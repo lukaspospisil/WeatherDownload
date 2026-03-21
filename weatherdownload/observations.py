@@ -9,12 +9,18 @@ from .chmi_daily import (
     normalize_daily_observations,
     parse_daily_csv,
 )
-from .errors import DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
+from .chmi_registry import get_dataset_spec
+from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .metadata import read_station_metadata
 from .queries import ObservationQuery
 
 
 def download_observations(query: ObservationQuery, timeout: int = 60, station_metadata: pd.DataFrame | None = None) -> pd.DataFrame:
+    dataset_spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    if not dataset_spec.implemented:
+        raise DatasetNotImplementedError(
+            f"Dataset path '{query.dataset_scope}/{query.resolution}' is valid in CHMI, but is not implemented by this library yet."
+        )
     if query.dataset_scope != 'historical_csv' or query.resolution != 'daily':
         raise UnsupportedQueryError(
             'Unsupported query combination: only dataset_scope="historical_csv" and resolution="daily" are currently implemented.'

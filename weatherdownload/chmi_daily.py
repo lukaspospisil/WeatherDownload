@@ -6,22 +6,10 @@ from dataclasses import dataclass
 import pandas as pd
 import requests
 
+from .chmi_registry import get_dataset_spec
 from .errors import DownloadError, UnsupportedQueryError
 from .queries import ObservationQuery
 
-BASE_DAILY_URL = 'https://opendata.chmi.cz/meteorology/climate/historical_csv/data/daily'
-ELEMENT_GROUPS: dict[str, str] = {
-    'T': 'temperature',
-    'TMA': 'temperature',
-    'TMI': 'temperature',
-    'RH': 'humidity',
-    'P': 'air_pressure',
-    'SRA': 'precipitation',
-    'SSV': 'sunshine',
-    'HS': 'snow',
-    'WSPD': 'wind',
-    'WDIR': 'wind',
-}
 RAW_DAILY_COLUMNS = ['STATION', 'ELEMENT', 'TIMEFUNC', 'DT', 'VALUE', 'FLAG', 'QUALITY']
 NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'observation_date', 'time_function',
@@ -38,18 +26,26 @@ class DailyDownloadTarget:
 
 
 def build_daily_download_targets(query: ObservationQuery) -> list[DailyDownloadTarget]:
+    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    if spec.time_semantics != 'date':
+        raise UnsupportedQueryError(
+            f"Unsupported time semantics for daily downloader: {spec.time_semantics}"
+        )
+    if spec.station_identifier_type != 'wsi':
+        raise UnsupportedQueryError(
+            f"Unsupported station identifier type for daily downloader: {spec.station_identifier_type}"
+        )
+    if spec.element_groups is None:
+        raise UnsupportedQueryError('The registered daily dataset spec does not define element groups.')
+
     targets: list[DailyDownloadTarget] = []
     for station_id in query.station_ids:
         for element in query.elements or []:
-            group = ELEMENT_GROUPS.get(element)
+            group = spec.element_groups.get(element)
             if group is None:
                 raise UnsupportedQueryError(f"Unsupported daily historical_csv element: {element}")
-            targets.append(DailyDownloadTarget(
-                station_id=station_id,
-                element=element,
-                group=group,
-                url=f'{BASE_DAILY_URL}/{group}/dly-{station_id}-{element}.csv',
-            ))
+            url = spec.endpoint_pattern.format(group=group, station_id=station_id, element=element)
+            targets.append(DailyDownloadTarget(station_id=station_id, element=element, group=group, url=url))
     return targets
 
 

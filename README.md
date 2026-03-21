@@ -11,8 +11,8 @@ Today it focuses on station metadata from the official CHMI `historical_csv` met
 - filter station metadata in memory
 - export tabular data to `csv`, `xlsx`, `parquet`, and `mat`
 - discover supported CHMI query dimensions before building download requests
-- validate CHMI observation queries
-- download the first narrow observation path: `historical_csv` + `daily`
+- validate CHMI observation queries against the broader CHMI dataset structure
+- download the first implemented path: `historical_csv` + `daily`
 - keep a simple CLI for metadata listing and export
 
 ## Canonical Station Identifier
@@ -64,7 +64,9 @@ Supported `dataset_scope` values:
 
 Supported `resolution` values depend on `dataset_scope` and can be discovered via `list_resolutions(...)`.
 
-Supported `elements` are currently defined by the library's CHMI registry and can be discovered via `list_supported_elements(...)`.
+Current downloader implementation support is narrower than the full CHMI capability registry. At the moment, the library implements only `historical_csv` + `daily`.
+
+Supported query dimensions are defined by an explicit CHMI registry layer. The registry describes broader CHMI capabilities, while downloader implementation support is narrower. Supported `elements` can be discovered via `list_supported_elements(...)`.
 
 ## Daily Query Semantics
 
@@ -142,7 +144,8 @@ pip install .[full]
 ## Architecture
 
 - `weatherdownload.metadata`: CHMI station metadata loading and filtering
-- `weatherdownload.discovery`: CHMI dataset scope, resolution, and element discovery helpers
+- `weatherdownload.chmi_registry`: explicit CHMI dataset registry and typed dataset specs
+- `weatherdownload.discovery`: discovery helpers backed by the CHMI registry
 - `weatherdownload.chmi_daily`: daily historical_csv path mapping, download, parse, and normalization helpers
 - `weatherdownload.observations`: narrow public observation downloader entrypoint
 - `weatherdownload.exporting`: generic DataFrame export helpers

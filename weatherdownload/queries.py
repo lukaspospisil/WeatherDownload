@@ -4,7 +4,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from .discovery import DATASET_SCOPES, RESOLUTIONS_BY_SCOPE
+from .chmi_registry import get_dataset_spec
+from .discovery import list_dataset_scopes, list_resolutions
 
 
 class QueryValidationError(ValueError):
@@ -35,18 +36,27 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
     query.dataset_scope = _normalize_scalar(query.dataset_scope, field_name="dataset_scope")
     query.resolution = _normalize_scalar(query.resolution, field_name="resolution")
 
-    if query.dataset_scope not in DATASET_SCOPES:
+    if query.dataset_scope not in list_dataset_scopes():
         raise QueryValidationError(f"Unsupported dataset_scope: {query.dataset_scope}")
 
-    if query.resolution not in RESOLUTIONS_BY_SCOPE[query.dataset_scope]:
+    supported_resolutions = list_resolutions(query.dataset_scope)
+    if query.resolution not in supported_resolutions:
         raise QueryValidationError(
             f"Unsupported resolution '{query.resolution}' for dataset_scope '{query.dataset_scope}'."
         )
+
+    dataset_spec = get_dataset_spec(query.dataset_scope, query.resolution)
 
     query.station_ids = _normalize_string_sequence(query.station_ids, "station_ids", uppercase=True, required=True)
 
     if query.elements is not None:
         query.elements = _normalize_string_sequence(query.elements, "elements", uppercase=True, required=False)
+        if dataset_spec.supported_elements:
+            unsupported_elements = [element for element in query.elements if element not in dataset_spec.supported_elements]
+            if unsupported_elements:
+                raise QueryValidationError(
+                    f"Unsupported elements for dataset_scope '{query.dataset_scope}' and resolution '{query.resolution}': {unsupported_elements}"
+                )
 
     has_datetime_range = query.start is not None or query.end is not None
     has_date_range = query.start_date is not None or query.end_date is not None
@@ -74,7 +84,7 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
         query.start_date = start_date
         query.end_date = end_date
 
-    if query.resolution == "daily" and has_datetime_range:
+    if dataset_spec.time_semantics == "date" and has_datetime_range:
         raise QueryValidationError(
             "For daily data, use start_date/end_date. Datetime precision is not supported."
         )

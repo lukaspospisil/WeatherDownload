@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 
+from weatherdownload import get_dataset_spec
 from weatherdownload.chmi_daily import NORMALIZED_DAILY_COLUMNS, build_daily_download_targets, normalize_daily_observations, parse_daily_csv
 from weatherdownload.metadata import _parse_station_metadata_csv
 from weatherdownload.queries import ObservationQuery
@@ -17,6 +18,13 @@ class DailyObservationTests(unittest.TestCase):
         self.assertEqual(len(targets), 2)
         self.assertTrue(targets[0].url.endswith('/temperature/dly-0-20000-0-11406-TMA.csv'))
         self.assertTrue(targets[1].url.endswith('/precipitation/dly-0-20000-0-11406-SRA.csv'))
+
+    def test_daily_mapping_uses_registry_endpoint_pattern(self) -> None:
+        spec = get_dataset_spec('historical_csv', 'daily')
+        query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='1865-06-01', end_date='1865-06-03', elements=['TMA'])
+        target = build_daily_download_targets(query)[0]
+        expected = spec.endpoint_pattern.format(group=spec.element_groups['TMA'], station_id='0-20000-0-11406', element='TMA')
+        self.assertEqual(target.url, expected)
 
     def test_parse_representative_daily_sample(self) -> None:
         parsed = parse_daily_csv(SAMPLE_DAILY_CSV)

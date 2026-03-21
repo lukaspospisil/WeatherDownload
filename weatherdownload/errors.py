@@ -6,7 +6,11 @@ class WeatherDownloadError(Exception):
 
 
 class UnsupportedQueryError(WeatherDownloadError, ValueError):
-    """Raised when a query combination is not supported by an implemented downloader."""
+    """Raised when a query combination is structurally unsupported by a downloader."""
+
+
+class DatasetNotImplementedError(WeatherDownloadError, NotImplementedError):
+    """Raised when a CHMI dataset combination is valid but not implemented by the library yet."""
 
 
 class StationNotFoundError(WeatherDownloadError, LookupError):

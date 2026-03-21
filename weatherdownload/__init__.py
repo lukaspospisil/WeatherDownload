@@ -1,15 +1,16 @@
 """Public API for working with CHMI weather data."""
 
+from .chmi_registry import ChmiDatasetSpec, get_dataset_spec
 from .discovery import list_dataset_scopes, list_resolutions, list_supported_elements
-from .errors import DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
+from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .exporting import export_table
 from .metadata import DEFAULT_META1_URL, filter_stations, read_station_metadata
 from .observations import download_observations
 from .queries import ObservationQuery, QueryValidationError, validate_observation_query
 
 __all__ = [
-    'DEFAULT_META1_URL', 'DownloadError', 'EmptyResultError', 'ObservationQuery', 'QueryValidationError',
-    'StationNotFoundError', 'UnsupportedQueryError', 'download_observations', 'export_table', 'filter_stations',
+    'ChmiDatasetSpec', 'DEFAULT_META1_URL', 'DatasetNotImplementedError', 'DownloadError', 'EmptyResultError', 'ObservationQuery', 'QueryValidationError',
+    'StationNotFoundError', 'UnsupportedQueryError', 'download_observations', 'export_table', 'filter_stations', 'get_dataset_spec',
     'list_dataset_scopes', 'list_resolutions', 'list_supported_elements', 'read_station_metadata',
     'validate_observation_query',
 ]
