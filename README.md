@@ -1,0 +1,156 @@
+# WeatherDownload
+
+WeatherDownload is a Python library for working with CHMI weather datasets.
+
+Today it focuses on station metadata from the official CHMI `historical_csv` metadata feed, while keeping a clean shape for future observation downloads.
+
+## Current capabilities
+
+- read station metadata into a pandas `DataFrame`
+- use CHMI WSI as the canonical public `station_id`
+- filter station metadata in memory
+- export tabular data to `csv`, `xlsx`, `parquet`, and `mat`
+- discover supported CHMI query dimensions before building download requests
+- validate CHMI observation queries
+- download the first narrow observation path: `historical_csv` + `daily`
+- keep a simple CLI for metadata listing and export
+
+## Canonical Station Identifier
+
+The library uses CHMI `WSI` as the single canonical public station identifier.
+
+- `station_id`: canonical CHMI WSI used across metadata and observations
+- `gh_id`: secondary metadata field kept for cross-reference with CHMI station metadata
+
+Public examples should use `station_id`.
+
+## Library API
+
+```python
+from weatherdownload import (
+    ObservationQuery,
+    download_observations,
+    export_table,
+    filter_stations,
+    list_dataset_scopes,
+    list_resolutions,
+    list_supported_elements,
+    read_station_metadata,
+)
+
+stations = read_station_metadata()
+selected = filter_stations(stations, station_ids=["0-20000-0-11406"], active_on="2024-01-01")
+export_table(selected, "stations.csv", format="csv")  # writes to outputs/stations.csv
+
+query = ObservationQuery(
+    dataset_scope="historical_csv",
+    resolution="daily",
+    station_ids=["0-20000-0-11406"],
+    start_date="2024-01-01",
+    end_date="2024-12-31",
+    elements=["TMA", "TMI"],
+)
+observations = download_observations(query, station_metadata=selected)
+```
+
+## Supported Query Dimensions
+
+Supported `dataset_scope` values:
+
+- `now`
+- `recent`
+- `historical`
+- `historical_csv`
+
+Supported `resolution` values depend on `dataset_scope` and can be discovered via `list_resolutions(...)`.
+
+Supported `elements` are currently defined by the library's CHMI registry and can be discovered via `list_supported_elements(...)`.
+
+## Daily Query Semantics
+
+Daily observations are treated as date-based data.
+
+- prefer `start_date` and `end_date` for `resolution="daily"`
+- `start_date` and `end_date` are inclusive
+- `start` and `end` cannot be used together with `start_date` and `end_date`
+- for `resolution="daily"`, `start` and `end` are rejected to avoid misleading time-of-day precision
+
+## Daily Observations Example
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    dataset_scope="historical_csv",
+    resolution="daily",
+    station_ids=["0-20000-0-11406"],
+    start_date="1865-06-01",
+    end_date="1865-06-10",
+    elements=["TMA"],
+)
+
+daily = download_observations(query)
+```
+
+Normalized daily output schema rationale:
+
+- daily data are date-based, so the normalized API exposes `observation_date`
+- the raw CHMI `DT` source field remains internal for parsing, but is not exposed as a fake high-precision timestamp
+- `time_function` is preserved because it still describes the CHMI daily measurement convention
+
+Normalized daily output schema:
+
+- `station_id`: canonical CHMI WSI identifier
+- `gh_id`: secondary station identifier from metadata
+- `element`: observed element code
+- `observation_date`: normalized daily date
+- `time_function`: source `TIMEFUNC` value from CHMI daily CSV
+- `value`: numeric observation value, nullable
+- `flag`: source flag value, nullable
+- `quality`: numeric quality code, nullable
+- `dataset_scope`: constant `historical_csv`
+- `resolution`: constant `daily`
+
+## CLI
+
+```powershell
+weatherdownload stations metadata --format screen
+weatherdownload stations metadata --format csv --output stations.csv
+weatherdownload stations metadata --format excel --output reports/stations.xlsx
+weatherdownload stations metadata --format parquet --output D:/data/stations.parquet
+weatherdownload stations metadata --format mat --output stations.mat
+weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10
+weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10 --format csv --output daily.csv
+```
+
+If `--output` is just a filename such as `stations.csv` or `daily.csv`, the file is written under `outputs/` by default.
+
+Explicit relative paths such as `reports/stations.xlsx` and absolute paths such as `D:/data/stations.parquet` are used as provided. Missing parent directories are created automatically.
+
+## Installation
+
+```powershell
+pip install .
+```
+
+Optional export dependencies:
+
+```powershell
+pip install .[full]
+```
+
+## Architecture
+
+- `weatherdownload.metadata`: CHMI station metadata loading and filtering
+- `weatherdownload.discovery`: CHMI dataset scope, resolution, and element discovery helpers
+- `weatherdownload.chmi_daily`: daily historical_csv path mapping, download, parse, and normalization helpers
+- `weatherdownload.observations`: narrow public observation downloader entrypoint
+- `weatherdownload.exporting`: generic DataFrame export helpers
+- `weatherdownload.queries`: query model and validation
+- `weatherdownload.cli`: thin CLI wrapper over the library API
+
+## Planned next steps
+
+- add hourly and 10min observation downloaders after the daily path is stable
+- connect discovery helpers to concrete CHMI download endpoints more systematically
+- add richer station filtering such as geographic bounds and dataset availability
