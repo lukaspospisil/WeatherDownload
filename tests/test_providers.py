@@ -55,35 +55,44 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list(observation_metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('TMK', observation_metadata['element'].tolist())
         self.assertIn('TT_TU', observation_metadata['element'].tolist())
-        self.assertIn('RWS_10', observation_metadata['element'].tolist())
+        self.assertIn('TT_10', observation_metadata['element'].tolist())
         self.assertTrue(observation_metadata['station_id'].str.len().eq(5).all())
 
     def test_discovery_country_de_returns_canonical_names_by_default(self) -> None:
         self.assertEqual(list_dataset_scopes(country='DE'), ['historical'])
         self.assertEqual(list_resolutions(country='DE', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         hourly_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='1hour')
-        self.assertIn('tas_mean', hourly_elements)
-        self.assertIn('wind_speed', hourly_elements)
-        self.assertIn('precipitation', hourly_elements)
+        self.assertEqual(hourly_elements, ['tas_mean', 'relative_humidity', 'wind_speed'])
+        tenmin_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='10min')
+        self.assertEqual(tenmin_elements, ['tas_mean', 'relative_humidity', 'wind_speed'])
 
     def test_discovery_country_de_can_return_raw_codes(self) -> None:
         hourly_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='1hour', provider_raw=True)
-        self.assertIn('TT_TU', hourly_elements)
-        self.assertIn('FF', hourly_elements)
-        self.assertIn('R1', hourly_elements)
+        self.assertEqual(hourly_elements, ['FF', 'RF_TU', 'TT_TU'])
+        tenmin_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='10min', provider_raw=True)
+        self.assertEqual(tenmin_elements, ['FF_10', 'RF_10', 'TT_10'])
 
-    def test_download_observations_country_de_hourly_not_implemented(self) -> None:
-        query = ObservationQuery(
+    def test_de_subdaily_queries_are_now_provider_valid(self) -> None:
+        hourly_query = ObservationQuery(
             country='DE',
             dataset_scope='historical',
             resolution='1hour',
             station_ids=['00003'],
             start='2024-01-01T00:00:00Z',
             end='2024-01-01T01:00:00Z',
-            elements=['tas_mean'],
+            elements=['tas_mean', 'wind_speed'],
         )
-        with self.assertRaises(NotImplementedError):
-            download_observations(query, country='DE')
+        tenmin_query = ObservationQuery(
+            country='DE',
+            dataset_scope='historical',
+            resolution='10min',
+            station_ids=['00003'],
+            start='2024-01-01T00:00:00Z',
+            end='2024-01-01T00:10:00Z',
+            elements=['tas_mean', 'relative_humidity'],
+        )
+        self.assertEqual(hourly_query.elements, ['TT_TU', 'FF'])
+        self.assertEqual(tenmin_query.elements, ['TT_10', 'RF_10'])
 
     def test_read_station_metadata_preserves_positional_source_url_compatibility(self) -> None:
         with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)) as mock_get:
@@ -94,3 +103,4 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

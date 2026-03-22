@@ -7,7 +7,7 @@ WeatherDownload is a Python library for working with weather datasets through a 
 Today it focuses on:
 
 - `CZ` via CHMI
-- `DE` via DWD metadata/discovery and the first `historical/daily` downloader path
+- `DE` via DWD metadata/discovery and the first `historical` downloader paths for `daily`, `1hour`, and `10min`
 
 The public API stays DataFrame-first and is designed to keep a stable shape across countries.
 
@@ -19,7 +19,7 @@ The public API stays DataFrame-first and is designed to keep a stable shape acro
 - export tabular data to `csv`, `xlsx`, `parquet`, and `mat`
 - discover supported dataset scopes, resolutions, and elements before building download requests
 - validate observation queries against provider-specific capability registries
-- download the first implemented paths: `CZ historical_csv` + `10min`, `CZ historical_csv` + `1hour`, `CZ historical_csv` + `daily`, and the first `DE historical` + `daily` path
+- download the first implemented paths: `CZ historical_csv` + `10min`, `CZ historical_csv` + `1hour`, `CZ historical_csv` + `daily`, `DE historical` + `10min`, `DE historical` + `1hour`, and `DE historical` + `daily`
 - keep a simple CLI for metadata, discovery, and observation export
 
 ## Canonical Station Identifier
@@ -287,7 +287,7 @@ Supported `dataset_scope` values include:
 
 Supported `resolution` values depend on `dataset_scope` and can be discovered with `list_resolutions(...)`.
 
-Current downloader implementation support is narrower than the full provider discovery surface. At the moment, the library implements `CZ historical_csv` + `10min`, `CZ historical_csv` + `1hour`, `CZ historical_csv` + `daily`, and the first `DE historical` + `daily` path.
+Current downloader implementation support is narrower than the full provider discovery surface. At the moment, the library implements `CZ historical_csv` + `10min`, `CZ historical_csv` + `1hour`, `CZ historical_csv` + `daily`, `DE historical` + `10min`, `DE historical` + `1hour`, and `DE historical` + `daily`.
 
 ## 10min Query Semantics
 
@@ -315,6 +315,22 @@ query = ObservationQuery(
 tenmin = download_observations(query)
 ```
 
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="DE",
+    dataset_scope="historical",
+    resolution="10min",
+    station_ids=["00044"],
+    start="1999-12-31T22:50:00Z",
+    end="2000-01-01T00:00:00Z",
+    elements=["tas_mean", "relative_humidity"],
+)
+
+de_tenmin = download_observations(query)
+```
+
 Normalized 10min output schema:
 
 - `station_id`: canonical public station identifier
@@ -328,9 +344,29 @@ Normalized 10min output schema:
 - `dataset_scope`: dataset scope used in the query
 - `resolution`: constant `10min`
 
+## DE Subdaily Query Semantics
+
+For `country="DE"`, the currently implemented DWD subdaily downloader paths are `historical + 1hour` and `historical + 10min`.
+
+- the supported canonical elements are intentionally narrow for now:
+  - `1hour`: `tas_mean`, `relative_humidity`, `wind_speed`
+  - `10min`: `tas_mean`, `relative_humidity`, `wind_speed`
+- raw DWD codes remain accepted for backward compatibility:
+  - `1hour`: `TT_TU`, `RF_TU`, `FF`
+  - `10min`: `TT_10`, `RF_10`, `FF_10`
+- normalized `station_id` is the zero-padded DWD station id
+- `gh_id` is nullable for DE
+- `flag` is nullable for these first DWD subdaily paths
+- `quality` is populated from the first available `QN...` column in the source file
+
+Timestamp rule for DWD subdaily paths:
+
+- before `2000-01-01`, source timestamps are localized to `Europe/Berlin` and then converted to UTC
+- from `2000-01-01` onward, source timestamps are treated as UTC directly
+
 ## DE Daily Query Semantics
 
-For `country="DE"`, the first implemented DWD downloader path is `historical + daily` from the DWD daily `kl` archive files.
+For `country="DE"`, the implemented DWD daily downloader path is `historical + daily` from the DWD daily `kl` archive files.
 
 - use `start_date` and `end_date`
 - normalized `station_id` is the zero-padded DWD station id
@@ -371,6 +407,22 @@ query = ObservationQuery(
 )
 
 hourly = download_observations(query)
+```
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="DE",
+    dataset_scope="historical",
+    resolution="1hour",
+    station_ids=["00044"],
+    start="1999-12-31T22:00:00Z",
+    end="2000-01-01T00:00:00Z",
+    elements=["tas_mean", "wind_speed"],
+)
+
+de_hourly = download_observations(query)
 ```
 
 Normalized hourly output schema:
@@ -431,12 +483,14 @@ weatherdownload stations metadata --country CZ --format screen
 weatherdownload stations metadata --country DE --format screen
 weatherdownload stations elements --country CZ --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution daily --include-mapping
 weatherdownload stations availability --country DE --station-id 00044 --include-mapping
+weatherdownload observations 10min --country DE --station-id 00044 --element tas_mean --element relative_humidity --start 1999-12-31T22:50:00Z --end 2000-01-01T00:00:00Z
+weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --element tas_max --element tas_min --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element TMK --element RSK --start-date 2024-01-01 --end-date 2024-01-10
 ```
 
-If `--output` is just a filename such as `stations.csv`, `tenmin.csv`, or `daily.csv`, the file is written under `outputs/` by default.
+If `--output` is just a filename such as `stations.csv`, `tenmin.csv`, `hourly.csv`, or `daily.csv`, the file is written under `outputs/` by default.
 
 Explicit relative paths such as `reports/stations.xlsx` and absolute paths such as `D:/data/stations.parquet` are used as provided. Missing parent directories are created automatically.
 
@@ -486,6 +540,7 @@ pip install .[full]
 - `weatherdownload.chmi_daily`: CZ daily historical_csv path mapping, download, parse, and normalization helpers
 - `weatherdownload.chmi_hourly`: CZ hourly historical_csv path mapping, download, parse, and normalization helpers
 - `weatherdownload.dwd_daily`: first DE daily historical path download, parse, and normalization helpers
+- `weatherdownload.dwd_subdaily`: first DE hourly and 10min historical path download, parse, and normalization helpers
 - `weatherdownload.observations`: public observation downloader entrypoint
 - `weatherdownload.exporting`: generic DataFrame export helpers
 - `weatherdownload.queries`: query model and validation

@@ -39,6 +39,8 @@ The canonical element layer is currently implemented for these downloader paths:
 - `CZ historical_csv / 1hour`
 - `CZ historical_csv / 10min`
 - `DE historical / daily`
+- `DE historical / 1hour`
+- `DE historical / 10min`
 
 ## Cross-Country Daily Mapping
 
@@ -115,6 +117,32 @@ This table shows the practical cross-country daily mapping for the currently imp
 | `snow_depth` | `SHK_TAG` |
 | `ground_temperature_min` | `TGK` |
 | `precipitation_indicator` | `RSKF` |
+
+### DE historical / 1hour
+
+| Canonical element | Raw code |
+| --- | --- |
+| `tas_mean` | `TT_TU` |
+| `relative_humidity` | `RF_TU` |
+| `wind_speed` | `FF` |
+
+Timestamp rule:
+
+- before `2000-01-01`, source timestamps are localized to `Europe/Berlin` and then converted to UTC
+- from `2000-01-01` onward, source timestamps are treated as UTC directly
+
+### DE historical / 10min
+
+| Canonical element | Raw code |
+| --- | --- |
+| `tas_mean` | `TT_10` |
+| `relative_humidity` | `RF_10` |
+| `wind_speed` | `FF_10` |
+
+Timestamp rule:
+
+- before `2000-01-01`, source timestamps are localized to `Europe/Berlin` and then converted to UTC
+- from `2000-01-01` onward, source timestamps are treated as UTC directly
 
 ## Python Examples
 
@@ -276,6 +304,8 @@ Station availability helpers follow the same idea:
 Examples:
 
 ```powershell
+weatherdownload observations 10min --country DE --station-id 00044 --element tas_mean --element relative_humidity --start 1999-12-31T22:50:00Z --end 2000-01-01T00:00:00Z
+weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --element tas_max --element tas_min --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element TMK --element RSK --start-date 2024-01-01 --end-date 2024-01-10
