@@ -159,6 +159,32 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
         self.assertEqual(list(observations['element'].unique()), ['tas_mean'])
         self.assertEqual(list(observations['element_raw'].unique()), ['TT_TU'])
 
+    def test_download_hourly_observations_country_de_all_history_skips_explicit_range_requirement(self) -> None:
+        tu_zip = _build_hourly_tu_zip()
+
+        def fake_get(url: str, timeout: int = 60):
+            if url.endswith('/hourly/air_temperature/historical/'):
+                return _MockResponse(text='<a href="stundenwerte_TU_00044_19991231_20000101_hist.zip">tu</a>')
+            if url.endswith('stundenwerte_TU_00044_19991231_20000101_hist.zip'):
+                return _MockResponse(content=tu_zip)
+            raise AssertionError(f'unexpected URL: {url}')
+
+        query = ObservationQuery(
+            country='DE',
+            dataset_scope='historical',
+            resolution='1hour',
+            station_ids=['00044'],
+            all_history=True,
+            elements=['tas_mean'],
+        )
+
+        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
+
+        self.assertEqual(len(observations), 2)
+        self.assertEqual(observations['element'].tolist(), ['tas_mean', 'tas_mean'])
+        self.assertEqual(observations['quality'].tolist(), [1, 2])
+
     def test_download_tenmin_observations_country_de_with_canonical_elements(self) -> None:
         tu_zip = _build_tenmin_tu_zip()
         ff_zip = _build_tenmin_ff_zip()
@@ -224,6 +250,32 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         self.assertEqual(list(observations['element'].unique()), ['tas_mean'])
         self.assertEqual(list(observations['element_raw'].unique()), ['TT_10'])
+
+    def test_download_tenmin_observations_country_de_all_history_skips_explicit_range_requirement(self) -> None:
+        tu_zip = _build_tenmin_tu_zip()
+
+        def fake_get(url: str, timeout: int = 60):
+            if url.endswith('/10_minutes/air_temperature/historical/'):
+                return _MockResponse(text='<a href="10minutenwerte_TU_00044_19991231_20000101_hist.zip">tu</a>')
+            if url.endswith('10minutenwerte_TU_00044_19991231_20000101_hist.zip'):
+                return _MockResponse(content=tu_zip)
+            raise AssertionError(f'unexpected URL: {url}')
+
+        query = ObservationQuery(
+            country='DE',
+            dataset_scope='historical',
+            resolution='10min',
+            station_ids=['00044'],
+            all_history=True,
+            elements=['tas_mean'],
+        )
+
+        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
+
+        self.assertEqual(len(observations), 2)
+        self.assertEqual(observations['element_raw'].tolist(), ['TT_10', 'TT_10'])
+        self.assertEqual(observations['quality'].tolist(), [3, 4])
 
 
 if __name__ == '__main__':

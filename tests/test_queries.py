@@ -73,6 +73,27 @@ class ObservationQueryValidationTests(unittest.TestCase):
         with self.assertRaises(QueryValidationError):
             ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_period_max'])
 
+    def test_daily_query_accepts_explicit_all_history_mode(self) -> None:
+        query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], all_history=True, elements=['tas_mean'])
+        self.assertTrue(query.all_history)
+        self.assertIsNone(query.start_date)
+        self.assertIsNone(query.end_date)
+
+    def test_subdaily_query_accepts_explicit_all_history_mode(self) -> None:
+        query = ObservationQuery(country='DE', dataset_scope='historical', resolution='1hour', station_ids=['00044'], all_history=True, elements=['tas_mean'])
+        self.assertTrue(query.all_history)
+        self.assertIsNone(query.start)
+        self.assertIsNone(query.end)
+        self.assertEqual(query.elements, ['TT_TU'])
+
+    def test_all_history_is_mutually_exclusive_with_explicit_ranges(self) -> None:
+        with self.assertRaises(QueryValidationError):
+            ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', all_history=True)
+
+    def test_query_requires_explicit_range_without_all_history(self) -> None:
+        with self.assertRaises(QueryValidationError):
+            ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'])
+
     def test_validate_observation_query_returns_query(self) -> None:
         query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date=date(2024, 1, 1), end_date=date(2024, 12, 31))
         validated = validate_observation_query(query)

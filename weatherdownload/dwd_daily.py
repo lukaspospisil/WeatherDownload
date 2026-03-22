@@ -20,7 +20,7 @@ NORMALIZED_DWD_DAILY_COLUMNS = [
 DWD_DAILY_DIRECTORY_URL = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/'
 _DWD_DAILY_ARCHIVE_PATTERN = re.compile(r'tageswerte_KL_(?P<station_id>\d{5})_\d{8}_\d{8}_hist\.zip')
 _DWD_DAILY_PRODUCT_PATTERN = re.compile(r'produkt_klima_tag_\d{8}_\d{8}_(?P<station_id>\d{5})\.txt')
-_DWD_DAILY_MISSING_SENTINELS = {'-999', '-999.0', '-9999', '-9999.0'}
+_DWD_DAILY_MISSING_SENTINELS = {'', '-999', '-999.0', '-9999', '-9999.0', '999', '999.0', '9990', '9990.0', '9999', '9999.0'}
 _DWD_DAILY_QN3_ELEMENTS = {'FX', 'FM'}
 
 
@@ -107,7 +107,7 @@ def _parse_daily_archive(archive_bytes: bytes, station_id: str) -> pd.DataFrame:
         product_name = product_names[0]
         csv_text = archive.read(product_name).decode('latin-1')
     table = pd.read_csv(io.StringIO(csv_text), sep=';', dtype=str)
-    table.columns = [column.strip() for column in table.columns]
+    table.columns = [_normalize_dwd_daily_column_name(column) for column in table.columns]
     return table
 
 
@@ -119,10 +119,11 @@ def normalize_daily_observations_dwd(
     rows: list[pd.DataFrame] = []
     metadata_lookup = _build_gh_id_lookup(station_metadata)
     for element in query.elements or []:
-        if element not in table.columns:
+        normalized_element = _normalize_dwd_daily_column_name(element)
+        if normalized_element not in table.columns:
             continue
-        quality_column = 'QN_3' if element in _DWD_DAILY_QN3_ELEMENTS else 'QN_4'
-        element_columns = canonicalize_element_series(pd.Series([element] * len(table.index), index=table.index), query)
+        quality_column = _quality_column_for_element(table, normalized_element)
+        element_columns = canonicalize_element_series(pd.Series([normalized_element] * len(table.index), index=table.index), query)
         normalized = pd.DataFrame(
             {
                 'station_id': table['STATIONS_ID'].astype(str).str.strip().str.zfill(5),
@@ -130,9 +131,9 @@ def normalize_daily_observations_dwd(
                 'element_raw': element_columns['element_raw'],
                 'observation_date': pd.to_datetime(table['MESS_DATUM'].astype(str).str.strip(), format='%Y%m%d').dt.date,
                 'time_function': pd.NA,
-                'value': _to_numeric_with_missing(table[element]),
+                'value': _to_numeric_with_missing(table[normalized_element]),
                 'flag': pd.NA,
-                'quality': _to_quality_with_missing(table[quality_column]) if quality_column in table.columns else pd.Series(pd.NA, index=table.index),
+                'quality': _to_quality_with_missing(table[quality_column]) if quality_column is not None else pd.Series(pd.NA, index=table.index, dtype='Int64'),
                 'dataset_scope': query.dataset_scope,
                 'resolution': query.resolution,
             }
@@ -170,3 +171,19 @@ def _to_quality_with_missing(series: pd.Series) -> pd.Series:
     cleaned = series.astype(str).str.strip()
     cleaned = cleaned.where(~cleaned.isin(_DWD_DAILY_MISSING_SENTINELS), pd.NA)
     return pd.to_numeric(cleaned, errors='coerce').astype('Int64')
+
+
+def _normalize_dwd_daily_column_name(value: object) -> str:
+    return str(value).strip().upper()
+
+
+def _quality_column_for_element(table: pd.DataFrame, element: str) -> str | None:
+    preferred = 'QN_3' if element in _DWD_DAILY_QN3_ELEMENTS else 'QN_4'
+    if preferred in table.columns:
+        return preferred
+    candidates = [column for column in table.columns if column.startswith('QN_')]
+    if preferred == 'QN_4':
+        for column in candidates:
+            if column != 'QN_3':
+                return column
+    return candidates[0] if candidates else None

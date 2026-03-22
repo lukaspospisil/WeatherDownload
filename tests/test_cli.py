@@ -2,7 +2,7 @@ import io
 import os
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -130,6 +130,15 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(query.elements, ['T'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'CZ')
 
+    def test_tenmin_cli_all_history_sets_query_mode(self) -> None:
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()) as download_mock:
+            exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--all-history'])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertTrue(query.all_history)
+        self.assertIsNone(query.start)
+        self.assertIsNone(query.end)
+
     def test_tenmin_cli_explicit_country_de_uses_de_query_shape(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_de_tenmin_table()) as download_mock:
@@ -174,6 +183,15 @@ class ObservationCliTests(unittest.TestCase):
         self.assertIn('0-20000-0-11406', output)
         self.assertIn('1hour', output)
 
+    def test_hourly_cli_all_history_sets_query_mode(self) -> None:
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()) as download_mock:
+            exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--all-history'])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertTrue(query.all_history)
+        self.assertIsNone(query.start)
+        self.assertIsNone(query.end)
+
     def test_hourly_cli_explicit_country_de_uses_de_query_shape(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_de_hourly_table()) as download_mock:
@@ -190,6 +208,15 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
         self.assertIn('1hour', buffer.getvalue())
+
+    def test_hourly_cli_rejects_mixed_all_history_and_explicit_range(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([
+                'observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--all-history', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('--all-history cannot be used together with --start or --end', stderr.getvalue())
 
     def test_hourly_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
         original_cwd = Path.cwd()
@@ -217,6 +244,15 @@ class ObservationCliTests(unittest.TestCase):
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
         self.assertIn('TMA', output)
+
+    def test_daily_cli_all_history_sets_query_mode(self) -> None:
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()) as download_mock:
+            exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_max', '--all-history'])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertTrue(query.all_history)
+        self.assertIsNone(query.start_date)
+        self.assertIsNone(query.end_date)
 
     def test_daily_cli_explicit_country_de_uses_de_query_shape(self) -> None:
         buffer = io.StringIO()

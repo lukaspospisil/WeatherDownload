@@ -67,6 +67,23 @@ query = ObservationQuery(
 daily = download_observations(query)
 ```
 
+Use explicit full-history mode only when you want the entire implemented station history:
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="DE",
+    dataset_scope="historical",
+    resolution="1hour",
+    station_ids=["00044"],
+    all_history=True,
+    elements=["tas_mean"],
+)
+
+hourly = download_observations(query)
+```
+
 ## CLI
 
 ```powershell
@@ -74,9 +91,14 @@ weatherdownload stations metadata --country CZ --format screen
 weatherdownload stations metadata --country DE --format screen
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --element tas_max --element tas_min --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-10
+weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --all-history
 weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
+weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --all-history
 weatherdownload observations 10min --country DE --station-id 00044 --element tas_mean --element relative_humidity --start 1999-12-31T22:50:00Z --end 2000-01-01T00:00:00Z
+weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --element tas_mean --all-history
 ```
+
+`--all-history` is explicit and mutually exclusive with `--start`/`--end` or `--start-date`/`--end-date`.
 
 ## Canonical Elements
 

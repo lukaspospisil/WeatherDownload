@@ -80,8 +80,6 @@ def download_subdaily_observations_dwd(
         raise UnsupportedQueryError('The DWD subdaily downloader only supports historical/1hour and historical/10min.')
     if not query.elements:
         raise UnsupportedQueryError('The DWD subdaily downloader requires at least one element.')
-    if query.start is None or query.end is None:
-        raise UnsupportedQueryError('The DWD subdaily downloader requires start and end.')
 
     source_specs = _implemented_source_specs_for_query(query)
     if not source_specs:
@@ -121,15 +119,16 @@ def _implemented_source_specs_for_query(query: ObservationQuery) -> list[DwdData
 
 def _build_subdaily_download_targets(query: ObservationQuery, source_specs: list[DwdDatasetSpec], timeout: int) -> list[DwdSubdailyDownloadTarget]:
     targets: list[DwdSubdailyDownloadTarget] = []
-    requested_start = pd.Timestamp(query.start).date()
-    requested_end = pd.Timestamp(query.end).date()
+    requested_start = pd.Timestamp(query.start).date() if query.start is not None else None
+    requested_end = pd.Timestamp(query.end).date() if query.end is not None else None
     for spec in source_specs:
         config = _SOURCE_CONFIGS[spec.source_id]
         archives = _fetch_archive_urls(config, timeout=timeout)
         for station_id in query.station_ids:
             for begin_date, end_date, archive_url in archives.get(station_id, []):
-                if end_date < requested_start or begin_date > requested_end:
-                    continue
+                if requested_start is not None and requested_end is not None:
+                    if end_date < requested_start or begin_date > requested_end:
+                        continue
                 targets.append(DwdSubdailyDownloadTarget(station_id=station_id, source_spec=spec, archive_url=archive_url))
     return targets
 
@@ -209,7 +208,10 @@ def normalize_subdaily_observations_dwd(
         return pd.DataFrame(columns=NORMALIZED_DWD_SUBDAILY_COLUMNS)
 
     combined = pd.concat(rows, ignore_index=True)
-    combined = combined[(combined['timestamp'] >= pd.Timestamp(query.start)) & (combined['timestamp'] <= pd.Timestamp(query.end))]
+    if query.start is not None:
+        combined = combined[combined['timestamp'] >= pd.Timestamp(query.start)]
+    if query.end is not None:
+        combined = combined[combined['timestamp'] <= pd.Timestamp(query.end)]
     return combined.loc[:, NORMALIZED_DWD_SUBDAILY_COLUMNS].reset_index(drop=True)
 
 

@@ -84,9 +84,7 @@ def _download_observations_dwd(
 def _download_tenmin_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:
     if not query.elements:
         raise UnsupportedQueryError('The 10min historical_csv downloader requires at least one element.')
-    if query.start is None or query.end is None:
-        raise UnsupportedQueryError('The 10min historical_csv downloader requires start and end.')
-    targets = build_tenmin_download_targets(query)
+    targets = build_tenmin_download_targets(query, timeout=timeout)
     parsed_tables: list[pd.DataFrame] = []
     missing_station_ids: set[str] = set()
     any_downloaded = False
@@ -144,9 +142,7 @@ def _download_daily_observations(query: ObservationQuery, timeout: int, station_
 def _download_hourly_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:
     if not query.elements:
         raise UnsupportedQueryError('The hourly historical_csv downloader requires at least one element.')
-    if query.start is None or query.end is None:
-        raise UnsupportedQueryError('The hourly historical_csv downloader requires start and end.')
-    targets = build_hourly_download_targets(query)
+    targets = build_hourly_download_targets(query, timeout=timeout)
     parsed_tables: list[pd.DataFrame] = []
     missing_station_ids: set[str] = set()
     any_downloaded = False

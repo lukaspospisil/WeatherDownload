@@ -22,7 +22,7 @@ class _MockResponse:
 
 def _build_sample_dwd_daily_zip() -> bytes:
     csv_text = (
-        'STATIONS_ID;MESS_DATUM;QN_3;  FX;  FM;QN_4; RSK;RSKF; SDK;SHK_TAG;  NM; VPM;  PM; TMK; UPM; TXK; TNK; TGK;eor\n'
+        ' stations_id ; mess_datum ; QN_3 ;  FX;  FM; qn_4 ; RSK ;RSKF; SDK;SHK_TAG;  NM; VPM;  PM; tmk ; UPM; TXK; TNK; TGK;eor\n'
         '3;20240101;1;12.5;4.0;2;5.0;1;3.2;-999;6.0;8.1;1013.2;2.5;85.0;4.1;0.2;-1.0;eor\n'
         '3;20240102;1;-999;-999;2;0.0;0;0.0;-999;2.0;7.5;1011.0;1.0;88.0;2.0;-0.5;-2.0;eor\n'
     )

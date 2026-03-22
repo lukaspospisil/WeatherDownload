@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from weatherdownload import get_dataset_spec
 from weatherdownload.chmi_tenmin import NORMALIZED_TENMIN_COLUMNS, build_tenmin_download_targets, normalize_tenmin_observations, parse_tenmin_csv
@@ -33,6 +34,29 @@ class TenMinObservationTests(unittest.TestCase):
         target = build_tenmin_download_targets(query)[0]
         expected = spec.endpoint_pattern.format(group=spec.element_groups['T'], year='2024', station_id='0-20000-0-11406', element='T', year_month='202401')
         self.assertEqual(target.url, expected)
+
+    def test_tenmin_all_history_builds_targets_from_directory_listing(self) -> None:
+        def fake_get(url: str, timeout: int = 60):
+            class _Response:
+                def __init__(self, text: str) -> None:
+                    self.text = text
+
+                def raise_for_status(self) -> None:
+                    return None
+
+            if url.endswith('/temperature/'):
+                return _Response('<a href="2023/">2023/</a><a href="2024/">2024/</a>')
+            if url.endswith('/temperature/2023/'):
+                return _Response('<a href="10m-0-20000-0-11406-T-202312.csv">202312</a>')
+            if url.endswith('/temperature/2024/'):
+                return _Response('<a href="10m-0-20000-0-11406-T-202401.csv">202401</a>')
+            raise AssertionError(f'unexpected URL: {url}')
+
+        query = ObservationQuery(dataset_scope='historical_csv', resolution='10min', station_ids=['0-20000-0-11406'], all_history=True, elements=['tas_mean'])
+        with patch('weatherdownload.chmi_tenmin.requests.get', side_effect=fake_get):
+            targets = build_tenmin_download_targets(query)
+        self.assertEqual(len(targets), 2)
+        self.assertEqual([target.year_month for target in targets], ['202312', '202401'])
 
     def test_parse_representative_tenmin_sample(self) -> None:
         parsed = parse_tenmin_csv(SAMPLE_TENMIN_CSV)

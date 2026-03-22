@@ -20,6 +20,7 @@ class ObservationQuery:
     end: datetime | str | None = None
     start_date: date | str | None = None
     end_date: date | str | None = None
+    all_history: bool = False
     elements: list[str] | None = None
     country: str = 'CZ'
 
@@ -67,9 +68,14 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
 
     has_datetime_range = query.start is not None or query.end is not None
     has_date_range = query.start_date is not None or query.end_date is not None
+    if not isinstance(query.all_history, bool):
+        raise QueryValidationError('all_history must be a boolean.')
 
     if has_datetime_range and has_date_range:
         raise QueryValidationError('Use either start/end or start_date/end_date, but not both.')
+
+    if query.all_history and (has_datetime_range or has_date_range):
+        raise QueryValidationError('all_history cannot be used together with start/end or start_date/end_date.')
 
     if has_datetime_range:
         if query.start is None or query.end is None:
@@ -100,6 +106,16 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
         raise QueryValidationError(
             'For hourly data, use start/end. Date-only precision is not supported.'
         )
+
+    if not query.all_history:
+        if dataset_spec.time_semantics == 'date' and not has_date_range:
+            raise QueryValidationError(
+                'Daily data require start_date/end_date unless all_history=True is set explicitly.'
+            )
+        if dataset_spec.time_semantics == 'datetime' and not has_datetime_range:
+            raise QueryValidationError(
+                'Timestamp-based data require start/end unless all_history=True is set explicitly.'
+            )
 
     return query
 

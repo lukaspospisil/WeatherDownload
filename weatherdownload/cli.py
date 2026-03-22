@@ -84,8 +84,9 @@ def build_parser() -> argparse.ArgumentParser:
     _add_country_argument(tenmin_parser)
     tenmin_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="Canonical station_id. Can be provided multiple times.")
     tenmin_parser.add_argument("--element", action="append", required=True, dest="elements", help="Canonical or raw provider element code. Can be provided multiple times.")
-    tenmin_parser.add_argument("--start", required=True, dest="start", help="Start datetime in ISO format.")
-    tenmin_parser.add_argument("--end", required=True, dest="end", help="End datetime in ISO format.")
+    tenmin_parser.add_argument("--start", dest="start", help="Start datetime in ISO format.")
+    tenmin_parser.add_argument("--end", dest="end", help="End datetime in ISO format.")
+    tenmin_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
     tenmin_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     tenmin_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     tenmin_parser.set_defaults(handler=handle_tenmin_observations)
@@ -94,8 +95,9 @@ def build_parser() -> argparse.ArgumentParser:
     _add_country_argument(hourly_parser)
     hourly_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="Canonical station_id. Can be provided multiple times.")
     hourly_parser.add_argument("--element", action="append", required=True, dest="elements", help="Canonical or raw provider element code. Can be provided multiple times.")
-    hourly_parser.add_argument("--start", required=True, dest="start", help="Start datetime in ISO format.")
-    hourly_parser.add_argument("--end", required=True, dest="end", help="End datetime in ISO format.")
+    hourly_parser.add_argument("--start", dest="start", help="Start datetime in ISO format.")
+    hourly_parser.add_argument("--end", dest="end", help="End datetime in ISO format.")
+    hourly_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
     hourly_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     hourly_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     hourly_parser.set_defaults(handler=handle_hourly_observations)
@@ -104,8 +106,9 @@ def build_parser() -> argparse.ArgumentParser:
     _add_country_argument(daily_parser)
     daily_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="Canonical station_id. Can be provided multiple times.")
     daily_parser.add_argument("--element", action="append", required=True, dest="elements", help="Canonical or raw provider element code. Can be provided multiple times.")
-    daily_parser.add_argument("--start-date", required=True, dest="start_date", help="Start date in YYYY-MM-DD format.")
-    daily_parser.add_argument("--end-date", required=True, dest="end_date", help="End date in YYYY-MM-DD format.")
+    daily_parser.add_argument("--start-date", dest="start_date", help="Start date in YYYY-MM-DD format.")
+    daily_parser.add_argument("--end-date", dest="end_date", help="End date in YYYY-MM-DD format.")
+    daily_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
     daily_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     daily_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     daily_parser.set_defaults(handler=handle_daily_observations)
@@ -222,6 +225,7 @@ def handle_station_elements(args: argparse.Namespace) -> int:
 
 
 def handle_tenmin_observations(args: argparse.Namespace) -> int:
+    _validate_observation_mode(args, daily=False)
     query = ObservationQuery(
         country=args.country,
         dataset_scope=_default_dataset_scope(args.country),
@@ -229,6 +233,7 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
         station_ids=args.station_ids,
         start=args.start,
         end=args.end,
+        all_history=args.all_history,
         elements=args.elements,
     )
     observations = download_observations(query, country=args.country)
@@ -243,6 +248,7 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
 
 
 def handle_hourly_observations(args: argparse.Namespace) -> int:
+    _validate_observation_mode(args, daily=False)
     query = ObservationQuery(
         country=args.country,
         dataset_scope=_default_dataset_scope(args.country),
@@ -250,6 +256,7 @@ def handle_hourly_observations(args: argparse.Namespace) -> int:
         station_ids=args.station_ids,
         start=args.start,
         end=args.end,
+        all_history=args.all_history,
         elements=args.elements,
     )
     observations = download_observations(query, country=args.country)
@@ -264,6 +271,7 @@ def handle_hourly_observations(args: argparse.Namespace) -> int:
 
 
 def handle_daily_observations(args: argparse.Namespace) -> int:
+    _validate_observation_mode(args, daily=True)
     query = ObservationQuery(
         country=args.country,
         dataset_scope=_default_dataset_scope(args.country),
@@ -271,6 +279,7 @@ def handle_daily_observations(args: argparse.Namespace) -> int:
         station_ids=args.station_ids,
         start_date=args.start_date,
         end_date=args.end_date,
+        all_history=args.all_history,
         elements=args.elements,
     )
     observations = download_observations(query, country=args.country)
@@ -314,6 +323,19 @@ def _default_dataset_scope(country: str) -> str:
 
 def _read_stations_for_cli(args: argparse.Namespace) -> pd.DataFrame:
     return read_station_metadata(country=args.country, source_url=getattr(args, "source_url", None))
+
+
+def _validate_observation_mode(args: argparse.Namespace, *, daily: bool) -> None:
+    if daily:
+        if args.all_history and (args.start_date is not None or args.end_date is not None):
+            raise ValueError('--all-history cannot be used together with --start-date or --end-date.')
+        if not args.all_history and (args.start_date is None or args.end_date is None):
+            raise ValueError('Use either --all-history or both --start-date and --end-date.')
+        return
+    if args.all_history and (args.start is not None or args.end is not None):
+        raise ValueError('--all-history cannot be used together with --start or --end.')
+    if not args.all_history and (args.start is None or args.end is None):
+        raise ValueError('Use either --all-history or both --start and --end.')
 
 
 def _format_table(table: pd.DataFrame, metadata_view: bool) -> str:
