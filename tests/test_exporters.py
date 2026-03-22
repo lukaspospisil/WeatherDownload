@@ -1,8 +1,12 @@
 import os
+import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 
 from weatherdownload import export_table
@@ -45,6 +49,54 @@ class ExporterTests(unittest.TestCase):
                 self.assertTrue(destination.exists())
             finally:
                 os.chdir(original_cwd)
+
+    def test_export_mat_sanitizes_missing_values_for_station_metadata(self) -> None:
+        table = pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'gh_id': pd.NA,
+                'begin_date': pd.Timestamp('2001-01-01T00:00:00Z'),
+                'end_date': pd.NaT,
+                'full_name': 'Cheb',
+                'longitude': 12.391389,
+                'latitude': np.nan,
+                'elevation_m': np.nan,
+            },
+            {
+                'station_id': '0-20000-0-11414',
+                'gh_id': 'L3KVAL01',
+                'begin_date': pd.Timestamp('1950-06-01T00:00:00Z'),
+                'end_date': pd.Timestamp('1958-07-31T23:59:00Z'),
+                'full_name': 'Karlovy Vary',
+                'longitude': 12.9131,
+                'latitude': 50.2019,
+                'elevation_m': 603.0,
+            },
+        ])
+        captured: dict[str, object] = {}
+
+        def fake_savemat(destination: Path, payload: dict[str, object]) -> None:
+            captured['destination'] = destination
+            captured['payload'] = payload
+
+        fake_scipy = types.ModuleType('scipy')
+        fake_io = types.ModuleType('scipy.io')
+        fake_io.savemat = fake_savemat
+        fake_scipy.io = fake_io
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            destination = Path(temp_dir) / 'stations.mat'
+            with patch.dict(sys.modules, {'scipy': fake_scipy, 'scipy.io': fake_io}):
+                export_table(table, destination, format='mat')
+
+        payload = captured['payload']['table']
+        self.assertEqual(payload['station_id'].tolist(), ['0-20000-0-11406', '0-20000-0-11414'])
+        self.assertEqual(payload['gh_id'].tolist(), ['', 'L3KVAL01'])
+        self.assertEqual(payload['begin_date'].tolist(), ['2001-01-01T00:00:00+00:00', '1950-06-01T00:00:00+00:00'])
+        self.assertEqual(payload['end_date'].tolist(), ['', '1958-07-31T23:59:00+00:00'])
+        self.assertTrue(np.isnan(payload['latitude'][0]))
+        self.assertTrue(np.isnan(payload['elevation_m'][0]))
+        self.assertEqual(payload['elevation_m'][1], 603.0)
 
 
 if __name__ == '__main__':

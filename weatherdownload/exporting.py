@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from datetime import date, datetime
+from numbers import Real
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 
 ExportFormat = Literal["csv", "excel", "parquet", "mat"]
@@ -65,7 +68,45 @@ def _export_mat(table: pd.DataFrame, destination: Path) -> None:
         ) from exc
 
     payload = {
-        column: [None if pd.isna(value) else value for value in table[column].tolist()]
+        column: _to_matlab_array(table[column])
         for column in table.columns
     }
     savemat(destination, {"table": payload})
+
+
+def _to_matlab_array(series: pd.Series) -> np.ndarray:
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return np.array([_serialize_datetime_like(value) for value in series.tolist()], dtype=object)
+
+    if pd.api.types.is_bool_dtype(series):
+        return np.array([False if pd.isna(value) else bool(value) for value in series.tolist()], dtype=bool)
+
+    if pd.api.types.is_numeric_dtype(series):
+        return np.array([np.nan if pd.isna(value) else float(value) for value in series.tolist()], dtype=np.float64)
+
+    non_missing = [value for value in series.tolist() if not pd.isna(value)]
+    if non_missing and all(isinstance(value, bool) for value in non_missing):
+        return np.array([False if pd.isna(value) else bool(value) for value in series.tolist()], dtype=bool)
+    if non_missing and all(isinstance(value, Real) and not isinstance(value, bool) for value in non_missing):
+        return np.array([np.nan if pd.isna(value) else float(value) for value in series.tolist()], dtype=np.float64)
+    if non_missing and all(isinstance(value, (pd.Timestamp, datetime, date)) for value in non_missing):
+        return np.array([_serialize_datetime_like(value) for value in series.tolist()], dtype=object)
+
+    return np.array([_serialize_object_like(value) for value in series.tolist()], dtype=object)
+
+
+def _serialize_object_like(value: object) -> str:
+    if pd.isna(value):
+        return ""
+    if isinstance(value, (pd.Timestamp, datetime, date)):
+        return _serialize_datetime_like(value)
+    return str(value)
+
+
+def _serialize_datetime_like(value: object) -> str:
+    if pd.isna(value):
+        return ""
+    timestamp = pd.Timestamp(value)
+    if timestamp.tzinfo is None:
+        return timestamp.isoformat()
+    return timestamp.tz_convert("UTC").isoformat()
