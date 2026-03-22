@@ -41,6 +41,26 @@ class StationMetadataTests(unittest.TestCase):
         self.assertEqual(len(filtered), 1)
         self.assertEqual(filtered.iloc[0]['gh_id'], 'L3KVAL01')
 
+    def test_filter_stations_by_name_substring(self) -> None:
+        with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)):
+            stations = read_station_metadata()
+        filtered = filter_stations(stations, name_contains='olsova')
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered.iloc[0]['station_id'], '0-20000-0-11414')
+
+    def test_filter_stations_by_bbox(self) -> None:
+        with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)):
+            stations = read_station_metadata()
+        filtered = filter_stations(stations, bbox=(12.8, 50.1, 13.0, 50.3))
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered.iloc[0]['station_id'], '0-20000-0-11414')
+
+    def test_filter_stations_by_active_on(self) -> None:
+        with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)):
+            stations = read_station_metadata()
+        filtered = filter_stations(stations, active_on='2024-01-01')
+        self.assertEqual(filtered['station_id'].tolist(), ['0-20000-0-11406'])
+
 
 if __name__ == '__main__':
     unittest.main()

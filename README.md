@@ -34,12 +34,19 @@ from weatherdownload import (
     filter_stations,
     list_dataset_scopes,
     list_resolutions,
+    list_station_elements,
+    list_station_paths,
     list_supported_elements,
     read_station_metadata,
+    station_supports,
 )
 
 stations = read_station_metadata()
-selected = filter_stations(stations, station_ids=["0-20000-0-11406"], active_on="2024-01-01")
+selected = filter_stations(
+    stations,
+    station_ids=["0-20000-0-11406"],
+    active_on="2024-01-01",
+)
 export_table(selected, "stations.csv", format="csv")  # writes to outputs/stations.csv
 
 query = ObservationQuery(
@@ -52,6 +59,36 @@ query = ObservationQuery(
 )
 observations = download_observations(query, station_metadata=selected)
 ```
+
+## Station Filtering And Availability
+
+Station filtering stays DataFrame-first and works entirely in memory on the metadata table.
+
+```python
+from weatherdownload import (
+    filter_stations,
+    list_station_elements,
+    list_station_paths,
+    read_station_metadata,
+    station_supports,
+)
+
+stations = read_station_metadata()
+
+western_active = filter_stations(
+    stations,
+    name_contains="vary",
+    gh_ids=["L3KVAL01"],
+    bbox=(12.8, 50.1, 13.0, 50.3),
+    active_on="1955-01-01",
+)
+
+paths = list_station_paths(stations, "0-20000-0-11406", include_elements=True)
+daily_elements = list_station_elements(stations, "0-20000-0-11406", "historical_csv", "daily")
+supports_hourly = station_supports(stations, "0-20000-0-11406", "historical_csv", "1hour")
+```
+
+Current availability helpers are CHMI-specific and intentionally conservative: they report only implemented observation paths from the CHMI registry and optionally apply station lifecycle filtering via `active_on`.
 
 ## Supported Query Dimensions
 
@@ -183,6 +220,7 @@ pip install .[full]
 
 - `weatherdownload.metadata`: CHMI station metadata loading and filtering
 - `weatherdownload.chmi_registry`: explicit CHMI dataset registry and typed dataset specs
+- `weatherdownload.availability`: CHMI-specific station availability helpers backed by metadata + registry
 - `weatherdownload.discovery`: discovery helpers backed by the CHMI registry
 - `weatherdownload.chmi_daily`: daily historical_csv path mapping, download, parse, and normalization helpers
 - `weatherdownload.chmi_hourly`: hourly historical_csv path mapping, download, parse, and normalization helpers

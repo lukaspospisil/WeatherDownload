@@ -109,3 +109,7 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec:
 
 def list_dataset_specs() -> list[ChmiDatasetSpec]:
     return list(_DATASET_REGISTRY.values())
+
+
+def list_implemented_dataset_specs() -> list[ChmiDatasetSpec]:
+    return [spec for spec in _DATASET_REGISTRY.values() if spec.implemented]
