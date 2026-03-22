@@ -1,5 +1,7 @@
 # WeatherDownload
 
+[![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml)
+
 WeatherDownload is a Python library for working with CHMI weather datasets.
 
 Today it focuses on station metadata from the official CHMI `historical_csv` metadata feed, while keeping a clean shape for future observation downloads.
@@ -112,7 +114,7 @@ Supported query dimensions are defined by an explicit CHMI registry layer. The r
 - use `start` and `end` for `resolution="10min"`
 - `start_date` and `end_date` are not used for 10min data
 - normalized `timestamp` is parsed from CHMI `DT` and kept as a timezone-aware UTC pandas timestamp
-- the first implemented 10min slice is intentionally narrow and currently supports `element="T"`
+- the implemented 10min slice currently supports `T`, `TMA`, `TMI`, `TPM`, `T10`, `T100`, and `SSV10M`
 
 ## 10min Observations Example
 
@@ -125,7 +127,7 @@ query = ObservationQuery(
     station_ids=["0-20000-0-11406"],
     start="2024-01-01T00:00:00Z",
     end="2024-01-01T00:20:00Z",
-    elements=["T"],
+    elements=["T", "T10"],
 )
 
 tenmin = download_observations(query)
@@ -171,13 +173,15 @@ query = ObservationQuery(
     station_ids=["0-20000-0-11406"],
     start="2024-01-01T00:00:00Z",
     end="2024-01-01T02:00:00Z",
-    elements=["E"],
+    elements=["E", "P"],
 )
 
 hourly = download_observations(query)
 ```
 
 Normalized hourly output schema:
+
+Implemented hourly elements currently include E, P, N, W1, W2, and SSV1H.
 
 - `station_id`: canonical CHMI WSI identifier
 - `gh_id`: secondary station identifier from metadata, nullable when metadata are not provided
@@ -237,8 +241,8 @@ weatherdownload stations availability --station-id 0-20000-0-11406
 weatherdownload stations availability --station-id 0-20000-0-11406 --include-elements --format csv --output station-paths.csv
 weatherdownload stations supports --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
 weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
-weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z
-weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z --format csv --output tenmin.csv
+weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --element T10 --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z
+weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --element T10 --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z --format csv --output tenmin.csv
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10 --format csv --output daily.csv
 ```
@@ -278,3 +282,5 @@ pip install .[full]
 - add more implemented downloader paths beyond the current narrow `historical_csv` support
 - connect discovery helpers to concrete CHMI download endpoints more systematically
 - broaden 10min and hourly element support beyond the first implemented slices
+
+

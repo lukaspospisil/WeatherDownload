@@ -20,6 +20,7 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(spec.station_identifier_type, 'wsi')
         self.assertEqual(spec.time_semantics, 'datetime')
         self.assertTrue(spec.implemented)
+        self.assertEqual(spec.supported_elements, ('E', 'P', 'N', 'W1', 'W2', 'SSV1H'))
 
     def test_get_dataset_spec_for_tenmin_historical_csv(self) -> None:
         spec = get_dataset_spec('historical_csv', '10min')
@@ -28,7 +29,7 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(spec.station_identifier_type, 'wsi')
         self.assertEqual(spec.time_semantics, 'datetime')
         self.assertTrue(spec.implemented)
-        self.assertEqual(spec.supported_elements, ('T',))
+        self.assertEqual(spec.supported_elements, ('T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'))
 
     def test_get_dataset_spec_for_valid_but_not_implemented_path(self) -> None:
         spec = get_dataset_spec('now', '10min')
@@ -44,8 +45,8 @@ class RegistryTests(unittest.TestCase):
     def test_discovery_reads_from_registry(self) -> None:
         self.assertIn('now', list_dataset_scopes())
         self.assertIn('10min', list_resolutions('now'))
-        self.assertEqual(['T'], list_supported_elements('10min', 'historical_csv'))
-        self.assertEqual(['E'], list_supported_elements('1hour', 'historical_csv'))
+        self.assertEqual(['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'], list_supported_elements('10min', 'historical_csv'))
+        self.assertEqual(['E', 'P', 'N', 'W1', 'W2', 'SSV1H'], list_supported_elements('1hour', 'historical_csv'))
 
     def test_can_list_implemented_specs(self) -> None:
         implemented = {(spec.dataset_scope, spec.resolution) for spec in list_implemented_dataset_specs()}
@@ -59,3 +60,5 @@ class RegistryTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+

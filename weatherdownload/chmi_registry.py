@@ -31,10 +31,21 @@ _DAILY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
 
 _TENMIN_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'T': 'temperature',
+    'TMA': 'temperature',
+    'TMI': 'temperature',
+    'TPM': 'temperature',
+    'T10': 'soil_temperature',
+    'T100': 'soil_temperature',
+    'SSV10M': 'sunshine',
 }
 
 _HOURLY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'E': 'humidity',
+    'P': 'synop',
+    'N': 'synop',
+    'W1': 'synop',
+    'W2': 'synop',
+    'SSV1H': 'sunshine',
 }
 
 

@@ -47,8 +47,8 @@ class StationAvailabilityTests(unittest.TestCase):
 
     def test_list_station_elements_for_implemented_path(self) -> None:
         stations = self._read_stations()
-        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min'), ['T'])
-        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '1hour'), ['E'])
+        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min'), ['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'])
+        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '1hour'), ['E', 'P', 'N', 'W1', 'W2', 'SSV1H'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'now', '10min'), [])
 
 
