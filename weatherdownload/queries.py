@@ -89,6 +89,11 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
             "For daily data, use start_date/end_date. Datetime precision is not supported."
         )
 
+    if dataset_spec.time_semantics == "datetime" and has_date_range:
+        raise QueryValidationError(
+            "For hourly data, use start/end. Date-only precision is not supported."
+        )
+
     return query
 
 

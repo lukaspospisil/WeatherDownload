@@ -29,6 +29,10 @@ _DAILY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'WSPD': 'wind',
 }
 
+_HOURLY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
+    'E': 'humidity',
+}
+
 
 def _build_spec(
     dataset_scope: str,
@@ -71,7 +75,13 @@ _DATASET_REGISTRY: dict[tuple[str, str], ChmiDatasetSpec] = {
     ('historical', 'yearly'): _build_spec('historical', 'yearly', time_semantics='date'),
     ('historical', 'phenomena'): _build_spec('historical', 'phenomena'),
     ('historical_csv', '10min'): _build_spec('historical_csv', '10min'),
-    ('historical_csv', '1hour'): _build_spec('historical_csv', '1hour'),
+    ('historical_csv', '1hour'): _build_spec(
+        'historical_csv',
+        '1hour',
+        implemented=True,
+        endpoint_pattern='https://opendata.chmi.cz/meteorology/climate/historical_csv/data/1hour/{group}/{year}/1h-{station_id}-{element}-{year_month}.csv',
+        element_groups=_HOURLY_HISTORICAL_CSV_ELEMENT_GROUPS,
+    ),
     ('historical_csv', 'daily'): _build_spec(
         'historical_csv',
         'daily',
@@ -95,7 +105,6 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec:
         raise ValueError(
             f"No CHMI dataset spec is registered for dataset_scope='{dataset_scope}' and resolution='{resolution}'."
         ) from exc
-
 
 
 def list_dataset_specs() -> list[ChmiDatasetSpec]:

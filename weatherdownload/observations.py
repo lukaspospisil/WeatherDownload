@@ -9,6 +9,13 @@ from .chmi_daily import (
     normalize_daily_observations,
     parse_daily_csv,
 )
+from .chmi_hourly import (
+    NORMALIZED_HOURLY_COLUMNS,
+    build_hourly_download_targets,
+    download_hourly_csv,
+    normalize_hourly_observations,
+    parse_hourly_csv,
+)
 from .chmi_registry import get_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .metadata import read_station_metadata
@@ -21,13 +28,21 @@ def download_observations(query: ObservationQuery, timeout: int = 60, station_me
         raise DatasetNotImplementedError(
             f"Dataset path '{query.dataset_scope}/{query.resolution}' is valid in CHMI, but is not implemented by this library yet."
         )
-    if query.dataset_scope != 'historical_csv' or query.resolution != 'daily':
-        raise UnsupportedQueryError(
-            'Unsupported query combination: only dataset_scope="historical_csv" and resolution="daily" are currently implemented.'
-        )
+    metadata_table = station_metadata if station_metadata is not None else read_station_metadata(timeout=timeout)
+
+    if query.dataset_scope == 'historical_csv' and query.resolution == 'daily':
+        return _download_daily_observations(query, timeout=timeout, station_metadata=metadata_table)
+    if query.dataset_scope == 'historical_csv' and query.resolution == '1hour':
+        return _download_hourly_observations(query, timeout=timeout, station_metadata=metadata_table)
+
+    raise UnsupportedQueryError(
+        f"Unsupported query combination for the current downloader implementation: {query.dataset_scope}/{query.resolution}"
+    )
+
+
+def _download_daily_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:
     if not query.elements:
         raise UnsupportedQueryError('The daily historical_csv downloader requires at least one element.')
-    metadata_table = station_metadata if station_metadata is not None else read_station_metadata(timeout=timeout)
     targets = build_daily_download_targets(query)
     parsed_tables: list[pd.DataFrame] = []
     missing_station_ids: set[str] = set()
@@ -48,7 +63,38 @@ def download_observations(query: ObservationQuery, timeout: int = 60, station_me
             raise StationNotFoundError(f"No daily historical_csv data found for station_id: {station_list}")
         raise EmptyResultError('No observations found for the given query.')
     merged = pd.concat(parsed_tables, ignore_index=True)
-    normalized = normalize_daily_observations(merged, query, station_metadata=metadata_table)
+    normalized = normalize_daily_observations(merged, query, station_metadata=station_metadata)
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_DAILY_COLUMNS]
+
+
+def _download_hourly_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:
+    if not query.elements:
+        raise UnsupportedQueryError('The hourly historical_csv downloader requires at least one element.')
+    if query.start is None or query.end is None:
+        raise UnsupportedQueryError('The hourly historical_csv downloader requires start and end.')
+    targets = build_hourly_download_targets(query)
+    parsed_tables: list[pd.DataFrame] = []
+    missing_station_ids: set[str] = set()
+    any_downloaded = False
+    for target in targets:
+        try:
+            csv_text = download_hourly_csv(target, timeout=timeout)
+        except FileNotFoundError:
+            missing_station_ids.add(target.station_id)
+            continue
+        except DownloadError:
+            raise
+        any_downloaded = True
+        parsed_tables.append(parse_hourly_csv(csv_text))
+    if not any_downloaded:
+        if missing_station_ids:
+            station_list = ', '.join(sorted(missing_station_ids))
+            raise StationNotFoundError(f"No hourly historical_csv data found for station_id: {station_list}")
+        raise EmptyResultError('No observations found for the given query.')
+    merged = pd.concat(parsed_tables, ignore_index=True)
+    normalized = normalize_hourly_observations(merged, query, station_metadata=station_metadata)
+    if normalized.empty:
+        raise EmptyResultError('No observations found for the given query.')
+    return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]

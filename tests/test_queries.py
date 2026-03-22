@@ -33,6 +33,11 @@ class ObservationQueryValidationTests(unittest.TestCase):
         with self.assertRaises(QueryValidationError):
             ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T00:00:00Z', start_date='2024-01-01', end_date='2024-01-31')
 
+
+    def test_hourly_query_rejects_date_only_precision(self) -> None:
+        with self.assertRaises(QueryValidationError):
+            ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['E'])
+
     def test_daily_query_rejects_datetime_precision(self) -> None:
         with self.assertRaises(QueryValidationError):
             ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T00:00:00Z')
