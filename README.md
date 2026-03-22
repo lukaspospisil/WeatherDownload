@@ -1,6 +1,6 @@
 # WeatherDownload
 
-[![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml)
+[![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
 WeatherDownload is a Python library for working with CHMI weather datasets.
 
@@ -279,8 +279,8 @@ pip install .[full]
 
 ## Planned next steps
 
-- add more implemented downloader paths beyond the current narrow `historical_csv` support
-- connect discovery helpers to concrete CHMI download endpoints more systematically
-- broaden 10min and hourly element support beyond the first implemented slices
+- broaden implemented CHMI downloader coverage
+- improve packaging and release readiness
+- prepare light provider abstraction for future DWD support
 
 

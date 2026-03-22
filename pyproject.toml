@@ -5,9 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "weatherdownload"
 version = "0.1.0"
-description = "Python library for CHMI weather metadata and future observation workflows."
+description = "Python library for CHMI weather metadata and observation workflows."
 readme = "README.md"
+authors = [
+    { name = "Lukáš Pospíšil" }
+]
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
     "pandas>=2.2.0",
     "requests>=2.31.0",
@@ -25,6 +30,10 @@ full = [
 
 [project.scripts]
 weatherdownload = "weatherdownload.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/lukaspospisil/WeatherDownload"
+Repository = "https://github.com/lukaspospisil/WeatherDownload"
 
 [tool.setuptools.packages.find]
 include = ["weatherdownload*"]
