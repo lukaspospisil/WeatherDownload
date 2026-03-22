@@ -2,21 +2,17 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="142.7724mm"
+   height="41.178574mm"
+   viewBox="0 0 142.7724 41.178574"
    version="1.1"
    id="svg1"
    xml:space="preserve"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"><defs
-     id="defs1"><rect
-       x="260.06586"
-       y="196.67287"
-       width="306.14173"
-       height="182.13887"
-       id="rect3" /></defs><g
-     id="layer1"><g
+     id="defs1" /><g
+     id="layer1"
+     transform="translate(-14.636688,-52.596201)"><g
        id="g1"
        transform="translate(-32.890909,-13.5)"><path
          style="fill:#3771c8"
@@ -45,8 +41,4 @@
          id="tspan2"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19.7556px;font-family:'Trebuchet MS';-inkscape-font-specification:'Trebuchet MS';stroke-width:0.264583"
          x="72.572723"
-         y="89.432587">Download</tspan></text><text
-       xml:space="preserve"
-       transform="scale(0.26458333)"
-       id="text3"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:74.6667px;font-family:'Segoe UI Variable';-inkscape-font-specification:'Segoe UI Variable';text-align:start;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect3);display:inline;fill:#3771c8;stroke:#3771c8;stroke-opacity:1" /></g></svg>
+         y="89.432587">Download</tspan></text></g></svg>
