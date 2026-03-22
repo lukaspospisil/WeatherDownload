@@ -21,6 +21,13 @@ class DiscoveryTests(unittest.TestCase):
         elements = list_supported_elements(resolution='daily', dataset_scope='historical_csv', provider_raw=True)
         self.assertEqual(elements, ['E', 'F', 'HS', 'P', 'RH', 'SRA', 'SSV', 'T', 'TMA', 'TMI', 'WDIR', 'WSPD'])
 
+    def test_list_supported_elements_can_return_mapping_table(self) -> None:
+        mapping = list_supported_elements(resolution='daily', dataset_scope='historical_csv', include_mapping=True)
+        self.assertEqual(list(mapping.columns), ['element', 'element_raw', 'raw_elements'])
+        wind_speed = mapping[mapping['element'] == 'wind_speed'].iloc[0]
+        self.assertEqual(wind_speed['element_raw'], 'F')
+        self.assertEqual(wind_speed['raw_elements'], ['F', 'WSPD'])
+
 
 class ObservationQueryValidationTests(unittest.TestCase):
     def test_query_normalizes_station_ids_and_translates_canonical_elements_for_cz(self) -> None:

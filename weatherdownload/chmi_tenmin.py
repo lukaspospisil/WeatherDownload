@@ -7,12 +7,13 @@ import pandas as pd
 import requests
 
 from .chmi_registry import get_dataset_spec
+from .elements import canonicalize_element_series
 from .errors import DownloadError, UnsupportedQueryError
 from .queries import ObservationQuery
 
 RAW_TENMIN_COLUMNS = ['STATION', 'ELEMENT', 'DT', 'VALUE', 'FLAG', 'QUALITY']
 NORMALIZED_TENMIN_COLUMNS = [
-    'station_id', 'gh_id', 'element', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'
 ]
 
 
@@ -85,12 +86,14 @@ def parse_tenmin_csv(csv_text: str) -> pd.DataFrame:
 def normalize_tenmin_observations(table: pd.DataFrame, query: ObservationQuery, station_metadata: pd.DataFrame | None = None) -> pd.DataFrame:
     normalized = table.rename(columns={
         'STATION': 'station_id',
-        'ELEMENT': 'element',
         'DT': 'timestamp',
         'VALUE': 'value',
         'FLAG': 'flag',
         'QUALITY': 'quality',
     }).copy()
+    element_columns = canonicalize_element_series(table['ELEMENT'], query)
+    normalized['element'] = element_columns['element']
+    normalized['element_raw'] = element_columns['element_raw']
     normalized['timestamp'] = pd.to_datetime(normalized['timestamp'], utc=True)
     normalized['value'] = pd.to_numeric(normalized['value'], errors='coerce')
     normalized['quality'] = pd.to_numeric(normalized['quality'], errors='coerce').astype('Int64')

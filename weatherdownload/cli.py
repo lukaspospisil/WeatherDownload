@@ -44,6 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     availability_parser.add_argument("--station-id", required=True, dest="station_id", help="Canonical station_id.")
     availability_parser.add_argument("--active-on", default=None, dest="active_on", help="Optional date filter in YYYY-MM-DD format.")
     availability_parser.add_argument("--include-elements", action="store_true", help="Include supported elements in the output.")
+    availability_parser.add_argument("--include-mapping", action="store_true", help="Include canonical-to-raw element mapping in the output.")
     availability_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     availability_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     availability_parser.add_argument("--source-url", default=None, help="Optional provider-specific metadata URL override.")
@@ -70,6 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     elements_parser.add_argument("--dataset-scope", required=True, dest="dataset_scope", help="Dataset scope to inspect.")
     elements_parser.add_argument("--resolution", required=True, help="Resolution to inspect.")
     elements_parser.add_argument("--active-on", default=None, dest="active_on", help="Optional date filter in YYYY-MM-DD format.")
+    elements_parser.add_argument("--include-mapping", action="store_true", help="Include canonical-to-raw element mapping in the output.")
     elements_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     elements_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     elements_parser.add_argument("--source-url", default=None, help="Optional provider-specific metadata URL override.")
@@ -81,7 +83,7 @@ def build_parser() -> argparse.ArgumentParser:
     tenmin_parser = observations_subparsers.add_parser("10min", help="Download 10min observations.")
     _add_country_argument(tenmin_parser)
     tenmin_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="Canonical station_id. Can be provided multiple times.")
-    tenmin_parser.add_argument("--element", action="append", required=True, dest="elements", help="Element code. Can be provided multiple times.")
+    tenmin_parser.add_argument("--element", action="append", required=True, dest="elements", help="Canonical or raw provider element code. Can be provided multiple times.")
     tenmin_parser.add_argument("--start", required=True, dest="start", help="Start datetime in ISO format.")
     tenmin_parser.add_argument("--end", required=True, dest="end", help="End datetime in ISO format.")
     tenmin_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
@@ -91,7 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     hourly_parser = observations_subparsers.add_parser("hourly", help="Download hourly observations.")
     _add_country_argument(hourly_parser)
     hourly_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="Canonical station_id. Can be provided multiple times.")
-    hourly_parser.add_argument("--element", action="append", required=True, dest="elements", help="Element code. Can be provided multiple times.")
+    hourly_parser.add_argument("--element", action="append", required=True, dest="elements", help="Canonical or raw provider element code. Can be provided multiple times.")
     hourly_parser.add_argument("--start", required=True, dest="start", help="Start datetime in ISO format.")
     hourly_parser.add_argument("--end", required=True, dest="end", help="End datetime in ISO format.")
     hourly_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
@@ -101,7 +103,7 @@ def build_parser() -> argparse.ArgumentParser:
     daily_parser = observations_subparsers.add_parser("daily", help="Download daily observations.")
     _add_country_argument(daily_parser)
     daily_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="Canonical station_id. Can be provided multiple times.")
-    daily_parser.add_argument("--element", action="append", required=True, dest="elements", help="Element code. Can be provided multiple times.")
+    daily_parser.add_argument("--element", action="append", required=True, dest="elements", help="Canonical or raw provider element code. Can be provided multiple times.")
     daily_parser.add_argument("--start-date", required=True, dest="start_date", help="Start date in YYYY-MM-DD format.")
     daily_parser.add_argument("--end-date", required=True, dest="end_date", help="End date in YYYY-MM-DD format.")
     daily_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
@@ -130,7 +132,8 @@ def handle_station_availability(args: argparse.Namespace) -> int:
             stations,
             args.station_id,
             active_on=args.active_on,
-            include_elements=args.include_elements,
+            include_elements=args.include_elements or args.include_mapping,
+            include_element_mapping=args.include_mapping,
             country=args.country,
         )
         print(_format_table(paths, metadata_view=False))
@@ -142,9 +145,10 @@ def handle_station_availability(args: argparse.Namespace) -> int:
         station_ids=[args.station_id],
         active_on=args.active_on,
         implemented_only=True,
+        include_element_mapping=args.include_mapping,
         country=args.country,
     )
-    if not args.include_elements and "supported_elements" in availability.columns:
+    if not args.include_elements and not args.include_mapping and "supported_elements" in availability.columns:
         availability = availability.drop(columns=["supported_elements"])
     destination = export_table(availability, output_path=args.output, format=args.format)
     print(f"Exported station availability to {destination}")
@@ -176,26 +180,37 @@ def handle_station_supports(args: argparse.Namespace) -> int:
 
 def handle_station_elements(args: argparse.Namespace) -> int:
     stations = _read_stations_for_cli(args)
-    elements = list_station_elements(
-        stations,
-        args.station_id,
-        args.dataset_scope,
-        args.resolution,
-        active_on=args.active_on,
-        country=args.country,
-    )
-    table = pd.DataFrame(
-        [
-            {
-                "station_id": args.station_id,
-                "dataset_scope": args.dataset_scope,
-                "resolution": args.resolution,
-                "element": element,
-            }
-            for element in elements
-        ],
-        columns=["station_id", "dataset_scope", "resolution", "element"],
-    )
+    if args.include_mapping:
+        table = list_station_elements(
+            stations,
+            args.station_id,
+            args.dataset_scope,
+            args.resolution,
+            active_on=args.active_on,
+            country=args.country,
+            include_mapping=True,
+        )
+    else:
+        elements = list_station_elements(
+            stations,
+            args.station_id,
+            args.dataset_scope,
+            args.resolution,
+            active_on=args.active_on,
+            country=args.country,
+        )
+        table = pd.DataFrame(
+            [
+                {
+                    "station_id": args.station_id,
+                    "dataset_scope": args.dataset_scope,
+                    "resolution": args.resolution,
+                    "element": element,
+                }
+                for element in elements
+            ],
+            columns=["station_id", "dataset_scope", "resolution", "element"],
+        )
     if args.format == "screen":
         print(_format_table(table, metadata_view=False))
         return 0

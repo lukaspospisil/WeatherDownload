@@ -59,6 +59,13 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'], list_supported_elements('10min', 'historical_csv', provider_raw=True))
         self.assertEqual(['E', 'P', 'N', 'W1', 'W2', 'SSV1H'], list_supported_elements('1hour', 'historical_csv', provider_raw=True))
 
+    def test_discovery_can_return_mapping_table(self) -> None:
+        mapping = list_supported_elements('10min', 'historical_csv', include_mapping=True)
+        self.assertEqual(list(mapping.columns), ['element', 'element_raw', 'raw_elements'])
+        tas_mean = mapping[mapping['element'] == 'tas_mean'].iloc[0]
+        self.assertEqual(tas_mean['element_raw'], 'T')
+        self.assertEqual(tas_mean['raw_elements'], ['T'])
+
     def test_can_list_implemented_specs(self) -> None:
         implemented = {(spec.dataset_scope, spec.resolution) for spec in list_implemented_dataset_specs()}
         self.assertEqual(implemented, {('historical_csv', '10min'), ('historical_csv', '1hour'), ('historical_csv', 'daily')})

@@ -9,11 +9,12 @@ import pandas as pd
 import requests
 
 from .dwd_registry import get_dataset_spec
+from .elements import canonicalize_element_series
 from .errors import EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
 
 NORMALIZED_DWD_DAILY_COLUMNS = [
-    'station_id', 'gh_id', 'element', 'observation_date', 'time_function',
+    'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
 DWD_DAILY_DIRECTORY_URL = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/'
@@ -121,10 +122,12 @@ def normalize_daily_observations_dwd(
         if element not in table.columns:
             continue
         quality_column = 'QN_3' if element in _DWD_DAILY_QN3_ELEMENTS else 'QN_4'
+        element_columns = canonicalize_element_series(pd.Series([element] * len(table.index), index=table.index), query)
         normalized = pd.DataFrame(
             {
                 'station_id': table['STATIONS_ID'].astype(str).str.strip().str.zfill(5),
-                'element': element,
+                'element': element_columns['element'],
+                'element_raw': element_columns['element_raw'],
                 'observation_date': pd.to_datetime(table['MESS_DATUM'].astype(str).str.strip(), format='%Y%m%d').dt.date,
                 'time_function': pd.NA,
                 'value': _to_numeric_with_missing(table[element]),

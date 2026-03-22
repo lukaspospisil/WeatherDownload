@@ -126,7 +126,7 @@ Examples:
 Canonical names are translated to provider-specific raw codes per country and path. For example, `tas_mean` maps to `T` for `CZ historical_csv/daily` and to `TMK` for `DE historical/daily`.
 
 Provider-specific raw codes such as `TMA` or `TMK` are still accepted for backward compatibility, but canonical names are preferred. `list_supported_elements(...)` and station element helpers return canonical names by default; pass `provider_raw=True` if you need raw provider codes.
-download_observations(...) keeps the normalized output schema unchanged for now, so the observation element column still contains the provider-specific raw code.
+download_observations(...) now uses canonical values in the normalized `element` column and preserves provider provenance in `element_raw`.
 
 ## 10min Query Semantics
 
@@ -158,7 +158,7 @@ Normalized 10min output schema:
 
 - `station_id`: canonical CHMI WSI identifier
 - `gh_id`: secondary station identifier from metadata, nullable when metadata are not provided
-- `element`: observed element code
+- `element`: canonical meteorological element name
 - `timestamp`: timezone-aware UTC pandas timestamp parsed from CHMI `DT` at 10-minute precision
 - `value`: numeric observation value, nullable
 - `flag`: source flag value, nullable
@@ -215,7 +215,7 @@ Implemented hourly elements currently include E, P, N, W1, W2, and SSV1H.
 
 - `station_id`: canonical CHMI WSI identifier
 - `gh_id`: secondary station identifier from metadata, nullable when metadata are not provided
-- `element`: observed element code
+- `element`: canonical meteorological element name
 - `timestamp`: timezone-aware UTC pandas timestamp parsed from CHMI `DT`
 - `value`: numeric observation value, nullable
 - `flag`: source flag value, nullable
@@ -250,7 +250,7 @@ Normalized daily output schema:
 
 - `station_id`: canonical CHMI WSI identifier
 - `gh_id`: secondary station identifier from metadata
-- `element`: observed element code
+- `element`: canonical meteorological element name
 - `observation_date`: normalized daily date
 - `time_function`: source `TIMEFUNC` value from CHMI daily CSV
 - `value`: numeric observation value, nullable
@@ -273,6 +273,7 @@ weatherdownload stations availability --country DE --station-id 00044
 weatherdownload stations availability --station-id 0-20000-0-11406 --include-elements --format csv --output station-paths.csv
 weatherdownload stations supports --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
 weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
+weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution daily --include-mapping
 weatherdownload observations 10min --station-id 0-20000-0-11406 --element tas_mean --element soil_temperature_10cm --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations 10min --station-id 0-20000-0-11406 --element tas_mean --element soil_temperature_10cm --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z --format csv --output tenmin.csv
 weatherdownload observations daily --station-id 0-20000-0-11406 --element tas_max --start-date 1865-06-01 --end-date 1865-06-10
@@ -344,6 +345,10 @@ pip install .[full]
 `examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB, R, or Python processing. It supports cache-aware `full`, `download`, and `build` modes, reuses cached `meta1`, `meta2`, and daily CSV inputs under `outputs/fao_cache` by default, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and can export either a MATLAB-oriented `.mat` bundle, a portable Parquet bundle directory, or both. The Parquet bundle contains `data_info.json`, `stations.parquet`, and a long-form `series.parquet`.
 
 The example does not compute FAO, extraterrestrial radiation `Ra`, or any other derived variables.
+
+
+
+
 
 
 

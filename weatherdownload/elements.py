@@ -3,13 +3,24 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+import pandas as pd
+
 
 CanonicalElementMap = Mapping[str, tuple[str, ...]]
+ELEMENT_MAPPING_COLUMNS = ['element', 'element_raw', 'raw_elements']
 
 
 def canonical_element_map_for_spec(spec: Any) -> dict[str, tuple[str, ...]]:
     mapping = getattr(spec, 'canonical_elements', None) or {}
     return {str(key): tuple(value) for key, value in mapping.items()}
+
+
+def raw_to_canonical_map_for_spec(spec: Any) -> dict[str, str]:
+    lookup: dict[str, str] = {}
+    for canonical_name, raw_codes in canonical_element_map_for_spec(spec).items():
+        for raw_code in raw_codes:
+            lookup[str(raw_code).upper()] = canonical_name
+    return lookup
 
 
 def supported_elements_for_spec(spec: Any, provider_raw: bool = False) -> list[str]:
@@ -19,6 +30,40 @@ def supported_elements_for_spec(spec: Any, provider_raw: bool = False) -> list[s
     if canonical_map:
         return list(canonical_map.keys())
     return list(getattr(spec, 'supported_elements', ()))
+
+
+def element_mapping_for_spec(spec: Any) -> pd.DataFrame:
+    canonical_map = canonical_element_map_for_spec(spec)
+    if canonical_map:
+        rows = [
+            {
+                'element': canonical_name,
+                'element_raw': raw_codes[0],
+                'raw_elements': list(raw_codes),
+            }
+            for canonical_name, raw_codes in canonical_map.items()
+        ]
+        return pd.DataFrame.from_records(rows, columns=ELEMENT_MAPPING_COLUMNS)
+    raw_elements = list(getattr(spec, 'supported_elements', ()))
+    rows = [
+        {
+            'element': raw_code,
+            'element_raw': raw_code,
+            'raw_elements': [raw_code],
+        }
+        for raw_code in raw_elements
+    ]
+    return pd.DataFrame.from_records(rows, columns=ELEMENT_MAPPING_COLUMNS)
+
+
+def element_mapping_dict_for_spec(spec: Any) -> dict[str, list[str]]:
+    mapping_frame = element_mapping_for_spec(spec)
+    if mapping_frame.empty:
+        return {}
+    return {
+        str(row.element): list(row.raw_elements)
+        for row in mapping_frame.itertuples(index=False)
+    }
 
 
 def normalize_requested_elements(elements: Sequence[str], spec: Any) -> list[str]:
@@ -63,3 +108,14 @@ def unsupported_requested_elements(elements: Sequence[str], spec: Any) -> list[s
             continue
         unsupported.append(cleaned)
     return unsupported
+
+
+def canonicalize_element_series(raw_series: pd.Series, query: Any) -> pd.DataFrame:
+    from .providers import get_provider
+
+    provider = get_provider(query.country)
+    spec = provider.get_dataset_spec(query.dataset_scope, query.resolution)
+    raw_to_canonical = raw_to_canonical_map_for_spec(spec)
+    element_raw = raw_series.astype('string').str.strip().str.upper()
+    element = element_raw.map(lambda raw: raw_to_canonical.get(str(raw), str(raw).lower() if str(raw).islower() else str(raw)))
+    return pd.DataFrame({'element': element, 'element_raw': element_raw})

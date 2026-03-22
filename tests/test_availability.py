@@ -46,6 +46,12 @@ class StationAvailabilityTests(unittest.TestCase):
         self.assertEqual(paths.iloc[0]['station_id'], '0-20000-0-11406')
         self.assertIn('tas_mean', paths.iloc[0]['supported_elements'])
 
+    def test_list_station_paths_can_include_mapping(self) -> None:
+        stations = self._read_stations()
+        paths = list_station_paths(stations, '0-20000-0-11406', include_element_mapping=True)
+        self.assertIn('supported_element_mapping', paths.columns)
+        self.assertEqual(paths.iloc[0]['supported_element_mapping']['tas_mean'], ['T'])
+
     def test_list_station_elements_for_implemented_path_returns_canonical_names_by_default(self) -> None:
         stations = self._read_stations()
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min'), ['tas_mean', 'tas_max', 'tas_min', 'tas_period_max', 'soil_temperature_10cm', 'soil_temperature_100cm', 'sunshine_duration'])
@@ -55,6 +61,14 @@ class StationAvailabilityTests(unittest.TestCase):
     def test_list_station_elements_can_return_provider_raw_codes(self) -> None:
         stations = self._read_stations()
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min', provider_raw=True), ['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'])
+
+    def test_list_station_elements_can_return_mapping_table(self) -> None:
+        stations = self._read_stations()
+        mapping = list_station_elements(stations, '0-20000-0-11406', 'historical_csv', 'daily', include_mapping=True)
+        self.assertEqual(list(mapping.columns), ['station_id', 'dataset_scope', 'resolution', 'element', 'element_raw', 'raw_elements'])
+        wind_speed = mapping[mapping['element'] == 'wind_speed'].iloc[0]
+        self.assertEqual(wind_speed['element_raw'], 'F')
+        self.assertEqual(wind_speed['raw_elements'], ['F', 'WSPD'])
 
 
 if __name__ == '__main__':

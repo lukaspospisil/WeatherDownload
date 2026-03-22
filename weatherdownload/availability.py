@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 import pandas as pd
 
-from .elements import supported_elements_for_spec
+from .elements import element_mapping_dict_for_spec, element_mapping_for_spec, supported_elements_for_spec
 from .metadata import filter_stations
 
 AVAILABILITY_COLUMNS = [
@@ -25,6 +25,7 @@ def station_availability(
     implemented_only: bool = True,
     country: str = 'CZ',
     provider_raw: bool = False,
+    include_element_mapping: bool = False,
 ) -> pd.DataFrame:
     from .providers import get_provider
 
@@ -35,18 +36,20 @@ def station_availability(
 
     for station in filtered.itertuples(index=False):
         for spec in specs:
-            rows.append(
-                {
-                    'station_id': station.station_id,
-                    'gh_id': station.gh_id,
-                    'dataset_scope': spec.dataset_scope,
-                    'resolution': spec.resolution,
-                    'implemented': spec.implemented,
-                    'supported_elements': supported_elements_for_spec(spec, provider_raw=provider_raw),
-                }
-            )
+            row = {
+                'station_id': station.station_id,
+                'gh_id': station.gh_id,
+                'dataset_scope': spec.dataset_scope,
+                'resolution': spec.resolution,
+                'implemented': spec.implemented,
+                'supported_elements': supported_elements_for_spec(spec, provider_raw=provider_raw),
+            }
+            if include_element_mapping:
+                row['supported_element_mapping'] = element_mapping_dict_for_spec(spec)
+            rows.append(row)
 
-    return pd.DataFrame.from_records(rows, columns=AVAILABILITY_COLUMNS)
+    columns = AVAILABILITY_COLUMNS + (['supported_element_mapping'] if include_element_mapping else [])
+    return pd.DataFrame.from_records(rows, columns=columns)
 
 
 def station_supports(
@@ -83,6 +86,7 @@ def list_station_paths(
     include_elements: bool = False,
     country: str = 'CZ',
     provider_raw: bool = False,
+    include_element_mapping: bool = False,
 ) -> pd.DataFrame:
     availability = station_availability(
         stations,
@@ -91,10 +95,11 @@ def list_station_paths(
         implemented_only=True,
         country=country,
         provider_raw=provider_raw,
+        include_element_mapping=include_element_mapping,
     )
     if availability.empty:
         return availability
-    if include_elements:
+    if include_elements or include_element_mapping:
         return availability.reset_index(drop=True)
     return availability.drop(columns=['supported_elements']).reset_index(drop=True)
 
@@ -107,7 +112,10 @@ def list_station_elements(
     active_on: date | datetime | str | None = None,
     country: str = 'CZ',
     provider_raw: bool = False,
-) -> list[str]:
+    include_mapping: bool = False,
+):
+    from .providers import get_provider
+
     availability = station_availability(
         stations,
         station_ids=[station_id],
@@ -121,5 +129,15 @@ def list_station_elements(
         & (availability['resolution'] == resolution.strip())
     ]
     if matches.empty:
+        if include_mapping:
+            return pd.DataFrame(columns=['station_id', 'dataset_scope', 'resolution', 'element', 'element_raw', 'raw_elements'])
         return []
+    if include_mapping:
+        provider = get_provider(country)
+        spec = provider.get_dataset_spec(dataset_scope, resolution)
+        mapping = element_mapping_for_spec(spec).copy()
+        mapping.insert(0, 'resolution', resolution.strip())
+        mapping.insert(0, 'dataset_scope', dataset_scope.strip())
+        mapping.insert(0, 'station_id', station_id)
+        return mapping.reset_index(drop=True)
     return list(matches.iloc[0]['supported_elements'])

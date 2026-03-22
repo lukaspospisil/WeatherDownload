@@ -63,7 +63,7 @@ class DwdDailyDownloaderTests(unittest.TestCase):
             station_ids=['00003'],
             start_date='2024-01-01',
             end_date='2024-01-02',
-            elements=['TMK', 'RSK', 'FM'],
+            elements=['tas_mean', 'precipitation', 'wind_speed'],
         )
 
         with patch('weatherdownload.dwd_daily.requests.get', side_effect=fake_get):
@@ -71,9 +71,10 @@ class DwdDailyDownloaderTests(unittest.TestCase):
 
         self.assertEqual(
             list(observations.columns),
-            ['station_id', 'gh_id', 'element', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'],
+            ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'],
         )
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['FM', 'RSK', 'TMK'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean', 'wind_speed'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['FM', 'RSK', 'TMK'])
         self.assertTrue(observations['station_id'].eq('00003').all())
         self.assertTrue(observations['gh_id'].isna().all())
         self.assertTrue(observations['time_function'].isna().all())
@@ -81,8 +82,8 @@ class DwdDailyDownloaderTests(unittest.TestCase):
         self.assertTrue(observations['dataset_scope'].eq('historical').all())
         self.assertTrue(observations['resolution'].eq('daily').all())
 
-        tmk = observations[observations['element'] == 'TMK'].reset_index(drop=True)
-        fm = observations[observations['element'] == 'FM'].reset_index(drop=True)
+        tmk = observations[observations['element'] == 'tas_mean'].reset_index(drop=True)
+        fm = observations[observations['element'] == 'wind_speed'].reset_index(drop=True)
         self.assertEqual(tmk.loc[0, 'observation_date'].isoformat(), '2024-01-01')
         self.assertEqual(float(tmk.loc[0, 'value']), 2.5)
         self.assertEqual(int(tmk.loc[0, 'quality']), 2)

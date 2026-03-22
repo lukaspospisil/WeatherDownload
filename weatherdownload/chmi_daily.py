@@ -7,12 +7,13 @@ import pandas as pd
 import requests
 
 from .chmi_registry import get_dataset_spec
+from .elements import canonicalize_element_series
 from .errors import DownloadError, UnsupportedQueryError
 from .queries import ObservationQuery
 
 RAW_DAILY_COLUMNS = ['STATION', 'ELEMENT', 'TIMEFUNC', 'DT', 'VALUE', 'FLAG', 'QUALITY']
 NORMALIZED_DAILY_COLUMNS = [
-    'station_id', 'gh_id', 'element', 'observation_date', 'time_function',
+    'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
 
@@ -75,12 +76,14 @@ def parse_daily_csv(csv_text: str) -> pd.DataFrame:
 def normalize_daily_observations(table: pd.DataFrame, query: ObservationQuery, station_metadata: pd.DataFrame | None = None) -> pd.DataFrame:
     normalized = table.rename(columns={
         'STATION': 'station_id',
-        'ELEMENT': 'element',
         'TIMEFUNC': 'time_function',
         'VALUE': 'value',
         'FLAG': 'flag',
         'QUALITY': 'quality',
     }).copy()
+    element_columns = canonicalize_element_series(table['ELEMENT'], query)
+    normalized['element'] = element_columns['element']
+    normalized['element_raw'] = element_columns['element_raw']
     raw_dt = pd.to_datetime(table['DT'], utc=True)
     normalized['observation_date'] = raw_dt.dt.date
     normalized['value'] = pd.to_numeric(normalized['value'], errors='coerce')
