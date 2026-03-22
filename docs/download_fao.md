@@ -245,3 +245,4 @@ General-purpose functionality remains in the library itself, such as:
 The FAO-specific orchestration remains in the example, because it is a specialized downstream preparation workflow rather than a general-purpose core API feature.
 
 When `meta1` contains duplicate rows for the same canonical `station_id`, the example keeps the first matching `meta1` row in the existing metadata order as the representative station record. This makes the workflow stable and prevents repeated downloads for the same station.
+

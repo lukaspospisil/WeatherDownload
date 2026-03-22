@@ -34,12 +34,105 @@ class CacheMissingError(FileNotFoundError):
     pass
 
 
+class ProgressReporter:
+    def __init__(self, *, silent: bool) -> None:
+        self.silent = silent
+
+    def info(self, message: str) -> None:
+        if not self.silent:
+            print(message)
+
+    def essential(self, message: str) -> None:
+        print(message)
+
+
+class CacheStats:
+    def __init__(self) -> None:
+        self.downloaded = 0
+        self.reused = 0
+        self.missing = 0
+        self.failed = 0
+        self.candidate_stations = 0
+        self.cache_ready_stations = 0
+        self.metadata_downloaded = 0
+        self.metadata_reused = 0
+
+    def add_file_status(self, status: str) -> None:
+        if status == 'downloaded':
+            self.downloaded += 1
+        elif status == 'reused':
+            self.reused += 1
+        elif status == 'missing':
+            self.missing += 1
+        elif status == 'failed':
+            self.failed += 1
+
+    def add_metadata_status(self, status: str) -> None:
+        if status == 'downloaded':
+            self.metadata_downloaded += 1
+        elif status == 'reused':
+            self.metadata_reused += 1
+        self.add_file_status(status)
+
+
+class StationCacheResult:
+    def __init__(self, station_id: str) -> None:
+        self.station_id = station_id
+        self.downloaded = 0
+        self.reused = 0
+        self.missing = 0
+        self.failed = 0
+
+    @property
+    def available(self) -> bool:
+        return self.missing == 0 and self.failed == 0
+
+    def add_status(self, status: str) -> None:
+        if status == 'downloaded':
+            self.downloaded += 1
+        elif status == 'reused':
+            self.reused += 1
+        elif status == 'missing':
+            self.missing += 1
+        elif status == 'failed':
+            self.failed += 1
+
+    def summary(self) -> str:
+        parts: list[str] = []
+        if self.reused:
+            parts.append(f'reused {self.reused}')
+        if self.downloaded:
+            parts.append(f'downloaded {self.downloaded}')
+        if self.missing:
+            parts.append(f'missing {self.missing}')
+        if self.failed:
+            parts.append(f'failed {self.failed}')
+        if not parts:
+            parts.append('no files')
+        return ', '.join(parts)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    reporter = ProgressReporter(silent=args.silent)
+    stats = CacheStats()
 
-    meta1 = load_station_metadata_with_cache(args.cache_dir, mode=args.mode, timeout=args.timeout)
-    meta2 = load_station_observation_metadata_with_cache(args.cache_dir, mode=args.mode, timeout=args.timeout)
+    reporter.info(f'Using cache directory: {args.cache_dir}')
+    meta1 = load_station_metadata_with_cache(
+        args.cache_dir,
+        mode=args.mode,
+        timeout=args.timeout,
+        reporter=reporter,
+        stats=stats,
+    )
+    meta2 = load_station_observation_metadata_with_cache(
+        args.cache_dir,
+        mode=args.mode,
+        timeout=args.timeout,
+        reporter=reporter,
+        stats=stats,
+    )
 
     if args.station_ids:
         requested = {station_id.strip().upper() for station_id in args.station_ids}
@@ -47,45 +140,57 @@ def main(argv: list[str] | None = None) -> int:
         meta2 = meta2[meta2['station_id'].str.upper().isin(requested)].reset_index(drop=True)
 
     candidates = screen_candidate_stations(meta1, meta2, min_complete_days=args.min_complete_days)
-    print(f'Meta2-screened candidate stations: {len(candidates)}')
+    stats.candidate_stations = len(candidates)
+    reporter.essential(f'Meta2-screened candidate stations: {len(candidates)}')
 
-    available_station_count, missing_station_ids = cache_candidate_daily_inputs(
+    available_station_count, missing_station_ids, failed_station_ids = cache_candidate_daily_inputs(
         candidates,
         cache_dir=args.cache_dir,
         mode=args.mode,
         timeout=args.timeout,
+        reporter=reporter,
+        stats=stats,
     )
+    stats.cache_ready_stations = available_station_count
 
     if args.mode == 'download':
-        print(f'Cached FAO inputs for {available_station_count} station(s) under {args.cache_dir}.')
+        reporter.essential(f'Cached FAO inputs for {available_station_count} station(s) under {args.cache_dir}.')
+        print_final_summary(reporter, stats)
         if missing_station_ids:
-            print(f'Skipped {len(missing_station_ids)} station(s) with missing required daily CSVs: {", ".join(missing_station_ids)}')
+            reporter.essential(f'Stations with missing required daily CSVs: {", ".join(missing_station_ids)}')
+        if failed_station_ids:
+            reporter.essential(f'Stations with failed downloads: {", ".join(failed_station_ids)}')
         return 0
 
+    if args.mode == 'build' and (missing_station_ids or failed_station_ids):
+        print_final_summary(reporter, stats)
+        problem_ids = missing_station_ids + failed_station_ids
+        raise SystemExit(
+            'Build mode requires a complete local cache. Missing or failed stations: '
+            + ', '.join(problem_ids)
+        )
+
+    unavailable_station_ids = set(missing_station_ids) | set(failed_station_ids)
     retained_series: list[dict[str, Any]] = []
     station_rows: list[dict[str, Any]] = []
 
-    for station in candidates.itertuples(index=False):
-        print(f'Processing {station.station_id} ({station.full_name})')
+    build_candidates = candidates[~candidates['station_id'].isin(unavailable_station_ids)].reset_index(drop=True)
+    total_build_candidates = len(build_candidates)
+    reporter.info(f'Building cleaned dataset from cache for {total_build_candidates} station(s).')
+
+    for index, station in enumerate(build_candidates.itertuples(index=False), start=1):
+        reporter.info(f'[{index}/{total_build_candidates}] Processing {station.station_id} ({station.full_name}) from cache')
         try:
-            csv_tables = fetch_required_daily_tables(
-                station.station_id,
-                cache_dir=args.cache_dir,
-                mode=args.mode,
-                timeout=args.timeout,
-            )
+            csv_tables = read_required_daily_tables_from_cache(station.station_id, cache_dir=args.cache_dir)
         except CacheMissingError as exc:
             raise SystemExit(str(exc)) from exc
-        if csv_tables is None:
-            print('  Missing one or more required daily CSV files, skipping.')
-            continue
 
         complete = prepare_complete_station_series(csv_tables)
         if complete.empty:
-            print('  No complete E-based days after TIMEFUNC selection, skipping.')
+            reporter.info('  No complete E-based days after TIMEFUNC selection, skipping.')
             continue
         if len(complete) < args.min_complete_days:
-            print(f'  Only {len(complete)} complete days, below threshold {args.min_complete_days}.')
+            reporter.info(f'  Only {len(complete)} complete days, below threshold {args.min_complete_days}.')
             continue
 
         retained_series.append(
@@ -126,7 +231,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.export_format in {'parquet', 'both'}:
         export_parquet_bundle(args.output_dir, data_info=data_info, stations=station_rows, series=retained_series)
         exported_targets.append(str(args.output_dir))
-    print(f"Exported FAO-prep output to: {', '.join(exported_targets)}")
+    reporter.essential(f"Exported FAO-prep output to: {', '.join(exported_targets)}")
+    print_final_summary(reporter, stats)
     return 0
 
 
@@ -160,28 +266,47 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional CHMI WSI station_id filter. Can be provided multiple times.')
     parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete E-based days required per station.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
+    parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
 
 
-def load_station_metadata_with_cache(cache_dir: Path, *, mode: str, timeout: int) -> pd.DataFrame:
-    csv_text = load_cached_text(
+def load_station_metadata_with_cache(
+    cache_dir: Path,
+    *,
+    mode: str,
+    timeout: int,
+    reporter: ProgressReporter,
+    stats: CacheStats,
+) -> pd.DataFrame:
+    csv_text, status = load_cached_text(
         cache_path=cache_dir / 'meta1.csv',
         source_url=DEFAULT_META1_URL,
         mode=mode,
         timeout=timeout,
         description='meta1.csv',
     )
+    stats.add_metadata_status(status)
+    reporter.info(f'meta1.csv: {format_file_status(status)}')
     return _parse_station_metadata_csv(csv_text)
 
 
-def load_station_observation_metadata_with_cache(cache_dir: Path, *, mode: str, timeout: int) -> pd.DataFrame:
-    csv_text = load_cached_text(
+def load_station_observation_metadata_with_cache(
+    cache_dir: Path,
+    *,
+    mode: str,
+    timeout: int,
+    reporter: ProgressReporter,
+    stats: CacheStats,
+) -> pd.DataFrame:
+    csv_text, status = load_cached_text(
         cache_path=cache_dir / 'meta2.csv',
         source_url=DEFAULT_META2_URL,
         mode=mode,
         timeout=timeout,
         description='meta2.csv',
     )
+    stats.add_metadata_status(status)
+    reporter.info(f'meta2.csv: {format_file_status(status)}')
     return _parse_station_observation_metadata_csv(csv_text)
 
 
@@ -192,15 +317,15 @@ def load_cached_text(
     mode: str,
     timeout: int,
     description: str,
-) -> str:
+) -> tuple[str, str]:
     if cache_path.exists():
-        return cache_path.read_text(encoding='utf-8')
+        return cache_path.read_text(encoding='utf-8'), 'reused'
     if mode == 'build':
         raise CacheMissingError(f'Missing cached {description}: {cache_path}')
     text = download_text(source_url, timeout=timeout)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(text, encoding='utf-8')
-    return text
+    return text, 'downloaded'
 
 
 def download_text(source_url: str, *, timeout: int) -> str:
@@ -261,24 +386,32 @@ def cache_candidate_daily_inputs(
     cache_dir: Path,
     mode: str,
     timeout: int,
-) -> tuple[int, list[str]]:
+    reporter: ProgressReporter,
+    stats: CacheStats,
+) -> tuple[int, list[str], list[str]]:
     available_station_count = 0
     missing_station_ids: list[str] = []
-    for station in candidates.itertuples(index=False):
-        try:
-            available = ensure_required_daily_inputs_cached(
-                station.station_id,
-                cache_dir=cache_dir,
-                mode=mode,
-                timeout=timeout,
-            )
-        except CacheMissingError as exc:
-            raise SystemExit(str(exc)) from exc
-        if available:
+    failed_station_ids: list[str] = []
+    total_candidates = len(candidates)
+    reporter.info(f'Checking daily CSV cache for {total_candidates} station(s).')
+    for index, station in enumerate(candidates.itertuples(index=False), start=1):
+        result = ensure_required_daily_inputs_cached(
+            station.station_id,
+            cache_dir=cache_dir,
+            mode=mode,
+            timeout=timeout,
+            stats=stats,
+        )
+        if result.available:
             available_station_count += 1
-        else:
+        if result.missing:
             missing_station_ids.append(station.station_id)
-    return available_station_count, missing_station_ids
+        if result.failed:
+            failed_station_ids.append(station.station_id)
+        reporter.info(
+            f'[{index}/{total_candidates}] {station.station_id} ({station.full_name}): {result.summary()}'
+        )
+    return available_station_count, missing_station_ids, failed_station_ids
 
 
 def ensure_required_daily_inputs_cached(
@@ -287,34 +420,17 @@ def ensure_required_daily_inputs_cached(
     cache_dir: Path,
     mode: str,
     timeout: int,
-) -> bool:
+    stats: CacheStats,
+) -> StationCacheResult:
+    result = StationCacheResult(station_id)
     for element in REQUIRED_ELEMENTS:
-        try:
-            get_daily_csv_text(station_id, element, cache_dir=cache_dir, mode=mode, timeout=timeout)
-        except FileNotFoundError:
-            return False
-    return True
+        status = ensure_daily_csv_cached(station_id, element, cache_dir=cache_dir, mode=mode, timeout=timeout)
+        result.add_status(status)
+        stats.add_file_status(status)
+    return result
 
 
-def fetch_required_daily_tables(
-    station_id: str,
-    *,
-    cache_dir: Path,
-    mode: str,
-    timeout: int = 60,
-) -> dict[str, pd.DataFrame] | None:
-    tables: dict[str, pd.DataFrame] = {}
-    for element in REQUIRED_ELEMENTS:
-        try:
-            csv_text = get_daily_csv_text(station_id, element, cache_dir=cache_dir, mode=mode, timeout=timeout)
-        except FileNotFoundError:
-            return None
-        table = parse_daily_csv(csv_text)
-        tables[element] = table[table['ELEMENT'].astype(str).str.upper() == element].reset_index(drop=True)
-    return tables
-
-
-def get_daily_csv_text(
+def ensure_daily_csv_cached(
     station_id: str,
     element: str,
     *,
@@ -324,13 +440,30 @@ def get_daily_csv_text(
 ) -> str:
     cache_path = cached_daily_csv_path(cache_dir, station_id, element)
     if cache_path.exists():
-        return cache_path.read_text(encoding='utf-8')
+        return 'reused'
     if mode == 'build':
-        raise CacheMissingError(f'Missing cached daily CSV for station {station_id} element {element}: {cache_path}')
-    csv_text = download_daily_csv(_build_daily_target(station_id, element), timeout=timeout)
+        return 'missing'
+    try:
+        csv_text = download_daily_csv(_build_daily_target(station_id, element), timeout=timeout)
+    except FileNotFoundError:
+        return 'missing'
+    except Exception:
+        return 'failed'
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(csv_text, encoding='utf-8')
-    return csv_text
+    return 'downloaded'
+
+
+def read_required_daily_tables_from_cache(station_id: str, *, cache_dir: Path) -> dict[str, pd.DataFrame]:
+    tables: dict[str, pd.DataFrame] = {}
+    for element in REQUIRED_ELEMENTS:
+        cache_path = cached_daily_csv_path(cache_dir, station_id, element)
+        if not cache_path.exists():
+            raise CacheMissingError(f'Missing cached daily CSV for station {station_id} element {element}: {cache_path}')
+        csv_text = cache_path.read_text(encoding='utf-8')
+        table = parse_daily_csv(csv_text)
+        tables[element] = table[table['ELEMENT'].astype(str).str.upper() == element].reset_index(drop=True)
+    return tables
 
 
 def cached_daily_csv_path(cache_dir: Path, station_id: str, element: str) -> Path:
@@ -467,6 +600,26 @@ def _select_timefunc_rows(table: pd.DataFrame, element: str, time_function: str)
     filtered[element] = pd.to_numeric(filtered['VALUE'], errors='coerce')
     filtered = filtered[['Date', element]].dropna(subset=[element]).drop_duplicates(subset=['Date'], keep='last')
     return filtered.reset_index(drop=True)
+
+
+def print_final_summary(reporter: ProgressReporter, stats: CacheStats) -> None:
+    reporter.essential(
+        'Cache summary: '
+        + f"downloaded={stats.downloaded}, reused={stats.reused}, missing={stats.missing}, failed={stats.failed}, "
+        + f"candidate_stations={stats.candidate_stations}, cache_ready_stations={stats.cache_ready_stations}"
+    )
+
+
+def format_file_status(status: str) -> str:
+    if status == 'downloaded':
+        return 'downloaded'
+    if status == 'reused':
+        return 'reused from cache'
+    if status == 'missing':
+        return 'missing'
+    if status == 'failed':
+        return 'failed'
+    return status
 
 
 def _station_rows_to_struct(rows: list[dict[str, Any]]) -> dict[str, np.ndarray]:

@@ -1,7 +1,9 @@
 import importlib.util
+import io
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 import pandas as pd
@@ -153,11 +155,19 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(len(candidates), 1)
 
     def test_load_station_metadata_with_cache_build_mode_requires_cached_file(self) -> None:
+        reporter = download_fao.ProgressReporter(silent=True)
+        stats = download_fao.CacheStats()
         with tempfile.TemporaryDirectory() as tmpdir:
             with self.assertRaises(download_fao.CacheMissingError):
-                download_fao.load_station_metadata_with_cache(Path(tmpdir), mode='build', timeout=60)
+                download_fao.load_station_metadata_with_cache(
+                    Path(tmpdir),
+                    mode='build',
+                    timeout=60,
+                    reporter=reporter,
+                    stats=stats,
+                )
 
-    def test_fetch_required_daily_tables_build_mode_reads_cached_files(self) -> None:
+    def test_read_required_daily_tables_from_cache_reads_cached_files(self) -> None:
         station_id = '0-20000-0-11406'
         raw_template = 'STATION,ELEMENT,TIMEFUNC,DT,VALUE,FLAG,QUALITY\n{station},{element},{timefunc},2024-01-01T00:00:00Z,1.0,,0\n'
         timefunc_map = download_fao.TIMEFUNC_BY_ELEMENT
@@ -175,21 +185,54 @@ class DownloadFaoExampleTests(unittest.TestCase):
             original_download_daily_csv = download_fao.download_daily_csv
             try:
                 def fail_download(*args, **kwargs):
-                    raise AssertionError('build mode should not download daily CSV files')
+                    raise AssertionError('cached read should not download daily CSV files')
 
                 download_fao.download_daily_csv = fail_download
-                tables = download_fao.fetch_required_daily_tables(
+                tables = download_fao.read_required_daily_tables_from_cache(station_id, cache_dir=cache_dir)
+            finally:
+                download_fao.download_daily_csv = original_download_daily_csv
+
+            self.assertEqual(set(tables.keys()), set(download_fao.REQUIRED_ELEMENTS))
+            self.assertEqual(tables['T'].iloc[0]['ELEMENT'], 'T')
+
+    def test_ensure_required_daily_inputs_cached_counts_cache_hits_without_downloading(self) -> None:
+        station_id = '0-20000-0-11406'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_dir = Path(tmpdir)
+            for element in download_fao.REQUIRED_ELEMENTS:
+                cache_path = download_fao.cached_daily_csv_path(cache_dir, station_id, element)
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                cache_path.write_text('cached', encoding='utf-8')
+
+            stats = download_fao.CacheStats()
+            original_download_daily_csv = download_fao.download_daily_csv
+            try:
+                def fail_download(*args, **kwargs):
+                    raise AssertionError('cache hit should skip download')
+
+                download_fao.download_daily_csv = fail_download
+                result = download_fao.ensure_required_daily_inputs_cached(
                     station_id,
                     cache_dir=cache_dir,
-                    mode='build',
+                    mode='full',
                     timeout=60,
+                    stats=stats,
                 )
             finally:
                 download_fao.download_daily_csv = original_download_daily_csv
 
-            self.assertIsNotNone(tables)
-            self.assertEqual(set(tables.keys()), set(download_fao.REQUIRED_ELEMENTS))
-            self.assertEqual(tables['T'].iloc[0]['ELEMENT'], 'T')
+            self.assertTrue(result.available)
+            self.assertEqual(result.reused, len(download_fao.REQUIRED_ELEMENTS))
+            self.assertEqual(stats.reused, len(download_fao.REQUIRED_ELEMENTS))
+            self.assertEqual(stats.downloaded, 0)
+
+    def test_silent_mode_suppresses_nonessential_progress(self) -> None:
+        reporter = download_fao.ProgressReporter(silent=True)
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            reporter.info('hidden')
+            reporter.essential('shown')
+        self.assertEqual(buffer.getvalue().strip(), 'shown')
 
 
 if __name__ == '__main__':
