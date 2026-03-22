@@ -4,6 +4,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from .elements import normalize_requested_elements, unsupported_requested_elements
+
 
 class QueryValidationError(ValueError):
     """Raised when ObservationQuery contains invalid provider-specific query dimensions."""
@@ -55,13 +57,13 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
     query.station_ids = _normalize_string_sequence(query.station_ids, 'station_ids', uppercase=True, required=True)
 
     if query.elements is not None:
-        query.elements = _normalize_string_sequence(query.elements, 'elements', uppercase=True, required=False)
-        if dataset_spec.supported_elements:
-            unsupported_elements = [element for element in query.elements if element not in dataset_spec.supported_elements]
-            if unsupported_elements:
-                raise QueryValidationError(
-                    f"Unsupported elements for dataset_scope '{query.dataset_scope}' and resolution '{query.resolution}': {unsupported_elements}"
-                )
+        normalized_input_elements = _normalize_elements_input(query.elements)
+        unsupported_elements = unsupported_requested_elements(normalized_input_elements, dataset_spec)
+        if unsupported_elements:
+            raise QueryValidationError(
+                f"Unsupported elements for dataset_scope '{query.dataset_scope}' and resolution '{query.resolution}': {unsupported_elements}"
+            )
+        query.elements = normalize_requested_elements(normalized_input_elements, dataset_spec)
 
     has_datetime_range = query.start is not None or query.end is not None
     has_date_range = query.start_date is not None or query.end_date is not None
@@ -133,6 +135,28 @@ def _normalize_string_sequence(value: Sequence[str] | None, field_name: str, upp
             normalized.append(cleaned)
     if required and not normalized:
         raise QueryValidationError(f'{field_name} must not be empty.')
+    return normalized
+
+
+def _normalize_elements_input(value: Sequence[str] | None) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str) or not isinstance(value, Sequence):
+        raise QueryValidationError('elements must be a sequence of strings.')
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, str):
+            raise QueryValidationError('elements must be a sequence of strings.')
+        cleaned = item.strip()
+        if not cleaned:
+            continue
+        lowered = cleaned.lower()
+        key = lowered if any(character.islower() for character in cleaned) else cleaned.upper()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(cleaned)
     return normalized
 
 

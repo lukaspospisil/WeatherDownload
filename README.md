@@ -57,7 +57,7 @@ query = ObservationQuery(
     station_ids=["0-20000-0-11406"],
     start_date="2024-01-01",
     end_date="2024-12-31",
-    elements=["TMA", "TMI"],
+    elements=["tas_max", "tas_min"],
 )
 observations = download_observations(query, station_metadata=selected, country='CZ')
 ```
@@ -107,6 +107,27 @@ Current downloader implementation support is narrower than the full provider dis
 
 Supported query dimensions are defined by an explicit CHMI registry layer. The registry describes broader CHMI capabilities, while downloader implementation support is narrower. Supported `elements` can be discovered via `list_supported_elements(...)`.
 
+## Canonical Elements
+
+The preferred public element vocabulary is canonical and country-independent.
+
+Examples:
+
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `wind_speed`
+- `vapour_pressure`
+- `sunshine_duration`
+- `precipitation`
+- `pressure`
+- `relative_humidity`
+
+Canonical names are translated to provider-specific raw codes per country and path. For example, `tas_mean` maps to `T` for `CZ historical_csv/daily` and to `TMK` for `DE historical/daily`.
+
+Provider-specific raw codes such as `TMA` or `TMK` are still accepted for backward compatibility, but canonical names are preferred. `list_supported_elements(...)` and station element helpers return canonical names by default; pass `provider_raw=True` if you need raw provider codes.
+download_observations(...) keeps the normalized output schema unchanged for now, so the observation element column still contains the provider-specific raw code.
+
 ## 10min Query Semantics
 
 10min observations are treated as timestamp-based data.
@@ -127,7 +148,7 @@ query = ObservationQuery(
     station_ids=["0-20000-0-11406"],
     start="2024-01-01T00:00:00Z",
     end="2024-01-01T00:20:00Z",
-    elements=["T", "T10"],
+    elements=["tas_mean", "soil_temperature_10cm"],
 )
 
 tenmin = download_observations(query)
@@ -147,14 +168,13 @@ Normalized 10min output schema:
 
 ## DE Daily Query Semantics
 
-For country='DE', the first implemented DWD downloader path is historical + daily from the DWD daily kl archive files.
+For `country="DE"`, the first implemented DWD downloader path is `historical + daily` from the DWD daily `kl` archive files.
 
-- use start_date and end_date`r
-- normalized station_id is the zero-padded DWD station id
-- normalized observation_date is parsed from DWD MESS_DATUM`r
-- 	ime_function is nullable because DWD daily files do not expose a CHMI-like TIMEFUNC field
-- gh_id is nullable for DE
-
+- use `start_date` and `end_date`
+- normalized `station_id` is the zero-padded DWD station id
+- normalized `observation_date` is parsed from DWD `MESS_DATUM`
+- `time_function` is nullable because DWD daily files do not expose a CHMI-like `TIMEFUNC` field
+- `gh_id` is nullable for DE
 ## Daily Query Semantics
 
 Daily observations are treated as date-based data.
@@ -183,7 +203,7 @@ query = ObservationQuery(
     station_ids=["0-20000-0-11406"],
     start="2024-01-01T00:00:00Z",
     end="2024-01-01T02:00:00Z",
-    elements=["E", "P"],
+    elements=["vapour_pressure", "pressure"],
 )
 
 hourly = download_observations(query)
@@ -214,7 +234,7 @@ query = ObservationQuery(
     station_ids=["0-20000-0-11406"],
     start_date="1865-06-01",
     end_date="1865-06-10",
-    elements=["TMA"],
+    elements=["tas_max"],
 )
 
 daily = download_observations(query)
@@ -253,11 +273,12 @@ weatherdownload stations availability --country DE --station-id 00044
 weatherdownload stations availability --station-id 0-20000-0-11406 --include-elements --format csv --output station-paths.csv
 weatherdownload stations supports --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
 weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
-weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --element T10 --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z
-weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --element T10 --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z --format csv --output tenmin.csv
-weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10
-weatherdownload observations daily --country DE --station-id 00044 --element TMK --start-date 2024-01-01 --end-date 2024-01-03
-weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10 --format csv --output daily.csv
+weatherdownload observations 10min --station-id 0-20000-0-11406 --element tas_mean --element soil_temperature_10cm --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z
+weatherdownload observations 10min --station-id 0-20000-0-11406 --element tas_mean --element soil_temperature_10cm --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z --format csv --output tenmin.csv
+weatherdownload observations daily --station-id 0-20000-0-11406 --element tas_max --start-date 1865-06-01 --end-date 1865-06-10
+weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations daily --station-id 0-20000-0-11406 --element tas_max --start-date 1865-06-01 --end-date 1865-06-10 --format csv --output daily.csv
+weatherdownload observations daily --country DE --station-id 00044 --element TMK --start-date 2024-01-01 --end-date 2024-01-03  # raw code compatibility
 ```
 
 If `--output` is just a filename such as `stations.csv`, `tenmin.csv`, or `daily.csv`, the file is written under `outputs/` by default.
@@ -323,6 +344,11 @@ pip install .[full]
 `examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB, R, or Python processing. It supports cache-aware `full`, `download`, and `build` modes, reuses cached `meta1`, `meta2`, and daily CSV inputs under `outputs/fao_cache` by default, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and can export either a MATLAB-oriented `.mat` bundle, a portable Parquet bundle directory, or both. The Parquet bundle contains `data_info.json`, `stations.parquet`, and a long-form `series.parquet`.
 
 The example does not compute FAO, extraterrestrial radiation `Ra`, or any other derived variables.
+
+
+
+
+
 
 
 

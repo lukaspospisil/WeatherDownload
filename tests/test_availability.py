@@ -39,17 +39,22 @@ class StationAvailabilityTests(unittest.TestCase):
         self.assertFalse(station_supports(stations, '0-20000-0-11414', 'historical_csv', 'daily', active_on='2024-01-01'))
         self.assertFalse(station_supports(stations, '0-20000-0-11406', 'now', '10min'))
 
-    def test_list_station_paths_can_include_elements(self) -> None:
+    def test_list_station_paths_can_include_canonical_elements(self) -> None:
         stations = self._read_stations()
         paths = list_station_paths(stations, '0-20000-0-11406', include_elements=True)
         self.assertIn('supported_elements', paths.columns)
         self.assertEqual(paths.iloc[0]['station_id'], '0-20000-0-11406')
+        self.assertIn('tas_mean', paths.iloc[0]['supported_elements'])
 
-    def test_list_station_elements_for_implemented_path(self) -> None:
+    def test_list_station_elements_for_implemented_path_returns_canonical_names_by_default(self) -> None:
         stations = self._read_stations()
-        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min'), ['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'])
-        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '1hour'), ['E', 'P', 'N', 'W1', 'W2', 'SSV1H'])
+        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min'), ['tas_mean', 'tas_max', 'tas_min', 'tas_period_max', 'soil_temperature_10cm', 'soil_temperature_100cm', 'sunshine_duration'])
+        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '1hour'), ['vapour_pressure', 'pressure', 'cloud_cover', 'past_weather_1', 'past_weather_2', 'sunshine_duration'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'now', '10min'), [])
+
+    def test_list_station_elements_can_return_provider_raw_codes(self) -> None:
+        stations = self._read_stations()
+        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min', provider_raw=True), ['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'])
 
 
 if __name__ == '__main__':

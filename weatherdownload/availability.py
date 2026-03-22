@@ -5,6 +5,7 @@ from datetime import date, datetime
 
 import pandas as pd
 
+from .elements import supported_elements_for_spec
 from .metadata import filter_stations
 
 AVAILABILITY_COLUMNS = [
@@ -23,6 +24,7 @@ def station_availability(
     active_on: date | datetime | str | None = None,
     implemented_only: bool = True,
     country: str = 'CZ',
+    provider_raw: bool = False,
 ) -> pd.DataFrame:
     from .providers import get_provider
 
@@ -40,7 +42,7 @@ def station_availability(
                     'dataset_scope': spec.dataset_scope,
                     'resolution': spec.resolution,
                     'implemented': spec.implemented,
-                    'supported_elements': list(spec.supported_elements),
+                    'supported_elements': supported_elements_for_spec(spec, provider_raw=provider_raw),
                 }
             )
 
@@ -80,6 +82,7 @@ def list_station_paths(
     active_on: date | datetime | str | None = None,
     include_elements: bool = False,
     country: str = 'CZ',
+    provider_raw: bool = False,
 ) -> pd.DataFrame:
     availability = station_availability(
         stations,
@@ -87,6 +90,7 @@ def list_station_paths(
         active_on=active_on,
         implemented_only=True,
         country=country,
+        provider_raw=provider_raw,
     )
     if availability.empty:
         return availability
@@ -102,6 +106,7 @@ def list_station_elements(
     resolution: str,
     active_on: date | datetime | str | None = None,
     country: str = 'CZ',
+    provider_raw: bool = False,
 ) -> list[str]:
     availability = station_availability(
         stations,
@@ -109,6 +114,7 @@ def list_station_elements(
         active_on=active_on,
         implemented_only=True,
         country=country,
+        provider_raw=provider_raw,
     )
     matches = availability[
         (availability['dataset_scope'] == dataset_scope.strip())

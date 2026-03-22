@@ -14,6 +14,7 @@ class ChmiDatasetSpec:
     time_semantics: str
     implemented: bool
     element_groups: Mapping[str, str] | None = None
+    canonical_elements: Mapping[str, tuple[str, ...]] | None = None
 
 
 _DAILY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
@@ -31,6 +32,20 @@ _DAILY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'WSPD': 'wind',
 }
 
+_DAILY_HISTORICAL_CSV_CANONICAL_ELEMENTS: dict[str, tuple[str, ...]] = {
+    'vapour_pressure': ('E',),
+    'wind_speed': ('F', 'WSPD'),
+    'snow_depth': ('HS',),
+    'pressure': ('P',),
+    'relative_humidity': ('RH',),
+    'precipitation': ('SRA',),
+    'sunshine_duration': ('SSV',),
+    'tas_mean': ('T',),
+    'tas_max': ('TMA',),
+    'tas_min': ('TMI',),
+    'wind_from_direction': ('WDIR',),
+}
+
 _TENMIN_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'T': 'temperature',
     'TMA': 'temperature',
@@ -41,6 +56,16 @@ _TENMIN_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'SSV10M': 'sunshine',
 }
 
+_TENMIN_HISTORICAL_CSV_CANONICAL_ELEMENTS: dict[str, tuple[str, ...]] = {
+    'tas_mean': ('T',),
+    'tas_max': ('TMA',),
+    'tas_min': ('TMI',),
+    'tas_period_max': ('TPM',),
+    'soil_temperature_10cm': ('T10',),
+    'soil_temperature_100cm': ('T100',),
+    'sunshine_duration': ('SSV10M',),
+}
+
 _HOURLY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'E': 'humidity',
     'P': 'synop',
@@ -48,6 +73,15 @@ _HOURLY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'W1': 'synop',
     'W2': 'synop',
     'SSV1H': 'sunshine',
+}
+
+_HOURLY_HISTORICAL_CSV_CANONICAL_ELEMENTS: dict[str, tuple[str, ...]] = {
+    'vapour_pressure': ('E',),
+    'pressure': ('P',),
+    'cloud_cover': ('N',),
+    'past_weather_1': ('W1',),
+    'past_weather_2': ('W2',),
+    'sunshine_duration': ('SSV1H',),
 }
 
 
@@ -61,6 +95,7 @@ def _build_spec(
     implemented: bool = False,
     endpoint_pattern: str | None = None,
     element_groups: Mapping[str, str] | None = None,
+    canonical_elements: Mapping[str, tuple[str, ...]] | None = None,
 ) -> ChmiDatasetSpec:
     effective_supported_elements = tuple(element_groups.keys()) if element_groups is not None else supported_elements
     return ChmiDatasetSpec(
@@ -72,6 +107,7 @@ def _build_spec(
         time_semantics=time_semantics,
         implemented=implemented,
         element_groups=element_groups,
+        canonical_elements=canonical_elements,
     )
 
 
@@ -97,6 +133,7 @@ _DATASET_REGISTRY: dict[tuple[str, str], ChmiDatasetSpec] = {
         implemented=True,
         endpoint_pattern='https://opendata.chmi.cz/meteorology/climate/historical_csv/data/10min/{group}/{year}/10m-{station_id}-{element}-{year_month}.csv',
         element_groups=_TENMIN_HISTORICAL_CSV_ELEMENT_GROUPS,
+        canonical_elements=_TENMIN_HISTORICAL_CSV_CANONICAL_ELEMENTS,
     ),
     ('historical_csv', '1hour'): _build_spec(
         'historical_csv',
@@ -104,6 +141,7 @@ _DATASET_REGISTRY: dict[tuple[str, str], ChmiDatasetSpec] = {
         implemented=True,
         endpoint_pattern='https://opendata.chmi.cz/meteorology/climate/historical_csv/data/1hour/{group}/{year}/1h-{station_id}-{element}-{year_month}.csv',
         element_groups=_HOURLY_HISTORICAL_CSV_ELEMENT_GROUPS,
+        canonical_elements=_HOURLY_HISTORICAL_CSV_CANONICAL_ELEMENTS,
     ),
     ('historical_csv', 'daily'): _build_spec(
         'historical_csv',
@@ -112,6 +150,7 @@ _DATASET_REGISTRY: dict[tuple[str, str], ChmiDatasetSpec] = {
         implemented=True,
         endpoint_pattern='https://opendata.chmi.cz/meteorology/climate/historical_csv/data/daily/{group}/dly-{station_id}-{element}.csv',
         element_groups=_DAILY_HISTORICAL_CSV_ELEMENT_GROUPS,
+        canonical_elements=_DAILY_HISTORICAL_CSV_CANONICAL_ELEMENTS,
     ),
     ('historical_csv', 'monthly'): _build_spec('historical_csv', 'monthly', time_semantics='date'),
     ('historical_csv', 'pentadic'): _build_spec('historical_csv', 'pentadic', time_semantics='date'),

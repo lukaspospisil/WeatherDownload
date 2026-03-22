@@ -78,7 +78,7 @@ class ObservationCliTests(unittest.TestCase):
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
             with redirect_stdout(buffer):
-                exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'T', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
+                exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
@@ -86,11 +86,12 @@ class ObservationCliTests(unittest.TestCase):
 
     def test_tenmin_cli_uses_default_country_cz(self) -> None:
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()) as download_mock:
-            exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'T', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
+            exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'CZ')
         self.assertEqual(query.dataset_scope, 'historical_csv')
+        self.assertEqual(query.elements, ['T'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'CZ')
 
     def test_tenmin_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
@@ -101,7 +102,7 @@ class ObservationCliTests(unittest.TestCase):
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
                     with redirect_stdout(buffer):
-                        exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'T', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z', '--format', 'csv', '--output', 'tenmin.csv'])
+                        exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z', '--format', 'csv', '--output', 'tenmin.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/tenmin.csv')
                 self.assertTrue(output_path.exists())
@@ -114,7 +115,7 @@ class ObservationCliTests(unittest.TestCase):
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()):
             with redirect_stdout(buffer):
-                exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'E', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'])
+                exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
@@ -125,7 +126,7 @@ class ObservationCliTests(unittest.TestCase):
         stderr_buffer = io.StringIO()
         with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
             exit_code = main([
-                'observations', 'hourly', '--country', 'DE', '--station-id', '00044', '--element', 'TT_TU', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'
+                'observations', 'hourly', '--country', 'DE', '--station-id', '00044', '--element', 'tas_mean', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'
             ])
         self.assertEqual(exit_code, 1)
         self.assertIn('Only the first DWD historical/daily downloader path is implemented so far.', stderr_buffer.getvalue())
@@ -138,7 +139,7 @@ class ObservationCliTests(unittest.TestCase):
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()):
                     with redirect_stdout(buffer):
-                        exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'E', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z', '--format', 'csv', '--output', 'hourly.csv'])
+                        exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z', '--format', 'csv', '--output', 'hourly.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/hourly.csv')
                 self.assertTrue(output_path.exists())
@@ -151,7 +152,7 @@ class ObservationCliTests(unittest.TestCase):
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()):
             with redirect_stdout(buffer):
-                exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'TMA', '--start-date', '1865-06-01', '--end-date', '1865-06-03'])
+                exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_max', '--start-date', '1865-06-01', '--end-date', '1865-06-03'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
@@ -162,13 +163,14 @@ class ObservationCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_de_daily_table()) as download_mock:
             with redirect_stdout(buffer):
                 exit_code = main([
-                    'observations', 'daily', '--country', 'DE', '--station-id', '00044', '--element', 'TMK', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
+                    'observations', 'daily', '--country', 'DE', '--station-id', '00044', '--element', 'tas_mean', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
                 ])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DE')
         self.assertEqual(query.dataset_scope, 'historical')
         self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(query.elements, ['TMK'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
         self.assertIn('historical', buffer.getvalue())
@@ -181,7 +183,7 @@ class ObservationCliTests(unittest.TestCase):
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()):
                     with redirect_stdout(buffer):
-                        exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'TMA', '--start-date', '1865-06-01', '--end-date', '1865-06-03', '--format', 'csv', '--output', 'daily.csv'])
+                        exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_max', '--start-date', '1865-06-01', '--end-date', '1865-06-03', '--format', 'csv', '--output', 'daily.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/daily.csv')
                 self.assertTrue(output_path.exists())
@@ -197,7 +199,7 @@ class ObservationCliTests(unittest.TestCase):
             try:
                 output_path = Path('reports/daily.csv')
                 with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()):
-                    exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'TMA', '--start-date', '1865-06-01', '--end-date', '1865-06-03', '--format', 'csv', '--output', str(output_path)])
+                    exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_max', '--start-date', '1865-06-01', '--end-date', '1865-06-03', '--format', 'csv', '--output', str(output_path)])
                 self.assertEqual(exit_code, 0)
                 self.assertTrue(output_path.exists())
             finally:
@@ -213,7 +215,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
                 'dataset_scope': 'historical_csv',
                 'resolution': '10min',
                 'implemented': True,
-                'supported_elements': ['T'],
+                'supported_elements': ['tas_mean'],
             }
         ])
 
@@ -322,12 +324,12 @@ class StationAvailabilityCliTests(unittest.TestCase):
     def test_station_elements_cli_screen_output(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-            with patch('weatherdownload.cli.list_station_elements', return_value=['T']):
+            with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean']):
                 with redirect_stdout(buffer):
                     exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
-        self.assertIn('T', output)
+        self.assertIn('tas_mean', output)
 
     def test_station_elements_cli_csv_export(self) -> None:
         original_cwd = Path.cwd()
@@ -336,14 +338,14 @@ class StationAvailabilityCliTests(unittest.TestCase):
             try:
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-                    with patch('weatherdownload.cli.list_station_elements', return_value=['T']):
+                    with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean']):
                         with redirect_stdout(buffer):
                             exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min', '--format', 'csv', '--output', 'elements.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/elements.csv')
                 self.assertTrue(output_path.exists())
                 content = output_path.read_text(encoding='utf-8')
-                self.assertIn('T', content)
+                self.assertIn('tas_mean', content)
                 self.assertIn('Exported station elements to outputs', buffer.getvalue())
             finally:
                 os.chdir(original_cwd)

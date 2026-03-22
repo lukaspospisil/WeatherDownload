@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -58,10 +58,16 @@ class ProviderTests(unittest.TestCase):
         self.assertIn('RWS_10', observation_metadata['element'].tolist())
         self.assertTrue(observation_metadata['station_id'].str.len().eq(5).all())
 
-    def test_discovery_country_de(self) -> None:
+    def test_discovery_country_de_returns_canonical_names_by_default(self) -> None:
         self.assertEqual(list_dataset_scopes(country='DE'), ['historical'])
         self.assertEqual(list_resolutions(country='DE', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         hourly_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='1hour')
+        self.assertIn('tas_mean', hourly_elements)
+        self.assertIn('wind_speed', hourly_elements)
+        self.assertIn('precipitation', hourly_elements)
+
+    def test_discovery_country_de_can_return_raw_codes(self) -> None:
+        hourly_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='1hour', provider_raw=True)
         self.assertIn('TT_TU', hourly_elements)
         self.assertIn('FF', hourly_elements)
         self.assertIn('R1', hourly_elements)
@@ -74,7 +80,7 @@ class ProviderTests(unittest.TestCase):
             station_ids=['00003'],
             start='2024-01-01T00:00:00Z',
             end='2024-01-01T01:00:00Z',
-            elements=['TT_TU'],
+            elements=['tas_mean'],
         )
         with self.assertRaises(NotImplementedError):
             download_observations(query, country='DE')
@@ -88,4 +94,3 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

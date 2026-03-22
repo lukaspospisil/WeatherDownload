@@ -13,16 +13,30 @@ class DiscoveryTests(unittest.TestCase):
         self.assertIsInstance(list_resolutions('now'), list)
         self.assertIn('10min', list_resolutions('now'))
 
-    def test_list_supported_elements_for_daily_historical_csv(self) -> None:
+    def test_list_supported_elements_for_daily_historical_csv_returns_canonical_names(self) -> None:
         elements = list_supported_elements(resolution='daily', dataset_scope='historical_csv')
+        self.assertEqual(elements, ['vapour_pressure', 'wind_speed', 'snow_depth', 'pressure', 'relative_humidity', 'precipitation', 'sunshine_duration', 'tas_mean', 'tas_max', 'tas_min', 'wind_from_direction'])
+
+    def test_list_supported_elements_can_return_provider_raw_codes(self) -> None:
+        elements = list_supported_elements(resolution='daily', dataset_scope='historical_csv', provider_raw=True)
         self.assertEqual(elements, ['E', 'F', 'HS', 'P', 'RH', 'SRA', 'SSV', 'T', 'TMA', 'TMI', 'WDIR', 'WSPD'])
 
 
 class ObservationQueryValidationTests(unittest.TestCase):
-    def test_query_normalizes_station_ids_and_elements(self) -> None:
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=[' 0-20000-0-11406 ', '0-20000-0-11406', '0-20000-0-11414'], start_date='2024-01-01', end_date='2024-12-31', elements=[' tma ', 'TMI', 'tma'])
+    def test_query_normalizes_station_ids_and_translates_canonical_elements_for_cz(self) -> None:
+        query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=[' 0-20000-0-11406 ', '0-20000-0-11406', '0-20000-0-11414'], start_date='2024-01-01', end_date='2024-12-31', elements=[' tas_max ', 'TMI', 'tas_max'])
         self.assertEqual(query.station_ids, ['0-20000-0-11406', '0-20000-0-11414'])
         self.assertEqual(query.elements, ['TMA', 'TMI'])
+
+    def test_query_accepts_raw_provider_codes_for_backward_compatibility(self) -> None:
+        query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['tma', 'TMI'])
+        self.assertEqual(query.elements, ['TMA', 'TMI'])
+
+    def test_same_canonical_daily_request_shape_works_for_cz_and_de(self) -> None:
+        cz_query = ObservationQuery(country='CZ', dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'sunshine_duration'])
+        de_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00044'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'sunshine_duration'])
+        self.assertEqual(cz_query.elements, ['T', 'SSV'])
+        self.assertEqual(de_query.elements, ['TMK', 'SDK'])
 
     def test_valid_but_not_implemented_combination_is_still_query_valid(self) -> None:
         query = ObservationQuery(dataset_scope='now', resolution='10min', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T01:00:00Z')
@@ -33,19 +47,25 @@ class ObservationQueryValidationTests(unittest.TestCase):
         with self.assertRaises(QueryValidationError):
             ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T00:00:00Z', start_date='2024-01-01', end_date='2024-01-31')
 
-
     def test_hourly_query_rejects_date_only_precision(self) -> None:
         with self.assertRaises(QueryValidationError):
-            ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['E'])
+            ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['vapour_pressure'])
 
     def test_daily_query_rejects_datetime_precision(self) -> None:
         with self.assertRaises(QueryValidationError):
             ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T00:00:00Z')
 
-    def test_de_daily_query_accepts_dwd_elements(self) -> None:
-        query = ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tmk', 'rsk'])
-        self.assertEqual(query.country, 'DE')
-        self.assertEqual(query.elements, ['TMK', 'RSK'])
+    def test_de_daily_query_accepts_dwd_elements_and_canonical_names(self) -> None:
+        raw_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tmk', 'rsk'])
+        canonical_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
+        self.assertEqual(raw_query.country, 'DE')
+        self.assertEqual(raw_query.elements, ['TMK', 'RSK'])
+        self.assertEqual(canonical_query.elements, ['TMK', 'RSK'])
+
+    def test_query_rejects_unknown_canonical_element_for_path(self) -> None:
+        with self.assertRaises(QueryValidationError):
+            ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_period_max'])
+
     def test_validate_observation_query_returns_query(self) -> None:
         query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date=date(2024, 1, 1), end_date=date(2024, 12, 31))
         validated = validate_observation_query(query)
@@ -54,4 +74,3 @@ class ObservationQueryValidationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

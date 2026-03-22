@@ -12,6 +12,7 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(spec.station_identifier_type, 'wsi')
         self.assertEqual(spec.time_semantics, 'date')
         self.assertTrue(spec.implemented)
+        self.assertEqual(spec.canonical_elements['tas_mean'], ('T',))
 
     def test_get_dataset_spec_for_hourly_historical_csv(self) -> None:
         spec = get_dataset_spec('historical_csv', '1hour')
@@ -42,11 +43,21 @@ class RegistryTests(unittest.TestCase):
         self.assertIsNotNone(spec.element_groups)
         self.assertEqual(tuple(spec.element_groups.keys()), spec.supported_elements)
 
-    def test_discovery_reads_from_registry(self) -> None:
+    def test_discovery_reads_from_registry_with_canonical_names_by_default(self) -> None:
         self.assertIn('now', list_dataset_scopes())
         self.assertIn('10min', list_resolutions('now'))
-        self.assertEqual(['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'], list_supported_elements('10min', 'historical_csv'))
-        self.assertEqual(['E', 'P', 'N', 'W1', 'W2', 'SSV1H'], list_supported_elements('1hour', 'historical_csv'))
+        self.assertEqual(
+            ['tas_mean', 'tas_max', 'tas_min', 'tas_period_max', 'soil_temperature_10cm', 'soil_temperature_100cm', 'sunshine_duration'],
+            list_supported_elements('10min', 'historical_csv'),
+        )
+        self.assertEqual(
+            ['vapour_pressure', 'pressure', 'cloud_cover', 'past_weather_1', 'past_weather_2', 'sunshine_duration'],
+            list_supported_elements('1hour', 'historical_csv'),
+        )
+
+    def test_discovery_can_still_return_provider_raw_codes(self) -> None:
+        self.assertEqual(['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'], list_supported_elements('10min', 'historical_csv', provider_raw=True))
+        self.assertEqual(['E', 'P', 'N', 'W1', 'W2', 'SSV1H'], list_supported_elements('1hour', 'historical_csv', provider_raw=True))
 
     def test_can_list_implemented_specs(self) -> None:
         implemented = {(spec.dataset_scope, spec.resolution) for spec in list_implemented_dataset_specs()}
@@ -60,5 +71,3 @@ class RegistryTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
