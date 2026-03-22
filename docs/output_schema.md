@@ -1,5 +1,9 @@
 # Normalized Output Schemas
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 WeatherDownload keeps its public outputs normalized across providers.
 
 This page documents the stable public columns, not the provider-specific raw files behind them.

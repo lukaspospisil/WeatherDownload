@@ -1,5 +1,9 @@
 # MATLAB-Oriented FAO Workflow
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 `examples/download_fao.py` is a workflow-oriented example built on top of the core WeatherDownload library.
 
 It is country-aware, but only for countries whose daily FAO-prep mapping is explicitly implemented.

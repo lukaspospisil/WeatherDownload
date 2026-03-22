@@ -1,5 +1,9 @@
 # Examples And Workflows
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 This page helps you find the example scripts quickly.
 
 ## Library Examples

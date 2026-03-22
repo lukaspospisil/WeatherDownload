@@ -1,5 +1,9 @@
 # WeatherDownload Tutorial (čeština)
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 [English version](tutorial.en.md)
 
 Tento tutoriál je praktický průvodce knihovnou **WeatherDownload**. Je napsaný jako „step by step“ přehled nejběžnějších i pokročilejších use-caseů, aby bylo možné knihovnu používat bez procházení celého zdrojového kódu.

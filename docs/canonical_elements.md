@@ -1,5 +1,9 @@
 # Canonical Elements
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 WeatherDownload exposes a canonical meteorological element vocabulary so users can request the same meteorological meaning across countries.
 
 ## Public Behavior

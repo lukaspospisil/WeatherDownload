@@ -1,5 +1,9 @@
 # WeatherDownload Tutorial (English)
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 [Česká verze](tutorial.cs.md)
 
 This tutorial is a practical guide to **WeatherDownload**. It is written as a step-by-step overview of common and advanced use cases, so that users can work with the library without studying the full source code first.

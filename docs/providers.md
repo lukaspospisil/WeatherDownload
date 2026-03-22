@@ -1,5 +1,9 @@
 # Provider Model And Coverage
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 WeatherDownload uses a provider layer so the public API can stay stable while provider-specific logic remains internal.
 
 ## Country Selection
