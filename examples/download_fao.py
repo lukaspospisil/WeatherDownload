@@ -6,7 +6,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from scipy.io import savemat
 
 from weatherdownload import get_dataset_spec, read_station_metadata, read_station_observation_metadata
 from weatherdownload.chmi_daily import DailyDownloadTarget, download_daily_csv, parse_daily_csv
@@ -193,6 +192,8 @@ def build_series_record(
 
 
 def export_bundle(output_path: Path, *, data_info: dict[str, Any], stations: list[dict[str, Any]], series: list[dict[str, Any]]) -> None:
+    from scipy.io import savemat
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         'dataInfo': _to_mat_struct(data_info),
