@@ -82,6 +82,15 @@ def build_parser() -> argparse.ArgumentParser:
     tenmin_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     tenmin_parser.set_defaults(handler=handle_tenmin_observations)
 
+    hourly_parser = observations_subparsers.add_parser("hourly", help="Download hourly historical_csv observations.")
+    hourly_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="CHMI WSI station_id. Can be provided multiple times.")
+    hourly_parser.add_argument("--element", action="append", required=True, dest="elements", help="Element code. Can be provided multiple times.")
+    hourly_parser.add_argument("--start", required=True, dest="start", help="Start datetime in ISO format.")
+    hourly_parser.add_argument("--end", required=True, dest="end", help="End datetime in ISO format.")
+    hourly_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
+    hourly_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
+    hourly_parser.set_defaults(handler=handle_hourly_observations)
+
     daily_parser = observations_subparsers.add_parser("daily", help="Download daily historical_csv observations.")
     daily_parser.add_argument("--station-id", action="append", required=True, dest="station_ids", help="CHMI WSI station_id. Can be provided multiple times.")
     daily_parser.add_argument("--element", action="append", required=True, dest="elements", help="Element code. Can be provided multiple times.")
@@ -202,6 +211,26 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
         raise SystemExit("Missing required --output for file export.")
     destination = export_table(observations, output_path=args.output, format=args.format)
     print(f"Exported 10min observations to {destination}")
+    return 0
+
+
+def handle_hourly_observations(args: argparse.Namespace) -> int:
+    query = ObservationQuery(
+        dataset_scope="historical_csv",
+        resolution="1hour",
+        station_ids=args.station_ids,
+        start=args.start,
+        end=args.end,
+        elements=args.elements,
+    )
+    observations = download_observations(query)
+    if args.format == "screen":
+        print(_format_table(observations, metadata_view=False))
+        return 0
+    if not args.output:
+        raise SystemExit("Missing required --output for file export.")
+    destination = export_table(observations, output_path=args.output, format=args.format)
+    print(f"Exported hourly observations to {destination}")
     return 0
 
 

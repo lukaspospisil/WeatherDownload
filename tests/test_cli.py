@@ -27,6 +27,21 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_hourly_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'gh_id': 'L3CHEB01',
+                'element': 'E',
+                'timestamp': '2024-01-01T00:00:00Z',
+                'value': 82.0,
+                'flag': None,
+                'quality': 0,
+                'dataset_scope': 'historical_csv',
+                'resolution': '1hour',
+            }
+        ])
+
     def _sample_daily_table(self) -> pd.DataFrame:
         return pd.DataFrame([
             {
@@ -67,6 +82,33 @@ class ObservationCliTests(unittest.TestCase):
                 self.assertTrue(output_path.exists())
                 self.assertIn('0-20000-0-11406', output_path.read_text(encoding='utf-8'))
                 self.assertIn('Exported 10min observations to outputs', buffer.getvalue())
+            finally:
+                os.chdir(original_cwd)
+
+    def test_hourly_cli_screen_output(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()):
+            with redirect_stdout(buffer):
+                exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'E', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'])
+        self.assertEqual(exit_code, 0)
+        output = buffer.getvalue()
+        self.assertIn('0-20000-0-11406', output)
+        self.assertIn('1hour', output)
+
+    def test_hourly_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
+        original_cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.chdir(temp_dir)
+            try:
+                buffer = io.StringIO()
+                with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()):
+                    with redirect_stdout(buffer):
+                        exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'E', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z', '--format', 'csv', '--output', 'hourly.csv'])
+                self.assertEqual(exit_code, 0)
+                output_path = Path('outputs/hourly.csv')
+                self.assertTrue(output_path.exists())
+                self.assertIn('0-20000-0-11406', output_path.read_text(encoding='utf-8'))
+                self.assertIn('Exported hourly observations to outputs', buffer.getvalue())
             finally:
                 os.chdir(original_cwd)
 
