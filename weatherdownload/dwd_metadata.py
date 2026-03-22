@@ -9,6 +9,16 @@ import requests
 from .dwd_registry import DwdDatasetSpec, list_dataset_specs
 from .metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
 
+_DWD_STATION_LINE_PATTERN = re.compile(
+    r'^\s*(?P<station_id>\d+)\s+'
+    r'(?P<begin_date>\d{8})\s+'
+    r'(?P<end_date>\d{8})\s+'
+    r'(?P<elevation>-?\d+(?:\.\d+)?)\s+'
+    r'(?P<latitude>-?\d+(?:\.\d+)?)\s+'
+    r'(?P<longitude>-?\d+(?:\.\d+)?)\s+'
+    r'(?P<name_block>.+?)\s*$'
+)
+
 
 def read_station_metadata_dwd(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
     specs = [_single_source_spec(source_url)] if source_url is not None else list_dataset_specs()
@@ -49,33 +59,21 @@ def _load_station_description(source_url: str, timeout: int) -> pd.DataFrame:
 
 
 def _parse_station_description_text(text: str) -> pd.DataFrame:
-    lines = [line.rstrip('\n') for line in text.splitlines() if line.strip()]
-    if len(lines) < 3:
-        return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
-    header_line = lines[0]
-    separator_line = lines[1]
-    spans = [(match.start(), match.end()) for match in re.finditer(r'-+', separator_line)]
-    column_names = [header_line[start:end].strip() for start, end in spans]
-
     records: list[dict[str, object]] = []
-    for line in lines[2:]:
-        row = {
-            column_name: line[start:end].strip()
-            for column_name, (start, end) in zip(column_names, spans)
-        }
-        station_id = _normalize_station_id(row.get('Stations_id'))
-        if not station_id:
+    for line in text.splitlines():
+        match = _DWD_STATION_LINE_PATTERN.match(line)
+        if not match:
             continue
         records.append(
             {
-                'station_id': station_id,
+                'station_id': _normalize_station_id(match.group('station_id')),
                 'gh_id': pd.NA,
-                'begin_date': _normalize_dwd_date(row.get('von_datum')),
-                'end_date': _normalize_dwd_date(row.get('bis_datum')),
-                'full_name': _clean_string(row.get('Stationsname')),
-                'longitude': _parse_float(row.get('geoLaenge')),
-                'latitude': _parse_float(row.get('geoBreite')),
-                'elevation_m': _parse_float(row.get('Stationshoehe')),
+                'begin_date': _normalize_dwd_date(match.group('begin_date')),
+                'end_date': _normalize_dwd_date(match.group('end_date')),
+                'full_name': _normalize_name_block(match.group('name_block')),
+                'longitude': _parse_float(match.group('longitude')),
+                'latitude': _parse_float(match.group('latitude')),
+                'elevation_m': _parse_float(match.group('elevation')),
             }
         )
     return pd.DataFrame.from_records(records, columns=STATION_METADATA_COLUMNS)
@@ -133,6 +131,13 @@ def _normalize_dwd_date(value: object) -> str:
     return f'{cleaned[0:4]}-{cleaned[4:6]}-{cleaned[6:8]}T00:00Z'
 
 
+def _normalize_name_block(value: object) -> str:
+    cleaned = _clean_string(value)
+    if not cleaned:
+        return ''
+    return re.sub(r'\s{2,}', ' | ', cleaned)
+
+
 def _clean_string(value: object) -> str:
     if value is None or pd.isna(value):
         return ''
@@ -164,5 +169,3 @@ def _min_date(series: pd.Series) -> str:
 def _max_date(series: pd.Series) -> str:
     values = [value for value in series.tolist() if isinstance(value, str) and value]
     return max(values) if values else ''
-
-

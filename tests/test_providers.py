@@ -45,7 +45,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list(stations.columns), ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'])
         self.assertEqual(stations.iloc[0]['station_id'], '00003')
         self.assertTrue(stations['gh_id'].isna().all())
-        self.assertEqual(stations.iloc[0]['full_name'], 'Aachen')
+        self.assertTrue(stations.iloc[0]['full_name'].startswith('Aachen'))
 
     def test_read_station_observation_metadata_country_de(self) -> None:
         with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockResponse(SAMPLE_DWD_STATIONS)):
@@ -84,4 +84,5 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
