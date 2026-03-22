@@ -2,10 +2,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from weatherdownload import filter_stations, read_station_metadata
+from weatherdownload import filter_stations, read_station_metadata, read_station_observation_metadata
 
 
 SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
+SAMPLE_META2 = Path('tests/data/sample_meta2.csv').read_text(encoding='utf-8')
 
 
 class _MockResponse:
@@ -26,6 +27,15 @@ class StationMetadataTests(unittest.TestCase):
         self.assertEqual(len(stations), 2)
         self.assertEqual(stations.iloc[0]['station_id'], '0-20000-0-11406')
         self.assertEqual(stations.iloc[0]['gh_id'], 'L3CHEB01')
+
+    def test_read_station_observation_metadata(self) -> None:
+        with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META2)):
+            observation_metadata = read_station_observation_metadata()
+        self.assertEqual(list(observation_metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
+        self.assertEqual(observation_metadata.iloc[0]['obs_type'], 'DLY')
+        self.assertEqual(observation_metadata.iloc[0]['station_id'], '0-20000-0-11406')
+        self.assertEqual(observation_metadata.iloc[0]['element'], 'TMA')
+        self.assertEqual(observation_metadata.iloc[1]['schedule'], 'AVG,07:00,14:00,21:00')
 
     def test_filter_stations_by_station_id(self) -> None:
         with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)):

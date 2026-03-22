@@ -260,6 +260,7 @@ Minimal runnable example scripts are available under `examples/`.
 - `examples/download_hourly.py`: run a minimal hourly `historical_csv` download query with timestamp semantics
 - `examples/download_tenmin.py`: run a minimal 10min `historical_csv` download query with timestamp semantics
 - `examples/station_availability.py`: inspect implemented station paths, elements, and support checks before downloading
+- `examples/download_fao.py`: prepare a MATLAB-oriented CHMI daily dataset bundle with station screening, complete-day filtering, and MAT export for later FAO processing
 
 Run them with:
 
@@ -269,7 +270,14 @@ python examples/download_daily.py
 python examples/download_hourly.py
 python examples/download_tenmin.py
 python examples/station_availability.py
+python examples/download_fao.py --output outputs/fao_daily.mat
 ```
+
+### MATLAB-Oriented Workflow
+
+`examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB processing. It screens stations via `meta1` + `meta2`, verifies required daily CSV availability, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and exports one MATLAB-oriented `.mat` bundle with `dataInfo`, `stations`, and per-station `series`.
+
+The example does not compute FAO, extraterrestrial radiation `Ra`, or any other derived variables.
 
 ## Installation
 
@@ -297,11 +305,8 @@ pip install .[full]
 - `weatherdownload.queries`: query model and validation
 - `weatherdownload.cli`: thin CLI wrapper over the library API
 
-## Planned next steps
+## Planned Next Steps
 
 - broaden implemented CHMI downloader coverage
 - improve packaging and release readiness
 - prepare light provider abstraction for future DWD support
-
-
-

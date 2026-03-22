@@ -10,6 +10,7 @@ import pandas as pd
 import requests
 
 DEFAULT_META1_URL = "https://opendata.chmi.cz/meteorology/climate/historical_csv/metadata/meta1.csv"
+DEFAULT_META2_URL = "https://opendata.chmi.cz/meteorology/climate/historical_csv/metadata/meta2.csv"
 
 STATION_METADATA_COLUMNS = [
     "station_id",
@@ -22,12 +23,31 @@ STATION_METADATA_COLUMNS = [
     "elevation_m",
 ]
 
+STATION_OBSERVATION_METADATA_COLUMNS = [
+    "obs_type",
+    "station_id",
+    "begin_date",
+    "end_date",
+    "element",
+    "schedule",
+    "name",
+    "description",
+    "height",
+]
+
 
 def read_station_metadata(source_url: str = DEFAULT_META1_URL, timeout: int = 60) -> pd.DataFrame:
     response = requests.get(source_url, timeout=timeout)
     response.raise_for_status()
     response.encoding = "utf-8"
     return _parse_station_metadata_csv(response.text)
+
+
+def read_station_observation_metadata(source_url: str = DEFAULT_META2_URL, timeout: int = 60) -> pd.DataFrame:
+    response = requests.get(source_url, timeout=timeout)
+    response.raise_for_status()
+    response.encoding = "utf-8"
+    return _parse_station_observation_metadata_csv(response.text)
 
 
 def filter_stations(
@@ -74,7 +94,7 @@ def filter_stations(
 
 
 def _parse_station_metadata_csv(csv_text: str) -> pd.DataFrame:
-    reader = csv.DictReader(io.StringIO(csv_text))
+    reader = csv.DictReader(io.StringIO(csv_text.lstrip('\ufeff')))
     records: list[dict[str, object]] = []
 
     for row in reader:
@@ -95,6 +115,31 @@ def _parse_station_metadata_csv(csv_text: str) -> pd.DataFrame:
         )
 
     return pd.DataFrame.from_records(records, columns=STATION_METADATA_COLUMNS)
+
+
+def _parse_station_observation_metadata_csv(csv_text: str) -> pd.DataFrame:
+    reader = csv.DictReader(io.StringIO(csv_text.lstrip('\ufeff')))
+    records: list[dict[str, object]] = []
+
+    for row in reader:
+        if not row.get("WSI") or not row.get("OBS_TYPE"):
+            continue
+
+        records.append(
+            {
+                "obs_type": row["OBS_TYPE"].strip(),
+                "station_id": row["WSI"].strip(),
+                "begin_date": _normalize_datetime(row["BEGIN_DATE"]),
+                "end_date": _normalize_datetime(row["END_DATE"]),
+                "element": row["EG_EL_ABBREVIATION"].strip(),
+                "schedule": row["SCHEDULE"].strip().strip('"'),
+                "name": row.get("NAME", "").strip(),
+                "description": row.get("UN_DESCRIPTION", "").strip(),
+                "height": _parse_float(row.get("HEIGHT", "")),
+            }
+        )
+
+    return pd.DataFrame.from_records(records, columns=STATION_OBSERVATION_METADATA_COLUMNS)
 
 
 def _normalize_datetime(value: str) -> str:
@@ -124,3 +169,4 @@ def _normalize_bbox(bbox: tuple[float, float, float, float]) -> tuple[float, flo
     if min_latitude > max_latitude:
         raise ValueError("bbox min_latitude must be less than or equal to max_latitude.")
     return float(min_longitude), float(min_latitude), float(max_longitude), float(max_latitude)
+

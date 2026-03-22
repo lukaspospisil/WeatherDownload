@@ -15,7 +15,7 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_list_supported_elements_for_daily_historical_csv(self) -> None:
         elements = list_supported_elements(resolution='daily', dataset_scope='historical_csv')
-        self.assertEqual(elements, ['HS', 'P', 'RH', 'SRA', 'SSV', 'T', 'TMA', 'TMI', 'WDIR', 'WSPD'])
+        self.assertEqual(elements, ['E', 'F', 'HS', 'P', 'RH', 'SRA', 'SSV', 'T', 'TMA', 'TMI', 'WDIR', 'WSPD'])
 
 
 class ObservationQueryValidationTests(unittest.TestCase):

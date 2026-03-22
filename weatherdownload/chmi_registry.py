@@ -17,6 +17,8 @@ class ChmiDatasetSpec:
 
 
 _DAILY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
+    'E': 'humidity',
+    'F': 'wind',
     'HS': 'snow',
     'P': 'air_pressure',
     'RH': 'humidity',
