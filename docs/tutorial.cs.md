@@ -62,7 +62,7 @@ Knihovna odděluje několik vrstev:
    Výstupy mají co nejvíc stejný tvar mezi zeměmi.
 
 4. **workflow examples**  
-   Specifické pipeline (např. příprava FAO datasetu) zůstávají mimo core API.
+   Specifické pipeline (např. příprava konkrétního datasetu) zůstávají mimo core API.
 
 Tím pádem může uživatel mezi zeměmi měnit hlavně:
 - `country="CZ"` / `country="DE"`,

@@ -34,7 +34,7 @@ The library can:
 - download meteorological observations,
 - export tabular outputs to common formats,
 - unify cross-country usage through **canonical elements**,
-- provide workflow examples, such as preparing a dataset for later FAO calculations.
+- provide workflow examples, such as preparing a specific dataset.
 
 ---
 
