@@ -1,4 +1,6 @@
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -47,6 +49,110 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(complete['Date'].tolist(), [pd.Timestamp('2024-01-01').date()])
         self.assertEqual(list(complete.columns), ['Date', 'T', 'TMA', 'TMI', 'F', 'E', 'SSV'])
 
+    def test_export_parquet_bundle_writes_portable_bundle_files(self) -> None:
+        data_info = {
+            'CreatedAt': '2026-03-22T10:00:00+00:00',
+            'DatasetType': 'test bundle',
+            'Source': 'test',
+            'Elements': ['T', 'TMA', 'TMI', 'F', 'E', 'SSV'],
+            'MinCompleteDays': 3650,
+            'NumStations': 1,
+        }
+        stations = [
+            {
+                'WSI': '0-20000-0-11406',
+                'FULL_NAME': 'TEST STATION',
+                'Latitude': 50.1,
+                'Longitude': 14.4,
+                'Elevation': 250.0,
+                'NumCompleteDays_E': 2,
+                'FirstCompleteDate_E': '2024-01-01',
+                'LastCompleteDate_E': '2024-01-02',
+            }
+        ]
+        series = [
+            {
+                'WSI': '0-20000-0-11406',
+                'FULL_NAME': 'TEST STATION',
+                'Latitude': 50.1,
+                'Longitude': 14.4,
+                'Elevation': 250.0,
+                'Date': ['2024-01-01', '2024-01-02'],
+                'T': [1.0, 2.0],
+                'TMA': [3.0, 4.0],
+                'TMI': [-1.0, 0.0],
+                'F': [2.5, 3.5],
+                'E': [7.0, 8.0],
+                'SSV': [0.5, 0.8],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / 'fao_bundle'
+            download_fao.export_parquet_bundle(output_dir, data_info=data_info, stations=stations, series=series)
+
+            data_info_path = output_dir / 'data_info.json'
+            stations_path = output_dir / 'stations.parquet'
+            series_path = output_dir / 'series.parquet'
+
+            self.assertTrue(data_info_path.exists())
+            self.assertTrue(stations_path.exists())
+            self.assertTrue(series_path.exists())
+
+            written_info = json.loads(data_info_path.read_text(encoding='utf-8'))
+            written_stations = pd.read_parquet(stations_path)
+            written_series = pd.read_parquet(series_path)
+
+            self.assertEqual(written_info['NumStations'], 1)
+            self.assertEqual(list(written_stations['WSI']), ['0-20000-0-11406'])
+            self.assertEqual(list(written_series['Date']), ['2024-01-01', '2024-01-02'])
+            self.assertEqual(list(written_series['E']), [7.0, 8.0])
+            self.assertFalse(written_series[['T', 'TMA', 'TMI', 'F', 'E', 'SSV']].isna().any().any())
+
+    def test_screen_candidate_stations_deduplicates_meta1_by_station_id(self) -> None:
+        meta1 = pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'full_name': 'Cheb primary',
+                'latitude': 50.08,
+                'longitude': 12.37,
+                'elevation_m': 471.0,
+            },
+            {
+                'station_id': '0-20000-0-11406',
+                'full_name': 'Cheb duplicate',
+                'latitude': 50.09,
+                'longitude': 12.38,
+                'elevation_m': 472.0,
+            },
+            {
+                'station_id': '0-20000-0-99999',
+                'full_name': 'Other station',
+                'latitude': 49.0,
+                'longitude': 15.0,
+                'elevation_m': 300.0,
+            },
+        ])
+        meta2_rows = []
+        for element in download_fao.REQUIRED_ELEMENTS:
+            meta2_rows.append(
+                {
+                    'obs_type': 'DLY',
+                    'station_id': '0-20000-0-11406',
+                    'element': element,
+                    'begin_date': '2000-01-01',
+                    'end_date': '2015-12-31',
+                }
+            )
+        meta2 = pd.DataFrame(meta2_rows)
+
+        candidates = download_fao.screen_candidate_stations(meta1, meta2, min_complete_days=3650)
+
+        self.assertEqual(list(candidates['station_id']), ['0-20000-0-11406'])
+        self.assertEqual(list(candidates['full_name']), ['Cheb primary'])
+        self.assertEqual(len(candidates), 1)
+
 
 if __name__ == '__main__':
     unittest.main()
+

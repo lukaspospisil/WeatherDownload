@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,7 @@ import pandas as pd
 
 from weatherdownload import get_dataset_spec, read_station_metadata, read_station_observation_metadata
 from weatherdownload.chmi_daily import DailyDownloadTarget, download_daily_csv, parse_daily_csv
+from weatherdownload.exporting import export_table
 
 REQUIRED_ELEMENTS = ['T', 'TMA', 'TMI', 'F', 'E', 'SSV']
 TIMEFUNC_BY_ELEMENT = {
@@ -85,14 +87,32 @@ def main(argv: list[str] | None = None) -> int:
         'MinCompleteDays': int(args.min_complete_days),
         'NumStations': int(len(retained_series)),
     }
-    export_bundle(args.output, data_info=data_info, stations=station_rows, series=retained_series)
-    print(f'Exported MATLAB-oriented FAO-prep bundle to {args.output}')
+    exported_targets: list[str] = []
+    if args.export_format in {'mat', 'both'}:
+        export_mat_bundle(args.output, data_info=data_info, stations=station_rows, series=retained_series)
+        exported_targets.append(str(args.output))
+    if args.export_format in {'parquet', 'both'}:
+        export_parquet_bundle(args.output_dir, data_info=data_info, stations=station_rows, series=retained_series)
+        exported_targets.append(str(args.output_dir))
+    print(f"Exported FAO-prep output to: {', '.join(exported_targets)}")
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Prepare a MATLAB-oriented CHMI daily dataset for later FAO processing.')
     parser.add_argument('--output', type=Path, default=Path('outputs/fao_daily.mat'), help='MATLAB .mat output path.')
+    parser.add_argument(
+        '--output-dir',
+        type=Path,
+        default=Path('outputs/fao_daily_bundle'),
+        help='Portable Parquet bundle output directory.',
+    )
+    parser.add_argument(
+        '--export-format',
+        choices=['mat', 'parquet', 'both'],
+        default='mat',
+        help='Output format to produce.',
+    )
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional CHMI WSI station_id filter. Can be provided multiple times.')
     parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete E-based days required per station.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
@@ -114,7 +134,8 @@ def screen_candidate_stations(meta1: pd.DataFrame, meta2: pd.DataFrame, *, min_c
     candidate_ids = screened[
         screened['has_required_elements'] & (screened['overlap_days_estimate'] >= min_complete_days)
     ]['station_id']
-    return meta1[meta1['station_id'].isin(candidate_ids)].reset_index(drop=True)
+    candidate_rows = meta1[meta1['station_id'].isin(candidate_ids)].copy()
+    return deduplicate_candidate_stations(candidate_rows)
 
 
 def estimate_station_overlap_days(meta2: pd.DataFrame) -> pd.DataFrame:
@@ -135,6 +156,12 @@ def estimate_station_overlap_days(meta2: pd.DataFrame) -> pd.DataFrame:
         (station_spans['overlap_end'] - station_spans['overlap_begin']).dt.days + 1
     ).clip(lower=0)
     return station_spans[['station_id', 'overlap_days_estimate']]
+
+
+def deduplicate_candidate_stations(meta1_rows: pd.DataFrame) -> pd.DataFrame:
+    if meta1_rows.empty:
+        return meta1_rows.reset_index(drop=True)
+    return meta1_rows.drop_duplicates(subset=['station_id'], keep='first').reset_index(drop=True)
 
 
 def fetch_required_daily_tables(station_id: str, timeout: int = 60) -> dict[str, pd.DataFrame] | None:
@@ -191,7 +218,7 @@ def build_series_record(
     }
 
 
-def export_bundle(output_path: Path, *, data_info: dict[str, Any], stations: list[dict[str, Any]], series: list[dict[str, Any]]) -> None:
+def export_mat_bundle(output_path: Path, *, data_info: dict[str, Any], stations: list[dict[str, Any]], series: list[dict[str, Any]]) -> None:
     from scipy.io import savemat
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -203,11 +230,72 @@ def export_bundle(output_path: Path, *, data_info: dict[str, Any], stations: lis
     savemat(output_path, payload)
 
 
+def export_parquet_bundle(
+    output_dir: Path,
+    *,
+    data_info: dict[str, Any],
+    stations: list[dict[str, Any]],
+    series: list[dict[str, Any]],
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    data_info_path = output_dir / 'data_info.json'
+    stations_path = output_dir / 'stations.parquet'
+    series_path = output_dir / 'series.parquet'
+
+    data_info_path.write_text(json.dumps(data_info, indent=2), encoding='utf-8')
+    export_table(build_station_table(stations), stations_path, format='parquet')
+    export_table(build_series_table(series), series_path, format='parquet')
+
+
 def _build_daily_target(station_id: str, element: str) -> DailyDownloadTarget:
     spec = get_dataset_spec('historical_csv', 'daily')
     group = spec.element_groups[element]
     url = spec.endpoint_pattern.format(group=group, station_id=station_id, element=element)
     return DailyDownloadTarget(station_id=station_id, element=element, group=group, url=url)
+
+
+def build_station_table(rows: list[dict[str, Any]]) -> pd.DataFrame:
+    columns = [
+        'WSI',
+        'FULL_NAME',
+        'Latitude',
+        'Longitude',
+        'Elevation',
+        'NumCompleteDays_E',
+        'FirstCompleteDate_E',
+        'LastCompleteDate_E',
+    ]
+    if not rows:
+        return pd.DataFrame(columns=columns)
+    return pd.DataFrame.from_records(rows, columns=columns)
+
+
+def build_series_table(series: list[dict[str, Any]]) -> pd.DataFrame:
+    columns = ['WSI', 'FULL_NAME', 'Latitude', 'Longitude', 'Elevation', 'Date', *REQUIRED_ELEMENTS]
+    records: list[dict[str, Any]] = []
+    for item in series:
+        dates = item['Date']
+        num_rows = len(dates)
+        for index in range(num_rows):
+            records.append(
+                {
+                    'WSI': item['WSI'],
+                    'FULL_NAME': item['FULL_NAME'],
+                    'Latitude': item['Latitude'],
+                    'Longitude': item['Longitude'],
+                    'Elevation': item['Elevation'],
+                    'Date': dates[index],
+                    'T': item['T'][index],
+                    'TMA': item['TMA'][index],
+                    'TMI': item['TMI'][index],
+                    'F': item['F'][index],
+                    'E': item['E'][index],
+                    'SSV': item['SSV'][index],
+                }
+            )
+    if not records:
+        return pd.DataFrame(columns=columns)
+    return pd.DataFrame.from_records(records, columns=columns)
 
 
 def _select_timefunc_rows(table: pd.DataFrame, element: str, time_function: str) -> pd.DataFrame:
@@ -266,3 +354,4 @@ def _to_mat_value(value: Any) -> Any:
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
