@@ -1,27 +1,38 @@
 from __future__ import annotations
 
-from .chmi_registry import get_dataset_spec, list_dataset_specs
+
+def list_dataset_scopes(country: str = 'CZ') -> list[str]:
+    from .providers import get_provider
+
+    provider = get_provider(country)
+    return sorted({spec.dataset_scope for spec in provider.list_dataset_specs()})
 
 
-def list_dataset_scopes() -> list[str]:
-    return sorted({spec.dataset_scope for spec in list_dataset_specs()})
+def list_resolutions(dataset_scope: str | None = None, country: str = 'CZ') -> list[str]:
+    from .providers import get_provider
 
-
-def list_resolutions(dataset_scope: str | None = None) -> list[str]:
-    specs = list_dataset_specs()
+    provider = get_provider(country)
+    specs = provider.list_dataset_specs()
     if dataset_scope is None:
         return sorted({spec.resolution for spec in specs})
     normalized_scope = dataset_scope.strip()
     resolutions = sorted({spec.resolution for spec in specs if spec.dataset_scope == normalized_scope})
     if not resolutions:
-        raise ValueError(f"Unsupported dataset_scope: {dataset_scope}")
+        raise ValueError(f'Unsupported dataset_scope: {dataset_scope}')
     return resolutions
 
 
-def list_supported_elements(resolution: str | None = None, dataset_scope: str | None = None) -> list[str]:
-    specs = list_dataset_specs()
+def list_supported_elements(
+    resolution: str | None = None,
+    dataset_scope: str | None = None,
+    country: str = 'CZ',
+) -> list[str]:
+    from .providers import get_provider
+
+    provider = get_provider(country)
+    specs = provider.list_dataset_specs()
     if dataset_scope is not None and resolution is not None:
-        spec = get_dataset_spec(dataset_scope, resolution)
+        spec = provider.get_dataset_spec(dataset_scope, resolution)
         return list(spec.supported_elements)
     if resolution is not None:
         matches = [spec for spec in specs if spec.resolution == resolution.strip()]

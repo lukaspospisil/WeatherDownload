@@ -25,17 +25,34 @@ from .chmi_tenmin import (
 )
 from .chmi_registry import get_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
-from .metadata import read_station_metadata
 from .queries import ObservationQuery
 
 
-def download_observations(query: ObservationQuery, timeout: int = 60, station_metadata: pd.DataFrame | None = None) -> pd.DataFrame:
+def download_observations(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+    country: str = 'CZ',
+) -> pd.DataFrame:
+    from .providers import get_provider
+
+    provider = get_provider(country)
+    return provider.download_observations(query, timeout, station_metadata)
+
+
+def _download_observations_chmi(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    from .metadata import read_station_metadata
+
     dataset_spec = get_dataset_spec(query.dataset_scope, query.resolution)
     if not dataset_spec.implemented:
         raise DatasetNotImplementedError(
             f"Dataset path '{query.dataset_scope}/{query.resolution}' is valid in CHMI, but is not implemented by this library yet."
         )
-    metadata_table = station_metadata if station_metadata is not None else read_station_metadata(timeout=timeout)
+    metadata_table = station_metadata if station_metadata is not None else read_station_metadata(country='CZ', timeout=timeout)
 
     if query.dataset_scope == 'historical_csv' and query.resolution == '10min':
         return _download_tenmin_observations(query, timeout=timeout, station_metadata=metadata_table)
@@ -45,7 +62,7 @@ def download_observations(query: ObservationQuery, timeout: int = 60, station_me
         return _download_hourly_observations(query, timeout=timeout, station_metadata=metadata_table)
 
     raise UnsupportedQueryError(
-        f"Unsupported query combination for the current downloader implementation: {query.dataset_scope}/{query.resolution}"
+        f'Unsupported query combination for the current downloader implementation: {query.dataset_scope}/{query.resolution}'
     )
 
 
@@ -71,7 +88,7 @@ def _download_tenmin_observations(query: ObservationQuery, timeout: int, station
     if not any_downloaded:
         if missing_station_ids:
             station_list = ', '.join(sorted(missing_station_ids))
-            raise StationNotFoundError(f"No 10min historical_csv data found for station_id: {station_list}")
+            raise StationNotFoundError(f'No 10min historical_csv data found for station_id: {station_list}')
         raise EmptyResultError('No observations found for the given query.')
     merged = pd.concat(parsed_tables, ignore_index=True)
     normalized = normalize_tenmin_observations(merged, query, station_metadata=station_metadata)
@@ -100,7 +117,7 @@ def _download_daily_observations(query: ObservationQuery, timeout: int, station_
     if not any_downloaded:
         if missing_station_ids:
             station_list = ', '.join(sorted(missing_station_ids))
-            raise StationNotFoundError(f"No daily historical_csv data found for station_id: {station_list}")
+            raise StationNotFoundError(f'No daily historical_csv data found for station_id: {station_list}')
         raise EmptyResultError('No observations found for the given query.')
     merged = pd.concat(parsed_tables, ignore_index=True)
     normalized = normalize_daily_observations(merged, query, station_metadata=station_metadata)
@@ -131,7 +148,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if not any_downloaded:
         if missing_station_ids:
             station_list = ', '.join(sorted(missing_station_ids))
-            raise StationNotFoundError(f"No hourly historical_csv data found for station_id: {station_list}")
+            raise StationNotFoundError(f'No hourly historical_csv data found for station_id: {station_list}')
         raise EmptyResultError('No observations found for the given query.')
     merged = pd.concat(parsed_tables, ignore_index=True)
     normalized = normalize_hourly_observations(merged, query, station_metadata=station_metadata)

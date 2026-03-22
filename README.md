@@ -43,7 +43,7 @@ from weatherdownload import (
     station_supports,
 )
 
-stations = read_station_metadata()
+stations = read_station_metadata(country='CZ')
 selected = filter_stations(
     stations,
     station_ids=["0-20000-0-11406"],
@@ -59,7 +59,7 @@ query = ObservationQuery(
     end_date="2024-12-31",
     elements=["TMA", "TMI"],
 )
-observations = download_observations(query, station_metadata=selected)
+observations = download_observations(query, station_metadata=selected, country='CZ')
 ```
 
 ## Station Filtering And Availability
@@ -75,7 +75,7 @@ from weatherdownload import (
     station_supports,
 )
 
-stations = read_station_metadata()
+stations = read_station_metadata(country='CZ')
 
 western_active = filter_stations(
     stations,
@@ -310,4 +310,5 @@ pip install .[full]
 `examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB, R, or Python processing. It supports cache-aware `full`, `download`, and `build` modes, reuses cached `meta1`, `meta2`, and daily CSV inputs under `outputs/fao_cache` by default, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and can export either a MATLAB-oriented `.mat` bundle, a portable Parquet bundle directory, or both. The Parquet bundle contains `data_info.json`, `stations.parquet`, and a long-form `series.parquet`.
 
 The example does not compute FAO, extraterrestrial radiation `Ra`, or any other derived variables.
+
 
