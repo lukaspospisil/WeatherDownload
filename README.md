@@ -251,6 +251,26 @@ If `--output` is just a filename such as `stations.csv`, `tenmin.csv`, or `daily
 
 Explicit relative paths such as `reports/stations.xlsx` and absolute paths such as `D:/data/stations.parquet` are used as provided. Missing parent directories are created automatically.
 
+## Examples
+
+Minimal runnable example scripts are available under `examples/`.
+
+- `examples/read_metadata.py`: load station metadata, apply a simple active-date filter, and print a small station table
+- `examples/download_daily.py`: run a minimal daily `historical_csv` download query
+- `examples/download_hourly.py`: run a minimal hourly `historical_csv` download query with timestamp semantics
+- `examples/download_tenmin.py`: run a minimal 10min `historical_csv` download query with timestamp semantics
+- `examples/station_availability.py`: inspect implemented station paths, elements, and support checks before downloading
+
+Run them with:
+
+```powershell
+python examples/read_metadata.py
+python examples/download_daily.py
+python examples/download_hourly.py
+python examples/download_tenmin.py
+python examples/station_availability.py
+```
+
 ## Installation
 
 ```powershell
@@ -282,5 +302,6 @@ pip install .[full]
 - broaden implemented CHMI downloader coverage
 - improve packaging and release readiness
 - prepare light provider abstraction for future DWD support
+
 
 
