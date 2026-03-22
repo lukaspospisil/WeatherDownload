@@ -7,10 +7,17 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import requests
 
-from weatherdownload import get_dataset_spec, read_station_metadata, read_station_observation_metadata
+from weatherdownload import get_dataset_spec
 from weatherdownload.chmi_daily import DailyDownloadTarget, download_daily_csv, parse_daily_csv
 from weatherdownload.exporting import export_table
+from weatherdownload.metadata import (
+    DEFAULT_META1_URL,
+    DEFAULT_META2_URL,
+    _parse_station_metadata_csv,
+    _parse_station_observation_metadata_csv,
+)
 
 REQUIRED_ELEMENTS = ['T', 'TMA', 'TMI', 'F', 'E', 'SSV']
 TIMEFUNC_BY_ELEMENT = {
@@ -23,12 +30,16 @@ TIMEFUNC_BY_ELEMENT = {
 }
 
 
+class CacheMissingError(FileNotFoundError):
+    pass
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    meta1 = read_station_metadata(timeout=args.timeout)
-    meta2 = read_station_observation_metadata(timeout=args.timeout)
+    meta1 = load_station_metadata_with_cache(args.cache_dir, mode=args.mode, timeout=args.timeout)
+    meta2 = load_station_observation_metadata_with_cache(args.cache_dir, mode=args.mode, timeout=args.timeout)
 
     if args.station_ids:
         requested = {station_id.strip().upper() for station_id in args.station_ids}
@@ -38,12 +49,33 @@ def main(argv: list[str] | None = None) -> int:
     candidates = screen_candidate_stations(meta1, meta2, min_complete_days=args.min_complete_days)
     print(f'Meta2-screened candidate stations: {len(candidates)}')
 
+    available_station_count, missing_station_ids = cache_candidate_daily_inputs(
+        candidates,
+        cache_dir=args.cache_dir,
+        mode=args.mode,
+        timeout=args.timeout,
+    )
+
+    if args.mode == 'download':
+        print(f'Cached FAO inputs for {available_station_count} station(s) under {args.cache_dir}.')
+        if missing_station_ids:
+            print(f'Skipped {len(missing_station_ids)} station(s) with missing required daily CSVs: {", ".join(missing_station_ids)}')
+        return 0
+
     retained_series: list[dict[str, Any]] = []
     station_rows: list[dict[str, Any]] = []
 
     for station in candidates.itertuples(index=False):
         print(f'Processing {station.station_id} ({station.full_name})')
-        csv_tables = fetch_required_daily_tables(station.station_id, timeout=args.timeout)
+        try:
+            csv_tables = fetch_required_daily_tables(
+                station.station_id,
+                cache_dir=args.cache_dir,
+                mode=args.mode,
+                timeout=args.timeout,
+            )
+        except CacheMissingError as exc:
+            raise SystemExit(str(exc)) from exc
         if csv_tables is None:
             print('  Missing one or more required daily CSV files, skipping.')
             continue
@@ -100,6 +132,18 @@ def main(argv: list[str] | None = None) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Prepare a MATLAB-oriented CHMI daily dataset for later FAO processing.')
+    parser.add_argument(
+        '--mode',
+        choices=['full', 'download', 'build'],
+        default='full',
+        help='Run the full pipeline, cache inputs only, or build only from cached inputs.',
+    )
+    parser.add_argument(
+        '--cache-dir',
+        type=Path,
+        default=Path('outputs/fao_cache'),
+        help='Cache directory for metadata and raw daily CSV inputs.',
+    )
     parser.add_argument('--output', type=Path, default=Path('outputs/fao_daily.mat'), help='MATLAB .mat output path.')
     parser.add_argument(
         '--output-dir',
@@ -111,12 +155,59 @@ def build_parser() -> argparse.ArgumentParser:
         '--export-format',
         choices=['mat', 'parquet', 'both'],
         default='mat',
-        help='Output format to produce.',
+        help='Output format to produce in full or build mode.',
     )
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional CHMI WSI station_id filter. Can be provided multiple times.')
     parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete E-based days required per station.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
     return parser
+
+
+def load_station_metadata_with_cache(cache_dir: Path, *, mode: str, timeout: int) -> pd.DataFrame:
+    csv_text = load_cached_text(
+        cache_path=cache_dir / 'meta1.csv',
+        source_url=DEFAULT_META1_URL,
+        mode=mode,
+        timeout=timeout,
+        description='meta1.csv',
+    )
+    return _parse_station_metadata_csv(csv_text)
+
+
+def load_station_observation_metadata_with_cache(cache_dir: Path, *, mode: str, timeout: int) -> pd.DataFrame:
+    csv_text = load_cached_text(
+        cache_path=cache_dir / 'meta2.csv',
+        source_url=DEFAULT_META2_URL,
+        mode=mode,
+        timeout=timeout,
+        description='meta2.csv',
+    )
+    return _parse_station_observation_metadata_csv(csv_text)
+
+
+def load_cached_text(
+    *,
+    cache_path: Path,
+    source_url: str,
+    mode: str,
+    timeout: int,
+    description: str,
+) -> str:
+    if cache_path.exists():
+        return cache_path.read_text(encoding='utf-8')
+    if mode == 'build':
+        raise CacheMissingError(f'Missing cached {description}: {cache_path}')
+    text = download_text(source_url, timeout=timeout)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(text, encoding='utf-8')
+    return text
+
+
+def download_text(source_url: str, *, timeout: int) -> str:
+    response = requests.get(source_url, timeout=timeout)
+    response.raise_for_status()
+    response.encoding = 'utf-8'
+    return response.text
 
 
 def screen_candidate_stations(meta1: pd.DataFrame, meta2: pd.DataFrame, *, min_complete_days: int) -> pd.DataFrame:
@@ -164,16 +255,86 @@ def deduplicate_candidate_stations(meta1_rows: pd.DataFrame) -> pd.DataFrame:
     return meta1_rows.drop_duplicates(subset=['station_id'], keep='first').reset_index(drop=True)
 
 
-def fetch_required_daily_tables(station_id: str, timeout: int = 60) -> dict[str, pd.DataFrame] | None:
+def cache_candidate_daily_inputs(
+    candidates: pd.DataFrame,
+    *,
+    cache_dir: Path,
+    mode: str,
+    timeout: int,
+) -> tuple[int, list[str]]:
+    available_station_count = 0
+    missing_station_ids: list[str] = []
+    for station in candidates.itertuples(index=False):
+        try:
+            available = ensure_required_daily_inputs_cached(
+                station.station_id,
+                cache_dir=cache_dir,
+                mode=mode,
+                timeout=timeout,
+            )
+        except CacheMissingError as exc:
+            raise SystemExit(str(exc)) from exc
+        if available:
+            available_station_count += 1
+        else:
+            missing_station_ids.append(station.station_id)
+    return available_station_count, missing_station_ids
+
+
+def ensure_required_daily_inputs_cached(
+    station_id: str,
+    *,
+    cache_dir: Path,
+    mode: str,
+    timeout: int,
+) -> bool:
+    for element in REQUIRED_ELEMENTS:
+        try:
+            get_daily_csv_text(station_id, element, cache_dir=cache_dir, mode=mode, timeout=timeout)
+        except FileNotFoundError:
+            return False
+    return True
+
+
+def fetch_required_daily_tables(
+    station_id: str,
+    *,
+    cache_dir: Path,
+    mode: str,
+    timeout: int = 60,
+) -> dict[str, pd.DataFrame] | None:
     tables: dict[str, pd.DataFrame] = {}
     for element in REQUIRED_ELEMENTS:
         try:
-            csv_text = download_daily_csv(_build_daily_target(station_id, element), timeout=timeout)
+            csv_text = get_daily_csv_text(station_id, element, cache_dir=cache_dir, mode=mode, timeout=timeout)
         except FileNotFoundError:
             return None
         table = parse_daily_csv(csv_text)
         tables[element] = table[table['ELEMENT'].astype(str).str.upper() == element].reset_index(drop=True)
     return tables
+
+
+def get_daily_csv_text(
+    station_id: str,
+    element: str,
+    *,
+    cache_dir: Path,
+    mode: str,
+    timeout: int,
+) -> str:
+    cache_path = cached_daily_csv_path(cache_dir, station_id, element)
+    if cache_path.exists():
+        return cache_path.read_text(encoding='utf-8')
+    if mode == 'build':
+        raise CacheMissingError(f'Missing cached daily CSV for station {station_id} element {element}: {cache_path}')
+    csv_text = download_daily_csv(_build_daily_target(station_id, element), timeout=timeout)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(csv_text, encoding='utf-8')
+    return csv_text
+
+
+def cached_daily_csv_path(cache_dir: Path, station_id: str, element: str) -> Path:
+    return cache_dir / 'daily' / station_id / f'dly-{station_id}-{element}.csv'
 
 
 def prepare_complete_station_series(raw_tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -354,4 +515,3 @@ def _to_mat_value(value: Any) -> Any:
 
 if __name__ == '__main__':
     raise SystemExit(main())
-

@@ -260,7 +260,7 @@ Minimal runnable example scripts are available under `examples/`.
 - `examples/download_hourly.py`: run a minimal hourly `historical_csv` download query with timestamp semantics
 - `examples/download_tenmin.py`: run a minimal 10min `historical_csv` download query with timestamp semantics
 - `examples/station_availability.py`: inspect implemented station paths, elements, and support checks before downloading
-- `examples/download_fao.py`: prepare a CHMI daily dataset bundle with station screening, complete-day filtering, and MAT or Parquet export for later FAO-related processing [more info](docs/download_fao.md)
+- `examples/download_fao.py`: prepare a CHMI daily dataset bundle with cache-aware download/build modes plus MAT or Parquet export for later FAO-related processing [more info](docs/download_fao.md)
 
 Run them with:
 
@@ -270,7 +270,7 @@ python examples/download_daily.py
 python examples/download_hourly.py
 python examples/download_tenmin.py
 python examples/station_availability.py
-python examples/download_fao.py --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
 ```
 
 ## Installation
@@ -307,7 +307,7 @@ pip install .[full]
 
 ## MATLAB-Oriented Workflow
 
-`examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB, R, or Python processing. It screens stations via `meta1` + `meta2`, verifies required daily CSV availability, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and can export either a MATLAB-oriented `.mat` bundle, a portable Parquet bundle directory, or both. The Parquet bundle contains `data_info.json`, `stations.parquet`, and a long-form `series.parquet`.
+`examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB, R, or Python processing. It supports cache-aware `full`, `download`, and `build` modes, reuses cached `meta1`, `meta2`, and daily CSV inputs under `outputs/fao_cache` by default, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and can export either a MATLAB-oriented `.mat` bundle, a portable Parquet bundle directory, or both. The Parquet bundle contains `data_info.json`, `stations.parquet`, and a long-form `series.parquet`.
 
 The example does not compute FAO, extraterrestrial radiation `Ra`, or any other derived variables.
 

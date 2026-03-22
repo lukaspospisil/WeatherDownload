@@ -53,12 +53,13 @@ The example applies a multi-stage screening workflow:
 2. load observation metadata from `meta2`
 3. keep only stations that declare all required daily elements
 4. use `meta2` validity intervals for a coarse overlap pre-screen
-5. verify that the required daily CSV files really exist
-6. load the daily files
-7. apply fixed `TIMEFUNC` selection rules
-8. merge variables by calendar date
-9. keep only complete E-based days
-10. retain only stations with at least `3650` complete days by default
+5. deduplicate candidate stations to one representative `meta1` row per canonical `station_id`
+6. verify that the required daily CSV files really exist
+7. load the daily files
+8. apply fixed `TIMEFUNC` selection rules
+9. merge variables by calendar date
+10. keep only complete E-based days
+11. retain only stations with at least `3650` complete days by default
 
 ## TIMEFUNC selection
 
@@ -73,6 +74,45 @@ The example uses these fixed daily selection rules:
 
 After that, the workflow derives calendar dates from `DT`, merges the selected variables by date, and keeps only complete days.
 
+## Execution modes
+
+The example supports three execution modes:
+
+- `full`: reuse cached inputs when present, download only missing inputs, then build and export
+- `download`: cache raw metadata and required daily CSV files only, then stop without exporting
+- `build`: read only from cache and fail clearly if required cached inputs are missing
+
+CLI arguments:
+
+- `--mode {full,download,build}`
+- `--cache-dir outputs/fao_cache`
+- `--export-format {mat,parquet,both}`
+- `--output` for the `.mat` path, default `outputs/fao_daily.mat`
+- `--output-dir` for the Parquet bundle directory, default `outputs/fao_daily_bundle`
+- `--station-id` for restricting the workflow to selected stations
+- `--min-complete-days` for changing the retention threshold
+- `--timeout` for HTTP timeout control
+
+## Cache layout
+
+The cache directory is human-readable and stores raw inputs:
+
+```text
+<cache-dir>/
+  meta1.csv
+  meta2.csv
+  daily/
+    <WSI>/
+      dly-<WSI>-T.csv
+      dly-<WSI>-TMA.csv
+      dly-<WSI>-TMI.csv
+      dly-<WSI>-F.csv
+      dly-<WSI>-E.csv
+      dly-<WSI>-SSV.csv
+```
+
+In `full` mode, the example reuses these files automatically and downloads only the ones that are missing. In `build` mode, the example reads from this cache only and does not touch the network.
+
 ## Export modes
 
 The example supports three export modes:
@@ -81,14 +121,7 @@ The example supports three export modes:
 - `parquet`: write only the portable Parquet bundle directory
 - `both`: write both outputs
 
-CLI arguments:
-
-- `--export-format {mat,parquet,both}`
-- `--output` for the `.mat` path, default `outputs/fao_daily.mat`
-- `--output-dir` for the Parquet bundle directory, default `outputs/fao_daily_bundle`
-- `--station-id` for restricting the workflow to selected stations
-- `--min-complete-days` for changing the retention threshold
-- `--timeout` for HTTP timeout control
+`--export-format` matters in `full` and `build` mode. In `download` mode, the script caches inputs and stops before any final export.
 
 ## MAT output structure
 
@@ -174,22 +207,22 @@ Like the MAT export, `series.parquet` contains only complete E-based days, so no
 
 ## Examples
 
-Write only the MATLAB bundle:
+Cache all required inputs without exporting:
 
 ```powershell
-python examples/download_fao.py --export-format mat --output outputs/fao_daily.mat
+python examples/download_fao.py --mode download --cache-dir outputs/fao_cache
 ```
 
-Write only the portable Parquet bundle:
+Build only from cache and write the Parquet bundle:
 
 ```powershell
-python examples/download_fao.py --export-format parquet --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --mode build --cache-dir outputs/fao_cache --export-format parquet --output-dir outputs/fao_daily_bundle
 ```
 
-Write both outputs in one run:
+Run the full pipeline and write both outputs:
 
 ```powershell
-python examples/download_fao.py --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
 ```
 
 For a restricted test run on selected stations:
@@ -204,12 +237,11 @@ This example is intentionally kept as a workflow layer on top of the core librar
 
 General-purpose functionality remains in the library itself, such as:
 
-- loading `meta1`
-- loading `meta2`
 - accessing CHMI registry information
 - downloading daily CSV files
 - parsing daily CHMI CSV data
 - exporting Parquet tables
 
-The FAO-specific orchestration remains in the example, because it is a specialized downstream preparation workflow rather than a general-purpose core API feature.\n\nWhen meta1 contains duplicate rows for the same canonical station_id, the example keeps the first matching meta1 row in the existing metadata order as the representative station record. This makes the workflow stable and prevents repeated downloads for the same station.
+The FAO-specific orchestration remains in the example, because it is a specialized downstream preparation workflow rather than a general-purpose core API feature.
 
+When `meta1` contains duplicate rows for the same canonical `station_id`, the example keeps the first matching `meta1` row in the existing metadata order as the representative station record. This makes the workflow stable and prevents repeated downloads for the same station.
