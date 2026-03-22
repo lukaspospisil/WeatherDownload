@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,18 +15,19 @@ from weatherdownload import (
 )
 
 SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
-SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname                               Bundesland         Abgabe
------------ --------- --------- ------------- --------- --------- ----------------------------------------- ------------------ ------
-00003       19500401  20241231  202           50.7827   6.0941    Aachen                                   Nordrhein-Westfalen
-00044       20070401  20241231  79            52.9336   8.2370    Alfhausen                                Niedersachsen
-'''
+SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland Abgabe
+----------- --------- --------- ------------- --------- --------- ----------------------------------------- ---------- ------
+00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\xfcrttemberg Frei
+00044 20070401 20241231 79 52.9336 8.2370 Alfhausen Niedersachsen Frei
+'''.encode('latin-1')
 
 
 class _MockResponse:
-    def __init__(self, text: str, status_code: int = 200) -> None:
-        self.text = text
+    def __init__(self, text: str | None = None, status_code: int = 200, content: bytes | None = None) -> None:
+        self.text = text or ''
         self.status_code = status_code
         self.encoding = 'utf-8'
+        self.content = content if content is not None else self.text.encode('utf-8')
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
@@ -40,15 +41,16 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(normalize_country_code(None), 'CZ')
 
     def test_read_station_metadata_country_de(self) -> None:
-        with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockResponse(SAMPLE_DWD_STATIONS)):
+        with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
             stations = read_station_metadata(country='DE')
         self.assertEqual(list(stations.columns), ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'])
         self.assertEqual(stations.iloc[0]['station_id'], '00003')
         self.assertTrue(stations['gh_id'].isna().all())
-        self.assertTrue(stations.iloc[0]['full_name'].startswith('Aachen'))
+        self.assertIn('W\u00fcrttemberg', stations.iloc[0]['full_name'])
+        self.assertNotIn('\ufffd', stations.iloc[0]['full_name'])
 
     def test_read_station_observation_metadata_country_de(self) -> None:
-        with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockResponse(SAMPLE_DWD_STATIONS)):
+        with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
             observation_metadata = read_station_observation_metadata(country='DE')
         self.assertEqual(list(observation_metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('TMK', observation_metadata['element'].tolist())
@@ -64,13 +66,15 @@ class ProviderTests(unittest.TestCase):
         self.assertIn('FF', hourly_elements)
         self.assertIn('R1', hourly_elements)
 
-    def test_download_observations_country_de_not_implemented(self) -> None:
+    def test_download_observations_country_de_hourly_not_implemented(self) -> None:
         query = ObservationQuery(
+            country='DE',
             dataset_scope='historical',
-            resolution='daily',
-            station_ids=['station-1'],
-            start_date='2024-01-01',
-            end_date='2024-01-02',
+            resolution='1hour',
+            station_ids=['00003'],
+            start='2024-01-01T00:00:00Z',
+            end='2024-01-01T01:00:00Z',
+            elements=['TT_TU'],
         )
         with self.assertRaises(NotImplementedError):
             download_observations(query, country='DE')
@@ -84,5 +88,4 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
 

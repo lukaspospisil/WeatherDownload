@@ -5,8 +5,10 @@ from ..dwd_registry import get_dataset_spec, list_dataset_specs, list_implemente
 from .base import WeatherProvider
 
 
-def _not_implemented(*args, **kwargs):
-    raise NotImplementedError('The DWD observations downloader is not implemented yet.')
+def _download_observations(*args, **kwargs):
+    from ..observations import _download_observations_dwd
+
+    return _download_observations_dwd(*args, **kwargs)
 
 
 PROVIDER = WeatherProvider(
@@ -17,5 +19,5 @@ PROVIDER = WeatherProvider(
     list_dataset_specs=list_dataset_specs,
     list_implemented_dataset_specs=list_implemented_dataset_specs,
     get_dataset_spec=get_dataset_spec,
-    download_observations=_not_implemented,
+    download_observations=_download_observations,
 )

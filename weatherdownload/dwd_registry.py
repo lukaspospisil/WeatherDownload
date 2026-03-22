@@ -24,6 +24,7 @@ _DWD_DATASET_SPECS = [
         metadata_url='https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/KL_Tageswerte_Beschreibung_Stationen.txt',
         supported_elements=('FX', 'FM', 'RSK', 'RSKF', 'SDK', 'SHK_TAG', 'NM', 'VPM', 'PM', 'TMK', 'UPM', 'TXK', 'TNK', 'TGK'),
         time_semantics='date',
+        implemented=True,
     ),
     DwdDatasetSpec(
         dataset_scope='historical',
@@ -87,7 +88,12 @@ def list_dataset_specs() -> list[DwdDatasetSpec]:
 
 
 def list_implemented_dataset_specs() -> list[DwdDatasetSpec]:
-    return [spec for spec in _DWD_DATASET_SPECS if spec.implemented]
+    implemented_pairs: dict[tuple[str, str], DwdDatasetSpec] = {}
+    for spec in _DWD_DATASET_SPECS:
+        if not spec.implemented:
+            continue
+        implemented_pairs[(spec.dataset_scope, spec.resolution)] = get_dataset_spec(spec.dataset_scope, spec.resolution)
+    return list(implemented_pairs.values())
 
 
 def get_dataset_spec(dataset_scope: str, resolution: str) -> DwdDatasetSpec:
@@ -109,5 +115,5 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> DwdDatasetSpec:
         metadata_url='',
         supported_elements=combined_elements,
         time_semantics=matching[0].time_semantics,
-        implemented=False,
+        implemented=any(spec.implemented for spec in matching),
     )

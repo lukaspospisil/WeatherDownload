@@ -14,7 +14,7 @@ Today it focuses on station metadata from the official CHMI `historical_csv` met
 - export tabular data to `csv`, `xlsx`, `parquet`, and `mat`
 - discover supported CHMI query dimensions before building download requests
 - validate CHMI observation queries against the broader CHMI dataset structure
-- download the first implemented paths: `historical_csv` + `10min`, `historical_csv` + `1hour`, and `historical_csv` + `daily`
+- download the first implemented paths: `CZ historical_csv` + `10min`, `CZ historical_csv` + `1hour`, `CZ historical_csv` + `daily`, and the first `DE historical` + `daily` path
 - keep a simple CLI for metadata listing and export
 
 ## Canonical Station Identifier
@@ -103,7 +103,7 @@ Supported `dataset_scope` values:
 
 Supported `resolution` values depend on `dataset_scope` and can be discovered via `list_resolutions(...)`.
 
-Current downloader implementation support is narrower than the full CHMI capability registry. At the moment, the library implements `historical_csv` + `10min`, `historical_csv` + `1hour`, and `historical_csv` + `daily`.
+Current downloader implementation support is narrower than the full provider discovery surface. At the moment, the library implements `CZ historical_csv` + `10min`, `CZ historical_csv` + `1hour`, `CZ historical_csv` + `daily`, and the first `DE historical` + `daily` path.
 
 Supported query dimensions are defined by an explicit CHMI registry layer. The registry describes broader CHMI capabilities, while downloader implementation support is narrower. Supported `elements` can be discovered via `list_supported_elements(...)`.
 
@@ -144,6 +144,16 @@ Normalized 10min output schema:
 - `quality`: numeric quality code, nullable
 - `dataset_scope`: constant `historical_csv`
 - `resolution`: constant `10min`
+
+## DE Daily Query Semantics
+
+For country='DE', the first implemented DWD downloader path is historical + daily from the DWD daily kl archive files.
+
+- use start_date and end_date`r
+- normalized station_id is the zero-padded DWD station id
+- normalized observation_date is parsed from DWD MESS_DATUM`r
+- 	ime_function is nullable because DWD daily files do not expose a CHMI-like TIMEFUNC field
+- gh_id is nullable for DE
 
 ## Daily Query Semantics
 
@@ -310,6 +320,7 @@ pip install .[full]
 `examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB, R, or Python processing. It supports cache-aware `full`, `download`, and `build` modes, reuses cached `meta1`, `meta2`, and daily CSV inputs under `outputs/fao_cache` by default, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and can export either a MATLAB-oriented `.mat` bundle, a portable Parquet bundle directory, or both. The Parquet bundle contains `data_info.json`, `stations.parquet`, and a long-form `series.parquet`.
 
 The example does not compute FAO, extraterrestrial radiation `Ra`, or any other derived variables.
+
 
 
 

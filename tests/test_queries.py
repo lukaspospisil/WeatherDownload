@@ -42,6 +42,10 @@ class ObservationQueryValidationTests(unittest.TestCase):
         with self.assertRaises(QueryValidationError):
             ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T00:00:00Z')
 
+    def test_de_daily_query_accepts_dwd_elements(self) -> None:
+        query = ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tmk', 'rsk'])
+        self.assertEqual(query.country, 'DE')
+        self.assertEqual(query.elements, ['TMK', 'RSK'])
     def test_validate_observation_query_returns_query(self) -> None:
         query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date=date(2024, 1, 1), end_date=date(2024, 12, 31))
         validated = validate_observation_query(query)
@@ -50,3 +54,4 @@ class ObservationQueryValidationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

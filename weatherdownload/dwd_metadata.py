@@ -54,8 +54,16 @@ def _single_source_spec(source_url: str) -> DwdDatasetSpec:
 def _load_station_description(source_url: str, timeout: int) -> pd.DataFrame:
     response = requests.get(source_url, timeout=timeout)
     response.raise_for_status()
-    response.encoding = 'utf-8'
-    return _parse_station_description_text(response.text)
+    text = _decode_dwd_text_response(response)
+    return _parse_station_description_text(text)
+
+
+def _decode_dwd_text_response(response: requests.Response) -> str:
+    content = getattr(response, 'content', None)
+    if content is not None:
+        return content.decode('latin-1')
+    text = getattr(response, 'text', '')
+    return text.encode('latin-1', errors='replace').decode('latin-1')
 
 
 def _parse_station_description_text(text: str) -> pd.DataFrame:

@@ -23,7 +23,8 @@ from .chmi_tenmin import (
     normalize_tenmin_observations,
     parse_tenmin_csv,
 )
-from .chmi_registry import get_dataset_spec
+from .dwd_daily import download_daily_observations_dwd
+from .chmi_registry import get_dataset_spec as get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
 
@@ -32,11 +33,12 @@ def download_observations(
     query: ObservationQuery,
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
-    country: str = 'CZ',
+    country: str | None = None,
 ) -> pd.DataFrame:
-    from .providers import get_provider
+    from .providers import get_provider, normalize_country_code
 
-    provider = get_provider(country)
+    resolved_country = normalize_country_code(country or query.country)
+    provider = get_provider(resolved_country)
     return provider.download_observations(query, timeout, station_metadata)
 
 
@@ -47,7 +49,7 @@ def _download_observations_chmi(
 ) -> pd.DataFrame:
     from .metadata import read_station_metadata
 
-    dataset_spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    dataset_spec = get_chmi_dataset_spec(query.dataset_scope, query.resolution)
     if not dataset_spec.implemented:
         raise DatasetNotImplementedError(
             f"Dataset path '{query.dataset_scope}/{query.resolution}' is valid in CHMI, but is not implemented by this library yet."
@@ -64,6 +66,16 @@ def _download_observations_chmi(
     raise UnsupportedQueryError(
         f'Unsupported query combination for the current downloader implementation: {query.dataset_scope}/{query.resolution}'
     )
+
+
+def _download_observations_dwd(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+        return download_daily_observations_dwd(query, timeout=timeout, station_metadata=station_metadata)
+    raise NotImplementedError('Only the first DWD historical/daily downloader path is implemented so far.')
 
 
 def _download_tenmin_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:

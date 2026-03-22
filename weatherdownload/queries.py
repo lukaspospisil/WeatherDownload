@@ -4,12 +4,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from .chmi_registry import get_dataset_spec
-from .discovery import list_dataset_scopes, list_resolutions
-
 
 class QueryValidationError(ValueError):
-    """Raised when ObservationQuery contains invalid CHMI query dimensions."""
+    """Raised when ObservationQuery contains invalid provider-specific query dimensions."""
 
 
 @dataclass(slots=True)
@@ -22,35 +19,43 @@ class ObservationQuery:
     start_date: date | str | None = None
     end_date: date | str | None = None
     elements: list[str] | None = None
+    country: str = 'CZ'
 
     def __post_init__(self) -> None:
         validate_observation_query(self)
 
 
 def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
+    from .providers import get_provider, normalize_country_code
+
     if not query.dataset_scope:
-        raise QueryValidationError("dataset_scope is required.")
+        raise QueryValidationError('dataset_scope is required.')
     if not query.resolution:
-        raise QueryValidationError("resolution is required.")
+        raise QueryValidationError('resolution is required.')
 
-    query.dataset_scope = _normalize_scalar(query.dataset_scope, field_name="dataset_scope")
-    query.resolution = _normalize_scalar(query.resolution, field_name="resolution")
+    query.country = normalize_country_code(query.country)
+    provider = get_provider(query.country)
+    query.dataset_scope = _normalize_scalar(query.dataset_scope, field_name='dataset_scope')
+    query.resolution = _normalize_scalar(query.resolution, field_name='resolution')
 
-    if query.dataset_scope not in list_dataset_scopes():
-        raise QueryValidationError(f"Unsupported dataset_scope: {query.dataset_scope}")
+    supported_scopes = sorted({spec.dataset_scope for spec in provider.list_dataset_specs()})
+    if query.dataset_scope not in supported_scopes:
+        raise QueryValidationError(f'Unsupported dataset_scope: {query.dataset_scope}')
 
-    supported_resolutions = list_resolutions(query.dataset_scope)
+    supported_resolutions = sorted({
+        spec.resolution for spec in provider.list_dataset_specs() if spec.dataset_scope == query.dataset_scope
+    })
     if query.resolution not in supported_resolutions:
         raise QueryValidationError(
             f"Unsupported resolution '{query.resolution}' for dataset_scope '{query.dataset_scope}'."
         )
 
-    dataset_spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    dataset_spec = provider.get_dataset_spec(query.dataset_scope, query.resolution)
 
-    query.station_ids = _normalize_string_sequence(query.station_ids, "station_ids", uppercase=True, required=True)
+    query.station_ids = _normalize_string_sequence(query.station_ids, 'station_ids', uppercase=True, required=True)
 
     if query.elements is not None:
-        query.elements = _normalize_string_sequence(query.elements, "elements", uppercase=True, required=False)
+        query.elements = _normalize_string_sequence(query.elements, 'elements', uppercase=True, required=False)
         if dataset_spec.supported_elements:
             unsupported_elements = [element for element in query.elements if element not in dataset_spec.supported_elements]
             if unsupported_elements:
@@ -62,36 +67,36 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
     has_date_range = query.start_date is not None or query.end_date is not None
 
     if has_datetime_range and has_date_range:
-        raise QueryValidationError("Use either start/end or start_date/end_date, but not both.")
+        raise QueryValidationError('Use either start/end or start_date/end_date, but not both.')
 
     if has_datetime_range:
         if query.start is None or query.end is None:
-            raise QueryValidationError("start and end must be provided together.")
-        start_dt = _coerce_datetime(query.start, "start")
-        end_dt = _coerce_datetime(query.end, "end")
+            raise QueryValidationError('start and end must be provided together.')
+        start_dt = _coerce_datetime(query.start, 'start')
+        end_dt = _coerce_datetime(query.end, 'end')
         if start_dt > end_dt:
-            raise QueryValidationError("start must be earlier than or equal to end.")
+            raise QueryValidationError('start must be earlier than or equal to end.')
         query.start = start_dt
         query.end = end_dt
 
     if has_date_range:
         if query.start_date is None or query.end_date is None:
-            raise QueryValidationError("start_date and end_date must be provided together.")
-        start_date = _coerce_date(query.start_date, "start_date")
-        end_date = _coerce_date(query.end_date, "end_date")
+            raise QueryValidationError('start_date and end_date must be provided together.')
+        start_date = _coerce_date(query.start_date, 'start_date')
+        end_date = _coerce_date(query.end_date, 'end_date')
         if start_date > end_date:
-            raise QueryValidationError("start_date must be earlier than or equal to end_date.")
+            raise QueryValidationError('start_date must be earlier than or equal to end_date.')
         query.start_date = start_date
         query.end_date = end_date
 
-    if dataset_spec.time_semantics == "date" and has_datetime_range:
+    if dataset_spec.time_semantics == 'date' and has_datetime_range:
         raise QueryValidationError(
-            "For daily data, use start_date/end_date. Datetime precision is not supported."
+            'For daily data, use start_date/end_date. Datetime precision is not supported.'
         )
 
-    if dataset_spec.time_semantics == "datetime" and has_date_range:
+    if dataset_spec.time_semantics == 'datetime' and has_date_range:
         raise QueryValidationError(
-            "For hourly data, use start/end. Date-only precision is not supported."
+            'For hourly data, use start/end. Date-only precision is not supported.'
         )
 
     return query
@@ -99,25 +104,25 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
 
 def _normalize_scalar(value: object, field_name: str) -> str:
     if not isinstance(value, str):
-        raise QueryValidationError(f"{field_name} must be a string.")
+        raise QueryValidationError(f'{field_name} must be a string.')
     normalized = value.strip()
     if not normalized:
-        raise QueryValidationError(f"{field_name} must not be empty.")
+        raise QueryValidationError(f'{field_name} must not be empty.')
     return normalized
 
 
 def _normalize_string_sequence(value: Sequence[str] | None, field_name: str, uppercase: bool, required: bool) -> list[str]:
     if value is None:
         if required:
-            raise QueryValidationError(f"{field_name} is required.")
+            raise QueryValidationError(f'{field_name} is required.')
         return []
     if isinstance(value, str) or not isinstance(value, Sequence):
-        raise QueryValidationError(f"{field_name} must be a sequence of strings.")
+        raise QueryValidationError(f'{field_name} must be a sequence of strings.')
     normalized: list[str] = []
     seen: set[str] = set()
     for item in value:
         if not isinstance(item, str):
-            raise QueryValidationError(f"{field_name} must be a sequence of strings.")
+            raise QueryValidationError(f'{field_name} must be a sequence of strings.')
         cleaned = item.strip()
         if not cleaned:
             continue
@@ -127,7 +132,7 @@ def _normalize_string_sequence(value: Sequence[str] | None, field_name: str, upp
             seen.add(cleaned)
             normalized.append(cleaned)
     if required and not normalized:
-        raise QueryValidationError(f"{field_name} must not be empty.")
+        raise QueryValidationError(f'{field_name} must not be empty.')
     return normalized
 
 
@@ -135,17 +140,17 @@ def _coerce_datetime(value: datetime | str, field_name: str) -> datetime:
     if isinstance(value, datetime):
         return value
     if isinstance(value, str):
-        normalized = value.strip().replace("Z", "+00:00")
+        normalized = value.strip().replace('Z', '+00:00')
         try:
             return datetime.fromisoformat(normalized)
         except ValueError as exc:
-            raise QueryValidationError(f"Invalid datetime for {field_name}: {value}") from exc
-    raise QueryValidationError(f"{field_name} must be a datetime or ISO datetime string.")
+            raise QueryValidationError(f'Invalid datetime for {field_name}: {value}') from exc
+    raise QueryValidationError(f'{field_name} must be a datetime or ISO datetime string.')
 
 
 def _coerce_date(value: date | str, field_name: str) -> date:
     if isinstance(value, datetime):
-        raise QueryValidationError(f"{field_name} must be a date without time.")
+        raise QueryValidationError(f'{field_name} must be a date without time.')
     if isinstance(value, date):
         return value
     if isinstance(value, str):
@@ -153,5 +158,5 @@ def _coerce_date(value: date | str, field_name: str) -> date:
         try:
             return date.fromisoformat(normalized)
         except ValueError as exc:
-            raise QueryValidationError(f"Invalid date for {field_name}: {value}") from exc
-    raise QueryValidationError(f"{field_name} must be a date or ISO date string.")
+            raise QueryValidationError(f'Invalid date for {field_name}: {value}') from exc
+    raise QueryValidationError(f'{field_name} must be a date or ISO date string.')
