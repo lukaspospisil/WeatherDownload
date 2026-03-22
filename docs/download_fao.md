@@ -1,101 +1,90 @@
-# MATLAB-Oriented FAO Preparation Example
+# MATLAB-Oriented FAO Workflow
 
-The repository includes a workflow-oriented example:
+`examples/download_fao.py` is a workflow-oriented example built on top of the core WeatherDownload library.
 
-```powershell
-python examples/download_fao.py
-```
+It is intentionally specialized and currently targets:
 
-This example prepares a clean daily meteorological dataset from CHMI OpenData historical CSV for later FAO-related processing in MATLAB, R, or Python.
+- `CZ`
+- CHMI `historical_csv`
+- daily data only
 
 ## Purpose
 
-The example does not compute:
+The example prepares a clean daily meteorological dataset for later downstream work in MATLAB, R, or Python.
 
-- FAO Penman-Monteith reference evapotranspiration
+It does not compute:
+
+- FAO Penman-Monteith evapotranspiration
 - extraterrestrial radiation `Ra`
-- any other derived variables
+- derived variables
 
-Its purpose is only to prepare a clean station-based dataset that can later be used for:
+## Input Data
 
-1. `Ra` computation
-2. FAO computation
-3. calibration of simpler empirical models
+The workflow uses:
 
-## Data source
-
-The workflow uses only CHMI `historical_csv` daily data together with:
-
-- `meta1.csv` for basic station metadata
+- `meta1.csv` for station identity/location metadata
 - `meta2.csv` for observation availability metadata
-- daily CSV files grouped by variable type
+- CHMI daily CSV files for:
+  - `T`
+  - `TMA`
+  - `TMI`
+  - `F`
+  - `E`
+  - `SSV`
 
-The example currently works only with daily data.
+This is an E-based workflow. Relative humidity is not part of the final export.
 
-## Required daily elements
+## Workflow Steps
 
-The final exported dataset is based on these daily elements:
-
-- `T`
-- `TMA`
-- `TMI`
-- `F`
-- `E`
-- `SSV`
-
-This is an E-based workflow, meaning vapor pressure `E` is required in the final dataset. Relative humidity `H` is not used in the final export.
-
-## Station screening logic
-
-The example applies a multi-stage screening workflow:
-
-1. load station metadata from `meta1`
-2. load observation metadata from `meta2`
-3. keep only stations that declare all required daily elements
-4. use `meta2` validity intervals for a coarse overlap pre-screen
-5. deduplicate candidate stations to one representative `meta1` row per canonical `station_id`
-6. verify that the required daily CSV files really exist
-7. load the daily files
-8. apply fixed `TIMEFUNC` selection rules
-9. merge variables by calendar date
+1. load `meta1` station metadata
+2. load `meta2` observation metadata
+3. coarse-screen stations by required daily elements
+4. apply a coarse validity-overlap pre-screen from `meta2`
+5. deduplicate candidate stations to one row per canonical `station_id`
+6. verify required daily CSV files
+7. load daily data
+8. apply fixed `TIMEFUNC` rules
+9. merge by calendar date
 10. keep only complete E-based days
 11. retain only stations with at least `3650` complete days by default
+12. export the final bundle
 
-## TIMEFUNC selection
+## Fixed `TIMEFUNC` Rules
 
-The example uses these fixed daily selection rules:
+| Element | Required `TIMEFUNC` |
+| --- | --- |
+| `T` | `AVG` |
+| `F` | `AVG` |
+| `E` | `AVG` |
+| `TMA` | `20:00` |
+| `TMI` | `20:00` |
+| `SSV` | `00:00` |
 
-- `T` -> `AVG`
-- `F` -> `AVG`
-- `E` -> `AVG`
-- `TMA` -> `20:00`
-- `TMI` -> `20:00`
-- `SSV` -> `00:00`
+## Execution Modes
 
-After that, the workflow derives calendar dates from `DT`, merges the selected variables by date, and keeps only complete days.
+The script supports:
 
-## Execution modes
+- `full`
+- `download`
+- `build`
 
-The example supports three execution modes:
+### `full`
 
-- `full`: reuse cached inputs when present, download only missing inputs, then build and export
-- `download`: cache raw metadata and required daily CSV files only, then stop without exporting
-- `build`: read only from cache and fail clearly if required cached inputs are missing
+- reuses cached files when present
+- downloads only missing files
+- builds and exports the final dataset
 
-CLI arguments:
+### `download`
 
-- `--mode {full,download,build}`
-- `--cache-dir outputs/fao_cache`
-- `--export-format {mat,parquet,both}`
-- `--output` for the `.mat` path, default `outputs/fao_daily.mat`
-- `--output-dir` for the Parquet bundle directory, default `outputs/fao_daily_bundle`
-- `--station-id` for restricting the workflow to selected stations
-- `--min-complete-days` for changing the retention threshold
-- `--timeout` for HTTP timeout control
+- downloads and caches raw inputs only
+- does not build the final dataset
 
-## Cache layout
+### `build`
 
-The cache directory is human-readable and stores raw inputs:
+- reads only from the cache
+- fails clearly if required cached files are missing
+
+## Cache Layout
 
 ```text
 <cache-dir>/
@@ -111,138 +100,71 @@ The cache directory is human-readable and stores raw inputs:
       dly-<WSI>-SSV.csv
 ```
 
-In `full` mode, the example reuses these files automatically and downloads only the ones that are missing. In `build` mode, the example reads from this cache only and does not touch the network.
+Default cache directory:
 
-## Export modes
+- `outputs/fao_cache`
 
-The example supports three export modes:
+## Export Modes
 
-- `mat`: write only the MATLAB-oriented `.mat` bundle
-- `parquet`: write only the portable Parquet bundle directory
-- `both`: write both outputs
+Supported export formats:
 
-`--export-format` matters in `full` and `build` mode. In `download` mode, the script caches inputs and stops before any final export.
+- `mat`
+- `parquet`
+- `both`
 
-## MAT output structure
+### MAT bundle
 
-The MATLAB-oriented `.mat` bundle contains three parts:
+The `.mat` export contains:
 
-### `dataInfo`
-Dataset-level metadata such as:
+- `dataInfo`
+- `stations`
+- `series`
 
-- creation timestamp
-- dataset type
-- source description
-- required elements
-- minimum required number of complete days
-- number of retained stations
+### Parquet bundle
 
-### `stations`
-A station summary table/struct containing at least:
-
-- `WSI`
-- `FULL_NAME`
-- `Latitude`
-- `Longitude`
-- `Elevation`
-- `NumCompleteDays_E`
-- `FirstCompleteDate_E`
-- `LastCompleteDate_E`
-
-### `series`
-A per-station structure array where each item contains:
-
-- `WSI`
-- `FULL_NAME`
-- `Latitude`
-- `Longitude`
-- `Elevation`
-- `Date`
-- `T`
-- `TMA`
-- `TMI`
-- `F`
-- `E`
-- `SSV`
-
-Each station series already contains only complete E-based days, so no missing values remain in the exported meteorological variables.
-
-## Parquet bundle layout
-
-The portable Parquet bundle is a directory containing:
+The Parquet bundle directory contains:
 
 - `data_info.json`
 - `stations.parquet`
 - `series.parquet`
 
-`data_info.json` stores dataset-level metadata such as `CreatedAt`, `DatasetType`, `Source`, `Elements`, `MinCompleteDays`, and `NumStations`.
+`series.parquet` is long-form and contains only complete E-based days.
 
-`stations.parquet` contains one row per retained station with:
+## Representative Station Row Rule
 
-- `WSI`
-- `FULL_NAME`
-- `Latitude`
-- `Longitude`
-- `Elevation`
-- `NumCompleteDays_E`
-- `FirstCompleteDate_E`
-- `LastCompleteDate_E`
+If `meta1` contains duplicate rows for the same canonical `station_id`, the workflow keeps the first matching row in the existing metadata order.
 
-`series.parquet` is one long flat table with one row per station-date and columns:
+This makes the workflow stable and prevents repeated downloads for the same station.
 
-- `WSI`
-- `FULL_NAME`
-- `Latitude`
-- `Longitude`
-- `Elevation`
-- `Date`
-- `T`
-- `TMA`
-- `TMI`
-- `F`
-- `E`
-- `SSV`
+## Example Commands
 
-Like the MAT export, `series.parquet` contains only complete E-based days, so no missing values remain in `T`, `TMA`, `TMI`, `F`, `E`, or `SSV`.
-
-## Examples
-
-Cache all required inputs without exporting:
+Cache raw inputs only:
 
 ```powershell
 python examples/download_fao.py --mode download --cache-dir outputs/fao_cache
 ```
 
-Build only from cache and write the Parquet bundle:
+Build only from cache and export Parquet:
 
 ```powershell
 python examples/download_fao.py --mode build --cache-dir outputs/fao_cache --export-format parquet --output-dir outputs/fao_daily_bundle
 ```
 
-Run the full pipeline and write both outputs:
+Run the full workflow and export both outputs:
 
 ```powershell
 python examples/download_fao.py --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
 ```
 
-For a restricted test run on selected stations:
+## Why This Stays In `examples/`
 
-```powershell
-python examples/download_fao.py --station-id 0-20000-0-11406 --min-complete-days 3650
-```
+This workflow is intentionally downstream-specific.
 
-## Why this example exists
+The reusable parts stay in the core library:
 
-This example is intentionally kept as a workflow layer on top of the core library.
+- metadata loading
+- registry/discovery
+- daily CSV download and parsing
+- DataFrame export helpers
 
-General-purpose functionality remains in the library itself, such as:
-
-- accessing CHMI registry information
-- downloading daily CSV files
-- parsing daily CHMI CSV data
-- exporting Parquet tables
-
-The FAO-specific orchestration remains in the example, because it is a specialized downstream preparation workflow rather than a general-purpose core API feature.
-
-When `meta1` contains duplicate rows for the same canonical `station_id`, the example keeps the first matching `meta1` row in the existing metadata order as the representative station record. This makes the workflow stable and prevents repeated downloads for the same station.
-
+The FAO preparation orchestration stays in the example layer because it is a specialized workflow, not a general-purpose downloader API.
