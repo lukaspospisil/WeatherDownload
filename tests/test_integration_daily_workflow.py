@@ -38,7 +38,8 @@ class DailyWorkflowIntegrationTests(unittest.TestCase):
             result = download_observations(query, station_metadata=selected)
         self.assertEqual(list(result['station_id'].unique()), ['0-20000-0-11406'])
         self.assertEqual(list(result['gh_id'].unique()), ['L3CHEB01'])
-        self.assertEqual(list(result['element'].unique()), ['TMA'])
+        self.assertEqual(list(result['element'].unique()), ['tas_max'])
+        self.assertEqual(list(result['element_raw'].unique()), ['TMA'])
         self.assertEqual(str(result.iloc[0]['observation_date']), '1865-06-01')
 
     def test_metadata_selection_and_tenmin_download_workflow(self) -> None:
@@ -57,7 +58,8 @@ class DailyWorkflowIntegrationTests(unittest.TestCase):
             result = download_observations(query, station_metadata=selected)
         self.assertEqual(list(result['station_id'].unique()), ['0-20000-0-11406'])
         self.assertEqual(list(result['gh_id'].unique()), ['L3CHEB01'])
-        self.assertEqual(list(result['element'].unique()), ['T'])
+        self.assertEqual(list(result['element'].unique()), ['tas_mean'])
+        self.assertEqual(list(result['element_raw'].unique()), ['T'])
         self.assertEqual(str(result.iloc[0]['timestamp']), '2024-01-01 00:00:00+00:00')
 
 
