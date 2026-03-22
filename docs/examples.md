@@ -76,6 +76,19 @@ Run:
 python examples/station_availability.py
 ```
 
+### `examples/inspect_parquet.py`
+
+Shows how to:
+
+- inspect a Parquet output file quickly from the terminal
+- view file size, modification time, schema, missing values, and a small preview
+
+Run:
+
+```powershell
+python examples/inspect_parquet.py outputs/some_file.parquet
+```
+
 ## Workflow Example
 
 ### `examples/download_fao.py`
