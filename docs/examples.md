@@ -82,21 +82,28 @@ python examples/station_availability.py
 
 This is a workflow-oriented example rather than a generic library quickstart.
 
-It prepares a clean CHMI daily dataset for later MATLAB, R, or Python processing.
+It prepares a clean daily FAO-prep dataset for later MATLAB, R, or Python processing.
 
 What it does:
 
-- caches raw CHMI inputs
+- supports `CZ` and `DE`
+- caches normalized country-aware daily inputs
 - screens candidate stations
-- verifies required daily CSV files
-- applies fixed `TIMEFUNC` rules
-- keeps only complete E-based days
+- applies country-specific daily selection rules
+- keeps only complete days
 - exports a MATLAB-oriented bundle, a Parquet bundle, or both
+- writes canonical exported variables:
+  - `tas_mean`
+  - `tas_max`
+  - `tas_min`
+  - `wind_speed`
+  - `vapour_pressure`
+  - `sunshine_duration`
 
 Run:
 
 ```powershell
-python examples/download_fao.py --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --country CZ --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
 ```
 
 Detailed workflow notes:

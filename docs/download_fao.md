@@ -2,63 +2,104 @@
 
 `examples/download_fao.py` is a workflow-oriented example built on top of the core WeatherDownload library.
 
-It is intentionally specialized and currently targets:
+It is country-aware, but only for countries whose daily FAO-prep mapping is explicitly implemented.
+
+Currently supported:
 
 - `CZ`
-- CHMI `historical_csv`
-- daily data only
+- `DE`
 
-## Purpose
+## CLI
 
-The example prepares a clean daily meteorological dataset for later downstream work in MATLAB, R, or Python.
+The example now accepts:
 
-It does not compute:
+```powershell
+python examples/download_fao.py --country CZ
+python examples/download_fao.py --country DE
+```
 
-- FAO Penman-Monteith evapotranspiration
-- extraterrestrial radiation `Ra`
-- derived variables
+`--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
 
-## Input Data
+## Conceptual Target Variables
 
-The workflow uses:
+The workflow prepares the same conceptual daily meteorological variables across countries:
 
-- `meta1.csv` for station identity/location metadata
-- `meta2.csv` for observation availability metadata
-- CHMI daily CSV files for:
-  - `T`
-  - `TMA`
-  - `TMI`
-  - `F`
-  - `E`
-  - `SSV`
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `wind_speed`
+- `vapour_pressure`
+- `sunshine_duration`
 
-This is an E-based workflow. Relative humidity is not part of the final export.
+These canonical names are now also the final exported variable names in the station series and Parquet bundle.
+
+## Final Export Schema
+
+The final per-station series expose:
+
+- `Date`
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `wind_speed`
+- `vapour_pressure`
+- `sunshine_duration`
+
+This keeps the exported dataset country-independent and canonical-first.
+
+## Provider Provenance Metadata
+
+The workflow still preserves how the dataset was built.
+
+`dataInfo` now includes `ProviderElementMapping`, which records for each canonical exported variable:
+
+- the raw/provider code or codes used for the selected country
+- the country-specific selection rule, if any
+
+Example idea:
+
+- `tas_mean -> raw_codes=['T']` and `selection_rule='AVG'` for `CZ`
+- `tas_mean -> raw_codes=['TMK']` and `selection_rule=null` for `DE`
+
+## Country-Specific Mapping
+
+### CZ
+
+| Canonical export name | CHMI raw code | Selection rule |
+| --- | --- | --- |
+| `tas_mean` | `T` | `TIMEFUNC=AVG` |
+| `tas_max` | `TMA` | `TIMEFUNC=20:00` |
+| `tas_min` | `TMI` | `TIMEFUNC=20:00` |
+| `wind_speed` | `F` | `TIMEFUNC=AVG` |
+| `vapour_pressure` | `E` | `TIMEFUNC=AVG` |
+| `sunshine_duration` | `SSV` | `TIMEFUNC=00:00` |
+
+### DE
+
+| Canonical export name | DWD raw code | Selection rule |
+| --- | --- | --- |
+| `tas_mean` | `TMK` | none |
+| `tas_max` | `TXK` | none |
+| `tas_min` | `TNK` | none |
+| `wind_speed` | `FM` | none |
+| `vapour_pressure` | `VPM` | none |
+| `sunshine_duration` | `SDK` | none |
+
+DE daily files do not expose a CHMI-like `TIMEFUNC` concept, so the DE branch uses the normalized daily values directly.
 
 ## Workflow Steps
 
-1. load `meta1` station metadata
-2. load `meta2` observation metadata
-3. coarse-screen stations by required daily elements
-4. apply a coarse validity-overlap pre-screen from `meta2`
+1. load station metadata for the selected country
+2. load observation metadata for the selected country
+3. coarse-screen stations by required daily FAO-prep variables
+4. apply a coarse validity-overlap pre-screen from observation metadata
 5. deduplicate candidate stations to one row per canonical `station_id`
-6. verify required daily CSV files
-7. load daily data
-8. apply fixed `TIMEFUNC` rules
-9. merge by calendar date
-10. keep only complete E-based days
-11. retain only stations with at least `3650` complete days by default
-12. export the final bundle
-
-## Fixed `TIMEFUNC` Rules
-
-| Element | Required `TIMEFUNC` |
-| --- | --- |
-| `T` | `AVG` |
-| `F` | `AVG` |
-| `E` | `AVG` |
-| `TMA` | `20:00` |
-| `TMI` | `20:00` |
-| `SSV` | `00:00` |
+6. download or reuse cached normalized daily observations for the selected country
+7. apply country-specific daily selection rules
+8. merge variables by calendar date
+9. keep only complete days
+10. retain only stations with at least `3650` complete days by default
+11. export the final bundle
 
 ## Execution Modes
 
@@ -76,31 +117,35 @@ The script supports:
 
 ### `download`
 
-- downloads and caches raw inputs only
+- downloads and caches normalized metadata and daily observations only
 - does not build the final dataset
 
 ### `build`
 
 - reads only from the cache
-- fails clearly if required cached files are missing
+- fails clearly if required cached inputs are missing
 
 ## Cache Layout
 
+The cache is now country-scoped:
+
 ```text
 <cache-dir>/
-  meta1.csv
-  meta2.csv
-  daily/
-    <WSI>/
-      dly-<WSI>-T.csv
-      dly-<WSI>-TMA.csv
-      dly-<WSI>-TMI.csv
-      dly-<WSI>-F.csv
-      dly-<WSI>-E.csv
-      dly-<WSI>-SSV.csv
+  CZ/
+    meta1.csv
+    meta2.csv
+    daily/
+      <station_id>/
+        daily-<station_id>.csv
+  DE/
+    meta1.csv
+    meta2.csv
+    daily/
+      <station_id>/
+        daily-<station_id>.csv
 ```
 
-Default cache directory:
+Default base cache directory:
 
 - `outputs/fao_cache`
 
@@ -128,32 +173,47 @@ The Parquet bundle directory contains:
 - `stations.parquet`
 - `series.parquet`
 
-`series.parquet` is long-form and contains only complete E-based days.
+`series.parquet` is long-form and contains only complete FAO-prep days with canonical variable names.
+
+## Legacy Variable Names
+
+The old CHMI-style export names
+
+- `T`
+- `TMA`
+- `TMI`
+- `F`
+- `E`
+- `SSV`
+
+are no longer used in the final exported dataset for this example.
+
+No separate legacy export mode is kept in this step.
 
 ## Representative Station Row Rule
 
-If `meta1` contains duplicate rows for the same canonical `station_id`, the workflow keeps the first matching row in the existing metadata order.
+If station metadata contain duplicate rows for the same canonical `station_id`, the workflow keeps the first matching row in the existing metadata order.
 
-This makes the workflow stable and prevents repeated downloads for the same station.
+This makes the workflow stable and prevents repeated processing for the same station.
 
 ## Example Commands
 
-Cache raw inputs only:
+Cache raw inputs only for CZ:
 
 ```powershell
-python examples/download_fao.py --mode download --cache-dir outputs/fao_cache
+python examples/download_fao.py --country CZ --mode download --cache-dir outputs/fao_cache
 ```
 
-Build only from cache and export Parquet:
+Build only from cache and export Parquet for DE:
 
 ```powershell
-python examples/download_fao.py --mode build --cache-dir outputs/fao_cache --export-format parquet --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --country DE --mode build --cache-dir outputs/fao_cache --export-format parquet --output-dir outputs/fao_daily_bundle
 ```
 
 Run the full workflow and export both outputs:
 
 ```powershell
-python examples/download_fao.py --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --country CZ --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
 ```
 
 ## Why This Stays In `examples/`
@@ -162,9 +222,9 @@ This workflow is intentionally downstream-specific.
 
 The reusable parts stay in the core library:
 
-- metadata loading
-- registry/discovery
-- daily CSV download and parsing
+- provider-aware metadata loading
+- canonical element handling
+- country-aware daily observation downloading
 - DataFrame export helpers
 
-The FAO preparation orchestration stays in the example layer because it is a specialized workflow, not a general-purpose downloader API.
+The FAO preparation orchestration stays in the example layer because it is a specialized downstream workflow, not a general-purpose downloader API.
