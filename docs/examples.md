@@ -76,17 +76,20 @@ Run:
 python examples/station_availability.py
 ```
 
-### `examples/inspect_parquet.py`
+### `examples/inspect_file.py`
 
 Shows how to:
 
-- inspect a Parquet output file quickly from the terminal
+- inspect WeatherDownload output files from the terminal
+- detect `.parquet`, `.csv`, `.mat`, `.json`, or a bundle directory automatically
 - view file size, modification time, schema, missing values, and a small preview
 
 Run:
 
 ```powershell
-python examples/inspect_parquet.py outputs/some_file.parquet
+python examples/inspect_file.py outputs/some_file.parquet
+python examples/inspect_file.py outputs/fao_daily.mat
+python examples/inspect_file.py outputs/fao_daily_bundle
 ```
 
 ## Workflow Example
