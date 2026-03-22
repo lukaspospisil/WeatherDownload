@@ -195,6 +195,10 @@ weatherdownload stations metadata --format csv --output stations.csv
 weatherdownload stations metadata --format excel --output reports/stations.xlsx
 weatherdownload stations metadata --format parquet --output D:/data/stations.parquet
 weatherdownload stations metadata --format mat --output stations.mat
+weatherdownload stations availability --station-id 0-20000-0-11406
+weatherdownload stations availability --station-id 0-20000-0-11406 --include-elements --format csv --output station-paths.csv
+weatherdownload stations supports --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution daily
+weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution daily
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10 --format csv --output daily.csv
 weatherdownload observations hourly --station-id 0-20000-0-11406 --element E --start 2024-01-01T00:00:00Z --end 2024-01-01T02:00:00Z
@@ -234,3 +238,4 @@ pip install .[full]
 - add more implemented downloader paths beyond `historical_csv` + `daily` and `historical_csv` + `1hour`
 - connect discovery helpers to concrete CHMI download endpoints more systematically
 - add richer station filtering such as geographic bounds and dataset availability
+
