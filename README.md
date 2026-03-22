@@ -242,18 +242,21 @@ Normalized daily output schema:
 ## CLI
 
 ```powershell
-weatherdownload stations metadata --format screen
+weatherdownload stations metadata --country CZ --format screen
 weatherdownload stations metadata --format csv --output stations.csv
+weatherdownload stations metadata --country DE --format screen
 weatherdownload stations metadata --format excel --output reports/stations.xlsx
 weatherdownload stations metadata --format parquet --output D:/data/stations.parquet
 weatherdownload stations metadata --format mat --output stations.mat
 weatherdownload stations availability --station-id 0-20000-0-11406
+weatherdownload stations availability --country DE --station-id 00044
 weatherdownload stations availability --station-id 0-20000-0-11406 --include-elements --format csv --output station-paths.csv
 weatherdownload stations supports --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
 weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
 weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --element T10 --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --element T10 --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z --format csv --output tenmin.csv
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10
+weatherdownload observations daily --country DE --station-id 00044 --element TMK --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10 --format csv --output daily.csv
 ```
 
@@ -320,6 +323,7 @@ pip install .[full]
 `examples/download_fao.py` builds a clean CHMI daily meteorological dataset for later MATLAB, R, or Python processing. It supports cache-aware `full`, `download`, and `build` modes, reuses cached `meta1`, `meta2`, and daily CSV inputs under `outputs/fao_cache` by default, applies fixed `TIMEFUNC` selection, keeps only complete E-based days, filters to stations with at least 3650 complete days by default, and can export either a MATLAB-oriented `.mat` bundle, a portable Parquet bundle directory, or both. The Parquet bundle contains `data_info.json`, `stations.parquet`, and a long-form `series.parquet`.
 
 The example does not compute FAO, extraterrestrial radiation `Ra`, or any other derived variables.
+
 
 
 

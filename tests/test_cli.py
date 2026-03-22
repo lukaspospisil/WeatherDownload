@@ -2,7 +2,7 @@ import io
 import os
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -58,6 +58,22 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_de_daily_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '00044',
+                'gh_id': None,
+                'element': 'TMK',
+                'observation_date': '2024-01-01',
+                'time_function': None,
+                'value': 3.4,
+                'flag': None,
+                'quality': 1,
+                'dataset_scope': 'historical',
+                'resolution': 'daily',
+            }
+        ])
+
     def test_tenmin_cli_screen_output(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
@@ -67,6 +83,15 @@ class ObservationCliTests(unittest.TestCase):
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
         self.assertIn('10min', output)
+
+    def test_tenmin_cli_uses_default_country_cz(self) -> None:
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()) as download_mock:
+            exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'T', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'CZ')
+        self.assertEqual(query.dataset_scope, 'historical_csv')
+        self.assertEqual(download_mock.call_args.kwargs['country'], 'CZ')
 
     def test_tenmin_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
         original_cwd = Path.cwd()
@@ -95,6 +120,16 @@ class ObservationCliTests(unittest.TestCase):
         self.assertIn('0-20000-0-11406', output)
         self.assertIn('1hour', output)
 
+    def test_hourly_cli_de_reports_not_implemented_path(self) -> None:
+        stdout_buffer = io.StringIO()
+        stderr_buffer = io.StringIO()
+        with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
+            exit_code = main([
+                'observations', 'hourly', '--country', 'DE', '--station-id', '00044', '--element', 'TT_TU', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('Only the first DWD historical/daily downloader path is implemented so far.', stderr_buffer.getvalue())
+
     def test_hourly_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
         original_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -121,6 +156,22 @@ class ObservationCliTests(unittest.TestCase):
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
         self.assertIn('TMA', output)
+
+    def test_daily_cli_explicit_country_de_uses_de_query_shape(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_de_daily_table()) as download_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'daily', '--country', 'DE', '--station-id', '00044', '--element', 'TMK', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
+                ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'DE')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
+        self.assertIn('00044', buffer.getvalue())
+        self.assertIn('historical', buffer.getvalue())
 
     def test_daily_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
         original_cwd = Path.cwd()
@@ -177,6 +228,46 @@ class StationAvailabilityCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_de_metadata_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '00044',
+                'gh_id': None,
+                'full_name': 'Grossenbrode',
+                'latitude': 54.36,
+                'longitude': 11.09,
+                'elevation_m': 10.0,
+                'begin_date': '1980-01-01T00:00Z',
+                'end_date': '2025-12-31T00:00Z',
+            }
+        ])
+
+    def _sample_de_paths_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '00044',
+                'gh_id': None,
+                'dataset_scope': 'historical',
+                'resolution': 'daily',
+                'implemented': True,
+            }
+        ])
+
+    def test_station_metadata_cli_uses_default_country_cz(self) -> None:
+        with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()) as read_mock:
+            exit_code = main(['stations', 'metadata'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(read_mock.call_args.kwargs['country'], 'CZ')
+
+    def test_station_metadata_cli_explicit_country_de(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()) as read_mock:
+            with redirect_stdout(buffer):
+                exit_code = main(['stations', 'metadata', '--country', 'DE'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(read_mock.call_args.kwargs['country'], 'DE')
+        self.assertIn('00044', buffer.getvalue())
+
     def test_station_availability_cli_screen_output(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
@@ -187,6 +278,17 @@ class StationAvailabilityCliTests(unittest.TestCase):
         output = buffer.getvalue()
         self.assertIn('historical_csv', output)
         self.assertIn('10min', output)
+
+    def test_station_availability_cli_explicit_country_de(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()):
+            with patch('weatherdownload.cli.list_station_paths', return_value=self._sample_de_paths_table()) as paths_mock:
+                with redirect_stdout(buffer):
+                    exit_code = main(['stations', 'availability', '--country', 'DE', '--station-id', '00044'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(paths_mock.call_args.kwargs['country'], 'DE')
+        self.assertIn('historical', buffer.getvalue())
+        self.assertIn('00044', buffer.getvalue())
 
     def test_station_availability_cli_csv_export(self) -> None:
         original_cwd = Path.cwd()
