@@ -43,7 +43,8 @@ def resolve_output_path(output_path: str | Path) -> Path:
 
 def _export_excel(table: pd.DataFrame, destination: Path) -> None:
     try:
-        table.to_excel(destination, index=False)
+        excel_table = _prepare_table_for_excel(table)
+        excel_table.to_excel(destination, index=False)
     except ImportError as exc:
         raise RuntimeError(
             "Excel export requires 'openpyxl'. Install it with 'pip install .[excel]'."
@@ -72,6 +73,15 @@ def _export_mat(table: pd.DataFrame, destination: Path) -> None:
         for column in table.columns
     }
     savemat(destination, {"table": payload})
+
+
+def _prepare_table_for_excel(table: pd.DataFrame) -> pd.DataFrame:
+    prepared = table.copy()
+    for column in prepared.columns:
+        series = prepared[column]
+        if isinstance(series.dtype, pd.DatetimeTZDtype):
+            prepared[column] = series.dt.tz_convert("UTC").dt.tz_localize(None)
+    return prepared
 
 
 def _to_matlab_array(series: pd.Series) -> np.ndarray:
@@ -110,3 +120,4 @@ def _serialize_datetime_like(value: object) -> str:
     if timestamp.tzinfo is None:
         return timestamp.isoformat()
     return timestamp.tz_convert("UTC").isoformat()
+

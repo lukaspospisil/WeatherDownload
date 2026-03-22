@@ -50,6 +50,54 @@ class ExporterTests(unittest.TestCase):
             finally:
                 os.chdir(original_cwd)
 
+    def test_export_excel_converts_hourly_timestamps_to_utc_naive(self) -> None:
+        table = pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'timestamp': pd.Timestamp('2024-01-01T00:00:00Z'),
+                'value': 82.0,
+                'resolution': '1hour',
+            }
+        ])
+        captured: dict[str, object] = {}
+
+        def fake_to_excel(self: pd.DataFrame, destination: Path, index: bool = False) -> None:
+            captured['table'] = self.copy()
+            captured['destination'] = destination
+            captured['index'] = index
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            destination = Path(temp_dir) / 'hourly.xlsx'
+            with patch.object(pd.DataFrame, 'to_excel', fake_to_excel):
+                export_table(table, destination, format='excel')
+
+        exported = captured['table']
+        self.assertIsNone(exported['timestamp'].dt.tz)
+        self.assertEqual(str(exported.iloc[0]['timestamp']), '2024-01-01 00:00:00')
+
+    def test_export_excel_converts_tenmin_timestamps_to_utc_naive(self) -> None:
+        table = pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'timestamp': pd.Timestamp('2024-01-01T00:10:00Z'),
+                'value': -1.1,
+                'resolution': '10min',
+            }
+        ])
+        captured: dict[str, object] = {}
+
+        def fake_to_excel(self: pd.DataFrame, destination: Path, index: bool = False) -> None:
+            captured['table'] = self.copy()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            destination = Path(temp_dir) / 'tenmin.xlsx'
+            with patch.object(pd.DataFrame, 'to_excel', fake_to_excel):
+                export_table(table, destination, format='excel')
+
+        exported = captured['table']
+        self.assertIsNone(exported['timestamp'].dt.tz)
+        self.assertEqual(str(exported.iloc[0]['timestamp']), '2024-01-01 00:10:00')
+
     def test_export_mat_sanitizes_missing_values_for_station_metadata(self) -> None:
         table = pd.DataFrame([
             {
