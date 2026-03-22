@@ -43,6 +43,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def inspect_directory(path: Path, head: int) -> None:
+    # Summarize the directory first, then inspect known bundle members if present.
     stat = path.stat()
     entries = sorted(path.iterdir(), key=lambda item: item.name.lower())
 
@@ -75,6 +76,7 @@ def inspect_directory(path: Path, head: int) -> None:
 
 
 def inspect_path(path: Path, head: int, indent: str = "") -> None:
+    # Dispatch by file extension so one utility can handle common output types.
     suffix = path.suffix.lower()
     if suffix == ".parquet":
         inspect_table(path, reader="parquet", head=head, indent=indent)
@@ -92,6 +94,7 @@ def inspect_path(path: Path, head: int, indent: str = "") -> None:
 
 
 def inspect_table(path: Path, reader: str, head: int, indent: str = "") -> None:
+    # Load the table into pandas so we can print the same summary for CSV and Parquet.
     table = pd.read_parquet(path) if reader == "parquet" else pd.read_csv(path)
     stat = path.stat()
 
@@ -138,6 +141,7 @@ def inspect_table(path: Path, reader: str, head: int, indent: str = "") -> None:
 
 
 def inspect_json(path: Path, indent: str = "") -> None:
+    # Print a compact structural summary instead of dumping the full JSON payload.
     stat = path.stat()
     data = json.loads(path.read_text(encoding="utf-8"))
 
@@ -169,6 +173,7 @@ def inspect_mat(path: Path, indent: str = "") -> None:
     except ImportError as exc:
         raise SystemExit("MAT inspection requires scipy. Install optional dependencies with `pip install .[full]`.") from exc
 
+    # Load top-level MATLAB variables and summarize each entry briefly.
     stat = path.stat()
     data = loadmat(path, squeeze_me=True, struct_as_record=False)
     keys = [key for key in data.keys() if not key.startswith("__")]

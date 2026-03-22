@@ -1,5 +1,6 @@
 from weatherdownload import ObservationQuery, download_observations
 
+# Build a small hourly query with explicit timestamp bounds.
 query = ObservationQuery(
     dataset_scope='historical_csv',
     resolution='1hour',
@@ -9,5 +10,6 @@ query = ObservationQuery(
     elements=['E', 'P'],
 )
 
+# Download normalized hourly observations and print a preview.
 hourly = download_observations(query)
 print(hourly.head(10).to_string(index=False))
