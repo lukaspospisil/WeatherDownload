@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
+![WeatherDownload logo](docs/images/logo.svg)
+
 WeatherDownload is a DataFrame-first Python library for country-aware weather metadata, discovery, and observation downloads.
 
 Current countries:
