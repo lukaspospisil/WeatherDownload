@@ -16,6 +16,13 @@ from .chmi_hourly import (
     normalize_hourly_observations,
     parse_hourly_csv,
 )
+from .chmi_tenmin import (
+    NORMALIZED_TENMIN_COLUMNS,
+    build_tenmin_download_targets,
+    download_tenmin_csv,
+    normalize_tenmin_observations,
+    parse_tenmin_csv,
+)
 from .chmi_registry import get_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .metadata import read_station_metadata
@@ -30,6 +37,8 @@ def download_observations(query: ObservationQuery, timeout: int = 60, station_me
         )
     metadata_table = station_metadata if station_metadata is not None else read_station_metadata(timeout=timeout)
 
+    if query.dataset_scope == 'historical_csv' and query.resolution == '10min':
+        return _download_tenmin_observations(query, timeout=timeout, station_metadata=metadata_table)
     if query.dataset_scope == 'historical_csv' and query.resolution == 'daily':
         return _download_daily_observations(query, timeout=timeout, station_metadata=metadata_table)
     if query.dataset_scope == 'historical_csv' and query.resolution == '1hour':
@@ -38,6 +47,37 @@ def download_observations(query: ObservationQuery, timeout: int = 60, station_me
     raise UnsupportedQueryError(
         f"Unsupported query combination for the current downloader implementation: {query.dataset_scope}/{query.resolution}"
     )
+
+
+def _download_tenmin_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:
+    if not query.elements:
+        raise UnsupportedQueryError('The 10min historical_csv downloader requires at least one element.')
+    if query.start is None or query.end is None:
+        raise UnsupportedQueryError('The 10min historical_csv downloader requires start and end.')
+    targets = build_tenmin_download_targets(query)
+    parsed_tables: list[pd.DataFrame] = []
+    missing_station_ids: set[str] = set()
+    any_downloaded = False
+    for target in targets:
+        try:
+            csv_text = download_tenmin_csv(target, timeout=timeout)
+        except FileNotFoundError:
+            missing_station_ids.add(target.station_id)
+            continue
+        except DownloadError:
+            raise
+        any_downloaded = True
+        parsed_tables.append(parse_tenmin_csv(csv_text))
+    if not any_downloaded:
+        if missing_station_ids:
+            station_list = ', '.join(sorted(missing_station_ids))
+            raise StationNotFoundError(f"No 10min historical_csv data found for station_id: {station_list}")
+        raise EmptyResultError('No observations found for the given query.')
+    merged = pd.concat(parsed_tables, ignore_index=True)
+    normalized = normalize_tenmin_observations(merged, query, station_metadata=station_metadata)
+    if normalized.empty:
+        raise EmptyResultError('No observations found for the given query.')
+    return normalized.loc[:, NORMALIZED_TENMIN_COLUMNS]
 
 
 def _download_daily_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:

@@ -29,6 +29,10 @@ _DAILY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'WSPD': 'wind',
 }
 
+_TENMIN_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
+    'T': 'temperature',
+}
+
 _HOURLY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'E': 'humidity',
 }
@@ -74,7 +78,13 @@ _DATASET_REGISTRY: dict[tuple[str, str], ChmiDatasetSpec] = {
     ('historical', 'monthly'): _build_spec('historical', 'monthly', time_semantics='date'),
     ('historical', 'yearly'): _build_spec('historical', 'yearly', time_semantics='date'),
     ('historical', 'phenomena'): _build_spec('historical', 'phenomena'),
-    ('historical_csv', '10min'): _build_spec('historical_csv', '10min'),
+    ('historical_csv', '10min'): _build_spec(
+        'historical_csv',
+        '10min',
+        implemented=True,
+        endpoint_pattern='https://opendata.chmi.cz/meteorology/climate/historical_csv/data/10min/{group}/{year}/10m-{station_id}-{element}-{year_month}.csv',
+        element_groups=_TENMIN_HISTORICAL_CSV_ELEMENT_GROUPS,
+    ),
     ('historical_csv', '1hour'): _build_spec(
         'historical_csv',
         '1hour',

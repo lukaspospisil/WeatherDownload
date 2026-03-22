@@ -12,7 +12,7 @@ Today it focuses on station metadata from the official CHMI `historical_csv` met
 - export tabular data to `csv`, `xlsx`, `parquet`, and `mat`
 - discover supported CHMI query dimensions before building download requests
 - validate CHMI observation queries against the broader CHMI dataset structure
-- download the first implemented paths: `historical_csv` + `daily` and `historical_csv` + `1hour`
+- download the first implemented paths: `historical_csv` + `10min`, `historical_csv` + `1hour`, and `historical_csv` + `daily`
 - keep a simple CLI for metadata listing and export
 
 ## Canonical Station Identifier
@@ -84,8 +84,8 @@ western_active = filter_stations(
 )
 
 paths = list_station_paths(stations, "0-20000-0-11406", include_elements=True)
-daily_elements = list_station_elements(stations, "0-20000-0-11406", "historical_csv", "daily")
-supports_hourly = station_supports(stations, "0-20000-0-11406", "historical_csv", "1hour")
+tenmin_elements = list_station_elements(stations, "0-20000-0-11406", "historical_csv", "10min")
+supports_tenmin = station_supports(stations, "0-20000-0-11406", "historical_csv", "10min")
 ```
 
 Current availability helpers are CHMI-specific and intentionally conservative: they report only implemented observation paths from the CHMI registry and optionally apply station lifecycle filtering via `active_on`.
@@ -101,9 +101,47 @@ Supported `dataset_scope` values:
 
 Supported `resolution` values depend on `dataset_scope` and can be discovered via `list_resolutions(...)`.
 
-Current downloader implementation support is narrower than the full CHMI capability registry. At the moment, the library implements `historical_csv` + `daily` and `historical_csv` + `1hour`.
+Current downloader implementation support is narrower than the full CHMI capability registry. At the moment, the library implements `historical_csv` + `10min`, `historical_csv` + `1hour`, and `historical_csv` + `daily`.
 
 Supported query dimensions are defined by an explicit CHMI registry layer. The registry describes broader CHMI capabilities, while downloader implementation support is narrower. Supported `elements` can be discovered via `list_supported_elements(...)`.
+
+## 10min Query Semantics
+
+10min observations are treated as timestamp-based data.
+
+- use `start` and `end` for `resolution="10min"`
+- `start_date` and `end_date` are not used for 10min data
+- normalized `timestamp` is parsed from CHMI `DT` and kept as a timezone-aware UTC pandas timestamp
+- the first implemented 10min slice is intentionally narrow and currently supports `element="T"`
+
+## 10min Observations Example
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    dataset_scope="historical_csv",
+    resolution="10min",
+    station_ids=["0-20000-0-11406"],
+    start="2024-01-01T00:00:00Z",
+    end="2024-01-01T00:20:00Z",
+    elements=["T"],
+)
+
+tenmin = download_observations(query)
+```
+
+Normalized 10min output schema:
+
+- `station_id`: canonical CHMI WSI identifier
+- `gh_id`: secondary station identifier from metadata, nullable when metadata are not provided
+- `element`: observed element code
+- `timestamp`: timezone-aware UTC pandas timestamp parsed from CHMI `DT` at 10-minute precision
+- `value`: numeric observation value, nullable
+- `flag`: source flag value, nullable
+- `quality`: numeric quality code, nullable
+- `dataset_scope`: constant `historical_csv`
+- `resolution`: constant `10min`
 
 ## Daily Query Semantics
 
@@ -197,14 +235,15 @@ weatherdownload stations metadata --format parquet --output D:/data/stations.par
 weatherdownload stations metadata --format mat --output stations.mat
 weatherdownload stations availability --station-id 0-20000-0-11406
 weatherdownload stations availability --station-id 0-20000-0-11406 --include-elements --format csv --output station-paths.csv
-weatherdownload stations supports --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution daily
-weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution daily
+weatherdownload stations supports --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
+weatherdownload stations elements --station-id 0-20000-0-11406 --dataset-scope historical_csv --resolution 10min
+weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z
+weatherdownload observations 10min --station-id 0-20000-0-11406 --element T --start 2024-01-01T00:00:00Z --end 2024-01-01T00:20:00Z --format csv --output tenmin.csv
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10
 weatherdownload observations daily --station-id 0-20000-0-11406 --element TMA --start-date 1865-06-01 --end-date 1865-06-10 --format csv --output daily.csv
-weatherdownload observations hourly --station-id 0-20000-0-11406 --element E --start 2024-01-01T00:00:00Z --end 2024-01-01T02:00:00Z
 ```
 
-If `--output` is just a filename such as `stations.csv` or `daily.csv`, the file is written under `outputs/` by default.
+If `--output` is just a filename such as `stations.csv`, `tenmin.csv`, or `daily.csv`, the file is written under `outputs/` by default.
 
 Explicit relative paths such as `reports/stations.xlsx` and absolute paths such as `D:/data/stations.parquet` are used as provided. Missing parent directories are created automatically.
 
@@ -225,9 +264,10 @@ pip install .[full]
 - `weatherdownload.metadata`: CHMI station metadata loading and filtering
 - `weatherdownload.chmi_registry`: explicit CHMI dataset registry and typed dataset specs
 - `weatherdownload.availability`: CHMI-specific station availability helpers backed by metadata + registry
-- `weatherdownload.discovery`: discovery helpers backed by the CHMI registry
+- `weatherdownload.chmi_tenmin`: narrow 10min historical_csv path mapping, download, parse, and normalization helpers
 - `weatherdownload.chmi_daily`: daily historical_csv path mapping, download, parse, and normalization helpers
 - `weatherdownload.chmi_hourly`: hourly historical_csv path mapping, download, parse, and normalization helpers
+- `weatherdownload.discovery`: discovery helpers backed by the CHMI registry
 - `weatherdownload.observations`: narrow public observation downloader entrypoint
 - `weatherdownload.exporting`: generic DataFrame export helpers
 - `weatherdownload.queries`: query model and validation
@@ -235,7 +275,6 @@ pip install .[full]
 
 ## Planned next steps
 
-- add more implemented downloader paths beyond `historical_csv` + `daily` and `historical_csv` + `1hour`
+- add more implemented downloader paths beyond the current narrow `historical_csv` support
 - connect discovery helpers to concrete CHMI download endpoints more systematically
-- add richer station filtering such as geographic bounds and dataset availability
-
+- broaden 10min and hourly element support beyond the first implemented slices

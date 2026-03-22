@@ -28,16 +28,14 @@ class StationAvailabilityTests(unittest.TestCase):
         stations = self._read_stations()
         availability = station_availability(stations, station_ids=['0-20000-0-11406'])
         self.assertEqual(
-            availability[['dataset_scope', 'resolution']].to_dict(orient='records'),
-            [
-                {'dataset_scope': 'historical_csv', 'resolution': '1hour'},
-                {'dataset_scope': 'historical_csv', 'resolution': 'daily'},
-            ],
+            set(tuple(item) for item in availability[['dataset_scope', 'resolution']].to_records(index=False)),
+            {('historical_csv', '10min'), ('historical_csv', '1hour'), ('historical_csv', 'daily')},
         )
 
     def test_station_supports_checks_registry_and_active_date(self) -> None:
         stations = self._read_stations()
         self.assertTrue(station_supports(stations, '0-20000-0-11406', 'historical_csv', 'daily', active_on='2024-01-01'))
+        self.assertTrue(station_supports(stations, '0-20000-0-11406', 'historical_csv', '10min', active_on='2024-01-01'))
         self.assertFalse(station_supports(stations, '0-20000-0-11414', 'historical_csv', 'daily', active_on='2024-01-01'))
         self.assertFalse(station_supports(stations, '0-20000-0-11406', 'now', '10min'))
 
@@ -49,6 +47,7 @@ class StationAvailabilityTests(unittest.TestCase):
 
     def test_list_station_elements_for_implemented_path(self) -> None:
         stations = self._read_stations()
+        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min'), ['T'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '1hour'), ['E'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'now', '10min'), [])
 

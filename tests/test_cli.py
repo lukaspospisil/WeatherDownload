@@ -11,7 +11,22 @@ import pandas as pd
 from weatherdownload.cli import main
 
 
-class DailyCliTests(unittest.TestCase):
+class ObservationCliTests(unittest.TestCase):
+    def _sample_tenmin_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'gh_id': 'L3CHEB01',
+                'element': 'T',
+                'timestamp': '2024-01-01T00:00:00Z',
+                'value': -1.2,
+                'flag': None,
+                'quality': 0,
+                'dataset_scope': 'historical_csv',
+                'resolution': '10min',
+            }
+        ])
+
     def _sample_daily_table(self) -> pd.DataFrame:
         return pd.DataFrame([
             {
@@ -27,6 +42,33 @@ class DailyCliTests(unittest.TestCase):
                 'resolution': 'daily',
             }
         ])
+
+    def test_tenmin_cli_screen_output(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
+            with redirect_stdout(buffer):
+                exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'T', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
+        self.assertEqual(exit_code, 0)
+        output = buffer.getvalue()
+        self.assertIn('0-20000-0-11406', output)
+        self.assertIn('10min', output)
+
+    def test_tenmin_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
+        original_cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.chdir(temp_dir)
+            try:
+                buffer = io.StringIO()
+                with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
+                    with redirect_stdout(buffer):
+                        exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'T', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z', '--format', 'csv', '--output', 'tenmin.csv'])
+                self.assertEqual(exit_code, 0)
+                output_path = Path('outputs/tenmin.csv')
+                self.assertTrue(output_path.exists())
+                self.assertIn('0-20000-0-11406', output_path.read_text(encoding='utf-8'))
+                self.assertIn('Exported 10min observations to outputs', buffer.getvalue())
+            finally:
+                os.chdir(original_cwd)
 
     def test_daily_cli_screen_output(self) -> None:
         buffer = io.StringIO()
@@ -76,9 +118,9 @@ class StationAvailabilityCliTests(unittest.TestCase):
                 'station_id': '0-20000-0-11406',
                 'gh_id': 'L3CHEB01',
                 'dataset_scope': 'historical_csv',
-                'resolution': 'daily',
+                'resolution': '10min',
                 'implemented': True,
-                'supported_elements': ['TMA', 'TMI'],
+                'supported_elements': ['T'],
             }
         ])
 
@@ -88,7 +130,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
                 'station_id': '0-20000-0-11406',
                 'gh_id': 'L3CHEB01',
                 'dataset_scope': 'historical_csv',
-                'resolution': 'daily',
+                'resolution': '10min',
                 'implemented': True,
             }
         ])
@@ -102,7 +144,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('historical_csv', output)
-        self.assertIn('daily', output)
+        self.assertIn('10min', output)
 
     def test_station_availability_cli_csv_export(self) -> None:
         original_cwd = Path.cwd()
@@ -127,7 +169,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
             with patch('weatherdownload.cli.station_supports', return_value=True):
                 with redirect_stdout(buffer):
-                    exit_code = main(['stations', 'supports', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', 'daily'])
+                    exit_code = main(['stations', 'supports', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
@@ -136,13 +178,12 @@ class StationAvailabilityCliTests(unittest.TestCase):
     def test_station_elements_cli_screen_output(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-            with patch('weatherdownload.cli.list_station_elements', return_value=['TMA', 'TMI']):
+            with patch('weatherdownload.cli.list_station_elements', return_value=['T']):
                 with redirect_stdout(buffer):
-                    exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', 'daily'])
+                    exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
-        self.assertIn('TMA', output)
-        self.assertIn('TMI', output)
+        self.assertIn('T', output)
 
     def test_station_elements_cli_csv_export(self) -> None:
         original_cwd = Path.cwd()
@@ -151,15 +192,14 @@ class StationAvailabilityCliTests(unittest.TestCase):
             try:
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-                    with patch('weatherdownload.cli.list_station_elements', return_value=['TMA', 'TMI']):
+                    with patch('weatherdownload.cli.list_station_elements', return_value=['T']):
                         with redirect_stdout(buffer):
-                            exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', 'daily', '--format', 'csv', '--output', 'elements.csv'])
+                            exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min', '--format', 'csv', '--output', 'elements.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/elements.csv')
                 self.assertTrue(output_path.exists())
                 content = output_path.read_text(encoding='utf-8')
-                self.assertIn('TMA', content)
-                self.assertIn('TMI', content)
+                self.assertIn('T', content)
                 self.assertIn('Exported station elements to outputs', buffer.getvalue())
             finally:
                 os.chdir(original_cwd)
