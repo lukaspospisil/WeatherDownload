@@ -17,6 +17,11 @@ What stays stable across countries:
 - normalized output schemas
 - country selection with ISO 3166-1 alpha-2 codes such as `CZ` and `DE`
 
+## Tutorial
+
+- [Tutorial (English)](docs/tutorial.en.md)
+- [Tutoriál (čeština)](docs/tutorial.cs.md)
+
 ## Install
 
 ```powershell
