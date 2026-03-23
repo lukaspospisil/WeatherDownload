@@ -4,7 +4,7 @@
 
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="docs/images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 WeatherDownload is a DataFrame-first Python library for country-aware weather metadata, discovery, and observation downloads.
