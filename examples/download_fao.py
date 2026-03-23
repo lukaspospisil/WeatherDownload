@@ -589,7 +589,7 @@ def read_cached_daily_observations(station_id: str, *, cache_dir: Path) -> pd.Da
     cache_path = cached_daily_observations_path(cache_dir, station_id)
     if not cache_path.exists():
         raise CacheMissingError(f'Missing cached daily observations for station {station_id}: {cache_path}')
-    table = pd.read_csv(cache_path)
+    table = pd.read_csv(cache_path, dtype={'flag': 'string'})
     table['observation_date'] = pd.to_datetime(table['observation_date']).dt.date
     return table
 
