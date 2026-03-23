@@ -36,6 +36,44 @@ CZ_TIMEFUNC_BY_CANONICAL = {
     'tas_min': '20:00',
     'sunshine_duration': '00:00',
 }
+AT_REQUIRED_OBSERVED_ELEMENTS = (
+    'tas_mean',
+    'tas_max',
+    'tas_min',
+    'wind_speed',
+    'sunshine_duration',
+)
+AT_ASSUMPTIONS = {
+    'wind_height_handling': (
+        'wind_speed uses GeoSphere daily vv_mittel as delivered. This shared workflow does not convert wind speed to FAO 2 m wind speed, '
+        'because the dataset metadata used here do not provide a normalized measurement height contract for that conversion.'
+    ),
+    'pressure_usage': (
+        'GeoSphere daily pressure is available in the provider, but it is intentionally not included in this shared FAO-preparation bundle. '
+        'The current cross-country workflow exports only the common daily core inputs used downstream in the existing sample workflow.'
+    ),
+    'relative_humidity_interpretation': (
+        'GeoSphere daily rf_mittel exists in the provider, but this shared workflow does not use it to derive new variables. ' 
+        'vapour_pressure therefore remains empty for Austria in the shared bundle.'
+    ),
+    'sunshine_duration_to_radiation': (
+        'sunshine_duration uses GeoSphere daily so_h as observed sunshine duration in hours. '
+        'This shared workflow does not derive solar radiation, net radiation, or extraterrestrial radiation.'
+    ),
+}
+AT_PROVIDER_ELEMENT_MAPPING = {
+    'tas_mean': {'raw_codes': ['tl_mittel'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['tlmax'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['tlmin'], 'selection_rule': None, 'status': 'observed'},
+    'wind_speed': {'raw_codes': ['vv_mittel'], 'selection_rule': None, 'status': 'observed'},
+    'vapour_pressure': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': 'Not directly available from the current Austria daily provider path. The shared workflow leaves this field empty instead of deriving it.',
+    },
+    'sunshine_duration': {'raw_codes': ['so_h'], 'selection_rule': None, 'status': 'observed'},
+}
 
 
 @dataclass(frozen=True)
@@ -47,12 +85,12 @@ class FaoCountryConfig:
     canonical_to_raw: dict[str, tuple[str, ...]]
     raw_to_canonical: dict[str, str]
     time_function_by_canonical: dict[str, str]
+    required_complete_elements: tuple[str, ...]
+    query_elements: tuple[str, ...]
+    provider_element_mapping: dict[str, dict[str, Any]]
+    assumptions: dict[str, str]
     dataset_type: str
     source: str
-
-    @property
-    def canonical_elements(self) -> list[str]:
-        return list(self.canonical_to_raw.keys())
 
 
 class CacheMissingError(FileNotFoundError):
@@ -144,36 +182,20 @@ def main(argv: list[str] | None = None) -> int:
         reporter = ProgressReporter(silent=args.silent)
         stats = CacheStats()
 
-        # Pick the country-specific FAO-prep mapping and cache location first.
         config = get_fao_country_config(args.country)
         country_cache_dir = resolve_country_cache_dir(args.cache_dir, config.country)
         mat_output_path = resolve_mat_output_path(args.output, country=config.country)
         parquet_output_dir = resolve_parquet_output_dir(args.output_dir, country=config.country)
 
         reporter.info(f'Using cache directory: {country_cache_dir}')
-        meta1 = load_station_metadata_with_cache(
-            country_cache_dir,
-            country=config.country,
-            mode=args.mode,
-            timeout=args.timeout,
-            reporter=reporter,
-            stats=stats,
-        )
-        meta2 = load_station_observation_metadata_with_cache(
-            country_cache_dir,
-            country=config.country,
-            mode=args.mode,
-            timeout=args.timeout,
-            reporter=reporter,
-            stats=stats,
-        )
+        meta1 = load_station_metadata_with_cache(country_cache_dir, country=config.country, mode=args.mode, timeout=args.timeout, reporter=reporter, stats=stats)
+        meta2 = load_station_observation_metadata_with_cache(country_cache_dir, country=config.country, mode=args.mode, timeout=args.timeout, reporter=reporter, stats=stats)
 
         if args.station_ids:
             requested = {station_id.strip().upper() for station_id in args.station_ids}
             meta1 = meta1[meta1['station_id'].str.upper().isin(requested)].reset_index(drop=True)
             meta2 = meta2[meta2['station_id'].str.upper().isin(requested)].reset_index(drop=True)
 
-        # Screen stations using observation metadata before touching daily observations.
         candidates = screen_candidate_stations(meta1, meta2, config=config, min_complete_days=args.min_complete_days)
         stats.candidate_stations = len(candidates)
         reporter.essential(f'Meta2-screened candidate stations: {len(candidates)}')
@@ -201,16 +223,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.mode == 'build' and (missing_station_ids or failed_station_ids):
             print_final_summary(reporter, stats)
             problem_ids = missing_station_ids + failed_station_ids
-            raise CacheMissingError(
-                'Build mode requires a complete local cache. Missing or failed stations: '
-                + ', '.join(problem_ids)
-            )
+            raise CacheMissingError('Build mode requires a complete local cache. Missing or failed stations: ' + ', '.join(problem_ids))
 
         unavailable_station_ids = set(missing_station_ids) | set(failed_station_ids)
         retained_series: list[dict[str, Any]] = []
         station_rows: list[dict[str, Any]] = []
 
-        # Build the cleaned daily dataset from cached normalized observations only.
         build_candidates = candidates[~candidates['station_id'].isin(unavailable_station_ids)].reset_index(drop=True)
         total_build_candidates = len(build_candidates)
         reporter.info(f'Building cleaned dataset from cache for {total_build_candidates} station(s).')
@@ -218,7 +236,6 @@ def main(argv: list[str] | None = None) -> int:
         for index, station in enumerate(build_candidates.itertuples(index=False), start=1):
             reporter.info(f'[{index}/{total_build_candidates}] Processing {station.station_id} ({station.full_name}) from cache')
             daily_table = read_cached_daily_observations(station.station_id, cache_dir=country_cache_dir)
-
             complete = prepare_complete_station_series(daily_table, config=config)
             if complete.empty:
                 reporter.info('  No complete FAO-prep days after country-specific selection, skipping.')
@@ -227,42 +244,20 @@ def main(argv: list[str] | None = None) -> int:
                 reporter.info(f'  Only {len(complete)} complete days, below threshold {args.min_complete_days}.')
                 continue
 
-            # Keep a station-level summary row and a per-station canonical time series.
-            retained_series.append(
-                build_series_record(
-                    complete,
-                    station_id=station.station_id,
-                    full_name=station.full_name,
-                    latitude=station.latitude,
-                    longitude=station.longitude,
-                    elevation=station.elevation_m,
-                )
-            )
-            station_rows.append(
-                {
-                    'station_id': station.station_id,
-                    'full_name': station.full_name,
-                    'latitude': station.latitude,
-                    'longitude': station.longitude,
-                    'elevation_m': station.elevation_m,
-                    'num_complete_days': int(len(complete)),
-                    'first_complete_date': complete['date'].min().isoformat(),
-                    'last_complete_date': complete['date'].max().isoformat(),
-                }
-            )
+            retained_series.append(build_series_record(complete, station_id=station.station_id, full_name=station.full_name, latitude=station.latitude, longitude=station.longitude, elevation=station.elevation_m))
+            station_rows.append({
+                'station_id': station.station_id,
+                'full_name': station.full_name,
+                'latitude': station.latitude,
+                'longitude': station.longitude,
+                'elevation_m': station.elevation_m,
+                'num_complete_days': int(len(complete)),
+                'first_complete_date': complete['date'].min().isoformat(),
+                'last_complete_date': complete['date'].max().isoformat(),
+            })
 
-        data_info = {
-            'created_at': pd.Timestamp.now("UTC").isoformat(),
-            'dataset_type': config.dataset_type,
-            'source': config.source,
-            'country': config.country,
-            'elements': FINAL_SERIES_COLUMNS,
-            'provider_element_mapping': build_provider_element_mapping(config),
-            'min_complete_days': int(args.min_complete_days),
-            'num_stations': int(len(retained_series)),
-        }
+        data_info = build_data_info(config, station_rows, min_complete_days=args.min_complete_days)
         exported_targets: list[str] = []
-        # Export one or both bundle formats without mixing download logic into the exporters.
         if args.export_format in {'mat', 'both'}:
             export_mat_bundle(mat_output_path, data_info=data_info, stations=station_rows, series=retained_series)
             exported_targets.append(str(mat_output_path))
@@ -281,38 +276,14 @@ def main(argv: list[str] | None = None) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Prepare a country-aware daily dataset for later FAO processing.')
-    parser.add_argument(
-        '--country',
-        default='CZ',
-        help='ISO 3166-1 alpha-2 country code. Defaults to CZ.',
-    )
-    parser.add_argument(
-        '--mode',
-        choices=['full', 'download', 'build'],
-        default='full',
-        help='Run the full pipeline, cache inputs only, or build only from cached inputs.',
-    )
-    parser.add_argument(
-        '--cache-dir',
-        type=Path,
-        default=Path('outputs/fao_cache'),
-        help='Base cache directory for metadata and daily inputs.',
-    )
+    parser.add_argument('--country', default='CZ', help='ISO 3166-1 alpha-2 country code. Defaults to CZ.')
+    parser.add_argument('--mode', choices=['full', 'download', 'build'], default='full', help='Run the full pipeline, cache inputs only, or build only from cached inputs.')
+    parser.add_argument('--cache-dir', type=Path, default=Path('outputs/fao_cache'), help='Base cache directory for metadata and daily inputs.')
     parser.add_argument('--output', type=Path, default=None, help='MATLAB .mat output path.')
-    parser.add_argument(
-        '--output-dir',
-        type=Path,
-        default=None,
-        help='Portable Parquet bundle output directory.',
-    )
-    parser.add_argument(
-        '--export-format',
-        choices=['mat', 'parquet', 'both'],
-        default='mat',
-        help='Output format to produce in full or build mode.',
-    )
+    parser.add_argument('--output-dir', type=Path, default=None, help='Portable Parquet bundle output directory.')
+    parser.add_argument('--export-format', choices=['mat', 'parquet', 'both'], default='mat', help='Output format to produce in full or build mode.')
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional canonical station_id filter. Can be provided multiple times.')
-    parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete E-based days required per station.')
+    parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete FAO-prep days required per station.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
     parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
@@ -321,56 +292,56 @@ def build_parser() -> argparse.ArgumentParser:
 def get_fao_country_config(country: str | None) -> FaoCountryConfig:
     normalized_country = normalize_country_code(country)
     try:
-        # Reuse the provider registry so the example stays aligned with supported daily mappings.
         provider = get_provider(normalized_country)
-        daily_spec = provider.get_dataset_spec(
-            'historical_csv' if normalized_country == 'CZ' else 'historical',
-            'daily',
-        )
+        daily_spec = provider.get_dataset_spec('historical_csv' if normalized_country == 'CZ' else 'historical', 'daily')
     except Exception as exc:
         raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.') from exc
 
     canonical_to_raw = daily_spec.canonical_elements or {}
     raw_to_provider_canonical = raw_to_canonical_map_for_spec(daily_spec)
+    query_elements = AT_REQUIRED_OBSERVED_ELEMENTS if normalized_country == 'AT' else FAO_CANONICAL_ELEMENTS
+
     selected_canonical_to_raw: dict[str, tuple[str, ...]] = {}
     raw_to_canonical: dict[str, str] = {}
-    for canonical_name in FAO_CANONICAL_ELEMENTS:
+    for canonical_name in query_elements:
         raw_codes = canonical_to_raw.get(canonical_name, ())
         if not raw_codes:
-            raise ValueError(
-                f'FAO preparation example requires daily canonical element {canonical_name!r} for country {normalized_country}.'
-            )
+            raise ValueError(f'FAO preparation example requires daily canonical element {canonical_name!r} for country {normalized_country}.')
         selected_canonical_to_raw[canonical_name] = tuple(raw_codes)
     for raw_code, canonical_name in raw_to_provider_canonical.items():
         if canonical_name in selected_canonical_to_raw:
             raw_to_canonical[raw_code.upper()] = canonical_name
 
     if normalized_country == 'CZ':
-        return FaoCountryConfig(
-            country='CZ',
-            dataset_scope='historical_csv',
-            resolution='daily',
-            obs_types=('DLY',),
-            canonical_to_raw=selected_canonical_to_raw,
-            raw_to_canonical=raw_to_canonical,
-            time_function_by_canonical=dict(CZ_TIMEFUNC_BY_CANONICAL),
-            dataset_type='CHMI daily meteorological dataset prepared for later FAO Penman-Monteith processing',
-            source='CHMI OpenData historical_csv metadata and daily observations',
-        )
+        return FaoCountryConfig('CZ', 'historical_csv', 'daily', ('DLY',), selected_canonical_to_raw, raw_to_canonical, dict(CZ_TIMEFUNC_BY_CANONICAL), FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, dict(CZ_TIMEFUNC_BY_CANONICAL)), {}, 'CHMI daily meteorological dataset prepared for later FAO Penman-Monteith processing', 'CHMI OpenData historical_csv metadata and daily observations')
     if normalized_country == 'DE':
-        return FaoCountryConfig(
-            country='DE',
-            dataset_scope='historical',
-            resolution='daily',
-            obs_types=('DAILY',),
-            canonical_to_raw=selected_canonical_to_raw,
-            raw_to_canonical=raw_to_canonical,
-            time_function_by_canonical={},
-            dataset_type='DWD daily meteorological dataset prepared for later FAO Penman-Monteith processing',
-            source='DWD CDC historical daily metadata and observations',
-        )
+        return FaoCountryConfig('DE', 'historical', 'daily', ('DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, {}), {}, 'DWD daily meteorological dataset prepared for later FAO Penman-Monteith processing', 'DWD CDC historical daily metadata and observations')
+    if normalized_country == 'AT':
+        return FaoCountryConfig('AT', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, AT_REQUIRED_OBSERVED_ELEMENTS, AT_REQUIRED_OBSERVED_ELEMENTS, dict(AT_PROVIDER_ELEMENT_MAPPING), dict(AT_ASSUMPTIONS), 'GeoSphere Austria daily meteorological dataset prepared for later FAO processing', 'GeoSphere Austria Dataset API station historical daily klima-v2-1d')
     raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.')
 
+
+def build_observed_provider_element_mapping(canonical_to_raw: dict[str, tuple[str, ...]], time_function_by_canonical: dict[str, str]) -> dict[str, dict[str, Any]]:
+    mapping: dict[str, dict[str, Any]] = {}
+    for canonical_name in FINAL_SERIES_COLUMNS:
+        mapping[canonical_name] = {'raw_codes': list(canonical_to_raw[canonical_name]), 'selection_rule': time_function_by_canonical.get(canonical_name), 'status': 'observed'}
+    return mapping
+
+
+def build_data_info(config: FaoCountryConfig, station_rows: list[dict[str, Any]], *, min_complete_days: int) -> dict[str, Any]:
+    data_info = {
+        'created_at': pd.Timestamp.now('UTC').isoformat(),
+        'dataset_type': config.dataset_type,
+        'source': config.source,
+        'country': config.country,
+        'elements': FINAL_SERIES_COLUMNS,
+        'provider_element_mapping': build_provider_element_mapping(config),
+        'min_complete_days': int(min_complete_days),
+        'num_stations': int(len(station_rows)),
+    }
+    if config.assumptions:
+        data_info['assumptions'] = dict(config.assumptions)
+    return data_info
 
 def resolve_country_cache_dir(cache_dir: Path, country: str) -> Path:
     return cache_dir / normalize_country_code(country)
@@ -388,53 +359,21 @@ def resolve_parquet_output_dir(output_dir: Path | None, *, country: str) -> Path
     return Path('outputs') / f"fao_daily.{normalize_country_code(country).lower()}"
 
 
-def load_station_metadata_with_cache(
-    cache_dir: Path,
-    *,
-    country: str,
-    mode: str,
-    timeout: int,
-    reporter: ProgressReporter,
-    stats: CacheStats,
-) -> pd.DataFrame:
-    table, status = load_cached_dataframe(
-        cache_path=cache_dir / 'meta1.csv',
-        mode=mode,
-        loader=lambda: read_station_metadata(country=country, timeout=timeout),
-        description='meta1.csv',
-    )
+def load_station_metadata_with_cache(cache_dir: Path, *, country: str, mode: str, timeout: int, reporter: ProgressReporter, stats: CacheStats) -> pd.DataFrame:
+    table, status = load_cached_dataframe(cache_path=cache_dir / 'meta1.csv', mode=mode, loader=lambda: read_station_metadata(country=country, timeout=timeout), description='meta1.csv')
     stats.add_metadata_status(status)
     reporter.info(f'meta1.csv: {format_file_status(status)}')
     return table
 
 
-def load_station_observation_metadata_with_cache(
-    cache_dir: Path,
-    *,
-    country: str,
-    mode: str,
-    timeout: int,
-    reporter: ProgressReporter,
-    stats: CacheStats,
-) -> pd.DataFrame:
-    table, status = load_cached_dataframe(
-        cache_path=cache_dir / 'meta2.csv',
-        mode=mode,
-        loader=lambda: read_station_observation_metadata(country=country, timeout=timeout),
-        description='meta2.csv',
-    )
+def load_station_observation_metadata_with_cache(cache_dir: Path, *, country: str, mode: str, timeout: int, reporter: ProgressReporter, stats: CacheStats) -> pd.DataFrame:
+    table, status = load_cached_dataframe(cache_path=cache_dir / 'meta2.csv', mode=mode, loader=lambda: read_station_observation_metadata(country=country, timeout=timeout), description='meta2.csv')
     stats.add_metadata_status(status)
     reporter.info(f'meta2.csv: {format_file_status(status)}')
     return table
 
 
-def load_cached_dataframe(
-    *,
-    cache_path: Path,
-    mode: str,
-    loader,
-    description: str,
-) -> tuple[pd.DataFrame, str]:
+def load_cached_dataframe(*, cache_path: Path, mode: str, loader, description: str) -> tuple[pd.DataFrame, str]:
     if cache_path.exists():
         return pd.read_csv(cache_path), 'reused'
     if mode == 'build':
@@ -445,32 +384,19 @@ def load_cached_dataframe(
     return table, 'downloaded'
 
 
-def screen_candidate_stations(
-    meta1: pd.DataFrame,
-    meta2: pd.DataFrame,
-    *,
-    config: FaoCountryConfig,
-    min_complete_days: int,
-) -> pd.DataFrame:
-    # Keep only the daily observation metadata rows relevant for the FAO-prep variables.
+def screen_candidate_stations(meta1: pd.DataFrame, meta2: pd.DataFrame, *, config: FaoCountryConfig, min_complete_days: int) -> pd.DataFrame:
     relevant = meta2[
         meta2['obs_type'].astype(str).str.upper().isin(config.obs_types)
         & meta2['element'].astype(str).str.upper().isin(config.raw_to_canonical)
     ].copy()
     relevant['canonical_element'] = relevant['element'].astype(str).str.upper().map(config.raw_to_canonical)
-    supported = (
-        relevant.groupby('station_id')['canonical_element']
-        .agg(lambda values: set(values))
-        .reset_index(name='canonical_elements')
-    )
-    supported['has_required_elements'] = supported['canonical_elements'].apply(lambda values: set(FINAL_SERIES_COLUMNS).issubset(values))
+    supported = relevant.groupby('station_id')['canonical_element'].agg(lambda values: set(values)).reset_index(name='canonical_elements')
+    supported['has_required_elements'] = supported['canonical_elements'].apply(lambda values: set(config.required_complete_elements).issubset(values))
 
     overlap = estimate_station_overlap_days(relevant)
     screened = supported.merge(overlap, on='station_id', how='left')
     screened['overlap_days_estimate'] = screened['overlap_days_estimate'].fillna(0).astype(int)
-    candidate_ids = screened[
-        screened['has_required_elements'] & (screened['overlap_days_estimate'] >= min_complete_days)
-    ]['station_id']
+    candidate_ids = screened[screened['has_required_elements'] & (screened['overlap_days_estimate'] >= min_complete_days)]['station_id']
     candidate_rows = meta1[meta1['station_id'].isin(candidate_ids)].copy()
     return deduplicate_candidate_stations(candidate_rows)
 
@@ -481,19 +407,9 @@ def estimate_station_overlap_days(meta2: pd.DataFrame) -> pd.DataFrame:
     dated = meta2.copy()
     dated['begin_ts'] = pd.to_datetime(dated['begin_date'], utc=True)
     dated['end_ts'] = pd.to_datetime(dated['end_date'], utc=True)
-    element_spans = (
-        dated.groupby(['station_id', 'canonical_element'])
-        .agg(begin_ts=('begin_ts', 'min'), end_ts=('end_ts', 'max'))
-        .reset_index()
-    )
-    station_spans = (
-        element_spans.groupby('station_id')
-        .agg(overlap_begin=('begin_ts', 'max'), overlap_end=('end_ts', 'min'))
-        .reset_index()
-    )
-    station_spans['overlap_days_estimate'] = (
-        (station_spans['overlap_end'] - station_spans['overlap_begin']).dt.days + 1
-    ).clip(lower=0)
+    element_spans = dated.groupby(['station_id', 'canonical_element']).agg(begin_ts=('begin_ts', 'min'), end_ts=('end_ts', 'max')).reset_index()
+    station_spans = element_spans.groupby('station_id').agg(overlap_begin=('begin_ts', 'max'), overlap_end=('end_ts', 'min')).reset_index()
+    station_spans['overlap_days_estimate'] = ((station_spans['overlap_end'] - station_spans['overlap_begin']).dt.days + 1).clip(lower=0)
     return station_spans[['station_id', 'overlap_days_estimate']]
 
 
@@ -503,52 +419,25 @@ def deduplicate_candidate_stations(meta1_rows: pd.DataFrame) -> pd.DataFrame:
     return meta1_rows.drop_duplicates(subset=['station_id'], keep='first').reset_index(drop=True)
 
 
-def cache_candidate_daily_inputs(
-    candidates: pd.DataFrame,
-    *,
-    cache_dir: Path,
-    config: FaoCountryConfig,
-    mode: str,
-    timeout: int,
-    reporter: ProgressReporter,
-    stats: CacheStats,
-) -> tuple[int, list[str], list[str]]:
-    # Cache normalized daily observations per station so rebuilds can run offline.
+def cache_candidate_daily_inputs(candidates: pd.DataFrame, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, reporter: ProgressReporter, stats: CacheStats) -> tuple[int, list[str], list[str]]:
     available_station_count = 0
     missing_station_ids: list[str] = []
     failed_station_ids: list[str] = []
     total_candidates = len(candidates)
     reporter.info(f'Checking daily input cache for {total_candidates} station(s).')
     for index, station in enumerate(candidates.itertuples(index=False), start=1):
-        result = ensure_daily_observations_cached(
-            station.station_id,
-            cache_dir=cache_dir,
-            config=config,
-            mode=mode,
-            timeout=timeout,
-            stats=stats,
-        )
+        result = ensure_daily_observations_cached(station.station_id, cache_dir=cache_dir, config=config, mode=mode, timeout=timeout, stats=stats)
         if result.available:
             available_station_count += 1
         if result.missing:
             missing_station_ids.append(station.station_id)
         if result.failed:
             failed_station_ids.append(station.station_id)
-        reporter.info(
-            f'[{index}/{total_candidates}] {station.station_id} ({station.full_name}): {result.summary()}'
-        )
+        reporter.info(f'[{index}/{total_candidates}] {station.station_id} ({station.full_name}): {result.summary()}')
     return available_station_count, missing_station_ids, failed_station_ids
 
 
-def ensure_daily_observations_cached(
-    station_id: str,
-    *,
-    cache_dir: Path,
-    config: FaoCountryConfig,
-    mode: str,
-    timeout: int,
-    stats: CacheStats,
-) -> StationCacheResult:
+def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, stats: CacheStats) -> StationCacheResult:
     result = StationCacheResult(station_id)
     cache_path = cached_daily_observations_path(cache_dir, station_id)
     if cache_path.exists():
@@ -560,14 +449,13 @@ def ensure_daily_observations_cached(
         stats.add_file_status('missing')
         return result
     try:
-        # Download the full normalized daily history for the required canonical variables.
         query = ObservationQuery(
             country=config.country,
             dataset_scope=config.dataset_scope,
             resolution=config.resolution,
             station_ids=[station_id],
             all_history=True,
-            elements=config.canonical_elements,
+            elements=list(config.query_elements),
         )
         observations = download_observations(query, timeout=timeout, country=config.country)
     except Exception:
@@ -584,7 +472,6 @@ def ensure_daily_observations_cached(
     stats.add_file_status('downloaded')
     return result
 
-
 def read_cached_daily_observations(station_id: str, *, cache_dir: Path) -> pd.DataFrame:
     cache_path = cached_daily_observations_path(cache_dir, station_id)
     if not cache_path.exists():
@@ -599,9 +486,8 @@ def cached_daily_observations_path(cache_dir: Path, station_id: str) -> Path:
 
 
 def prepare_complete_station_series(daily_table: pd.DataFrame, *, config: FaoCountryConfig) -> pd.DataFrame:
-    # Pivot the long-form daily observations into one complete-day table per station.
     selected_tables: list[pd.DataFrame] = []
-    for canonical_name in FINAL_SERIES_COLUMNS:
+    for canonical_name in config.required_complete_elements:
         selected = select_daily_variable_rows(daily_table, canonical_name=canonical_name, config=config)
         if selected.empty:
             return pd.DataFrame(columns=['date', *FINAL_SERIES_COLUMNS])
@@ -611,17 +497,15 @@ def prepare_complete_station_series(daily_table: pd.DataFrame, *, config: FaoCou
     for table in selected_tables[1:]:
         merged = merged.merge(table, on='date', how='inner')
 
-    complete = merged.dropna(subset=FINAL_SERIES_COLUMNS).sort_values('date').reset_index(drop=True)
-    return complete
+    for canonical_name in FINAL_SERIES_COLUMNS:
+        if canonical_name not in merged.columns:
+            merged[canonical_name] = pd.NA
+
+    complete = merged.dropna(subset=list(config.required_complete_elements)).sort_values('date').reset_index(drop=True)
+    return complete.loc[:, ['date', *FINAL_SERIES_COLUMNS]]
 
 
-def select_daily_variable_rows(
-    daily_table: pd.DataFrame,
-    *,
-    canonical_name: str,
-    config: FaoCountryConfig,
-) -> pd.DataFrame:
-    # Apply the country-specific daily selection rule, if one exists, before merging by date.
+def select_daily_variable_rows(daily_table: pd.DataFrame, *, canonical_name: str, config: FaoCountryConfig) -> pd.DataFrame:
     filtered = daily_table[daily_table['element'].astype(str) == canonical_name].copy()
     required_time_function = config.time_function_by_canonical.get(canonical_name)
     if required_time_function is not None:
@@ -634,15 +518,7 @@ def select_daily_variable_rows(
     return filtered.reset_index(drop=True)
 
 
-def build_series_record(
-    complete: pd.DataFrame,
-    *,
-    station_id: str,
-    full_name: str,
-    latitude: float | None,
-    longitude: float | None,
-    elevation: float | None,
-) -> dict[str, Any]:
+def build_series_record(complete: pd.DataFrame, *, station_id: str, full_name: str, latitude: float | None, longitude: float | None, elevation: float | None) -> dict[str, Any]:
     return {
         'station_id': station_id,
         'full_name': full_name,
@@ -650,19 +526,18 @@ def build_series_record(
         'longitude': longitude,
         'elevation_m': elevation,
         'date': [value.isoformat() for value in complete['date'].tolist()],
-        'tas_mean': complete['tas_mean'].astype(float).tolist(),
-        'tas_max': complete['tas_max'].astype(float).tolist(),
-        'tas_min': complete['tas_min'].astype(float).tolist(),
-        'wind_speed': complete['wind_speed'].astype(float).tolist(),
-        'vapour_pressure': complete['vapour_pressure'].astype(float).tolist(),
-        'sunshine_duration': complete['sunshine_duration'].astype(float).tolist(),
+        'tas_mean': pd.to_numeric(complete['tas_mean'], errors='coerce').tolist(),
+        'tas_max': pd.to_numeric(complete['tas_max'], errors='coerce').tolist(),
+        'tas_min': pd.to_numeric(complete['tas_min'], errors='coerce').tolist(),
+        'wind_speed': pd.to_numeric(complete['wind_speed'], errors='coerce').tolist(),
+        'vapour_pressure': pd.to_numeric(complete['vapour_pressure'], errors='coerce').tolist(),
+        'sunshine_duration': pd.to_numeric(complete['sunshine_duration'], errors='coerce').tolist(),
     }
 
 
 def export_mat_bundle(output_path: Path, *, data_info: dict[str, Any], stations: list[dict[str, Any]], series: list[dict[str, Any]]) -> None:
     from scipy.io import savemat
 
-    # Export a MATLAB-oriented nested bundle for downstream workflows.
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         'data_info': _to_mat_struct(data_info),
@@ -672,14 +547,7 @@ def export_mat_bundle(output_path: Path, *, data_info: dict[str, Any], stations:
     savemat(output_path, payload)
 
 
-def export_parquet_bundle(
-    output_dir: Path,
-    *,
-    data_info: dict[str, Any],
-    stations: list[dict[str, Any]],
-    series: list[dict[str, Any]],
-) -> None:
-    # Export a portable bundle directory for R, Python, or later MATLAB import.
+def export_parquet_bundle(output_dir: Path, *, data_info: dict[str, Any], stations: list[dict[str, Any]], series: list[dict[str, Any]]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     data_info_path = output_dir / 'data_info.json'
     stations_path = output_dir / 'stations.parquet'
@@ -691,26 +559,11 @@ def export_parquet_bundle(
 
 
 def build_provider_element_mapping(config: FaoCountryConfig) -> dict[str, dict[str, Any]]:
-    mapping: dict[str, dict[str, Any]] = {}
-    for canonical_name in FINAL_SERIES_COLUMNS:
-        mapping[canonical_name] = {
-            'raw_codes': list(config.canonical_to_raw[canonical_name]),
-            'selection_rule': config.time_function_by_canonical.get(canonical_name),
-        }
-    return mapping
+    return dict(config.provider_element_mapping)
 
 
 def build_station_table(rows: list[dict[str, Any]]) -> pd.DataFrame:
-    columns = [
-        'station_id',
-        'full_name',
-        'latitude',
-        'longitude',
-        'elevation_m',
-        'num_complete_days',
-        'first_complete_date',
-        'last_complete_date',
-    ]
+    columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'num_complete_days', 'first_complete_date', 'last_complete_date']
     if not rows:
         return pd.DataFrame(columns=columns)
     return pd.DataFrame.from_records(rows, columns=columns)
@@ -742,7 +595,6 @@ def build_series_table(series: list[dict[str, Any]]) -> pd.DataFrame:
     if not records:
         return pd.DataFrame(columns=columns)
     return pd.DataFrame.from_records(records, columns=columns)
-
 
 def print_final_summary(reporter: ProgressReporter, stats: CacheStats) -> None:
     reporter.essential(
@@ -777,17 +629,11 @@ def _station_rows_to_struct(rows: list[dict[str, Any]]) -> dict[str, np.ndarray]
             'last_complete_date': np.array([], dtype=object),
         }
     columns = rows[0].keys()
-    return {
-        column: _to_mat_value([row[column] for row in rows])
-        for column in columns
-    }
+    return {column: _to_mat_value([row[column] for row in rows]) for column in columns}
 
 
 def _to_mat_struct(mapping: dict[str, Any]) -> dict[str, Any]:
-    return {
-        key: _to_mat_value(value)
-        for key, value in mapping.items()
-    }
+    return {key: _to_mat_value(value) for key, value in mapping.items()}
 
 
 def _to_mat_value(value: Any) -> Any:
@@ -814,4 +660,7 @@ def _to_mat_value(value: Any) -> Any:
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
+
+
 

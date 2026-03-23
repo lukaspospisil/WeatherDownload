@@ -1,0 +1,101 @@
+﻿{
+  "stations": [
+    {
+      "type": "COMBINED",
+      "id": 1,
+      "group_id": null,
+      "name": "Aflenz",
+      "state": "Steiermark",
+      "lat": 47.54594,
+      "lon": 15.24069,
+      "altitude": 783.2,
+      "valid_from": "1983-05-01T00:00:00+00:00",
+      "valid_to": "2100-12-31T00:00:00+00:00",
+      "has_sunshine": true,
+      "has_global_radiation": true,
+      "is_active": true
+    },
+    {
+      "type": "COMBINED",
+      "id": 2,
+      "group_id": null,
+      "name": "Aigen im Ennstal",
+      "state": "Steiermark",
+      "lat": 47.53278,
+      "lon": 14.13826,
+      "altitude": 641.0,
+      "valid_from": "1939-03-01T00:00:00+00:00",
+      "valid_to": "2100-12-31T00:00:00+00:00",
+      "has_sunshine": true,
+      "has_global_radiation": true,
+      "is_active": true
+    }
+  ],
+  "parameters": [
+    {
+      "name": "tl_mittel",
+      "long_name": "Air temperature 2m mean",
+      "description": "Air temperature 2m daily mean from tlmax and tlmin",
+      "unit": "degC"
+    },
+    {
+      "name": "tlmax",
+      "long_name": "Air temperature 2m maximum",
+      "description": "Air temperature 2m daily maximum",
+      "unit": "degC"
+    },
+    {
+      "name": "tlmin",
+      "long_name": "Air temperature 2m minimum",
+      "description": "Air temperature 2m daily minimum",
+      "unit": "degC"
+    },
+    {
+      "name": "rr",
+      "long_name": "Precipitation 24h sum",
+      "description": "Precipitation 24-hour sum",
+      "unit": "mm"
+    },
+    {
+      "name": "so_h",
+      "long_name": "Sunshine duration",
+      "description": "Sunshine duration daily sum",
+      "unit": "h"
+    },
+    {
+      "name": "vv_mittel",
+      "long_name": "Wind speed mean",
+      "description": "Wind speed daily mean from observation terms",
+      "unit": "m/s"
+    },
+    {
+      "name": "p_mittel",
+      "long_name": "Pressure mean",
+      "description": "Pressure daily mean from observation terms",
+      "unit": "hPa"
+    },
+    {
+      "name": "rf_mittel",
+      "long_name": "Relative humidity mean",
+      "description": "Relative humidity daily mean from observation terms",
+      "unit": "%"
+    }
+  ],
+  "title": "Station daily climate data v2",
+  "frequency": "P1D",
+  "type": "station",
+  "mode": "historical",
+  "response_formats": ["geojson", "csv"],
+  "start_time": "1775-01-01T00:00:00+00:00",
+  "end_time": "2026-03-23T00:00:00",
+  "id_type": "Klima",
+  "code_lists": {
+    "q21": [
+      {"key": null, "value": "undefined"},
+      {"key": 0, "value": "unchecked"},
+      {"key": 20, "value": "manual checked unknown"},
+      {"key": 21, "value": "manual checked changed"},
+      {"key": 22, "value": "manual checked original"}
+    ]
+  }
+}

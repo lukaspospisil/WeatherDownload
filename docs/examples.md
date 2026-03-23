@@ -29,6 +29,7 @@ python examples/read_metadata.py
 Shows how to:
 
 - build a daily observation query
+- switch countries through the same public API
 - use canonical element names
 - download normalized daily observations
 
@@ -36,6 +37,9 @@ Run:
 
 ```powershell
 python examples/download_daily.py
+python examples/download_daily.py --country AT
+python examples/download_daily.py --country CZ
+python examples/download_daily.py --country DE
 ```
 
 ### `examples/download_hourly.py`
@@ -133,7 +137,7 @@ It prepares a clean daily FAO-prep dataset for later MATLAB, R, or Python proces
 
 What it does:
 
-- supports `CZ` and `DE`
+- supports `CZ`, `DE`, and `AT`
 - caches normalized country-aware daily inputs
 - screens candidate stations
 - applies country-specific daily selection rules
@@ -157,6 +161,8 @@ Detailed workflow notes:
 
 - [MATLAB-Oriented FAO Workflow](download_fao.md)
 
+
+
 ## Recommended Reading Order
 
 For a new user:
@@ -166,3 +172,4 @@ For a new user:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+

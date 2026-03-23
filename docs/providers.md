@@ -10,6 +10,7 @@ WeatherDownload uses a provider layer so the public API can stay stable while pr
 
 Use ISO 3166-1 alpha-2 country codes:
 
+- `AT`
 - `CZ`
 - `DE`
 - `SK` (experimental, limited to `recent / daily`)
@@ -19,6 +20,7 @@ Examples:
 ```python
 from weatherdownload import read_station_metadata, list_supported_elements
 
+at_stations = read_station_metadata(country="AT")
 cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
 sk_stations = read_station_metadata(country="SK")
@@ -31,6 +33,7 @@ sk_daily_elements = list_supported_elements(
 ```
 
 ```powershell
+weatherdownload stations metadata --country AT
 weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
 weatherdownload stations metadata --country SK
@@ -67,6 +70,7 @@ What stays provider-specific internally:
 
 | Country | Normalized `station_id` |
 | --- | --- |
+| `AT` | GeoSphere Klima station id as string |
 | `CZ` | CHMI `WSI` |
 | `DE` | zero-padded DWD `Stations_id` |
 | `SK` | SHMU `ind_kli` as string |
@@ -82,21 +86,41 @@ WeatherDownload distinguishes between:
 
 This matters because discovery can be broader than the current downloader coverage.
 
-## Coverage Overview
+## Capability Matrix
 
-| Country | Dataset scope | Resolution | Status | Notes |
-| --- | --- | --- | --- | --- |
-| `CZ` | `historical_csv` | `daily` | Implemented | CHMI daily downloader |
-| `CZ` | `historical_csv` | `1hour` | Implemented | CHMI hourly downloader |
-| `CZ` | `historical_csv` | `10min` | Implemented | CHMI 10min downloader |
-| `DE` | `historical` | `daily` | Implemented | DWD daily `kl` path |
-| `DE` | `historical` | `1hour` | Implemented | Narrow slice |
-| `DE` | `historical` | `10min` | Implemented | Narrow slice |
-| `SK` | `recent` | `daily` | Experimental, implemented | SHMU recent daily climatological stations |
+| Country | Status | Supported dataset scopes | Implemented resolutions | Supported canonical elements | Station metadata quality |
+| --- | --- | --- | --- | --- | --- |
+| `AT` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
+| `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`<br>Hourly: `vapour_pressure`, `pressure`, `cloud_cover`, `past_weather_1`, `past_weather_2`, `sunshine_duration`<br>10min: `tas_mean`, `tas_max`, `tas_min`, `tas_period_max`, `soil_temperature_10cm`, `soil_temperature_100cm`, `sunshine_duration` | Official CHMI station metadata with canonical `station_id` (`WSI`) and secondary `gh_id` |
+| `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator`<br>`1hour`: `tas_mean`, `relative_humidity`, `wind_speed`<br>`10min`: `tas_mean`, `relative_humidity`, `wind_speed` | Official DWD station descriptions normalized to canonical `station_id`; `gh_id` remains null |
+| `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload; station name and coordinates remain null |
+
+Interpretation notes:
+
+- “Supported canonical elements” means the currently implemented downloader slice, not the full upstream provider vocabulary.
+- `SK` `begin_date` and `end_date` describe only coverage visible in the sampled recent payload, not authoritative historical station coverage.
+- Discovery support can be broader than implemented download support, especially for `CZ`.
 
 ## Current Narrow Slices
 
 The following implemented paths are intentionally conservative:
+
+### AT `historical / daily`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `precipitation`
+- `sunshine_duration`
+- `wind_speed`
+- `pressure`
+- `relative_humidity`
+
+Detailed notes:
+
+- [GeoSphere Austria Provider Notes](providers_at_geosphere.md)
 
 ### DE `historical / 1hour`
 
@@ -168,8 +192,10 @@ The CLI mirrors the provider model:
 Examples:
 
 ```powershell
+weatherdownload observations daily --country AT --station-id 1 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
+

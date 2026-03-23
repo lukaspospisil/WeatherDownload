@@ -9,9 +9,13 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+from weatherdownload.geosphere_daily import normalize_daily_observations_geosphere
+from weatherdownload.geosphere_parser import parse_geosphere_daily_csv
+from weatherdownload.queries import ObservationQuery
 
 
 MODULE_PATH = Path('examples/download_fao.py')
+GEOSPHERE_SAMPLE_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1d.csv')
 SPEC = importlib.util.spec_from_file_location('download_fao_example', MODULE_PATH)
 download_fao = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = download_fao
@@ -39,6 +43,10 @@ class DownloadFaoExampleTests(unittest.TestCase):
             download_fao.resolve_mat_output_path(None, country='DE'),
             Path('outputs/fao_daily.de.mat'),
         )
+        self.assertEqual(
+            download_fao.resolve_mat_output_path(None, country='AT'),
+            Path('outputs/fao_daily.at.mat'),
+        )
 
     def test_default_parquet_output_dir_is_country_aware(self) -> None:
         self.assertEqual(
@@ -48,6 +56,10 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(
             download_fao.resolve_parquet_output_dir(None, country='DE'),
             Path('outputs/fao_daily.de'),
+        )
+        self.assertEqual(
+            download_fao.resolve_parquet_output_dir(None, country='AT'),
+            Path('outputs/fao_daily.at'),
         )
 
     def test_explicit_output_paths_override_country_defaults(self) -> None:
@@ -340,8 +352,50 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(buffer.getvalue().strip(), 'shown')
 
 
+    def test_get_fao_country_config_returns_at_mapping(self) -> None:
+        config = download_fao.get_fao_country_config('AT')
+        self.assertEqual(config.country, 'AT')
+        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
+        self.assertEqual(config.raw_to_canonical['VV_MITTEL'], 'wind_speed')
+
+    def test_prepare_complete_station_series_handles_at_without_deriving_vapour_pressure(self) -> None:
+        csv_text = GEOSPHERE_SAMPLE_CSV_PATH.read_text(encoding='utf-8')
+        query = ObservationQuery(
+            country='AT',
+            dataset_scope='historical',
+            resolution='daily',
+            station_ids=['1'],
+            start_date='2024-01-01',
+            end_date='2024-01-03',
+            elements=['tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'],
+        )
+        parsed = parse_geosphere_daily_csv(csv_text)
+        normalized = normalize_daily_observations_geosphere(parsed, query)
+
+        complete = download_fao.prepare_complete_station_series(normalized, config=download_fao.get_fao_country_config('AT'))
+
+        self.assertEqual(list(complete['date'].astype(str)), ['2024-01-01', '2024-01-03'])
+        self.assertEqual(list(complete.columns), ['date', 'tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'])
+        self.assertTrue(complete['vapour_pressure'].isna().all())
+
+    def test_build_data_info_includes_at_assumptions(self) -> None:
+        config = download_fao.get_fao_country_config('AT')
+        info = download_fao.build_data_info(config, station_rows=[{'station_id': '1'}], min_complete_days=3650)
+
+        self.assertEqual(info['country'], 'AT')
+        self.assertIn('assumptions', info)
+        self.assertEqual(info['provider_element_mapping']['vapour_pressure']['status'], 'unavailable')
+        self.assertIn('pressure_usage', info['assumptions'])
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+
+
+
 
 
 
