@@ -108,8 +108,14 @@ The following are intentionally out of scope for the current SHMU provider:
 
 Maintainer-oriented next steps, in order:
 
+Reference investigation note:
+
+- [Slovakia Historical Daily Climate Investigation](providers_sk_historical_investigation.md)
+
+
 1. Identify and validate an authoritative SHMU station metadata source.
 2. Add a validated historical SHMU climate path if a stable public source exists.
 3. Revisit quality and flag normalization once SHMU field semantics are documented.
 4. Revisit subdaily SHMU support only after timestamp semantics are confirmed.
 5. Expand canonical element mappings only after the raw field semantics are explicitly verified.
+
