@@ -250,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
             )
 
         data_info = {
-            'CreatedAt': pd.Timestamp.utcnow().isoformat(),
+            'CreatedAt': pd.Timestamp.now("UTC").isoformat(),
             'DatasetType': config.dataset_type,
             'Source': config.source,
             'Country': config.country,
