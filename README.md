@@ -6,7 +6,7 @@
   <img src="docs/images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-WeatherDownload is a DataFrame-first Python library for country-aware weather metadata, discovery, and observation downloads.
+WeatherDownload is a DataFrame-first Python library for country-aware weather metadata, discovery, and observation downloads through a unified interface.
 
 Current countries:
 

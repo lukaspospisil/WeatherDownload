@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "weatherdownload"
 version = "0.1.0"
-description = "Python library for CHMI weather metadata and observation workflows."
+description = "Country-aware Python library for weather metadata, discovery, and observation downloads through a unified interface."
 readme = "README.md"
 authors = [
     { name = "Lukáš Pospíšil" }
