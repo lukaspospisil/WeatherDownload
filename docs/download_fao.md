@@ -41,7 +41,7 @@ These canonical names are now also the final exported variable names in the stat
 
 The final per-station series expose:
 
-- `Date`
+- `date`
 - `tas_mean`
 - `tas_max`
 - `tas_min`
@@ -55,7 +55,7 @@ This keeps the exported dataset country-independent and canonical-first.
 
 The workflow still preserves how the dataset was built.
 
-`dataInfo` now includes `ProviderElementMapping`, which records for each canonical exported variable:
+`data_info` now includes `provider_element_mapping`, which records for each canonical exported variable:
 
 - the raw/provider code or codes used for the selected country
 - the country-specific selection rule, if any
@@ -161,11 +161,18 @@ Supported export formats:
 - `parquet`
 - `both`
 
+Default country-aware output names when you do not pass explicit paths:
+
+- `CZ` MAT: `outputs/fao_daily.cz.mat`
+- `CZ` Parquet bundle: `outputs/fao_daily.cz`
+- `DE` MAT: `outputs/fao_daily.de.mat`
+- `DE` Parquet bundle: `outputs/fao_daily.de`
+
 ### MAT bundle
 
 The `.mat` export contains:
 
-- `dataInfo`
+- `data_info`
 - `stations`
 - `series`
 
@@ -178,6 +185,32 @@ The Parquet bundle directory contains:
 - `series.parquet`
 
 `series.parquet` is long-form and contains only complete FAO-prep days with canonical variable names.
+
+`stations.parquet` uses normalized snake_case fields:
+
+- `station_id`
+- `full_name`
+- `latitude`
+- `longitude`
+- `elevation_m`
+- `num_complete_days`
+- `first_complete_date`
+- `last_complete_date`
+
+`series.parquet` uses:
+
+- `station_id`
+- `full_name`
+- `latitude`
+- `longitude`
+- `elevation_m`
+- `date`
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `wind_speed`
+- `vapour_pressure`
+- `sunshine_duration`
 
 ## Legacy Variable Names
 
@@ -211,13 +244,13 @@ python examples/download_fao.py --country CZ --mode download --cache-dir outputs
 Build only from cache and export Parquet for DE:
 
 ```powershell
-python examples/download_fao.py --country DE --mode build --cache-dir outputs/fao_cache --export-format parquet --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --country DE --mode build --cache-dir outputs/fao_cache --export-format parquet
 ```
 
 Run the full workflow and export both outputs:
 
 ```powershell
-python examples/download_fao.py --country CZ --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --country CZ --mode full --cache-dir outputs/fao_cache --export-format both
 ```
 
 ## Why This Stays In `examples/`
@@ -232,3 +265,6 @@ The reusable parts stay in the core library:
 - DataFrame export helpers
 
 The FAO preparation orchestration stays in the example layer because it is a specialized downstream workflow, not a general-purpose downloader API.
+
+
+

@@ -147,6 +147,8 @@ def main(argv: list[str] | None = None) -> int:
         # Pick the country-specific FAO-prep mapping and cache location first.
         config = get_fao_country_config(args.country)
         country_cache_dir = resolve_country_cache_dir(args.cache_dir, config.country)
+        mat_output_path = resolve_mat_output_path(args.output, country=config.country)
+        parquet_output_dir = resolve_parquet_output_dir(args.output_dir, country=config.country)
 
         reporter.info(f'Using cache directory: {country_cache_dir}')
         meta1 = load_station_metadata_with_cache(
@@ -238,35 +240,35 @@ def main(argv: list[str] | None = None) -> int:
             )
             station_rows.append(
                 {
-                    'WSI': station.station_id,
-                    'FULL_NAME': station.full_name,
-                    'Latitude': station.latitude,
-                    'Longitude': station.longitude,
-                    'Elevation': station.elevation_m,
-                    'NumCompleteDays_E': int(len(complete)),
-                    'FirstCompleteDate_E': complete['Date'].min().isoformat(),
-                    'LastCompleteDate_E': complete['Date'].max().isoformat(),
+                    'station_id': station.station_id,
+                    'full_name': station.full_name,
+                    'latitude': station.latitude,
+                    'longitude': station.longitude,
+                    'elevation_m': station.elevation_m,
+                    'num_complete_days': int(len(complete)),
+                    'first_complete_date': complete['date'].min().isoformat(),
+                    'last_complete_date': complete['date'].max().isoformat(),
                 }
             )
 
         data_info = {
-            'CreatedAt': pd.Timestamp.now("UTC").isoformat(),
-            'DatasetType': config.dataset_type,
-            'Source': config.source,
-            'Country': config.country,
-            'Elements': FINAL_SERIES_COLUMNS,
-            'ProviderElementMapping': build_provider_element_mapping(config),
-            'MinCompleteDays': int(args.min_complete_days),
-            'NumStations': int(len(retained_series)),
+            'created_at': pd.Timestamp.now("UTC").isoformat(),
+            'dataset_type': config.dataset_type,
+            'source': config.source,
+            'country': config.country,
+            'elements': FINAL_SERIES_COLUMNS,
+            'provider_element_mapping': build_provider_element_mapping(config),
+            'min_complete_days': int(args.min_complete_days),
+            'num_stations': int(len(retained_series)),
         }
         exported_targets: list[str] = []
         # Export one or both bundle formats without mixing download logic into the exporters.
         if args.export_format in {'mat', 'both'}:
-            export_mat_bundle(args.output, data_info=data_info, stations=station_rows, series=retained_series)
-            exported_targets.append(str(args.output))
+            export_mat_bundle(mat_output_path, data_info=data_info, stations=station_rows, series=retained_series)
+            exported_targets.append(str(mat_output_path))
         if args.export_format in {'parquet', 'both'}:
-            export_parquet_bundle(args.output_dir, data_info=data_info, stations=station_rows, series=retained_series)
-            exported_targets.append(str(args.output_dir))
+            export_parquet_bundle(parquet_output_dir, data_info=data_info, stations=station_rows, series=retained_series)
+            exported_targets.append(str(parquet_output_dir))
         reporter.essential(f"Exported FAO-prep output to: {', '.join(exported_targets)}")
         print_final_summary(reporter, stats)
         return 0
@@ -296,11 +298,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path('outputs/fao_cache'),
         help='Base cache directory for metadata and daily inputs.',
     )
-    parser.add_argument('--output', type=Path, default=Path('outputs/fao_daily.mat'), help='MATLAB .mat output path.')
+    parser.add_argument('--output', type=Path, default=None, help='MATLAB .mat output path.')
     parser.add_argument(
         '--output-dir',
         type=Path,
-        default=Path('outputs/fao_daily_bundle'),
+        default=None,
         help='Portable Parquet bundle output directory.',
     )
     parser.add_argument(
@@ -372,6 +374,18 @@ def get_fao_country_config(country: str | None) -> FaoCountryConfig:
 
 def resolve_country_cache_dir(cache_dir: Path, country: str) -> Path:
     return cache_dir / normalize_country_code(country)
+
+
+def resolve_mat_output_path(output: Path | None, *, country: str) -> Path:
+    if output is not None:
+        return output
+    return Path('outputs') / f"fao_daily.{normalize_country_code(country).lower()}.mat"
+
+
+def resolve_parquet_output_dir(output_dir: Path | None, *, country: str) -> Path:
+    if output_dir is not None:
+        return output_dir
+    return Path('outputs') / f"fao_daily.{normalize_country_code(country).lower()}"
 
 
 def load_station_metadata_with_cache(
@@ -590,14 +604,14 @@ def prepare_complete_station_series(daily_table: pd.DataFrame, *, config: FaoCou
     for canonical_name in FINAL_SERIES_COLUMNS:
         selected = select_daily_variable_rows(daily_table, canonical_name=canonical_name, config=config)
         if selected.empty:
-            return pd.DataFrame(columns=['Date', *FINAL_SERIES_COLUMNS])
+            return pd.DataFrame(columns=['date', *FINAL_SERIES_COLUMNS])
         selected_tables.append(selected)
 
     merged = selected_tables[0]
     for table in selected_tables[1:]:
-        merged = merged.merge(table, on='Date', how='inner')
+        merged = merged.merge(table, on='date', how='inner')
 
-    complete = merged.dropna(subset=FINAL_SERIES_COLUMNS).sort_values('Date').reset_index(drop=True)
+    complete = merged.dropna(subset=FINAL_SERIES_COLUMNS).sort_values('date').reset_index(drop=True)
     return complete
 
 
@@ -613,10 +627,10 @@ def select_daily_variable_rows(
     if required_time_function is not None:
         filtered = filtered[filtered['time_function'].astype(str).str.strip() == required_time_function]
     if filtered.empty:
-        return pd.DataFrame(columns=['Date', canonical_name])
-    filtered['Date'] = pd.to_datetime(filtered['observation_date']).dt.date
+        return pd.DataFrame(columns=['date', canonical_name])
+    filtered['date'] = pd.to_datetime(filtered['observation_date']).dt.date
     filtered[canonical_name] = pd.to_numeric(filtered['value'], errors='coerce')
-    filtered = filtered[['Date', canonical_name]].dropna(subset=[canonical_name]).drop_duplicates(subset=['Date'], keep='last')
+    filtered = filtered[['date', canonical_name]].dropna(subset=[canonical_name]).drop_duplicates(subset=['date'], keep='last')
     return filtered.reset_index(drop=True)
 
 
@@ -630,12 +644,12 @@ def build_series_record(
     elevation: float | None,
 ) -> dict[str, Any]:
     return {
-        'WSI': station_id,
-        'FULL_NAME': full_name,
-        'Latitude': latitude,
-        'Longitude': longitude,
-        'Elevation': elevation,
-        'Date': [value.isoformat() for value in complete['Date'].tolist()],
+        'station_id': station_id,
+        'full_name': full_name,
+        'latitude': latitude,
+        'longitude': longitude,
+        'elevation_m': elevation,
+        'date': [value.isoformat() for value in complete['date'].tolist()],
         'tas_mean': complete['tas_mean'].astype(float).tolist(),
         'tas_max': complete['tas_max'].astype(float).tolist(),
         'tas_min': complete['tas_min'].astype(float).tolist(),
@@ -651,7 +665,7 @@ def export_mat_bundle(output_path: Path, *, data_info: dict[str, Any], stations:
     # Export a MATLAB-oriented nested bundle for downstream workflows.
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        'dataInfo': _to_mat_struct(data_info),
+        'data_info': _to_mat_struct(data_info),
         'stations': _station_rows_to_struct(stations),
         'series': np.array([_to_mat_struct(item) for item in series], dtype=object),
     }
@@ -688,14 +702,14 @@ def build_provider_element_mapping(config: FaoCountryConfig) -> dict[str, dict[s
 
 def build_station_table(rows: list[dict[str, Any]]) -> pd.DataFrame:
     columns = [
-        'WSI',
-        'FULL_NAME',
-        'Latitude',
-        'Longitude',
-        'Elevation',
-        'NumCompleteDays_E',
-        'FirstCompleteDate_E',
-        'LastCompleteDate_E',
+        'station_id',
+        'full_name',
+        'latitude',
+        'longitude',
+        'elevation_m',
+        'num_complete_days',
+        'first_complete_date',
+        'last_complete_date',
     ]
     if not rows:
         return pd.DataFrame(columns=columns)
@@ -703,20 +717,20 @@ def build_station_table(rows: list[dict[str, Any]]) -> pd.DataFrame:
 
 
 def build_series_table(series: list[dict[str, Any]]) -> pd.DataFrame:
-    columns = ['WSI', 'FULL_NAME', 'Latitude', 'Longitude', 'Elevation', 'Date', *FINAL_SERIES_COLUMNS]
+    columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'date', *FINAL_SERIES_COLUMNS]
     records: list[dict[str, Any]] = []
     for item in series:
-        dates = item['Date']
+        dates = item['date']
         num_rows = len(dates)
         for index in range(num_rows):
             records.append(
                 {
-                    'WSI': item['WSI'],
-                    'FULL_NAME': item['FULL_NAME'],
-                    'Latitude': item['Latitude'],
-                    'Longitude': item['Longitude'],
-                    'Elevation': item['Elevation'],
-                    'Date': dates[index],
+                    'station_id': item['station_id'],
+                    'full_name': item['full_name'],
+                    'latitude': item['latitude'],
+                    'longitude': item['longitude'],
+                    'elevation_m': item['elevation_m'],
+                    'date': dates[index],
                     'tas_mean': item['tas_mean'][index],
                     'tas_max': item['tas_max'][index],
                     'tas_min': item['tas_min'][index],
@@ -753,14 +767,14 @@ def format_file_status(status: str) -> str:
 def _station_rows_to_struct(rows: list[dict[str, Any]]) -> dict[str, np.ndarray]:
     if not rows:
         return {
-            'WSI': np.array([], dtype=object),
-            'FULL_NAME': np.array([], dtype=object),
-            'Latitude': np.array([], dtype=np.float64),
-            'Longitude': np.array([], dtype=np.float64),
-            'Elevation': np.array([], dtype=np.float64),
-            'NumCompleteDays_E': np.array([], dtype=np.float64),
-            'FirstCompleteDate_E': np.array([], dtype=object),
-            'LastCompleteDate_E': np.array([], dtype=object),
+            'station_id': np.array([], dtype=object),
+            'full_name': np.array([], dtype=object),
+            'latitude': np.array([], dtype=np.float64),
+            'longitude': np.array([], dtype=np.float64),
+            'elevation_m': np.array([], dtype=np.float64),
+            'num_complete_days': np.array([], dtype=np.float64),
+            'first_complete_date': np.array([], dtype=object),
+            'last_complete_date': np.array([], dtype=object),
         }
     columns = rows[0].keys()
     return {
@@ -800,3 +814,4 @@ def _to_mat_value(value: Any) -> Any:
 
 if __name__ == '__main__':
     raise SystemExit(main())
+

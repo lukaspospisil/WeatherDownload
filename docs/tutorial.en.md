@@ -688,7 +688,7 @@ Returns a **wide-format workflow dataset**, prepared for later FAO work.
 This means:
 - one row per complete date,
 - side-by-side canonical columns:
-  - `Date`
+  - `date`
   - `tas_mean`
   - `tas_max`
   - `tas_min`
@@ -717,7 +717,7 @@ A typical bundle directory contains:
 - canonical variables,
 - minimum required number of complete days,
 - number of retained stations,
-- `ProviderElementMapping`.
+- `provider_element_mapping`.
 
 ### 21.3 What is inside `stations.parquet`
 
@@ -735,7 +735,7 @@ A typical bundle directory contains:
 - `latitude`
 - `longitude`
 - `elevation_m`
-- `Date`
+- `date`
 - `tas_mean`
 - `tas_max`
 - `tas_min`
@@ -779,7 +779,7 @@ The FAO example is a workflow layer on top of the library.
 
 ### 22.4 Provider provenance
 Provider-specific mapping is preserved in:
-- `dataInfo["ProviderElementMapping"]`
+- `data_info["provider_element_mapping"]`
 
 ---
 
@@ -872,8 +872,8 @@ python -c "import pandas as pd; df = pd.read_parquet('outputs/kopisty_daily.parq
 
 ```bash
 python examples/inspect_file.py outputs/kopisty_daily.parquet
-python examples/inspect_file.py outputs/fao_daily.mat
-python examples/inspect_file.py outputs/fao_daily_bundle
+python examples/inspect_file.py outputs/fao_daily.cz.mat
+python examples/inspect_file.py outputs/fao_daily.cz
 ```
 
 ### 27.3 What `inspect_file.py` should show
@@ -925,7 +925,7 @@ python examples/download_fao.py --country DE --mode full --export-format parquet
 ### What to expect
 The result is a **wide-format dataset bundle**. The main data will be in `series.parquet` and will contain canonical columns:
 
-- `Date`
+- `date`
 - `tas_mean`
 - `tas_max`
 - `tas_min`
@@ -1007,3 +1007,6 @@ The most important practical distinction is:
 - wide-format,
 - country-aware,
 - suitable as a clean input dataset for later physical/model-based processing.
+
+
+

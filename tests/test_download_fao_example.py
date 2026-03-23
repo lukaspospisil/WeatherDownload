@@ -30,6 +30,36 @@ class DownloadFaoExampleTests(unittest.TestCase):
         args = parser.parse_args(['--country', 'CZ'])
         self.assertEqual(args.country, 'CZ')
 
+    def test_default_mat_output_path_is_country_aware(self) -> None:
+        self.assertEqual(
+            download_fao.resolve_mat_output_path(None, country='CZ'),
+            Path('outputs/fao_daily.cz.mat'),
+        )
+        self.assertEqual(
+            download_fao.resolve_mat_output_path(None, country='DE'),
+            Path('outputs/fao_daily.de.mat'),
+        )
+
+    def test_default_parquet_output_dir_is_country_aware(self) -> None:
+        self.assertEqual(
+            download_fao.resolve_parquet_output_dir(None, country='CZ'),
+            Path('outputs/fao_daily.cz'),
+        )
+        self.assertEqual(
+            download_fao.resolve_parquet_output_dir(None, country='DE'),
+            Path('outputs/fao_daily.de'),
+        )
+
+    def test_explicit_output_paths_override_country_defaults(self) -> None:
+        self.assertEqual(
+            download_fao.resolve_mat_output_path(Path('custom.mat'), country='CZ'),
+            Path('custom.mat'),
+        )
+        self.assertEqual(
+            download_fao.resolve_parquet_output_dir(Path('custom_bundle'), country='DE'),
+            Path('custom_bundle'),
+        )
+
     def test_get_fao_country_config_returns_cz_mapping(self) -> None:
         config = download_fao.get_fao_country_config('CZ')
         self.assertEqual(config.country, 'CZ')
@@ -76,8 +106,8 @@ class DownloadFaoExampleTests(unittest.TestCase):
         complete = download_fao.prepare_complete_station_series(daily_table, config=config)
 
         self.assertEqual(len(complete), 1)
-        self.assertEqual(complete['Date'].tolist(), [pd.Timestamp('2024-01-01').date()])
-        self.assertEqual(list(complete.columns), ['Date', 'tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'])
+        self.assertEqual(complete['date'].tolist(), [pd.Timestamp('2024-01-01').date()])
+        self.assertEqual(list(complete.columns), ['date', 'tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'])
 
     def test_prepare_complete_station_series_handles_de_without_timefunc_rules(self) -> None:
         config = download_fao.get_fao_country_config('DE')
@@ -93,42 +123,42 @@ class DownloadFaoExampleTests(unittest.TestCase):
         complete = download_fao.prepare_complete_station_series(daily_table, config=config)
 
         self.assertEqual(len(complete), 1)
-        self.assertEqual(list(complete.columns), ['Date', 'tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'])
+        self.assertEqual(list(complete.columns), ['date', 'tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'])
         self.assertEqual(float(complete.loc[0, 'vapour_pressure']), 7.0)
         self.assertEqual(float(complete.loc[0, 'sunshine_duration']), 0.5)
 
     def test_export_parquet_bundle_writes_portable_bundle_files(self) -> None:
         data_info = {
-            'CreatedAt': '2026-03-22T10:00:00+00:00',
-            'DatasetType': 'test bundle',
-            'Source': 'test',
-            'Elements': ['tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'],
-            'ProviderElementMapping': {
+            'created_at': '2026-03-22T10:00:00+00:00',
+            'dataset_type': 'test bundle',
+            'source': 'test',
+            'elements': ['tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'],
+            'provider_element_mapping': {
                 'tas_mean': {'raw_codes': ['T'], 'selection_rule': 'AVG'},
             },
-            'MinCompleteDays': 3650,
-            'NumStations': 1,
+            'min_complete_days': 3650,
+            'num_stations': 1,
         }
         stations = [
             {
-                'WSI': '0-20000-0-11406',
-                'FULL_NAME': 'TEST STATION',
-                'Latitude': 50.1,
-                'Longitude': 14.4,
-                'Elevation': 250.0,
-                'NumCompleteDays_E': 2,
-                'FirstCompleteDate_E': '2024-01-01',
-                'LastCompleteDate_E': '2024-01-02',
+                'station_id': '0-20000-0-11406',
+                'full_name': 'TEST STATION',
+                'latitude': 50.1,
+                'longitude': 14.4,
+                'elevation_m': 250.0,
+                'num_complete_days': 2,
+                'first_complete_date': '2024-01-01',
+                'last_complete_date': '2024-01-02',
             }
         ]
         series = [
             {
-                'WSI': '0-20000-0-11406',
-                'FULL_NAME': 'TEST STATION',
-                'Latitude': 50.1,
-                'Longitude': 14.4,
-                'Elevation': 250.0,
-                'Date': ['2024-01-01', '2024-01-02'],
+                'station_id': '0-20000-0-11406',
+                'full_name': 'TEST STATION',
+                'latitude': 50.1,
+                'longitude': 14.4,
+                'elevation_m': 250.0,
+                'date': ['2024-01-01', '2024-01-02'],
                 'tas_mean': [1.0, 2.0],
                 'tas_max': [3.0, 4.0],
                 'tas_min': [-1.0, 0.0],
@@ -154,10 +184,12 @@ class DownloadFaoExampleTests(unittest.TestCase):
             written_stations = pd.read_parquet(stations_path)
             written_series = pd.read_parquet(series_path)
 
-            self.assertEqual(written_info['NumStations'], 1)
-            self.assertEqual(written_info['ProviderElementMapping']['tas_mean']['raw_codes'], ['T'])
-            self.assertEqual(list(written_stations['WSI']), ['0-20000-0-11406'])
-            self.assertEqual(list(written_series['Date']), ['2024-01-01', '2024-01-02'])
+            self.assertEqual(written_info['num_stations'], 1)
+            self.assertEqual(written_info['provider_element_mapping']['tas_mean']['raw_codes'], ['T'])
+            self.assertEqual(list(written_stations['station_id']), ['0-20000-0-11406'])
+            self.assertEqual(list(written_stations['num_complete_days']), [2])
+            self.assertEqual(list(written_series['date']), ['2024-01-01', '2024-01-02'])
+            self.assertEqual(list(written_series['station_id']), ['0-20000-0-11406', '0-20000-0-11406'])
             self.assertEqual(list(written_series['vapour_pressure']), [7.0, 8.0])
             self.assertFalse(written_series[download_fao.FINAL_SERIES_COLUMNS].isna().any().any())
 
@@ -244,7 +276,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_build_series_record_uses_canonical_export_names(self) -> None:
         complete = pd.DataFrame([
             {
-                'Date': pd.Timestamp('2024-01-01').date(),
+                'date': pd.Timestamp('2024-01-01').date(),
                 'tas_mean': 1.0,
                 'tas_max': 3.0,
                 'tas_min': -1.0,
@@ -263,8 +295,14 @@ class DownloadFaoExampleTests(unittest.TestCase):
             elevation=10.0,
         )
 
+        self.assertIn('station_id', series)
+        self.assertIn('full_name', series)
+        self.assertIn('elevation_m', series)
         self.assertIn('tas_mean', series)
         self.assertIn('sunshine_duration', series)
+        self.assertNotIn('WSI', series)
+        self.assertNotIn('FULL_NAME', series)
+        self.assertNotIn('Elevation', series)
         self.assertNotIn('T', series)
         self.assertNotIn('SSV', series)
 
@@ -304,3 +342,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+

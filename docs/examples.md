@@ -92,8 +92,8 @@ Run:
 
 ```powershell
 python examples/inspect_file.py outputs/some_file.parquet
-python examples/inspect_file.py outputs/fao_daily.mat
-python examples/inspect_file.py outputs/fao_daily_bundle
+python examples/inspect_file.py outputs/fao_daily.cz.mat
+python examples/inspect_file.py outputs/fao_daily.cz
 ```
 
 ## Workflow Example
@@ -123,7 +123,7 @@ What it does:
 Run:
 
 ```powershell
-python examples/download_fao.py --country CZ --mode full --cache-dir outputs/fao_cache --export-format both --output outputs/fao_daily.mat --output-dir outputs/fao_daily_bundle
+python examples/download_fao.py --country CZ --mode full --cache-dir outputs/fao_cache --export-format both
 ```
 
 Detailed workflow notes:
@@ -139,3 +139,4 @@ For a new user:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+

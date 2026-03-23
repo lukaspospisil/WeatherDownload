@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
-
 <p align="right">
   <img src="docs/images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
