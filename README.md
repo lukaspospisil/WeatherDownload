@@ -2,10 +2,6 @@
 
 [![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
-<p align="right">
-  <img src="docs/images/logo.svg" alt="WeatherDownload logo" width="180">
-</p>
-
 WeatherDownload is a DataFrame-first Python library for country-aware weather metadata, discovery, and observation downloads.
 
 Current countries:
@@ -20,11 +16,6 @@ What stays stable across countries:
 - canonical meteorological element names
 - normalized output schemas
 - country selection with ISO 3166-1 alpha-2 codes such as `CZ` and `DE`
-
-## Tutorial
-
-- [Tutorial (English)](docs/tutorial.en.md)
-- [Tutoriál (čeština)](docs/tutorial.cs.md)
 
 ## Install
 
@@ -105,9 +96,16 @@ weatherdownload observations hourly --country DE --station-id 00044 --element ta
 weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --all-history
 weatherdownload observations 10min --country DE --station-id 00044 --element tas_mean --element relative_humidity --start 1999-12-31T22:50:00Z --end 2000-01-01T00:00:00Z
 weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --element tas_mean --all-history
+weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --element tas_max --layout long --format parquet --output daily-long.parquet
 ```
 
 `--all-history` is explicit and mutually exclusive with `--start`/`--end` or `--start-date`/`--end-date`.
+
+Observation output layout defaults:
+
+- `screen`, `csv`, `excel`: `wide`
+- `parquet`, `mat`: `long`
+- use `--layout long` or `--layout wide` to override the default
 
 ## Canonical Elements
 

@@ -25,7 +25,19 @@ class ObservationCliTests(unittest.TestCase):
                 'quality': 0,
                 'dataset_scope': 'historical_csv',
                 'resolution': '10min',
-            }
+            },
+            {
+                'station_id': '0-20000-0-11406',
+                'gh_id': 'L3CHEB01',
+                'element': 'soil_temperature_10cm',
+                'element_raw': 'T10',
+                'timestamp': '2024-01-01T00:00:00Z',
+                'value': -0.5,
+                'flag': None,
+                'quality': 0,
+                'dataset_scope': 'historical_csv',
+                'resolution': '10min',
+            },
         ])
 
     def _sample_hourly_table(self) -> pd.DataFrame:
@@ -41,11 +53,36 @@ class ObservationCliTests(unittest.TestCase):
                 'quality': 0,
                 'dataset_scope': 'historical_csv',
                 'resolution': '1hour',
-            }
+            },
+            {
+                'station_id': '0-20000-0-11406',
+                'gh_id': 'L3CHEB01',
+                'element': 'pressure',
+                'element_raw': 'P',
+                'timestamp': '2024-01-01T00:00:00Z',
+                'value': 1012.5,
+                'flag': None,
+                'quality': 0,
+                'dataset_scope': 'historical_csv',
+                'resolution': '1hour',
+            },
         ])
 
     def _sample_daily_table(self) -> pd.DataFrame:
         return pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'gh_id': 'L3CHEB01',
+                'element': 'tas_mean',
+                'element_raw': 'T',
+                'observation_date': '1865-06-01',
+                'time_function': 'AVG',
+                'value': 18.5,
+                'flag': None,
+                'quality': 0,
+                'dataset_scope': 'historical_csv',
+                'resolution': 'daily',
+            },
             {
                 'station_id': '0-20000-0-11406',
                 'gh_id': 'L3CHEB01',
@@ -58,7 +95,7 @@ class ObservationCliTests(unittest.TestCase):
                 'quality': 0,
                 'dataset_scope': 'historical_csv',
                 'resolution': 'daily',
-            }
+            },
         ])
 
     def _sample_de_daily_table(self) -> pd.DataFrame:
@@ -110,15 +147,17 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
-    def test_tenmin_cli_screen_output(self) -> None:
+    def test_tenmin_cli_screen_output_defaults_to_wide_layout(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
             with redirect_stdout(buffer):
-                exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
+                exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--element', 'soil_temperature_10cm', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
-        self.assertIn('0-20000-0-11406', output)
-        self.assertIn('10min', output)
+        self.assertIn('timestamp', output)
+        self.assertIn('tas_mean', output)
+        self.assertIn('soil_temperature_10cm', output)
+        self.assertNotIn('element_raw', output)
 
     def test_tenmin_cli_uses_default_country_cz(self) -> None:
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()) as download_mock:
@@ -154,9 +193,9 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(query.elements, ['TT_10'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
-        self.assertIn('10min', buffer.getvalue())
+        self.assertIn('tas_mean', buffer.getvalue())
 
-    def test_tenmin_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
+    def test_tenmin_cli_csv_export_defaults_to_wide_layout(self) -> None:
         original_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as temp_dir:
             os.chdir(temp_dir)
@@ -164,24 +203,30 @@ class ObservationCliTests(unittest.TestCase):
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
                     with redirect_stdout(buffer):
-                        exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z', '--format', 'csv', '--output', 'tenmin.csv'])
+                        exit_code = main(['observations', '10min', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--element', 'soil_temperature_10cm', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T00:20:00Z', '--format', 'csv', '--output', 'tenmin.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/tenmin.csv')
                 self.assertTrue(output_path.exists())
-                self.assertIn('0-20000-0-11406', output_path.read_text(encoding='utf-8'))
+                content = output_path.read_text(encoding='utf-8')
+                self.assertIn('timestamp', content)
+                self.assertIn('tas_mean', content)
+                self.assertIn('soil_temperature_10cm', content)
+                self.assertNotIn('element_raw', content)
                 self.assertIn('Exported 10min observations to outputs', buffer.getvalue())
             finally:
                 os.chdir(original_cwd)
 
-    def test_hourly_cli_screen_output(self) -> None:
+    def test_hourly_cli_screen_output_defaults_to_wide_layout(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()):
             with redirect_stdout(buffer):
-                exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'])
+                exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--element', 'pressure', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
-        self.assertIn('0-20000-0-11406', output)
-        self.assertIn('1hour', output)
+        self.assertIn('timestamp', output)
+        self.assertIn('vapour_pressure', output)
+        self.assertIn('pressure', output)
+        self.assertNotIn('element_raw', output)
 
     def test_hourly_cli_all_history_sets_query_mode(self) -> None:
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()) as download_mock:
@@ -207,7 +252,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(query.elements, ['TT_TU'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
-        self.assertIn('1hour', buffer.getvalue())
+        self.assertIn('tas_mean', buffer.getvalue())
 
     def test_hourly_cli_rejects_mixed_all_history_and_explicit_range(self) -> None:
         stderr = io.StringIO()
@@ -218,6 +263,16 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertIn('--all-history cannot be used together with --start or --end', stderr.getvalue())
 
+    def test_hourly_cli_layout_long_preserves_normalized_output(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()):
+            with redirect_stdout(buffer):
+                exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z', '--layout', 'long'])
+        self.assertEqual(exit_code, 0)
+        output = buffer.getvalue()
+        self.assertIn('element_raw', output)
+        self.assertIn('vapour_pressure', output)
+
     def test_hourly_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
         original_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -226,24 +281,30 @@ class ObservationCliTests(unittest.TestCase):
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.download_observations', return_value=self._sample_hourly_table()):
                     with redirect_stdout(buffer):
-                        exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z', '--format', 'csv', '--output', 'hourly.csv'])
+                        exit_code = main(['observations', 'hourly', '--station-id', '0-20000-0-11406', '--element', 'vapour_pressure', '--element', 'pressure', '--start', '2024-01-01T00:00:00Z', '--end', '2024-01-01T02:00:00Z', '--format', 'csv', '--output', 'hourly.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/hourly.csv')
                 self.assertTrue(output_path.exists())
-                self.assertIn('0-20000-0-11406', output_path.read_text(encoding='utf-8'))
+                content = output_path.read_text(encoding='utf-8')
+                self.assertIn('timestamp', content)
+                self.assertIn('vapour_pressure', content)
+                self.assertIn('pressure', content)
+                self.assertNotIn('element_raw', content)
                 self.assertIn('Exported hourly observations to outputs', buffer.getvalue())
             finally:
                 os.chdir(original_cwd)
 
-    def test_daily_cli_screen_output(self) -> None:
+    def test_daily_cli_screen_output_defaults_to_wide_layout(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()):
             with redirect_stdout(buffer):
-                exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_max', '--start-date', '1865-06-01', '--end-date', '1865-06-03'])
+                exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--element', 'tas_max', '--start-date', '1865-06-01', '--end-date', '1865-06-03'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
-        self.assertIn('0-20000-0-11406', output)
-        self.assertIn('TMA', output)
+        self.assertIn('observation_date', output)
+        self.assertIn('tas_mean', output)
+        self.assertIn('tas_max', output)
+        self.assertNotIn('element_raw', output)
 
     def test_daily_cli_all_history_sets_query_mode(self) -> None:
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()) as download_mock:
@@ -269,9 +330,9 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(query.elements, ['TMK'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
-        self.assertIn('historical', buffer.getvalue())
+        self.assertIn('tas_mean', buffer.getvalue())
 
-    def test_daily_cli_csv_export_uses_outputs_for_bare_filename(self) -> None:
+    def test_daily_cli_csv_export_defaults_to_wide_layout(self) -> None:
         original_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as temp_dir:
             os.chdir(temp_dir)
@@ -279,11 +340,15 @@ class ObservationCliTests(unittest.TestCase):
                 buffer = io.StringIO()
                 with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()):
                     with redirect_stdout(buffer):
-                        exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_max', '--start-date', '1865-06-01', '--end-date', '1865-06-03', '--format', 'csv', '--output', 'daily.csv'])
+                        exit_code = main(['observations', 'daily', '--station-id', '0-20000-0-11406', '--element', 'tas_mean', '--element', 'tas_max', '--start-date', '1865-06-01', '--end-date', '1865-06-03', '--format', 'csv', '--output', 'daily.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/daily.csv')
                 self.assertTrue(output_path.exists())
-                self.assertIn('0-20000-0-11406', output_path.read_text(encoding='utf-8'))
+                content = output_path.read_text(encoding='utf-8')
+                self.assertIn('observation_date', content)
+                self.assertIn('tas_mean', content)
+                self.assertIn('tas_max', content)
+                self.assertNotIn('element_raw', content)
                 self.assertIn('Exported daily observations to outputs', buffer.getvalue())
             finally:
                 os.chdir(original_cwd)
@@ -449,3 +514,6 @@ class StationAvailabilityCliTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+

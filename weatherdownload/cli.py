@@ -88,6 +88,7 @@ def build_parser() -> argparse.ArgumentParser:
     tenmin_parser.add_argument("--end", dest="end", help="End datetime in ISO format.")
     tenmin_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
     tenmin_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
+    tenmin_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
     tenmin_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     tenmin_parser.set_defaults(handler=handle_tenmin_observations)
 
@@ -99,6 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
     hourly_parser.add_argument("--end", dest="end", help="End datetime in ISO format.")
     hourly_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
     hourly_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
+    hourly_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
     hourly_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     hourly_parser.set_defaults(handler=handle_hourly_observations)
 
@@ -110,6 +112,7 @@ def build_parser() -> argparse.ArgumentParser:
     daily_parser.add_argument("--end-date", dest="end_date", help="End date in YYYY-MM-DD format.")
     daily_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
     daily_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
+    daily_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
     daily_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     daily_parser.set_defaults(handler=handle_daily_observations)
 
@@ -236,7 +239,11 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
         all_history=args.all_history,
         elements=args.elements,
     )
-    observations = download_observations(query, country=args.country)
+    observations = _prepare_observation_output(
+        download_observations(query, country=args.country),
+        output_format=args.format,
+        requested_layout=args.layout,
+    )
     if args.format == "screen":
         print(_format_table(observations, metadata_view=False))
         return 0
@@ -259,7 +266,11 @@ def handle_hourly_observations(args: argparse.Namespace) -> int:
         all_history=args.all_history,
         elements=args.elements,
     )
-    observations = download_observations(query, country=args.country)
+    observations = _prepare_observation_output(
+        download_observations(query, country=args.country),
+        output_format=args.format,
+        requested_layout=args.layout,
+    )
     if args.format == "screen":
         print(_format_table(observations, metadata_view=False))
         return 0
@@ -282,7 +293,11 @@ def handle_daily_observations(args: argparse.Namespace) -> int:
         all_history=args.all_history,
         elements=args.elements,
     )
-    observations = download_observations(query, country=args.country)
+    observations = _prepare_observation_output(
+        download_observations(query, country=args.country),
+        output_format=args.format,
+        requested_layout=args.layout,
+    )
     if args.format == "screen":
         print(_format_table(observations, metadata_view=False))
         return 0
@@ -336,6 +351,44 @@ def _validate_observation_mode(args: argparse.Namespace, *, daily: bool) -> None
         raise ValueError('--all-history cannot be used together with --start or --end.')
     if not args.all_history and (args.start is None or args.end is None):
         raise ValueError('Use either --all-history or both --start and --end.')
+
+
+def _prepare_observation_output(
+    observations: pd.DataFrame,
+    *,
+    output_format: str,
+    requested_layout: str | None,
+) -> pd.DataFrame:
+    if observations.empty:
+        return observations
+    resolved_layout = requested_layout or _default_observation_layout(output_format)
+    if resolved_layout == "long":
+        return observations
+    return _pivot_observations_wide(observations)
+
+
+def _default_observation_layout(output_format: str) -> str:
+    if output_format in {"screen", "csv", "excel"}:
+        return "wide"
+    return "long"
+
+
+def _pivot_observations_wide(observations: pd.DataFrame) -> pd.DataFrame:
+    if "observation_date" in observations.columns:
+        row_key = "observation_date"
+    elif "timestamp" in observations.columns:
+        row_key = "timestamp"
+    else:
+        return observations
+
+    index_columns = ["station_id"]
+    if "gh_id" in observations.columns and observations["gh_id"].notna().any():
+        index_columns.append("gh_id")
+    index_columns.append(row_key)
+
+    wide = observations.pivot_table(index=index_columns, columns="element", values="value", aggfunc="first").reset_index()
+    wide.columns.name = None
+    return wide
 
 
 def _format_table(table: pd.DataFrame, metadata_view: bool) -> str:
