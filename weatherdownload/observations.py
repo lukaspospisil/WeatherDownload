@@ -28,6 +28,7 @@ from .dwd_subdaily import NORMALIZED_DWD_SUBDAILY_COLUMNS, download_subdaily_obs
 from .chmi_registry import get_dataset_spec as get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
+from .shmu_observations import NORMALIZED_SHMU_DAILY_COLUMNS, download_daily_observations_shmu
 
 
 def download_observations(
@@ -79,6 +80,16 @@ def _download_observations_dwd(
     if query.dataset_scope == 'historical' and query.resolution in {'1hour', '10min'}:
         return download_subdaily_observations_dwd(query, timeout=timeout, station_metadata=station_metadata).loc[:, NORMALIZED_DWD_SUBDAILY_COLUMNS]
     raise NotImplementedError('Only the first DWD historical downloader paths for daily, 1hour, and 10min are implemented so far.')
+
+
+def _download_observations_shmu(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    if query.dataset_scope == 'recent' and query.resolution == 'daily':
+        return download_daily_observations_shmu(query, timeout=timeout, station_metadata=station_metadata).loc[:, NORMALIZED_SHMU_DAILY_COLUMNS]
+    raise NotImplementedError('Experimental SHMU support currently implements only recent/daily station observations.')
 
 
 def _download_tenmin_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:

@@ -12,6 +12,7 @@ Current countries:
 
 - `CZ` via CHMI
 - `DE` via DWD
+- `SK` via SHMU OpenDATA (experimental, limited to `recent / daily` station observations and minimal station discovery)
 
 What stays stable across countries:
 
@@ -19,7 +20,7 @@ What stays stable across countries:
 - canonical `station_id`
 - canonical meteorological element names
 - normalized output schemas
-- country selection with ISO 3166-1 alpha-2 codes such as `CZ` and `DE`
+- country selection with ISO 3166-1 alpha-2 codes such as `CZ`, `DE`, and `SK`
 
 ## Install
 
@@ -71,6 +72,26 @@ query = ObservationQuery(
 daily = download_observations(query)
 ```
 
+The experimental Slovakia slice currently focuses only on SHMU recent daily station observations and minimal station discovery derived from the same recent/daily payload:
+
+```python
+from weatherdownload import ObservationQuery, download_observations, read_station_metadata
+
+sk_stations = read_station_metadata(country="SK")
+
+query = ObservationQuery(
+    country="SK",
+    dataset_scope="recent",
+    resolution="daily",
+    station_ids=["11800"],
+    start_date="2025-01-01",
+    end_date="2025-01-02",
+    elements=["tas_max", "precipitation"],
+)
+
+daily = download_observations(query, station_metadata=sk_stations)
+```
+
 Use explicit full-history mode only when you want the entire implemented station history:
 
 ```python
@@ -93,11 +114,12 @@ hourly = download_observations(query)
 ```powershell
 weatherdownload stations metadata --country CZ --format screen
 weatherdownload stations metadata --country DE --format screen
+weatherdownload stations metadata --country SK --format screen
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --element tas_max --element tas_min --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-10
+weatherdownload observations daily --country SK --station-id 11800 --element tas_max --element precipitation --start-date 2025-01-01 --end-date 2025-01-02
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --all-history
 weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
-weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --all-history
 weatherdownload observations 10min --country DE --station-id 00044 --element tas_mean --element relative_humidity --start 1999-12-31T22:50:00Z --end 2000-01-01T00:00:00Z
 weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --element tas_mean --all-history
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --element tas_max --layout long --format parquet --output daily-long.parquet
@@ -127,11 +149,13 @@ WeatherDownload is canonical-first:
 | --- | --- | --- | --- | --- | --- |
 | `CZ` | Yes | Yes | Yes | Yes | Yes |
 | `DE` | Yes | Yes | Yes | Yes, narrow slice | Yes, narrow slice |
+| `SK` | Experimental, probe-derived | Experimental | Yes, narrow slice | No | No |
 
 Current intentionally narrow slices:
 
 - `DE historical / 1hour`: `tas_mean`, `relative_humidity`, `wind_speed`
 - `DE historical / 10min`: `tas_mean`, `relative_humidity`, `wind_speed`
+- `SK recent / daily`: `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`
 
 ## Docs
 
@@ -140,6 +164,8 @@ Current intentionally narrow slices:
 - [Normalized Output Schemas](docs/output_schema.md)
 - [Examples And Workflows](docs/examples.md)
 - [MATLAB-Oriented FAO Workflow](docs/download_fao.md)
+- [Experimental Slovakia Provider Notes](docs/providers_sk_experimental.md)
+- [Changelog](docs/changelog.md)
 
 ## Public API Highlights
 
@@ -159,6 +185,8 @@ Current intentionally narrow slices:
 - `station_id` is normalized across providers:
   - `CZ`: CHMI `WSI`
   - `DE`: zero-padded DWD `Stations_id`
+  - `SK`: SHMU `ind_kli` as string
 - `gh_id` is optional and nullable when a provider does not expose an equivalent field
 - outputs stay DataFrame-first
 - provider-specific internals stay behind the provider layer
+- `SK` support is experimental, limited to `recent / daily`, and currently has incomplete probe-derived station metadata

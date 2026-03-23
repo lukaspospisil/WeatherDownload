@@ -1,0 +1,9 @@
+{
+  "id": "kli_inter_metadata",
+  "data": [
+    {"m_column_name": "t_max", "popis": "Maximum air temperature", "unit": "degC"},
+    {"m_column_name": "t_min", "popis": "Minimum air temperature", "unit": "degC"},
+    {"m_column_name": "sln_svit", "popis": "Sunshine duration", "unit": "h"},
+    {"m_column_name": "zra_uhrn", "popis": "Precipitation total", "unit": "mm"}
+  ]
+}

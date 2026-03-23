@@ -333,7 +333,12 @@ def _add_country_argument(parser: argparse.ArgumentParser) -> None:
 
 
 def _default_dataset_scope(country: str) -> str:
-    return "historical" if country.strip().upper() == "DE" else "historical_csv"
+    normalized = country.strip().upper()
+    if normalized == 'DE':
+        return 'historical'
+    if normalized == 'SK':
+        return 'recent'
+    return 'historical_csv'
 
 
 def _read_stations_for_cli(args: argparse.Namespace) -> pd.DataFrame:
@@ -403,3 +408,4 @@ def _format_table(table: pd.DataFrame, metadata_view: bool) -> str:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

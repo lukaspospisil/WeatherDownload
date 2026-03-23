@@ -96,6 +96,33 @@ python examples/inspect_file.py outputs/fao_daily.cz.mat
 python examples/inspect_file.py outputs/fao_daily.cz
 ```
 
+## Experimental Provider Example
+
+### `examples/probe_shmu_sk.py`
+
+Shows how to:
+
+- probe the experimental SHMU Slovakia `recent / daily` observation feed
+- cache the raw metadata JSON and one monthly daily JSON sample
+- inspect the current feed summary offline via `probe_summary.csv`
+- normalize one selected station/date slice into the library's canonical daily observation schema
+
+Important current limits:
+
+- this example is only for experimental `SK / recent / daily`
+- it does not provide authoritative historical metadata coverage
+- it does not implement validated historical climate downloads
+
+Run:
+
+```powershell
+python examples/probe_shmu_sk.py --country SK --station-id 11800 --date 2025-01-01 --element tas_max --element precipitation
+```
+
+Related provider notes:
+
+- [Experimental Slovakia Provider Notes](providers_sk_experimental.md)
+
 ## Workflow Example
 
 ### `examples/download_fao.py`
@@ -139,4 +166,3 @@ For a new user:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
-

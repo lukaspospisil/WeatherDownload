@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable
 
 import pandas as pd
@@ -19,3 +19,8 @@ class WeatherProvider:
     list_implemented_dataset_specs: Callable[[], list[Any]]
     get_dataset_spec: Callable[[str, str], Any]
     download_observations: Callable[[ObservationQuery, int, pd.DataFrame | None], pd.DataFrame]
+    supported_country_codes: tuple[str, ...] = field(default_factory=tuple)
+    supported_dataset_scopes: tuple[str, ...] = field(default_factory=tuple)
+    supported_resolutions: tuple[str, ...] = field(default_factory=tuple)
+    supported_canonical_elements: tuple[str, ...] = field(default_factory=tuple)
+    experimental: bool = False

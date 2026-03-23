@@ -12,6 +12,7 @@ Use ISO 3166-1 alpha-2 country codes:
 
 - `CZ`
 - `DE`
+- `SK` (experimental, limited to `recent / daily`)
 
 Examples:
 
@@ -20,10 +21,11 @@ from weatherdownload import read_station_metadata, list_supported_elements
 
 cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
+sk_stations = read_station_metadata(country="SK")
 
-de_daily_elements = list_supported_elements(
-    country="DE",
-    dataset_scope="historical",
+sk_daily_elements = list_supported_elements(
+    country="SK",
+    dataset_scope="recent",
     resolution="daily",
 )
 ```
@@ -31,6 +33,7 @@ de_daily_elements = list_supported_elements(
 ```powershell
 weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
+weatherdownload stations metadata --country SK
 ```
 
 ## Stable Public Model
@@ -58,6 +61,7 @@ What stays provider-specific internally:
 - raw element codes
 - quality/flag conventions
 - timestamp parsing rules
+- metadata completeness
 
 ## Canonical Station Identifier
 
@@ -65,6 +69,7 @@ What stays provider-specific internally:
 | --- | --- |
 | `CZ` | CHMI `WSI` |
 | `DE` | zero-padded DWD `Stations_id` |
+| `SK` | SHMU `ind_kli` as string |
 
 `gh_id` remains an optional secondary field and is nullable when a provider does not expose an equivalent identifier.
 
@@ -87,6 +92,7 @@ This matters because discovery can be broader than the current downloader covera
 | `DE` | `historical` | `daily` | Implemented | DWD daily `kl` path |
 | `DE` | `historical` | `1hour` | Implemented | Narrow slice |
 | `DE` | `historical` | `10min` | Implemented | Narrow slice |
+| `SK` | `recent` | `daily` | Experimental, implemented | SHMU recent daily climatological stations |
 
 ## Current Narrow Slices
 
@@ -107,6 +113,32 @@ Supported canonical elements:
 - `tas_mean`
 - `relative_humidity`
 - `wind_speed`
+
+### SK `recent / daily`
+
+Supported canonical elements:
+
+- `tas_max`
+- `tas_min`
+- `sunshine_duration`
+- `precipitation`
+
+Important current limitations:
+
+- `SK` support is experimental
+- only `SK / recent / daily` is implemented
+- `SK` metadata are probe-derived and do not yet include authoritative station names or coordinates
+- `SK` `begin_date` / `end_date` describe only coverage visible in the sampled recent payload, not authoritative historical station coverage
+
+Hard capability boundary:
+
+- only `SK / recent / daily`
+- only `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`
+- unsupported requests fail early by design
+
+Detailed notes:
+
+- [Experimental Slovakia Provider Notes](providers_sk_experimental.md)
 
 ## Query Semantics
 
@@ -130,7 +162,7 @@ For DWD subdaily paths:
 The CLI mirrors the provider model:
 
 - `--country` defaults to `CZ`
-- the same command shape works across countries
+- the same command shape works across countries where the provider path is implemented
 - unsupported combinations fail with a clear error
 
 Examples:
@@ -139,4 +171,5 @@ Examples:
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
+weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```

@@ -1,0 +1,17 @@
+{
+  "id": "kli_inter",
+  "dataset": "Climatological stations",
+  "interval": "1 day",
+  "frequency": "1 months",
+  "statistics": {
+    "stations_count": 2,
+    "records_count": 5
+  },
+  "data": [
+    {"ind_kli": "11800", "datum": "2025-01-01", "t_max": "5.2"},
+    {"ind_kli": "11800", "datum": "2025-01-02", "t_max": "6.3"},
+    {"ind_kli": "11800", "datum": "2025-01-03", "t_max": "4.1"},
+    {"ind_kli": "11999", "datum": "2025-01-02", "t_max": "3.0"},
+    {"ind_kli": "11999", "datum": "2025-01-03", "t_max": "4.0"}
+  ]
+}

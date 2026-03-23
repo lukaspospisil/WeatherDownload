@@ -19,7 +19,7 @@ def raw_to_canonical_map_for_spec(spec: Any) -> dict[str, str]:
     lookup: dict[str, str] = {}
     for canonical_name, raw_codes in canonical_element_map_for_spec(spec).items():
         for raw_code in raw_codes:
-            lookup[str(raw_code).upper()] = canonical_name
+            lookup[str(raw_code).casefold()] = canonical_name
     return lookup
 
 
@@ -68,7 +68,10 @@ def element_mapping_dict_for_spec(spec: Any) -> dict[str, list[str]]:
 
 def normalize_requested_elements(elements: Sequence[str], spec: Any) -> list[str]:
     canonical_map = canonical_element_map_for_spec(spec)
-    supported_raw = {str(element).upper() for element in getattr(spec, 'supported_elements', ())}
+    supported_raw_lookup = {
+        str(element).casefold(): str(element)
+        for element in getattr(spec, 'supported_elements', ())
+    }
     normalized: list[str] = []
     seen: set[str] = set()
 
@@ -83,19 +86,23 @@ def normalize_requested_elements(elements: Sequence[str], spec: Any) -> list[str
                 seen.add(preferred_raw)
                 normalized.append(preferred_raw)
             continue
-        raw_code = cleaned.upper()
-        if raw_code in supported_raw and raw_code not in seen:
+        raw_code = supported_raw_lookup.get(cleaned.casefold())
+        if raw_code is not None and raw_code not in seen:
             seen.add(raw_code)
             normalized.append(raw_code)
             continue
-        if canonical_name not in canonical_map and raw_code not in supported_raw:
-            normalized.append(raw_code)
+        if canonical_name not in canonical_map and cleaned not in seen:
+            seen.add(cleaned)
+            normalized.append(cleaned)
     return normalized
 
 
 def unsupported_requested_elements(elements: Sequence[str], spec: Any) -> list[str]:
     canonical_map = canonical_element_map_for_spec(spec)
-    supported_raw = {str(element).upper() for element in getattr(spec, 'supported_elements', ())}
+    supported_raw_lookup = {
+        str(element).casefold(): str(element)
+        for element in getattr(spec, 'supported_elements', ())
+    }
     unsupported: list[str] = []
 
     for item in elements:
@@ -104,7 +111,7 @@ def unsupported_requested_elements(elements: Sequence[str], spec: Any) -> list[s
             continue
         if cleaned.lower() in canonical_map:
             continue
-        if cleaned.upper() in supported_raw:
+        if cleaned.casefold() in supported_raw_lookup:
             continue
         unsupported.append(cleaned)
     return unsupported
@@ -116,6 +123,6 @@ def canonicalize_element_series(raw_series: pd.Series, query: Any) -> pd.DataFra
     provider = get_provider(query.country)
     spec = provider.get_dataset_spec(query.dataset_scope, query.resolution)
     raw_to_canonical = raw_to_canonical_map_for_spec(spec)
-    element_raw = raw_series.astype('string').str.strip().str.upper()
-    element = element_raw.map(lambda raw: raw_to_canonical.get(str(raw), str(raw).lower() if str(raw).islower() else str(raw)))
+    element_raw = raw_series.astype('string').str.strip()
+    element = element_raw.map(lambda raw: raw_to_canonical.get(str(raw).casefold(), str(raw)))
     return pd.DataFrame({'element': element, 'element_raw': element_raw})

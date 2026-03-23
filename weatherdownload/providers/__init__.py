@@ -3,10 +3,12 @@ from __future__ import annotations
 from .base import WeatherProvider
 from .chmi import PROVIDER as CHMI_PROVIDER
 from .dwd import PROVIDER as DWD_PROVIDER
+from .shmu import PROVIDER as SHMU_PROVIDER
 
 PROVIDERS: dict[str, WeatherProvider] = {
     'CZ': CHMI_PROVIDER,
     'DE': DWD_PROVIDER,
+    'SK': SHMU_PROVIDER,
 }
 
 
@@ -30,3 +32,4 @@ def get_provider(country: str | None = None) -> WeatherProvider:
 
 def list_supported_countries() -> list[str]:
     return sorted(PROVIDERS)
+
