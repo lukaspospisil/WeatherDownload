@@ -54,10 +54,10 @@ BE notes:
 
 DK notes:
 
-- DK uses the shared daily example path through the official DMI Climate Data stationValue collection
-- station discovery uses the official DMI Climate Data station collection filtered to Denmark stations only
+- `DK` uses the shared daily example path through the official DMI Climate Data `stationValue` collection
+- station discovery uses the official DMI Climate Data `station` collection filtered to Denmark stations only
 - the mapped daily parameters are documented by DMI as local-day Denmark values, and the example keeps that provider-defined meaning behind the provider layer
-- raw source qcStatus and validity are preserved in flag and normalized quality stays null
+- raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
 
 NL notes:

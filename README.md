@@ -110,7 +110,7 @@ query = ObservationQuery(
 tenmin = download_observations(query)
 ```
 
-The same API shape also works for Denmark via the official DMI Climate Data daily `stationValue` path:
+The same API shape also works for Denmark via the official DMI Climate Data daily `stationValue` collection:
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -256,10 +256,10 @@ DK scope limits for this pass:
 
 - official DMI open-data APIs only
 - Denmark only; Greenland and Faroe Islands differences are out of scope in this pass
-- historical daily station observations only via the DMI Climate Data stationValue path
-- station discovery uses the official DMI Climate Data station collection filtered to Denmark stations
+- historical daily station observations only via the DMI Climate Data `stationValue` collection
+- station discovery uses the official DMI Climate Data `station` collection filtered to Denmark stations
 - mapped daily parameters are source-backed local-day Denmark values; WeatherDownload does not derive meteorological variables
-- raw DMI qcStatus and validity are preserved in flag and normalized quality stays null
+- raw DMI `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - no FAO computation and no derived meteorological variables
 
 NL scope limits for this pass:

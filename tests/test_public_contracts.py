@@ -245,6 +245,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         if country == 'DK':
             assert observations['flag'].notna().all()
             assert observations['flag'].str.contains('qcStatus').all()
+            assert observations['flag'].str.contains('validity').all()
             assert observations['quality'].isna().all()
             assert str(observations['quality'].dtype) == 'Int64'
 
