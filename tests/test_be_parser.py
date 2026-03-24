@@ -8,7 +8,7 @@ from weatherdownload.be_parser import (
     normalize_be_station_metadata,
     parse_be_feature_collection_json,
 )
-from weatherdownload.be_registry import BE_DAILY_PARAMETER_METADATA, BE_TENMIN_PARAMETER_METADATA, get_dataset_spec
+from weatherdownload.be_registry import BE_DAILY_PARAMETER_METADATA, BE_HOURLY_PARAMETER_METADATA, BE_TENMIN_PARAMETER_METADATA, get_dataset_spec
 
 
 class BelgiumParserTests(unittest.TestCase):
@@ -72,37 +72,23 @@ class BelgiumParserTests(unittest.TestCase):
         self.assertAlmostEqual(float(stations.iloc[0]['elevation_m']), 12.0)
 
     def test_normalize_be_observation_metadata_builds_daily_rows_for_supported_elements(self) -> None:
-        stations = pd.DataFrame([
-            {
-                'station_id': '6414',
-                'gh_id': pd.NA,
-                'begin_date': '2003-07-26T00:10Z',
-                'end_date': '',
-                'full_name': 'BEITEM',
-                'longitude': 3.122,
-                'latitude': 50.904,
-                'elevation_m': 24.8,
-            }
-        ])
+        stations = self._sample_station_table()
         metadata = normalize_be_observation_metadata(stations, get_dataset_spec('historical', 'daily'), BE_DAILY_PARAMETER_METADATA)
         self.assertEqual(metadata.iloc[0]['station_id'], '6414')
         self.assertIn('temp_avg', metadata['element'].tolist())
         self.assertIn('P1D', metadata['schedule'].iloc[0])
         self.assertIn('precipitation', ' '.join(metadata['description'].fillna('').tolist()).lower())
 
+    def test_normalize_be_observation_metadata_builds_hourly_rows_for_supported_elements(self) -> None:
+        stations = self._sample_station_table()
+        metadata = normalize_be_observation_metadata(stations, get_dataset_spec('historical', '1hour'), BE_HOURLY_PARAMETER_METADATA)
+        self.assertEqual(metadata.iloc[0]['station_id'], '6414')
+        self.assertIn('temp_dry_shelter_avg', metadata['element'].tolist())
+        self.assertIn('PT1H', metadata['schedule'].iloc[0])
+        self.assertIn('hourly', ' '.join(metadata['description'].fillna('').tolist()).lower())
+
     def test_normalize_be_observation_metadata_builds_tenmin_rows_for_supported_elements(self) -> None:
-        stations = pd.DataFrame([
-            {
-                'station_id': '6414',
-                'gh_id': pd.NA,
-                'begin_date': '2003-07-26T00:10Z',
-                'end_date': '',
-                'full_name': 'BEITEM',
-                'longitude': 3.122,
-                'latitude': 50.904,
-                'elevation_m': 24.8,
-            }
-        ])
+        stations = self._sample_station_table()
         metadata = normalize_be_observation_metadata(stations, get_dataset_spec('historical', '10min'), BE_TENMIN_PARAMETER_METADATA)
         self.assertEqual(metadata.iloc[0]['station_id'], '6414')
         self.assertIn('temp_dry_shelter_avg', metadata['element'].tolist())
@@ -111,6 +97,21 @@ class BelgiumParserTests(unittest.TestCase):
 
     def test_normalize_be_metadata_datetime_converts_to_project_format(self) -> None:
         self.assertEqual(normalize_be_metadata_datetime('2024-01-01T00:00:00+00:00'), '2024-01-01T00:00Z')
+
+    @staticmethod
+    def _sample_station_table() -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '6414',
+                'gh_id': pd.NA,
+                'begin_date': '2003-07-26T00:10Z',
+                'end_date': '',
+                'full_name': 'BEITEM',
+                'longitude': 3.122,
+                'latitude': 50.904,
+                'elevation_m': 24.8,
+            }
+        ])
 
 
 if __name__ == '__main__':

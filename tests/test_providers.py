@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from weatherdownload import (
     ObservationQuery,
-    download_observations,
     list_dataset_scopes,
     list_resolutions,
     list_supported_countries,
@@ -72,46 +71,26 @@ class ProviderTests(unittest.TestCase):
         tenmin_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='10min', provider_raw=True)
         self.assertEqual(tenmin_elements, ['FF_10', 'RF_10', 'TT_10'])
 
-    def test_discovery_country_be_includes_daily_and_tenmin(self) -> None:
+    def test_discovery_country_be_includes_daily_hourly_and_tenmin(self) -> None:
         self.assertEqual(list_dataset_scopes(country='BE'), ['historical'])
-        self.assertEqual(list_resolutions(country='BE', dataset_scope='historical'), ['10min', 'daily'])
+        self.assertEqual(list_resolutions(country='BE', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         daily_elements = list_supported_elements(country='BE', dataset_scope='historical', resolution='daily')
+        hourly_elements = list_supported_elements(country='BE', dataset_scope='historical', resolution='1hour')
         tenmin_elements = list_supported_elements(country='BE', dataset_scope='historical', resolution='10min')
         self.assertEqual(daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
+        self.assertEqual(hourly_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
     def test_de_subdaily_queries_are_now_provider_valid(self) -> None:
-        hourly_query = ObservationQuery(
-            country='DE',
-            dataset_scope='historical',
-            resolution='1hour',
-            station_ids=['00003'],
-            start='2024-01-01T00:00:00Z',
-            end='2024-01-01T01:00:00Z',
-            elements=['tas_mean', 'wind_speed'],
-        )
-        tenmin_query = ObservationQuery(
-            country='DE',
-            dataset_scope='historical',
-            resolution='10min',
-            station_ids=['00003'],
-            start='2024-01-01T00:00:00Z',
-            end='2024-01-01T00:10:00Z',
-            elements=['tas_mean', 'relative_humidity'],
-        )
+        hourly_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='1hour', station_ids=['00003'], start='2024-01-01T00:00:00Z', end='2024-01-01T01:00:00Z', elements=['tas_mean', 'wind_speed'])
+        tenmin_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='10min', station_ids=['00003'], start='2024-01-01T00:00:00Z', end='2024-01-01T00:10:00Z', elements=['tas_mean', 'relative_humidity'])
         self.assertEqual(hourly_query.elements, ['TT_TU', 'FF'])
         self.assertEqual(tenmin_query.elements, ['TT_10', 'RF_10'])
 
-    def test_be_tenmin_query_is_provider_valid(self) -> None:
-        tenmin_query = ObservationQuery(
-            country='BE',
-            dataset_scope='historical',
-            resolution='10min',
-            station_ids=['6414'],
-            start='2024-01-01T00:10:00Z',
-            end='2024-01-01T00:20:00Z',
-            elements=['tas_mean', 'pressure'],
-        )
+    def test_be_subdaily_queries_are_provider_valid(self) -> None:
+        hourly_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        tenmin_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(hourly_query.elements, ['temp_dry_shelter_avg', 'pressure'])
         self.assertEqual(tenmin_query.elements, ['temp_dry_shelter_avg', 'pressure'])
 
     def test_read_station_metadata_preserves_positional_source_url_compatibility(self) -> None:
@@ -123,5 +102,3 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-

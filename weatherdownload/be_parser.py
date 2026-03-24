@@ -66,8 +66,7 @@ def normalize_be_station_metadata(payload: dict[str, object]) -> pd.DataFrame:
 
 
 def normalize_be_observation_metadata(stations: pd.DataFrame, spec: Any, parameter_metadata: dict[str, dict[str, str]]) -> pd.DataFrame:
-    schedule = 'P1D RMI/KMI AWS WFS' if spec.time_semantics == 'date' else 'PT10M RMI/KMI AWS WFS'
-    obs_type = 'HISTORICAL_DAILY' if spec.time_semantics == 'date' else 'HISTORICAL_10MIN'
+    schedule, obs_type = _metadata_schedule_and_type(spec.resolution)
     rows: list[dict[str, object]] = []
     for station in stations.itertuples(index=False):
         for raw_code in spec.supported_elements:
@@ -119,6 +118,14 @@ def read_text_from_source(source: str, timeout: int, requests_module) -> str:
     response.raise_for_status()
     response.encoding = 'utf-8'
     return response.text
+
+
+def _metadata_schedule_and_type(resolution: str) -> tuple[str, str]:
+    if resolution == 'daily':
+        return 'P1D RMI/KMI AWS WFS', 'HISTORICAL_DAILY'
+    if resolution == '1hour':
+        return 'PT1H RMI/KMI AWS WFS', 'HISTORICAL_HOURLY'
+    return 'PT10M RMI/KMI AWS WFS', 'HISTORICAL_10MIN'
 
 
 def _extract_coordinates(geometry: object) -> tuple[float | None, float | None]:

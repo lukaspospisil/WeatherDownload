@@ -33,7 +33,7 @@ PROVIDER = WeatherProvider(
     download_observations=_download_be_observations,
     supported_country_codes=('BE',),
     supported_dataset_scopes=('historical',),
-    supported_resolutions=('daily', '10min'),
+    supported_resolutions=('daily', '1hour', '10min'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )

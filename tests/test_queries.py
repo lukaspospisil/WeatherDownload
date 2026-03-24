@@ -69,6 +69,13 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.elements, ['TMK', 'RSK'])
         self.assertEqual(canonical_query.elements, ['TMK', 'RSK'])
 
+    def test_be_hourly_query_accepts_be_elements_and_canonical_names(self) -> None:
+        raw_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
+        canonical_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(raw_query.country, 'BE')
+        self.assertEqual(raw_query.elements, ['temp_dry_shelter_avg', 'pressure'])
+        self.assertEqual(canonical_query.elements, ['temp_dry_shelter_avg', 'pressure'])
+
     def test_be_tenmin_query_accepts_be_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
         canonical_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])

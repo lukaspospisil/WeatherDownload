@@ -8,18 +8,19 @@ This page documents the current conservative Belgium slice implemented through t
 
 ## Scope In This Pass
 
-Supported query shapes:
+Supported query shapes in the shared public API:
 
 - `country="BE"`, `dataset_scope="historical"`, `resolution="daily"`
+- `country="BE"`, `dataset_scope="historical"`, `resolution="1hour"`
 - `country="BE"`, `dataset_scope="historical"`, `resolution="10min"`
 
 Out of scope in this pass:
 
-- hourly downloads
+- adding a separate `hourly` public API token; the shared interface keeps `resolution="1hour"`
 - FAO computation
 - ET0 computation
 - derived meteorological variables
-- recomputing daily or hourly aggregates from subdaily data
+- recomputing daily or hourly aggregates inside WeatherDownload
 
 ## Official Source
 
@@ -30,6 +31,7 @@ Reference documentation:
 - AWS documentation: `https://opendata.meteo.be/documentation/?dataset=aws`
 - station metadata layer: `aws_station`
 - daily observation layer: `aws_1day`
+- hourly observation layer: `aws_1hour`
 - 10-minute observation layer: `aws_10min`
 
 ## Station Metadata
@@ -63,6 +65,27 @@ The documented daily grouping window is:
 
 - for day `D`, use 10-minute values from `00:10` on day `D` to `00:00` on day `D+1`
 
+## Hourly Observation Semantics
+
+The official AWS documentation states that `aws_1hour` hourly data are aggregated from 10-minute data.
+
+For the implemented `aws_1hour` path:
+
+- hourly values are official provider-side aggregates published by RMI/KMI
+- WeatherDownload does not recompute hourly values from 10-minute data
+- the shared public API keeps the existing `resolution="1hour"` shape
+- `timestamp` preserves the published hourly timestamp from `aws_1hour`
+
+The documented hourly grouping window is:
+
+- for an hour `H`, use 10-minute values from `(H-1):10` to `H:00`
+
+The documentation also states:
+
+- missing-data tolerance is at most 1 missing 10-minute value among the 6 expected values
+- aggregated hourly values are rounded to 2 decimal places
+- hourly `PRESSURE` is the provider-side average of the 10-minute `PRESSURE` field
+
 ## 10-Minute Observation Semantics
 
 For the implemented `aws_10min` path:
@@ -86,6 +109,15 @@ Current conservative daily mapping:
 - `pressure` -> `pressure`
 - `sunshine_duration` -> `sun_duration`
 
+Current conservative hourly mapping:
+
+- `tas_mean` -> `temp_dry_shelter_avg`
+- `precipitation` -> `precip_quantity`
+- `wind_speed` -> `wind_speed_10m`
+- `relative_humidity` -> `humidity_rel_shelter_avg`
+- `pressure` -> `pressure`
+- `sunshine_duration` -> `sun_duration`
+
 Current conservative 10-minute mapping:
 
 - `tas_mean` -> `temp_dry_shelter_avg`
@@ -99,7 +131,7 @@ These are mapped directly from documented source properties only.
 
 ## Quality And Flags
 
-The source exposes a `qc_flags` field on daily and 10-minute features.
+The source exposes a `qc_flags` field on daily, hourly, and 10-minute features.
 
 Current handling is intentionally conservative:
 
@@ -117,10 +149,10 @@ from weatherdownload import ObservationQuery, download_observations
 query = ObservationQuery(
     country="BE",
     dataset_scope="historical",
-    resolution="10min",
+    resolution="1hour",
     station_ids=["6414"],
-    start="2024-01-01T00:10:00Z",
-    end="2024-01-01T00:20:00Z",
+    start="2024-01-01T01:00:00Z",
+    end="2024-01-01T02:00:00Z",
     elements=["tas_mean", "pressure"],
 )
 

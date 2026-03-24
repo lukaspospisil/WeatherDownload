@@ -49,7 +49,7 @@ BE notes:
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - WeatherDownload does not recompute those aggregates in this pass
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
-- `BE` currently supports `historical / daily` and `historical / 10min`; hourly remains out of scope
+- `BE` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the same shared examples
 
 NL notes:
 
@@ -69,7 +69,17 @@ Run:
 
 ```powershell
 python examples/download_hourly.py
+python examples/download_hourly.py --country BE
+python examples/download_hourly.py --country DE
 ```
+
+BE hourly notes:
+
+- `BE` uses the shared hourly example path through the official RMI/KMI `aws_1hour` layer
+- hourly values are official provider-side aggregates from 10-minute data
+- the documented hourly grouping window is from `(H-1):10` to `H:00` for hour `H`
+- the example preserves the published hourly timestamps and does not recompute hourly values from 10-minute data
+- raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 
 ### `examples/download_tenmin.py`
 
@@ -167,4 +177,6 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+
 

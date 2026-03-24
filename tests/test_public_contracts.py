@@ -26,6 +26,7 @@ SAMPLE_GEOSPHERE_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1d.csv')
 SAMPLE_GEOSPHERE_CSV_TEXT = SAMPLE_GEOSPHERE_CSV_PATH.read_text(encoding='utf-8')
 SAMPLE_BE_STATIONS_PATH = Path('tests/data/sample_be_aws_station.json')
 SAMPLE_BE_DAILY_TEXT = Path('tests/data/sample_be_aws_1day.json').read_text(encoding='utf-8')
+SAMPLE_BE_HOURLY_TEXT = Path('tests/data/sample_be_aws_1hour.json').read_text(encoding='utf-8')
 SAMPLE_BE_TENMIN_TEXT = Path('tests/data/sample_be_aws_10min.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
@@ -85,55 +86,23 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
 def _download_daily_fixture(country: str) -> pd.DataFrame:
     if country == 'CZ':
         station_metadata = _read_station_metadata_fixture('CZ')
-        query = ObservationQuery(
-            country='CZ',
-            dataset_scope='historical_csv',
-            resolution='daily',
-            station_ids=['0-20000-0-11406'],
-            start_date='1865-06-01',
-            end_date='1865-06-03',
-            elements=['tas_max'],
-        )
+        query = ObservationQuery(country='CZ', dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='1865-06-01', end_date='1865-06-03', elements=['tas_max'])
         sample_daily_csv = Path('tests/data/sample_daily_tma.csv').read_text(encoding='utf-8')
         with patch('weatherdownload.observations.download_daily_csv', return_value=sample_daily_csv):
             return download_observations(query, country='CZ', station_metadata=station_metadata)
     if country == 'AT':
         station_metadata = _read_station_metadata_fixture('AT')
-        query = ObservationQuery(
-            country='AT',
-            dataset_scope='historical',
-            resolution='daily',
-            station_ids=['1'],
-            start_date='2024-01-01',
-            end_date='2024-01-03',
-            elements=['tas_mean', 'precipitation'],
-        )
+        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
         with patch('weatherdownload.geosphere_daily.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':
         station_metadata = _read_station_metadata_fixture('BE')
-        query = ObservationQuery(
-            country='BE',
-            dataset_scope='historical',
-            resolution='daily',
-            station_ids=['6414'],
-            start_date='2024-01-01',
-            end_date='2024-01-02',
-            elements=['tas_mean', 'precipitation'],
-        )
+        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
         with patch('weatherdownload.be_daily.requests.get', return_value=_MockTextResponse(SAMPLE_BE_DAILY_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
     if country == 'DE':
         station_metadata = _read_station_metadata_fixture('DE')
-        query = ObservationQuery(
-            country='DE',
-            dataset_scope='historical',
-            resolution='daily',
-            station_ids=['00003'],
-            start_date='2024-01-01',
-            end_date='2024-01-02',
-            elements=['tas_mean', 'precipitation'],
-        )
+        query = ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
         directory_html = '<a href="tageswerte_KL_00003_20240101_20240102_hist.zip">zip</a>'
         zip_bytes = _build_sample_dwd_daily_zip()
 
@@ -148,15 +117,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='DE', station_metadata=station_metadata)
     if country == 'NL':
         station_metadata = _read_station_metadata_fixture('NL')
-        query = ObservationQuery(
-            country='NL',
-            dataset_scope='historical',
-            resolution='daily',
-            station_ids=['0-20000-0-06260'],
-            start_date='2024-01-01',
-            end_date='2024-01-02',
-            elements=['tas_mean', 'precipitation'],
-        )
+        query = ObservationQuery(country='NL', dataset_scope='historical', resolution='daily', station_ids=['0-20000-0-06260'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
         parsed_payloads = iter([
             {
                 'observation_date': pd.Timestamp('2024-01-01').date(),
@@ -184,15 +145,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                         return download_observations(query, country='NL', station_metadata=station_metadata)
     if country == 'SK':
         station_metadata = _read_station_metadata_fixture('SK')
-        query = ObservationQuery(
-            country='SK',
-            dataset_scope='recent',
-            resolution='daily',
-            station_ids=['11800'],
-            start_date='2025-01-01',
-            end_date='2025-01-02',
-            elements=['tas_max', 'precipitation'],
-        )
+        query = ObservationQuery(country='SK', dataset_scope='recent', resolution='daily', station_ids=['11800'], start_date='2025-01-01', end_date='2025-01-02', elements=['tas_max', 'precipitation'])
 
         def fake_read_text(source: str, timeout: int) -> str:
             if source.endswith('/recent/data/daily/'):
@@ -208,18 +161,19 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
     raise AssertionError(f'unsupported test country: {country}')
 
 
+def _download_hourly_fixture(country: str) -> pd.DataFrame:
+    if country == 'BE':
+        station_metadata = _read_station_metadata_fixture('BE')
+        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.be_hourly.requests.get', return_value=_MockTextResponse(SAMPLE_BE_HOURLY_TEXT)):
+            return download_observations(query, country='BE', station_metadata=station_metadata)
+    raise AssertionError(f'unsupported test country: {country}')
+
+
 def _download_tenmin_fixture(country: str) -> pd.DataFrame:
     if country == 'BE':
         station_metadata = _read_station_metadata_fixture('BE')
-        query = ObservationQuery(
-            country='BE',
-            dataset_scope='historical',
-            resolution='10min',
-            station_ids=['6414'],
-            start='2024-01-01T00:10:00Z',
-            end='2024-01-01T00:20:00Z',
-            elements=['tas_mean', 'pressure'],
-        )
+        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
         with patch('weatherdownload.be_tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_BE_TENMIN_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
@@ -243,27 +197,8 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
-    expected_columns = [
-        'station_id',
-        'gh_id',
-        'element',
-        'element_raw',
-        'observation_date',
-        'time_function',
-        'value',
-        'flag',
-        'quality',
-        'dataset_scope',
-        'resolution',
-    ]
-    expected_dataset_scopes = {
-        'AT': 'historical',
-        'BE': 'historical',
-        'CZ': 'historical_csv',
-        'DE': 'historical',
-        'NL': 'historical',
-        'SK': 'recent',
-    }
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'NL': 'historical', 'SK': 'recent'}
 
     for country in ['AT', 'BE', 'CZ', 'DE', 'NL', 'SK']:
         observations = _download_daily_fixture(country)
@@ -284,20 +219,24 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
             assert str(observations['quality'].dtype) == 'Int64'
 
 
-def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None:
-    expected_columns = [
-        'station_id',
-        'gh_id',
-        'element',
-        'element_raw',
-        'timestamp',
-        'value',
-        'flag',
-        'quality',
-        'dataset_scope',
-        'resolution',
-    ]
+def test_hourly_download_contract_is_stable_for_supported_belgium_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    observations = _download_hourly_fixture('BE')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].notna().all()
+    assert observations['flag'].str.startswith('{"validated"').all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
 
+
+def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
     observations = _download_tenmin_fixture('BE')
     assert list(observations.columns) == expected_columns
     assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -313,62 +252,14 @@ def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None
 
 
 def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() -> None:
-    expected_data_info_keys = {
-        'created_at',
-        'dataset_type',
-        'source',
-        'country',
-        'elements',
-        'provider_element_mapping',
-        'min_complete_days',
-        'num_stations',
-    }
-    expected_station_columns = [
-        'station_id',
-        'full_name',
-        'latitude',
-        'longitude',
-        'elevation_m',
-        'num_complete_days',
-        'first_complete_date',
-        'last_complete_date',
-    ]
-    expected_series_columns = [
-        'station_id',
-        'full_name',
-        'latitude',
-        'longitude',
-        'elevation_m',
-        'date',
-        *download_fao.FINAL_SERIES_COLUMNS,
-    ]
+    expected_data_info_keys = {'created_at', 'dataset_type', 'source', 'country', 'elements', 'provider_element_mapping', 'min_complete_days', 'num_stations'}
+    expected_station_columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'num_complete_days', 'first_complete_date', 'last_complete_date']
+    expected_series_columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'date', *download_fao.FINAL_SERIES_COLUMNS]
 
     for country in ['CZ', 'DE', 'AT', 'BE']:
         config = download_fao.get_fao_country_config(country)
-        station_rows = [{
-            'station_id': 'TEST1',
-            'full_name': 'Test Station',
-            'latitude': 50.0,
-            'longitude': 14.0,
-            'elevation_m': 250.0,
-            'num_complete_days': 2,
-            'first_complete_date': '2024-01-01',
-            'last_complete_date': '2024-01-02',
-        }]
-        series = [{
-            'station_id': 'TEST1',
-            'full_name': 'Test Station',
-            'latitude': 50.0,
-            'longitude': 14.0,
-            'elevation_m': 250.0,
-            'date': ['2024-01-01', '2024-01-02'],
-            'tas_mean': [1.0, 2.0],
-            'tas_max': [3.0, 4.0],
-            'tas_min': [-1.0, 0.0],
-            'wind_speed': [2.5, 3.0],
-            'vapour_pressure': [pd.NA, pd.NA] if country in {'AT', 'BE'} else [7.0, 8.0],
-            'sunshine_duration': [0.5, 0.8],
-        }]
+        station_rows = [{'station_id': 'TEST1', 'full_name': 'Test Station', 'latitude': 50.0, 'longitude': 14.0, 'elevation_m': 250.0, 'num_complete_days': 2, 'first_complete_date': '2024-01-01', 'last_complete_date': '2024-01-02'}]
+        series = [{'station_id': 'TEST1', 'full_name': 'Test Station', 'latitude': 50.0, 'longitude': 14.0, 'elevation_m': 250.0, 'date': ['2024-01-01', '2024-01-02'], 'tas_mean': [1.0, 2.0], 'tas_max': [3.0, 4.0], 'tas_min': [-1.0, 0.0], 'wind_speed': [2.5, 3.0], 'vapour_pressure': [pd.NA, pd.NA] if country in {'AT', 'BE'} else [7.0, 8.0], 'sunshine_duration': [0.5, 0.8]}]
 
         data_info = download_fao.build_data_info(config, station_rows, min_complete_days=3650)
         station_table = download_fao.build_station_table(station_rows)

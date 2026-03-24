@@ -19,12 +19,22 @@ class BelgiumDatasetSpec:
 RMI_AWS_WFS_URL = 'https://opendata.meteo.be/geoserver/aws/ows'
 RMI_AWS_STATION_LAYER = 'aws:aws_station'
 RMI_AWS_DAILY_LAYER = 'aws:aws_1day'
+RMI_AWS_HOURLY_LAYER = 'aws:aws_1hour'
 RMI_AWS_TENMIN_LAYER = 'aws:aws_10min'
 
 _BE_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('temp_avg',),
     'tas_max': ('temp_max',),
     'tas_min': ('temp_min',),
+    'precipitation': ('precip_quantity',),
+    'wind_speed': ('wind_speed_10m',),
+    'relative_humidity': ('humidity_rel_shelter_avg',),
+    'pressure': ('pressure',),
+    'sunshine_duration': ('sun_duration',),
+}
+
+_BE_HOURLY_CANONICAL_ELEMENTS = {
+    'tas_mean': ('temp_dry_shelter_avg',),
     'precipitation': ('precip_quantity',),
     'wind_speed': ('wind_speed_10m',),
     'relative_humidity': ('humidity_rel_shelter_avg',),
@@ -76,6 +86,33 @@ BE_DAILY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     },
 }
 
+BE_HOURLY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
+    'precip_quantity': {
+        'name': 'Hourly precipitation amount',
+        'description': 'Official RMI/KMI provider-side hourly precipitation sum in millimeters from the documented aws_1hour aggregation.',
+    },
+    'temp_dry_shelter_avg': {
+        'name': 'Hourly mean air temperature',
+        'description': 'Official RMI/KMI provider-side hourly mean dry-bulb air temperature in degrees Celsius from the documented aws_1hour aggregation.',
+    },
+    'wind_speed_10m': {
+        'name': 'Hourly mean wind speed at 10 m',
+        'description': 'Official RMI/KMI provider-side hourly mean wind speed at 10 meters in meters per second from the documented aws_1hour aggregation.',
+    },
+    'humidity_rel_shelter_avg': {
+        'name': 'Hourly mean relative humidity',
+        'description': 'Official RMI/KMI provider-side hourly mean relative humidity under shelter in percent from the documented aws_1hour aggregation.',
+    },
+    'pressure': {
+        'name': 'Hourly mean station pressure',
+        'description': 'Official RMI/KMI provider-side hourly mean station pressure in hectopascal from the documented aws_1hour aggregation of the 10-minute pressure field.',
+    },
+    'sun_duration': {
+        'name': 'Hourly sunshine duration',
+        'description': 'Official RMI/KMI provider-side hourly sunshine duration in minutes from the documented aws_1hour aggregation.',
+    },
+}
+
 BE_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     'precip_quantity': {
         'name': '10-minute precipitation amount',
@@ -103,7 +140,7 @@ BE_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     },
 }
 
-BE_PARAMETER_METADATA = {**BE_DAILY_PARAMETER_METADATA, **BE_TENMIN_PARAMETER_METADATA}
+BE_PARAMETER_METADATA = {**BE_DAILY_PARAMETER_METADATA, **BE_HOURLY_PARAMETER_METADATA, **BE_TENMIN_PARAMETER_METADATA}
 
 
 _BE_DATASET_SPECS = [
@@ -128,6 +165,27 @@ _BE_DATASET_SPECS = [
         ),
         canonical_elements=_BE_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
+        implemented=True,
+    ),
+    BelgiumDatasetSpec(
+        dataset_scope='historical',
+        resolution='1hour',
+        label='RMI/KMI AWS historical hourly observations',
+        metadata_url=(
+            f'{RMI_AWS_WFS_URL}?service=WFS&version=1.0.0&request=GetFeature'
+            f'&typeName={RMI_AWS_STATION_LAYER}&outputFormat=application/json&srsName=EPSG:4326'
+        ),
+        data_url=RMI_AWS_WFS_URL,
+        supported_elements=(
+            'temp_dry_shelter_avg',
+            'precip_quantity',
+            'wind_speed_10m',
+            'humidity_rel_shelter_avg',
+            'pressure',
+            'sun_duration',
+        ),
+        canonical_elements=_BE_HOURLY_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
         implemented=True,
     ),
     BelgiumDatasetSpec(

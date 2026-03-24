@@ -92,7 +92,7 @@ What stays provider-specific internally:
 | Country | Status | Supported dataset scopes | Implemented resolutions | Supported canonical elements | Station metadata quality |
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
-| `BE` | Stable | `historical` | `daily`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, geometry-backed coordinates, altitude, and validity timestamps |
+| `BE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, geometry-backed coordinates, altitude, and validity timestamps |
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` |
 | `NL` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official KNMI metadata file retrieved through the Open Data API; API key required |
@@ -130,6 +130,17 @@ Supported canonical elements:
 - `pressure`
 - `sunshine_duration`
 
+### BE `historical / 1hour`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `precipitation`
+- `wind_speed`
+- `relative_humidity`
+- `pressure`
+- `sunshine_duration`
+
 ### BE `historical / 10min`
 
 Supported canonical elements:
@@ -144,9 +155,12 @@ Supported canonical elements:
 Important current limitations:
 
 - the implemented path uses the official RMI/KMI open-data platform only
-- only `BE / historical / daily` and `BE / historical / 10min` are implemented
+- only `BE / historical / daily`, `BE / historical / 1hour`, and `BE / historical / 10min` are implemented
 - daily values are the official provider-side `aws_1day` aggregates from 10-minute data
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
+- hourly values are the official provider-side `aws_1hour` aggregates from 10-minute data
+- the documented hourly grouping window is from `(H-1):10` to `H:00` for hour `H`
+- the source documents hourly `PRESSURE` as the provider-side average of the 10-minute `PRESSURE` field
 - 10-minute values come directly from `aws_10min` and WeatherDownload preserves the published timestamps
 - the source documents most mapped 10-minute fields over the last 10 minutes, while `pressure` is documented as a last-minute average on the same path
 - WeatherDownload does not recompute daily or hourly aggregates from Belgium 10-minute data in this pass
@@ -231,11 +245,14 @@ For RMI/KMI Belgium files:
 
 - station discovery uses the `aws_station` layer
 - daily observations use the `aws_1day` layer
+- hourly observations use the `aws_1hour` layer
 - 10-minute observations use the `aws_10min` layer
 - `observation_date` follows the source daily timestamp date for `aws_1day`
 - the source-defined daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
+- `timestamp` in the normalized hourly output preserves the published `aws_1hour` timestamp
+- the source-defined hourly grouping window is from `(H-1):10` to `H:00` for hour `H`
 - `timestamp` in the normalized 10-minute output preserves the published `aws_10min` timestamp
-- the source documents most mapped 10-minute fields over the last 10 minutes, while `pressure` is documented as a last-minute average on the same path
+- the source documents most mapped 10-minute fields over the last 10 minutes, while 10-minute `pressure` is a last-minute average and hourly `pressure` is the provider-side average of that field
 - provider-defined grouping and timestamp semantics stay behind the provider layer
 - raw `qc_flags` stay in `flag`; normalized `quality` stays null
 
@@ -258,10 +275,13 @@ Examples:
 ```powershell
 weatherdownload observations daily --country AT --station-id 1 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country BE --station-id 6414 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations hourly --country BE --station-id 6414 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country BE --station-id 6414 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
+
+
 
