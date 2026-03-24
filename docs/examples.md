@@ -36,10 +36,18 @@ Run:
 ```powershell
 python examples/download_daily.py
 python examples/download_daily.py --country AT
+python examples/download_daily.py --country BE
 python examples/download_daily.py --country CZ
 python examples/download_daily.py --country DE
 python examples/download_daily.py --country NL
 ```
+
+BE notes:
+
+- `BE` uses the shared daily example path through the official RMI/KMI `aws_1day` daily layer
+- daily values are official provider-side daily aggregates from 10-minute data
+- WeatherDownload does not recompute those aggregates in this pass
+- only `historical / daily` is implemented
 
 NL notes:
 
@@ -145,4 +153,3 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
-

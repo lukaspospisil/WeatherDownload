@@ -24,6 +24,8 @@ SAMPLE_GEOSPHERE_METADATA_PATH = Path('tests/data/sample_geosphere_klima_v2_1d_m
 SAMPLE_GEOSPHERE_METADATA_TEXT = SAMPLE_GEOSPHERE_METADATA_PATH.read_text(encoding='utf-8')
 SAMPLE_GEOSPHERE_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1d.csv')
 SAMPLE_GEOSPHERE_CSV_TEXT = SAMPLE_GEOSPHERE_CSV_PATH.read_text(encoding='utf-8')
+SAMPLE_BE_STATIONS_PATH = Path('tests/data/sample_be_aws_station.json')
+SAMPLE_BE_DAILY_TEXT = Path('tests/data/sample_be_aws_1day.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -67,6 +69,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'AT':
         with patch('weatherdownload.geosphere_metadata.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_METADATA_TEXT)):
             return read_station_metadata(country='AT')
+    if country == 'BE':
+        return read_station_metadata(country='BE', source_url=str(SAMPLE_BE_STATIONS_PATH))
     if country == 'DE':
         with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockTextResponse(content=SAMPLE_DWD_STATIONS)):
             return read_station_metadata(country='DE')
@@ -105,6 +109,19 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
         )
         with patch('weatherdownload.geosphere_daily.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
+    if country == 'BE':
+        station_metadata = _read_station_metadata_fixture('BE')
+        query = ObservationQuery(
+            country='BE',
+            dataset_scope='historical',
+            resolution='daily',
+            station_ids=['6414'],
+            start_date='2024-01-01',
+            end_date='2024-01-02',
+            elements=['tas_mean', 'precipitation'],
+        )
+        with patch('weatherdownload.be_daily.requests.get', return_value=_MockTextResponse(SAMPLE_BE_DAILY_TEXT)):
+            return download_observations(query, country='BE', station_metadata=station_metadata)
     if country == 'DE':
         station_metadata = _read_station_metadata_fixture('DE')
         query = ObservationQuery(
@@ -193,13 +210,14 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
 def test_read_station_metadata_contract_is_stable_across_countries() -> None:
     expected_station_ids = {
         'AT': ['1', '2'],
+        'BE': ['6414', '6438'],
         'CZ': ['0-20000-0-11406', '0-20000-0-11414'],
         'DE': ['00003', '00044'],
         'NL': ['0-20000-0-06260', '0-20000-0-06310'],
         'SK': ['11800', '11999'],
     }
 
-    for country in ['AT', 'CZ', 'DE', 'NL', 'SK']:
+    for country in ['AT', 'BE', 'CZ', 'DE', 'NL', 'SK']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         assert stations['station_id'].tolist() == expected_station_ids[country]
@@ -222,13 +240,14 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     ]
     expected_dataset_scopes = {
         'AT': 'historical',
+        'BE': 'historical',
         'CZ': 'historical_csv',
         'DE': 'historical',
         'NL': 'historical',
         'SK': 'recent',
     }
 
-    for country in ['AT', 'CZ', 'DE', 'NL', 'SK']:
+    for country in ['AT', 'BE', 'CZ', 'DE', 'NL', 'SK']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -237,7 +256,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         assert observations['dataset_scope'].eq(expected_dataset_scopes[country]).all()
         assert observations['resolution'].eq('daily').all()
 
-        if country in {'AT', 'DE', 'NL', 'SK'}:
+        if country in {'AT', 'BE', 'DE', 'NL', 'SK'}:
             assert observations['gh_id'].isna().all()
 
 
@@ -318,3 +337,4 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
+

@@ -36,7 +36,7 @@ class _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'CZ', 'DE', 'NL', 'SK'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CZ', 'DE', 'NL', 'SK'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
@@ -103,6 +103,7 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

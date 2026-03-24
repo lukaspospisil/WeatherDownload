@@ -334,7 +334,7 @@ def _add_country_argument(parser: argparse.ArgumentParser) -> None:
 
 def _default_dataset_scope(country: str) -> str:
     normalized = country.strip().upper()
-    if normalized in {'DE', 'AT', 'NL'}:
+    if normalized in {'DE', 'AT', 'BE', 'NL'}:
         return 'historical'
     if normalized == 'SK':
         return 'recent'
@@ -408,6 +408,7 @@ def _format_table(table: pd.DataFrame, metadata_view: bool) -> str:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 
 

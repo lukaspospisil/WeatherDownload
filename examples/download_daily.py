@@ -11,6 +11,13 @@ COUNTRY_DEFAULTS = {
         'end_date': '2024-01-03',
         'elements': ['tas_mean', 'precipitation', 'sunshine_duration'],
     },
+    'BE': {
+        'dataset_scope': 'historical',
+        'station_ids': ['6414'],
+        'start_date': '2024-01-01',
+        'end_date': '2024-01-03',
+        'elements': ['tas_mean', 'precipitation', 'sunshine_duration'],
+    },
     'CZ': {
         'dataset_scope': 'historical_csv',
         'station_ids': ['0-20000-0-11406'],
@@ -63,4 +70,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-

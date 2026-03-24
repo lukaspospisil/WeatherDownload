@@ -147,6 +147,22 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_be_daily_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '6414',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': 'temp_avg',
+                'observation_date': '2024-01-01',
+                'time_function': None,
+                'value': 4.2,
+                'flag': '{"validated":{"TEMP_AVG":true}}',
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': 'daily',
+            }
+        ])
     def _sample_nl_daily_table(self) -> pd.DataFrame:
         return pd.DataFrame([
             {
@@ -349,6 +365,22 @@ class ObservationCliTests(unittest.TestCase):
         self.assertIn('00044', buffer.getvalue())
         self.assertIn('tas_mean', buffer.getvalue())
 
+    def test_daily_cli_explicit_country_be_uses_be_query_shape(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_be_daily_table()) as download_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'daily', '--country', 'BE', '--station-id', '6414', '--element', 'tas_mean', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
+                ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'BE')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(query.elements, ['temp_avg'])
+        self.assertEqual(download_mock.call_args.kwargs['country'], 'BE')
+        self.assertIn('6414', buffer.getvalue())
+        self.assertIn('tas_mean', buffer.getvalue())
     def test_daily_cli_explicit_country_nl_uses_nl_query_shape(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_nl_daily_table()) as download_mock:
@@ -548,6 +580,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 
