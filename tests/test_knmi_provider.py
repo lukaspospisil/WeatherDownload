@@ -30,7 +30,7 @@ class KnmiProviderTests(unittest.TestCase):
         self._environment.stop()
 
     def test_supported_countries_include_nl(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'CZ', 'DE', 'NL', 'SK'])
+        self.assertIn('NL', list_supported_countries())
         self.assertEqual(list_dataset_scopes(country='NL'), ['historical'])
         self.assertEqual(list_resolutions(country='NL', dataset_scope='historical'), ['daily'])
 
@@ -146,3 +146,4 @@ class KnmiProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

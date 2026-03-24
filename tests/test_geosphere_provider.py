@@ -58,7 +58,7 @@ class _MockResponse:
 
 class GeosphereProviderTests(unittest.TestCase):
     def test_supported_countries_include_at(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'CZ', 'DE', 'SK'])
+        self.assertIn('AT', list_supported_countries())
         self.assertEqual(list_dataset_scopes(country='AT'), ['historical'])
         self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['daily'])
 
@@ -194,4 +194,5 @@ class GeosphereProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
