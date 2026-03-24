@@ -17,22 +17,22 @@ SPEC.loader.exec_module(download_daily)
 
 
 class DownloadDailyExampleTests(unittest.TestCase):
-    def test_build_parser_accepts_country_be(self) -> None:
+    def test_build_parser_accepts_country_dk(self) -> None:
         parser = download_daily.build_parser()
-        args = parser.parse_args(['--country', 'BE'])
-        self.assertEqual(args.country, 'BE')
+        args = parser.parse_args(['--country', 'DK'])
+        self.assertEqual(args.country, 'DK')
 
-    def test_main_uses_shared_be_query_shape(self) -> None:
+    def test_main_uses_shared_dk_query_shape(self) -> None:
         sample = pd.DataFrame([
             {
-                'station_id': '6414',
+                'station_id': '06180',
                 'gh_id': None,
                 'element': 'tas_mean',
-                'element_raw': 'temp_avg',
+                'element_raw': 'mean_temp',
                 'observation_date': '2024-01-01',
                 'time_function': None,
-                'value': 4.2,
-                'flag': '{"validated":{"TEMP_AVG":true}}',
+                'value': 3.5,
+                'flag': '{"qcStatus":"manual","validity":true}',
                 'quality': None,
                 'dataset_scope': 'historical',
                 'resolution': 'daily',
@@ -40,18 +40,17 @@ class DownloadDailyExampleTests(unittest.TestCase):
         ])
         buffer = io.StringIO()
         with patch.object(download_daily, 'download_observations', return_value=sample) as download_mock:
-            with patch.object(sys, 'argv', ['download_daily.py', '--country', 'BE']):
+            with patch.object(sys, 'argv', ['download_daily.py', '--country', 'DK']):
                 with redirect_stdout(buffer):
                     download_daily.main()
         query = download_mock.call_args.args[0]
-        self.assertEqual(query.country, 'BE')
+        self.assertEqual(query.country, 'DK')
         self.assertEqual(query.dataset_scope, 'historical')
         self.assertEqual(query.resolution, 'daily')
-        self.assertEqual(query.station_ids, ['6414'])
-        self.assertEqual(query.elements, ['temp_avg', 'precip_quantity', 'sun_duration'])
-        self.assertIn('6414', buffer.getvalue())
+        self.assertEqual(query.station_ids, ['06180'])
+        self.assertEqual(query.elements, ['mean_temp', 'acc_precip', 'bright_sunshine'])
+        self.assertIn('06180', buffer.getvalue())
 
 
 if __name__ == '__main__':
     unittest.main()
-

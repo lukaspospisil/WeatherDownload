@@ -39,6 +39,7 @@ python examples/download_daily.py --country AT
 python examples/download_daily.py --country BE
 python examples/download_daily.py --country CZ
 python examples/download_daily.py --country DE
+python examples/download_daily.py --country DK
 python examples/download_daily.py --country NL
 ```
 
@@ -50,6 +51,14 @@ BE notes:
 - WeatherDownload does not recompute those aggregates in this pass
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 - `BE` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the same shared examples and public resolution tokens
+
+DK notes:
+
+- DK uses the shared daily example path through the official DMI Climate Data stationValue collection
+- station discovery uses the official DMI Climate Data station collection filtered to Denmark stations only
+- the mapped daily parameters are documented by DMI as local-day Denmark values, and the example keeps that provider-defined meaning behind the provider layer
+- raw source qcStatus and validity are preserved in flag and normalized quality stays null
+- Greenland and Faroe Islands differences are intentionally out of scope for this pass
 
 NL notes:
 
@@ -177,4 +186,5 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
 

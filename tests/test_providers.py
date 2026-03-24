@@ -35,7 +35,7 @@ class _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CZ', 'DE', 'NL', 'SK'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SK'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
@@ -81,6 +81,11 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
+    def test_discovery_country_dk_includes_daily(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='DK'), ['historical'])
+        self.assertEqual(list_resolutions(country='DK', dataset_scope='historical'), ['daily'])
+        daily_elements = list_supported_elements(country='DK', dataset_scope='historical', resolution='daily')
+        self.assertEqual(daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
     def test_de_subdaily_queries_are_now_provider_valid(self) -> None:
         hourly_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='1hour', station_ids=['00003'], start='2024-01-01T00:00:00Z', end='2024-01-01T01:00:00Z', elements=['tas_mean', 'wind_speed'])
         tenmin_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='10min', station_ids=['00003'], start='2024-01-01T00:00:00Z', end='2024-01-01T00:10:00Z', elements=['tas_mean', 'relative_humidity'])
@@ -102,3 +107,4 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

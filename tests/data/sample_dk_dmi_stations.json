@@ -1,0 +1,57 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [12.5683, 55.6862]},
+      "properties": {
+        "stationId": "06180",
+        "name": "Koebenhavn Landbohoejskolen",
+        "country": "DNK",
+        "stationHeight": 24.0,
+        "validFrom": "2011-01-01T00:00:00Z",
+        "validTo": null,
+        "parameterId": [
+          "mean_temp",
+          "mean_daily_max_temp",
+          "mean_daily_min_temp",
+          "acc_precip",
+          "mean_wind_speed",
+          "mean_relative_hum",
+          "mean_pressure",
+          "bright_sunshine"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [10.6197, 55.4331]},
+      "properties": {
+        "stationId": "06030",
+        "name": "Odense",
+        "country": "DNK",
+        "stationHeight": 17.0,
+        "validFrom": "2012-06-01T00:00:00Z",
+        "validTo": null,
+        "parameterId": [
+          "mean_temp",
+          "acc_precip",
+          "bright_sunshine"
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-51.1000, 69.2200]},
+      "properties": {
+        "stationId": "04250",
+        "name": "Ilulissat",
+        "country": "GRL",
+        "stationHeight": 29.0,
+        "validFrom": "2011-01-01T00:00:00Z",
+        "validTo": null,
+        "parameterId": ["mean_temp", "acc_precip"]
+      }
+    }
+  ]
+}

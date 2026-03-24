@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import json
 import sys
 import zipfile
 from pathlib import Path
@@ -28,6 +29,8 @@ SAMPLE_BE_STATIONS_PATH = Path('tests/data/sample_be_aws_station.json')
 SAMPLE_BE_DAILY_TEXT = Path('tests/data/sample_be_aws_1day.json').read_text(encoding='utf-8')
 SAMPLE_BE_HOURLY_TEXT = Path('tests/data/sample_be_aws_1hour.json').read_text(encoding='utf-8')
 SAMPLE_BE_TENMIN_TEXT = Path('tests/data/sample_be_aws_10min.json').read_text(encoding='utf-8')
+SAMPLE_DK_STATIONS_PATH = Path('tests/data/sample_dk_dmi_stations.json')
+SAMPLE_DK_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -76,6 +79,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'DE':
         with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockTextResponse(content=SAMPLE_DWD_STATIONS)):
             return read_station_metadata(country='DE')
+    if country == 'DK':
+        return read_station_metadata(country='DK', source_url=str(SAMPLE_DK_STATIONS_PATH))
     if country == 'NL':
         return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_STATIONS_PATH))
     if country == 'SK':
@@ -115,6 +120,24 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.dwd_daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='DE', station_metadata=station_metadata)
+    if country == 'DK':
+        station_metadata = _read_station_metadata_fixture('DK')
+        query = ObservationQuery(country='DK', dataset_scope='historical', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
+        sample_payload = json.loads(SAMPLE_DK_DAILY_TEXT)
+
+        def fake_get(url, params=None, timeout=60):
+            filtered = {
+                'type': 'FeatureCollection',
+                'features': [
+                    feature for feature in sample_payload['features']
+                    if feature['properties'].get('stationId') == params['stationId']
+                    and feature['properties'].get('parameterId') == params['parameterId']
+                ],
+            }
+            return _MockTextResponse(text=json.dumps(filtered))
+
+        with patch('weatherdownload.dk_daily.requests.get', side_effect=fake_get):
+            return download_observations(query, country='DK', station_metadata=station_metadata)
     if country == 'NL':
         station_metadata = _read_station_metadata_fixture('NL')
         query = ObservationQuery(country='NL', dataset_scope='historical', resolution='daily', station_ids=['0-20000-0-06260'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
@@ -185,11 +208,12 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'BE': ['6414', '6438'],
         'CZ': ['0-20000-0-11406', '0-20000-0-11414'],
         'DE': ['00003', '00044'],
+        'DK': ['06030', '06180'],
         'NL': ['0-20000-0-06260', '0-20000-0-06310'],
         'SK': ['11800', '11999'],
     }
 
-    for country in ['AT', 'BE', 'CZ', 'DE', 'NL', 'SK']:
+    for country in ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SK']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         assert stations['station_id'].tolist() == expected_station_ids[country]
@@ -198,9 +222,9 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
-    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'NL': 'historical', 'SK': 'recent'}
+    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'NL': 'historical', 'SK': 'recent'}
 
-    for country in ['AT', 'BE', 'CZ', 'DE', 'NL', 'SK']:
+    for country in ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SK']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -209,12 +233,18 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         assert observations['dataset_scope'].eq(expected_dataset_scopes[country]).all()
         assert observations['resolution'].eq('daily').all()
 
-        if country in {'AT', 'BE', 'DE', 'NL', 'SK'}:
+        if country in {'AT', 'BE', 'DE', 'DK', 'NL', 'SK'}:
             assert observations['gh_id'].isna().all()
 
         if country == 'BE':
             assert observations['flag'].notna().all()
             assert observations['flag'].str.startswith('{"validated"').all()
+            assert observations['quality'].isna().all()
+            assert str(observations['quality'].dtype) == 'Int64'
+
+        if country == 'DK':
+            assert observations['flag'].notna().all()
+            assert observations['flag'].str.contains('qcStatus').all()
             assert observations['quality'].isna().all()
             assert str(observations['quality'].dtype) == 'Int64'
 
