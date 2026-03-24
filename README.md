@@ -204,8 +204,10 @@ BE scope limits for this pass:
 
 - official RMI/KMI open-data platform only
 - historical daily station observations only
-- daily values are official provider-side `aws_1day` aggregates from 10-minute data
+- daily values are the official provider-side `aws_1day` aggregates from 10-minute data
+- the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - WeatherDownload does not recompute those daily aggregates
+- raw `qc_flags` stay in `flag` as source text and normalized `quality` stays null
 - hourly and 10-minute public support are out of scope
 - no FAO computation and no derived meteorological variables
 
@@ -248,6 +250,6 @@ BE scope limits for this pass:
 - outputs stay DataFrame-first
 - provider-specific internals stay behind the provider layer
 - `AT` support is currently limited to `historical / daily` via the official GeoSphere Austria `klima-v2-1d` station dataset
-- `BE` support is currently limited to `historical / daily` via the official RMI/KMI AWS `aws_1day` layer; daily values are official provider-side daily aggregates from 10-minute data, not recomputed by WeatherDownload
+- `BE` support is currently limited to `historical / daily` via the official RMI/KMI AWS `aws_1day` layer; the source publishes provider-side daily aggregates from 10-minute data, and WeatherDownload does not recompute them
 - `NL` support is currently limited to KNMI `historical / daily` validated station observations via the Open Data API; hourly and EDR are intentionally out of scope for this pass
 - `SK` support is experimental, limited to `recent / daily`, and currently has incomplete probe-derived station metadata

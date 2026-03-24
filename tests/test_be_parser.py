@@ -51,6 +51,26 @@ class BelgiumParserTests(unittest.TestCase):
         self.assertEqual(stations.iloc[0]['begin_date'], '2003-07-26T00:10Z')
         self.assertEqual(float(stations.iloc[0]['longitude']), 3.122)
 
+    def test_normalize_be_station_metadata_does_not_infer_missing_geometry(self) -> None:
+        payload = {
+            'features': [
+                {
+                    'geometry': None,
+                    'properties': {
+                        'code': 7001,
+                        'name': 'NO_GEOMETRY',
+                        'date_begin': '2020-01-01T00:00:00Z',
+                        'date_end': None,
+                        'altitude': 12.0,
+                    },
+                },
+            ]
+        }
+        stations = normalize_be_station_metadata(payload)
+        self.assertTrue(pd.isna(stations.iloc[0]['longitude']))
+        self.assertTrue(pd.isna(stations.iloc[0]['latitude']))
+        self.assertAlmostEqual(float(stations.iloc[0]['elevation_m']), 12.0)
+
     def test_normalize_be_observation_metadata_builds_rows_for_supported_elements(self) -> None:
         stations = pd.DataFrame([
             {

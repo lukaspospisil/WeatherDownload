@@ -36,19 +36,21 @@ Reference documentation:
 
 `station_id` is the official RMI/KMI AWS station code from the `aws_station` metadata layer, normalized as a string.
 
-The current metadata path is source-backed and keeps only conservative fields:
+The current metadata path keeps only source-backed fields exposed by that layer:
 
 - station code
 - station name
-- longitude / latitude
+- longitude / latitude from the published station geometry
 - altitude
 - begin / end validity timestamps
+
+The provider does not infer missing metadata beyond those published fields.
 
 `gh_id` remains null because this provider path does not expose an equivalent secondary identifier.
 
 ## Daily Observation Semantics
 
-The official AWS documentation states that daily data are aggregated from 10-minute data.
+The official AWS documentation states that `aws_1day` daily data are aggregated from 10-minute data.
 
 For the implemented `aws_1day` path:
 
@@ -57,7 +59,7 @@ For the implemented `aws_1day` path:
 - provider-defined day grouping remains behind the provider layer
 - `observation_date` follows the source daily timestamp date
 
-The documented daily grouping is:
+The documented daily grouping window is:
 
 - for day `D`, use 10-minute values from `00:10` on day `D` to `00:00` on day `D+1`
 
@@ -82,8 +84,8 @@ The source exposes a `qc_flags` field on daily features.
 
 Current handling is intentionally conservative:
 
-- `flag` carries the raw `qc_flags` string when present
-- `quality` remains null
+- `flag` carries the raw `qc_flags` source text when present
+- `quality` remains null in the normalized output
 - WeatherDownload does not reinterpret provider QC semantics in this pass
 
 ## Shared Interface Example

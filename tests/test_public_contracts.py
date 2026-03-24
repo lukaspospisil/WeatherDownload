@@ -259,6 +259,12 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         if country in {'AT', 'BE', 'DE', 'NL', 'SK'}:
             assert observations['gh_id'].isna().all()
 
+        if country == 'BE':
+            assert observations['flag'].notna().all()
+            assert observations['flag'].str.startswith('{\"validated\"').all()
+            assert observations['quality'].isna().all()
+            assert str(observations['quality'].dtype) == 'Int64'
+
 
 def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() -> None:
     expected_data_info_keys = {
@@ -337,4 +343,5 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
+
 

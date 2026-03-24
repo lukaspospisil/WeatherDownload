@@ -42,6 +42,7 @@ EXPECTED_BE_CANONICAL_MAPPING = {
     'pressure': 'pressure',
     'sunshine_duration': 'sun_duration',
 }
+EXPECTED_RAW_QC_FLAG = '{"validated":{"PRECIP_QUANTITY":true,"TEMP_AVG":true}}'
 
 
 class _MockResponse:
@@ -68,6 +69,18 @@ class BelgiumProviderTests(unittest.TestCase):
             ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
         )
         self.assertEqual(stations['station_id'].tolist(), ['6414', '6438'])
+        self.assertTrue(stations['gh_id'].isna().all())
+
+    def test_be_station_metadata_keeps_only_source_backed_fields(self) -> None:
+        stations = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
+        first = stations.iloc[0]
+        self.assertEqual(first['station_id'], '6414')
+        self.assertEqual(first['full_name'], 'BEITEM')
+        self.assertAlmostEqual(float(first['longitude']), 3.122)
+        self.assertAlmostEqual(float(first['latitude']), 50.904)
+        self.assertAlmostEqual(float(first['elevation_m']), 24.8)
+        self.assertEqual(first['begin_date'], '2003-07-26T00:10Z')
+        self.assertEqual(first['end_date'], '')
         self.assertTrue(stations['gh_id'].isna().all())
 
     def test_read_station_observation_metadata_country_be_from_local_fixture(self) -> None:
@@ -141,7 +154,9 @@ class BelgiumProviderTests(unittest.TestCase):
         self.assertTrue(observations['gh_id'].isna().all())
         self.assertTrue(observations['time_function'].isna().all())
         self.assertTrue(observations['quality'].isna().all())
+        self.assertEqual(str(observations['quality'].dtype), 'Int64')
         self.assertTrue(observations['flag'].notna().all())
+        self.assertEqual(observations.iloc[0]['flag'], EXPECTED_RAW_QC_FLAG)
         self.assertEqual(observations.iloc[0]['observation_date'].isoformat(), '2024-01-01')
 
     def test_be_daily_contract_mapping_and_key_values_are_stable(self) -> None:
@@ -169,4 +184,3 @@ class BelgiumProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

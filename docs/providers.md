@@ -92,7 +92,7 @@ What stays provider-specific internally:
 | Country | Status | Supported dataset scopes | Implemented resolutions | Supported canonical elements | Station metadata quality |
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
-| `BE` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, coordinates, altitude, and validity range |
+| `BE` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, geometry-backed coordinates, altitude, and validity timestamps |
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` |
 | `NL` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official KNMI metadata file retrieved through the Open Data API; API key required |
@@ -135,6 +135,7 @@ Important current limitations:
 - the implemented path uses the official RMI/KMI open-data platform only
 - only `BE / historical / daily` is implemented
 - daily values are the official provider-side `aws_1day` aggregates from 10-minute data
+- the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - WeatherDownload does not recompute daily aggregates from 10-minute data in this pass
 - `flag` carries the raw `qc_flags` JSON string when present
 - `quality` remains null because this pass does not speculate on provider QC semantics
@@ -217,8 +218,10 @@ For RMI/KMI Belgium daily files:
 
 - station discovery uses the `aws_station` layer
 - daily observations use the `aws_1day` layer
-- observation_date follows the source daily timestamp date
-- provider-defined day grouping stays behind the provider layer
+- `observation_date` follows the source daily timestamp date
+- the source-defined daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
+- provider-defined grouping stays behind the provider layer
+- raw `qc_flags` stay in `flag`; normalized `quality` stays null
 
 For KNMI daily files:
 

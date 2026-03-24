@@ -101,6 +101,7 @@ def normalize_daily_observations_be(
         return pd.DataFrame(columns=BE_NORMALIZED_DAILY_COLUMNS)
 
     combined = pd.DataFrame.from_records(rows)
+    combined['quality'] = pd.Series(combined['quality'], dtype='Int64')
     if metadata_lookup is not None:
         combined = combined.drop(columns=['gh_id']).merge(metadata_lookup, on='station_id', how='left')
     return combined.loc[:, BE_NORMALIZED_DAILY_COLUMNS].reset_index(drop=True)
@@ -145,3 +146,4 @@ def _build_cql_filter(*, station_id: str, request_start: date, request_end: date
     start_iso = f'{request_start.isoformat()}T00:00:00Z'
     end_iso = f'{request_end.isoformat()}T00:00:00Z'
     return f"code = {code} AND timestamp >= '{start_iso}' AND timestamp <= '{end_iso}'"
+

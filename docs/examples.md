@@ -46,7 +46,9 @@ BE notes:
 
 - `BE` uses the shared daily example path through the official RMI/KMI `aws_1day` daily layer
 - daily values are official provider-side daily aggregates from 10-minute data
+- the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - WeatherDownload does not recompute those aggregates in this pass
+- raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 - only `historical / daily` is implemented
 
 NL notes:
