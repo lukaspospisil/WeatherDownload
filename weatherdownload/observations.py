@@ -26,6 +26,8 @@ from .chmi_tenmin import (
 from .dwd_daily import download_daily_observations_dwd
 from .dwd_subdaily import NORMALIZED_DWD_SUBDAILY_COLUMNS, download_subdaily_observations_dwd
 from .geosphere_daily import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, download_daily_observations_geosphere
+from .knmi_daily import download_daily_observations_knmi
+from .knmi_parser import KNMI_NORMALIZED_DAILY_COLUMNS
 from .chmi_registry import get_dataset_spec as get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
@@ -92,6 +94,16 @@ def _download_observations_geosphere(
     if query.dataset_scope == 'historical' and query.resolution == 'daily':
         return download_daily_observations_geosphere(query, timeout=timeout, station_metadata=station_metadata).loc[:, GEOSPHERE_NORMALIZED_DAILY_COLUMNS]
     raise NotImplementedError('GeoSphere Austria support currently implements only historical/daily station observations.')
+
+
+def _download_observations_knmi(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+        return download_daily_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_DAILY_COLUMNS]
+    raise NotImplementedError('KNMI Netherlands support currently implements only historical/daily station observations.')
 
 def _download_observations_shmu(
     query: ObservationQuery,
@@ -188,4 +200,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
+
+
 

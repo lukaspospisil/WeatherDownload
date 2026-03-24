@@ -8,12 +8,13 @@ version = "0.1.0"
 description = "Country-aware Python library for weather metadata, discovery, and observation downloads through a unified interface."
 readme = "README.md"
 authors = [
-    { name = "Lukáš Pospíšil" }
+    { name = "LukĂˇĹˇ PospĂ­Ĺˇil" }
 ]
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
+    "netCDF4>=1.7.0",
     "pandas>=2.2.0",
     "requests>=2.31.0",
 ]
@@ -37,3 +38,4 @@ Repository = "https://github.com/lukaspospisil/WeatherDownload"
 
 [tool.setuptools.packages.find]
 include = ["weatherdownload*"]
+

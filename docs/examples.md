@@ -8,8 +8,6 @@ This page helps you find the example scripts quickly.
 
 ## Library Examples
 
-These examples are small and focused on the public library API.
-
 ### `examples/read_metadata.py`
 
 Shows how to:
@@ -40,7 +38,14 @@ python examples/download_daily.py
 python examples/download_daily.py --country AT
 python examples/download_daily.py --country CZ
 python examples/download_daily.py --country DE
+python examples/download_daily.py --country NL
 ```
+
+NL notes:
+
+- set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
+- only `historical / daily` is implemented
+- hourly and EDR are intentionally out of scope for this pass
 
 ### `examples/download_hourly.py`
 
@@ -111,22 +116,6 @@ Shows how to:
 - inspect the current feed summary offline via `probe_summary.csv`
 - normalize one selected station/date slice into the library's canonical daily observation schema
 
-Important current limits:
-
-- this example is only for experimental `SK / recent / daily`
-- it does not provide authoritative historical metadata coverage
-- it does not implement validated historical climate downloads
-
-Run:
-
-```powershell
-python examples/probe_shmu_sk.py --country SK --station-id 11800 --date 2025-01-01 --element tas_max --element precipitation
-```
-
-Related provider notes:
-
-- [Experimental Slovakia Provider Notes](providers_sk_experimental.md)
-
 ## Workflow Example
 
 ### `examples/download_fao.py`
@@ -143,33 +132,16 @@ What it does:
 - applies country-specific daily selection rules
 - keeps only complete days
 - exports a MATLAB-oriented bundle, a Parquet bundle, or both
-- writes canonical exported variables:
-  - `tas_mean`
-  - `tas_max`
-  - `tas_min`
-  - `wind_speed`
-  - `vapour_pressure`
-  - `sunshine_duration`
 
-Run:
+Important boundary:
 
-```powershell
-python examples/download_fao.py --country CZ --mode full --cache-dir outputs/fao_cache --export-format both
-```
-
-Detailed workflow notes:
-
-- [MATLAB-Oriented FAO Workflow](download_fao.md)
-
-
+- `NL` is intentionally not included in the FAO workflow example for this pass
+- this KNMI slice does not add FAO computation or FAO-related derivations
 
 ## Recommended Reading Order
-
-For a new user:
 
 1. start with the root [README](../README.md)
 2. check [Provider Model And Coverage](providers.md)
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
-

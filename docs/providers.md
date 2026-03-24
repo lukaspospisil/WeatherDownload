@@ -13,6 +13,7 @@ Use ISO 3166-1 alpha-2 country codes:
 - `AT`
 - `CZ`
 - `DE`
+- `NL`
 - `SK` (experimental, limited to `recent / daily`)
 
 Examples:
@@ -23,11 +24,12 @@ from weatherdownload import read_station_metadata, list_supported_elements
 at_stations = read_station_metadata(country="AT")
 cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
+nl_stations = read_station_metadata(country="NL")
 sk_stations = read_station_metadata(country="SK")
 
-sk_daily_elements = list_supported_elements(
-    country="SK",
-    dataset_scope="recent",
+nl_daily_elements = list_supported_elements(
+    country="NL",
+    dataset_scope="historical",
     resolution="daily",
 )
 ```
@@ -36,6 +38,7 @@ sk_daily_elements = list_supported_elements(
 weatherdownload stations metadata --country AT
 weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
+weatherdownload stations metadata --country NL
 weatherdownload stations metadata --country SK
 ```
 
@@ -65,6 +68,7 @@ What stays provider-specific internally:
 - quality/flag conventions
 - timestamp parsing rules
 - metadata completeness
+- authentication requirements
 
 ## Canonical Station Identifier
 
@@ -73,37 +77,22 @@ What stays provider-specific internally:
 | `AT` | GeoSphere Klima station id as string |
 | `CZ` | CHMI `WSI` |
 | `DE` | zero-padded DWD `Stations_id` |
+| `NL` | KNMI `WSI` / WIGOS station identifier |
 | `SK` | SHMU `ind_kli` as string |
 
 `gh_id` remains an optional secondary field and is nullable when a provider does not expose an equivalent identifier.
-
-## Implemented Support vs Discovery Support
-
-WeatherDownload distinguishes between:
-
-- discovery support: the provider registry knows that a dataset path exists
-- implemented support: the library can actually download and normalize that path
-
-This matters because discovery can be broader than the current downloader coverage.
 
 ## Capability Matrix
 
 | Country | Status | Supported dataset scopes | Implemented resolutions | Supported canonical elements | Station metadata quality |
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
-| `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`<br>Hourly: `vapour_pressure`, `pressure`, `cloud_cover`, `past_weather_1`, `past_weather_2`, `sunshine_duration`<br>10min: `tas_mean`, `tas_max`, `tas_min`, `tas_period_max`, `soil_temperature_10cm`, `soil_temperature_100cm`, `sunshine_duration` | Official CHMI station metadata with canonical `station_id` (`WSI`) and secondary `gh_id` |
-| `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator`<br>`1hour`: `tas_mean`, `relative_humidity`, `wind_speed`<br>`10min`: `tas_mean`, `relative_humidity`, `wind_speed` | Official DWD station descriptions normalized to canonical `station_id`; `gh_id` remains null |
-| `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload; station name and coordinates remain null |
-
-Interpretation notes:
-
-- “Supported canonical elements” means the currently implemented downloader slice, not the full upstream provider vocabulary.
-- `SK` `begin_date` and `end_date` describe only coverage visible in the sampled recent payload, not authoritative historical station coverage.
-- Discovery support can be broader than implemented download support, especially for `CZ`.
+| `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` |
+| `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` |
+| `NL` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official KNMI metadata file retrieved through the Open Data API; API key required |
+| `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 
 ## Current Narrow Slices
-
-The following implemented paths are intentionally conservative:
 
 ### AT `historical / daily`
 
@@ -138,6 +127,32 @@ Supported canonical elements:
 - `relative_humidity`
 - `wind_speed`
 
+### NL `historical / daily`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `precipitation`
+- `sunshine_duration`
+- `wind_speed`
+- `pressure`
+- `relative_humidity`
+
+Important current limitations:
+
+- KNMI access requires an API key
+- only `NL / historical / daily` is implemented
+- the implemented path uses the official KNMI Open Data API only
+- hourly and EDR are intentionally out of scope for this pass
+- no FAO computation and no FAO-related meteorological derivations are added
+- `quality` and `flag` remain null because this pass does not speculate on KNMI quality semantics beyond the validated dataset boundary
+
+Detailed notes:
+
+- [KNMI Netherlands Provider Notes](providers_nl_knmi.md)
+
 ### SK `recent / daily`
 
 Supported canonical elements:
@@ -152,17 +167,6 @@ Important current limitations:
 - `SK` support is experimental
 - only `SK / recent / daily` is implemented
 - `SK` metadata are probe-derived and do not yet include authoritative station names or coordinates
-- `SK` `begin_date` / `end_date` describe only coverage visible in the sampled recent payload, not authoritative historical station coverage
-
-Hard capability boundary:
-
-- only `SK / recent / daily`
-- only `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`
-- unsupported requests fail early by design
-
-Detailed notes:
-
-- [Experimental Slovakia Provider Notes](providers_sk_experimental.md)
 
 ## Query Semantics
 
@@ -176,10 +180,11 @@ Subdaily paths are timestamp-based:
 - use `start` and `end`
 - output uses `timestamp`
 
-For DWD subdaily paths:
+For KNMI daily files:
 
-- before `2000-01-01`, source timestamps are localized to `Europe/Berlin` and then converted to UTC
-- from `2000-01-01` onward, source timestamps are treated as UTC directly
+- files are handled through the Open Data API
+- the NetCDF timestamp marks the end of the daily interval in UTC
+- WeatherDownload normalizes that end timestamp back to the represented observation date
 
 ## CLI Notes
 
@@ -195,7 +200,6 @@ Examples:
 weatherdownload observations daily --country AT --station-id 1 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
-weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
+weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
-

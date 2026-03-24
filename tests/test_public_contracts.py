@@ -24,6 +24,7 @@ SAMPLE_GEOSPHERE_METADATA_PATH = Path('tests/data/sample_geosphere_klima_v2_1d_m
 SAMPLE_GEOSPHERE_METADATA_TEXT = SAMPLE_GEOSPHERE_METADATA_PATH.read_text(encoding='utf-8')
 SAMPLE_GEOSPHERE_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1d.csv')
 SAMPLE_GEOSPHERE_CSV_TEXT = SAMPLE_GEOSPHERE_CSV_PATH.read_text(encoding='utf-8')
+SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
 SAMPLE_SHMU_INDEX_HTML = Path('tests/data/sample_shmu_recent_daily_index.html').read_text(encoding='utf-8')
@@ -69,6 +70,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'DE':
         with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockTextResponse(content=SAMPLE_DWD_STATIONS)):
             return read_station_metadata(country='DE')
+    if country == 'NL':
+        return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_STATIONS_PATH))
     if country == 'SK':
         return read_station_metadata(country='SK', source_url=str(SAMPLE_SHMU_PAYLOAD_PATH))
     raise AssertionError(f'unsupported test country: {country}')
@@ -125,6 +128,42 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.dwd_daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='DE', station_metadata=station_metadata)
+    if country == 'NL':
+        station_metadata = _read_station_metadata_fixture('NL')
+        query = ObservationQuery(
+            country='NL',
+            dataset_scope='historical',
+            resolution='daily',
+            station_ids=['0-20000-0-06260'],
+            start_date='2024-01-01',
+            end_date='2024-01-02',
+            elements=['tas_mean', 'precipitation'],
+        )
+        parsed_payloads = iter([
+            {
+                'observation_date': pd.Timestamp('2024-01-01').date(),
+                'stations': pd.DataFrame([
+                    {'station_id': '0-20000-0-06260', 'full_name': 'De Bilt', 'latitude': 52.1, 'longitude': 5.18, 'elevation_m': 4.0},
+                    {'station_id': '0-20000-0-06310', 'full_name': 'Vlissingen', 'latitude': 51.442, 'longitude': 3.596, 'elevation_m': 8.0},
+                ]),
+                'variables': {'TG': pd.Series([3.4, 5.6]), 'RH': pd.Series([1.2, 0.0])},
+            },
+            {
+                'observation_date': pd.Timestamp('2024-01-02').date(),
+                'stations': pd.DataFrame([
+                    {'station_id': '0-20000-0-06260', 'full_name': 'De Bilt', 'latitude': 52.1, 'longitude': 5.18, 'elevation_m': 4.0},
+                    {'station_id': '0-20000-0-06310', 'full_name': 'Vlissingen', 'latitude': 51.442, 'longitude': 3.596, 'elevation_m': 8.0},
+                ]),
+                'variables': {'TG': pd.Series([4.1, 6.2]), 'RH': pd.Series([0.5, 0.1])},
+            },
+        ])
+        file_listing = {'files': [{'filename': 'daily-observations-20240101.nc'}, {'filename': 'daily-observations-20240102.nc'}]}
+
+        with patch.dict('os.environ', {'WEATHERDOWNLOAD_KNMI_API_KEY': 'test-key'}, clear=False):
+            with patch('weatherdownload.knmi_daily.list_knmi_files', return_value=file_listing):
+                with patch('weatherdownload.knmi_daily.download_knmi_file_bytes', side_effect=[b'first', b'second']):
+                    with patch('weatherdownload.knmi_daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
+                        return download_observations(query, country='NL', station_metadata=station_metadata)
     if country == 'SK':
         station_metadata = _read_station_metadata_fixture('SK')
         query = ObservationQuery(
@@ -156,10 +195,11 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'AT': ['1', '2'],
         'CZ': ['0-20000-0-11406', '0-20000-0-11414'],
         'DE': ['00003', '00044'],
+        'NL': ['0-20000-0-06260', '0-20000-0-06310'],
         'SK': ['11800', '11999'],
     }
 
-    for country in ['AT', 'CZ', 'DE', 'SK']:
+    for country in ['AT', 'CZ', 'DE', 'NL', 'SK']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         assert stations['station_id'].tolist() == expected_station_ids[country]
@@ -184,10 +224,11 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         'AT': 'historical',
         'CZ': 'historical_csv',
         'DE': 'historical',
+        'NL': 'historical',
         'SK': 'recent',
     }
 
-    for country in ['AT', 'CZ', 'DE', 'SK']:
+    for country in ['AT', 'CZ', 'DE', 'NL', 'SK']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -196,7 +237,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         assert observations['dataset_scope'].eq(expected_dataset_scopes[country]).all()
         assert observations['resolution'].eq('daily').all()
 
-        if country in {'AT', 'DE', 'SK'}:
+        if country in {'AT', 'DE', 'NL', 'SK'}:
             assert observations['gh_id'].isna().all()
 
 
@@ -277,6 +318,3 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
-
-
-

@@ -147,6 +147,23 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_nl_daily_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '0-20000-0-06260',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': 'TG',
+                'observation_date': '2024-01-01',
+                'time_function': None,
+                'value': 3.4,
+                'flag': None,
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': 'daily',
+            }
+        ])
+
     def test_tenmin_cli_screen_output_defaults_to_wide_layout(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
@@ -332,6 +349,23 @@ class ObservationCliTests(unittest.TestCase):
         self.assertIn('00044', buffer.getvalue())
         self.assertIn('tas_mean', buffer.getvalue())
 
+    def test_daily_cli_explicit_country_nl_uses_nl_query_shape(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_nl_daily_table()) as download_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'daily', '--country', 'NL', '--station-id', '0-20000-0-06260', '--element', 'tas_mean', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
+                ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'NL')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(query.elements, ['TG'])
+        self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
+        self.assertIn('0-20000-0-06260', buffer.getvalue())
+        self.assertIn('tas_mean', buffer.getvalue())
+
     def test_daily_cli_csv_export_defaults_to_wide_layout(self) -> None:
         original_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -514,6 +548,8 @@ class StationAvailabilityCliTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
 
 
 

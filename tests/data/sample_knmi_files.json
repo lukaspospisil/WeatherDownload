@@ -1,0 +1,17 @@
+{
+  "files": [
+    {
+      "filename": "daily-observations-20240101.nc",
+      "size": 1234
+    },
+    {
+      "filename": "daily-observations-20240102.nc",
+      "size": 1234
+    },
+    {
+      "filename": "daily-observations-20240103.nc",
+      "size": 1234
+    }
+  ],
+  "isTruncated": false
+}
