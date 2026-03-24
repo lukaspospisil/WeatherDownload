@@ -11,6 +11,7 @@ Critical boundary:
 - it does not compute FAO-56 ET0
 - it does not derive FAO intermediate variables
 - it only downloads, normalizes, filters, and packages observed daily meteorological inputs for later downstream FAO workflow use
+- unavailable fields remain null or missing instead of being derived
 
 Currently supported:
 
@@ -108,7 +109,7 @@ Unavailable in the current shared path:
 
 - `vapour_pressure` stays null
 
-The DK branch uses only the existing Denmark daily provider through the unified public interface. It remains Denmark-only in this pass and does not broaden to Greenland or Faroe Islands support.
+The DK branch uses only the existing Denmark daily provider through the unified public interface. Denmark daily values come from the official DMI Climate Data `stationValue` path, and the workflow remains Denmark-only in this pass without broadening to Greenland or Faroe Islands support.
 
 ### NL
 

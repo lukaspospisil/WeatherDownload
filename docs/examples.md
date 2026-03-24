@@ -195,9 +195,9 @@ Important boundary:
 - `AT`, `BE`, `CZ`, `DE`, `DK`, and `NL` all use the same shared country-parameterized workflow shape
 - the workflow downloads, normalizes, filters, and packages observed daily inputs only
 - it does not compute FAO-56 ET0 or derive meteorological variables
-- if a field is unavailable in the current provider path, it remains null instead of being derived
+- if a field is unavailable in the current provider path, it remains null or missing instead of being derived
 - `BE` daily values come from the official provider-side `aws_1day` aggregation and are not recomputed from 10-minute data in the workflow
-- `DK` is included through the shared workflow using only observed Denmark daily inputs from the existing provider and remains Denmark-only in this pass
+- `DK` is included through the shared workflow using only observed Denmark daily inputs from the existing provider; Denmark daily values come from the DMI Climate Data `stationValue` path and the workflow remains Denmark-only in this pass
 - `NL` is included through the shared workflow using only observed KNMI daily inputs, and `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` is required
 
 ## Recommended Reading Order

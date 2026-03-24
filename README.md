@@ -8,7 +8,7 @@
 
 WeatherDownload is a DataFrame-first Python library for country-aware weather metadata, discovery, and observation downloads through a unified interface.
 
-Current countries:
+Current implemented country coverage:
 
 - `AT` via GeoSphere Austria
 - `BE` via RMI/KMI open-data AWS platform
@@ -25,6 +25,13 @@ What stays stable across countries:
 - canonical meteorological element names
 - normalized output schemas
 - country selection with ISO 3166-1 alpha-2 codes such as `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, and `SK`
+
+Shared example coverage currently includes:
+
+- `examples/download_daily.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`
+- `examples/download_hourly.py`: `BE`, `DE`, `DK`
+- `examples/download_tenmin.py`: `BE`, `DE`, `DK`
+- `examples/download_fao.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL` for observed daily input packaging only
 
 ## Install
 
