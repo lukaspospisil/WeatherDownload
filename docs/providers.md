@@ -77,7 +77,7 @@ What stays provider-specific internally:
 | `AT` | GeoSphere Klima station id as string |
 | `CZ` | CHMI `WSI` |
 | `DE` | zero-padded DWD `Stations_id` |
-| `NL` | KNMI `WSI` / WIGOS station identifier |
+| `NL` | official KNMI station identifier from the station metadata CSV used by this provider |
 | `SK` | SHMU `ind_kli` as string |
 
 `gh_id` remains an optional secondary field and is nullable when a provider does not expose an equivalent identifier.

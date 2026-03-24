@@ -45,7 +45,7 @@ Station discovery for this slice is source-backed and uses official KNMI station
 
 Normalized identifier choice:
 
-- `station_id` = KNMI `WSI` / WIGOS station identifier
+- `station_id` = official KNMI station identifier from the station metadata CSV used by this provider
 - `gh_id` remains null because KNMI does not expose a matching field in this path
 
 ## Canonical Elements In Scope
