@@ -18,6 +18,7 @@ Currently supported:
 - `DE`
 - `AT`
 - `BE`
+- `DK`
 - `NL`
 
 ## CLI
@@ -27,6 +28,7 @@ python examples/download_fao.py --country CZ
 python examples/download_fao.py --country DE
 python examples/download_fao.py --country AT
 python examples/download_fao.py --country BE
+python examples/download_fao.py --country DK
 python examples/download_fao.py --country NL
 ```
 
@@ -92,6 +94,22 @@ Unavailable in the current shared path:
 
 The BE branch uses only the existing Belgium provider through the unified public interface. Belgium daily values come from the official provider-side `aws_1day` aggregation under the shared `resolution="daily"` path and are not recomputed from 10-minute data in this example.
 
+### DK
+
+Observed inputs used:
+
+- `tas_mean` via `mean_temp`
+- `tas_max` via `mean_daily_max_temp`
+- `tas_min` via `mean_daily_min_temp`
+- `wind_speed` via `mean_wind_speed`
+- `sunshine_duration` via `bright_sunshine`
+
+Unavailable in the current shared path:
+
+- `vapour_pressure` stays null
+
+The DK branch uses only the existing Denmark daily provider through the unified public interface. It remains Denmark-only in this pass and does not broaden to Greenland or Faroe Islands support.
+
 ### NL
 
 Observed inputs used:
@@ -150,6 +168,13 @@ For `BE`, that assumptions block explicitly states that:
 - Belgium daily values come from the provider-side `aws_1day` aggregation and are not recomputed in this example
 - the example does not derive radiation or other meteorological variables
 
+For `DK`, that assumptions block explicitly states that:
+
+- the branch packages observed inputs only
+- the workflow stays Denmark-only and does not broaden to Greenland or Faroe Islands differences in this pass
+- `vapour_pressure` is unavailable in the current provider path and remains null
+- the example does not derive radiation or other meteorological variables
+
 For `NL`, that assumptions block explicitly states that:
 
 - the branch packages observed inputs only
@@ -166,6 +191,7 @@ The cache is country-scoped under the base cache directory, for example:
   DE/
   AT/
   BE/
+  DK/
   NL/
 ```
 
@@ -183,11 +209,13 @@ Default country-aware output names when you do not pass explicit paths:
 - `DE` MAT: `outputs/fao_daily.de.mat`
 - `AT` MAT: `outputs/fao_daily.at.mat`
 - `BE` MAT: `outputs/fao_daily.be.mat`
+- `DK`
 - `NL` MAT: `outputs/fao_daily.nl.mat`
 - `CZ` Parquet bundle: `outputs/fao_daily.cz`
 - `DE` Parquet bundle: `outputs/fao_daily.de`
 - `AT` Parquet bundle: `outputs/fao_daily.at`
 - `BE` Parquet bundle: `outputs/fao_daily.be`
+- `DK`
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
 
 ## Why This Stays In `examples/`

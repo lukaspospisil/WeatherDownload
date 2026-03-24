@@ -164,7 +164,7 @@ It prepares a clean daily FAO-prep bundle for later MATLAB, R, or Python process
 
 What it does:
 
-- supports `CZ`, `DE`, `AT`, `BE`, and `NL`
+- supports `CZ`, `DE`, `AT`, `BE`, `DK`, and `NL`
 - downloads and caches normalized country-aware observed daily inputs
 - screens candidate stations
 - applies country-specific observed-input selection rules
