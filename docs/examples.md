@@ -126,7 +126,7 @@ It prepares a clean daily FAO-prep dataset for later MATLAB, R, or Python proces
 
 What it does:
 
-- supports `CZ`, `DE`, and `AT`
+- supports `CZ`, `DE`, `AT`, and `NL`
 - caches normalized country-aware daily inputs
 - screens candidate stations
 - applies country-specific daily selection rules
@@ -135,8 +135,8 @@ What it does:
 
 Important boundary:
 
-- `NL` is intentionally not included in the FAO workflow example for this pass
-- this KNMI slice does not add FAO computation or FAO-related derivations
+- `NL` is included through the shared country-parameterized workflow using only observed KNMI daily inputs
+- `vapour_pressure` remains null for `NL` because the current provider path does not expose it directly, and the workflow does not derive it
 
 ## Recommended Reading Order
 
@@ -145,3 +145,4 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+

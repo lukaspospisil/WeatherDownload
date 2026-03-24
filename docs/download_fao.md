@@ -1,34 +1,40 @@
-# MATLAB-Oriented FAO Workflow
+# FAO-Oriented Daily Input Packaging Workflow
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-`examples/download_fao.py` is a workflow-oriented example built on top of the core WeatherDownload library.
+`examples/download_fao.py` is a shared, country-aware example built on top of the core WeatherDownload library.
 
-It is country-aware, but only for countries whose daily FAO-prep mapping is explicitly implemented.
+Critical boundary:
+
+- it does not compute FAO-56 ET0
+- it does not derive FAO intermediate variables
+- it only downloads, filters, and packages observed daily meteorological inputs for later downstream FAO workflow use
 
 Currently supported:
 
 - `CZ`
 - `DE`
 - `AT`
+- `NL`
 
 ## CLI
-
-The example now accepts:
 
 ```powershell
 python examples/download_fao.py --country CZ
 python examples/download_fao.py --country DE
 python examples/download_fao.py --country AT
+python examples/download_fao.py --country NL
 ```
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
 
-## Conceptual Target Variables
+For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
 
-The workflow prepares the same conceptual daily meteorological variables across countries:
+## Fixed Export Shape
+
+The shared example always exports the same canonical bundle columns:
 
 - `tas_mean`
 - `tas_max`
@@ -37,258 +43,132 @@ The workflow prepares the same conceptual daily meteorological variables across 
 - `vapour_pressure`
 - `sunshine_duration`
 
-These canonical names are also the final exported variable names in the station series and Parquet bundle.
+This keeps the downstream bundle shape stable across countries.
 
-## Final Export Schema
+Important interpretation:
 
-The final per-station series expose:
+- these are packaging targets, not a promise that every country directly observes every field in the current provider path
+- if a field is unavailable in the provider path, the shared example keeps it null instead of deriving it
 
-- `date`
-- `tas_mean`
-- `tas_max`
-- `tas_min`
-- `wind_speed`
-- `vapour_pressure`
-- `sunshine_duration`
-
-This keeps the exported dataset country-independent and canonical-first.
-
-## Provider Provenance Metadata
-
-`data_info` includes `provider_element_mapping`, which records for each canonical exported variable:
-
-- the raw/provider code or codes used for the selected country
-- the country-specific selection rule, if any
-- whether the exported variable is directly observed or unavailable in the shared example layer
-
-When country-specific assumptions matter, `data_info` also includes an `assumptions` block.
-
-## Country-Specific Mapping
+## Country Mapping Summary
 
 ### CZ
 
-| Canonical export name | CHMI raw code | Selection rule | Status |
-| --- | --- | --- | --- |
-| `tas_mean` | `T` | `TIMEFUNC=AVG` | observed |
-| `tas_max` | `TMA` | `TIMEFUNC=20:00` | observed |
-| `tas_min` | `TMI` | `TIMEFUNC=20:00` | observed |
-| `wind_speed` | `F` | `TIMEFUNC=AVG` | observed |
-| `vapour_pressure` | `E` | `TIMEFUNC=AVG` | observed |
-| `sunshine_duration` | `SSV` | `TIMEFUNC=00:00` | observed |
+All exported fields are directly observed in the current shared path.
 
 ### DE
 
-| Canonical export name | DWD raw code | Selection rule | Status |
-| --- | --- | --- | --- |
-| `tas_mean` | `TMK` | none | observed |
-| `tas_max` | `TXK` | none | observed |
-| `tas_min` | `TNK` | none | observed |
-| `wind_speed` | `FM` | none | observed |
-| `vapour_pressure` | `VPM` | none | observed |
-| `sunshine_duration` | `SDK` | none | observed |
+All exported fields are directly observed in the current shared path.
 
 ### AT
 
-| Canonical export name | GeoSphere raw code(s) | Selection rule | Status |
-| --- | --- | --- | --- |
-| `tas_mean` | `tl_mittel` | none | observed |
-| `tas_max` | `tlmax` | none | observed |
-| `tas_min` | `tlmin` | none | observed |
-| `wind_speed` | `vv_mittel` | none | observed |
-| `vapour_pressure` | none | none | unavailable |
-| `sunshine_duration` | `so_h` | none | observed |
+Observed inputs used:
 
-For Austria, the shared workflow keeps the same exported bundle shape as CZ and DE, but `vapour_pressure` stays empty because it is not directly available from the current Austria daily provider path.
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `wind_speed`
+- `sunshine_duration`
 
-## Austria Assumptions
+Unavailable in the current shared path:
 
-The Austria branch keeps several assumptions explicit in `data_info`:
+- `vapour_pressure` stays null
 
-- `wind_height_handling`: `wind_speed` uses GeoSphere daily `vv_mittel` as delivered and is not converted to FAO 2 m wind speed
-- `pressure_usage`: GeoSphere daily pressure is available in the provider but is intentionally not included in this shared bundle
-- `relative_humidity_interpretation`: GeoSphere daily `rf_mittel` exists in the provider, but the shared workflow does not use it to derive new variables
-- `sunshine_duration_to_radiation`: GeoSphere daily `so_h` is used as observed sunshine duration; no radiation is derived
+### NL
 
-The example still does not compute FAO-56 ET0 or any FAO intermediate physics.
+Observed inputs used:
 
-## Workflow Steps
+- `tas_mean` via `TG`
+- `tas_max` via `TX`
+- `tas_min` via `TN`
+- `wind_speed` via `FG`
+- `sunshine_duration` via `SQ`
+
+Unavailable in the current shared path:
+
+- `vapour_pressure` stays null
+
+The NL branch uses only the existing KNMI provider through the unified public interface.
+
+## What The Example Does
 
 1. load station metadata for the selected country
-2. load observation metadata for the selected country
-3. coarse-screen stations by required daily FAO-prep inputs
-4. apply a coarse validity-overlap pre-screen from observation metadata
-5. deduplicate candidate stations to one row per canonical `station_id`
-6. download or reuse cached normalized daily observations for the selected country
-7. apply country-specific daily selection rules only
-8. merge variables by calendar date
-9. keep only complete days
-10. retain only stations with at least `3650` complete days by default
-11. export the final bundle
+2. load station observation metadata for the selected country
+3. screen stations by required observed daily inputs
+4. estimate overlap from observation metadata
+5. cache normalized daily observations through the shared provider interface
+6. keep only complete observed-input days for the configured required fields
+7. package the result into a stable MAT or Parquet bundle shape
 
-## Execution Modes
+## What The Example Explicitly Does Not Do
 
-The script supports:
+- no ET0 computation
+- no vapour-pressure derivation
+- no RH-based derivation
+- no net-radiation derivation
+- no extraterrestrial-radiation derivation
+- no psychrometric-constant computation
+- no sunshine-to-radiation estimation
+- no hidden meteorological estimation
 
-- `full`
-- `download`
-- `build`
+## Metadata In `data_info`
 
-### `full`
+`data_info` includes:
 
-- reuses cached files when present
-- downloads only missing files
-- builds and exports the final dataset
+- `provider_element_mapping`
+- `country`
+- `source`
+- `dataset_type`
+- `elements`
+- `min_complete_days`
+- `num_stations`
 
-### `download`
+If a country has important limitations, `data_info` also includes an `assumptions` block.
 
-- downloads and caches normalized metadata and daily observations only
-- does not build the final dataset
+For `NL`, that assumptions block explicitly states that:
 
-### `build`
-
-- reads only from the cache
-- fails clearly if required cached inputs are missing
+- the branch packages observed inputs only
+- `vapour_pressure` is unavailable in the current provider path and remains null
+- the example does not derive radiation or other meteorological variables
 
 ## Cache Layout
 
-The cache is country-scoped:
+The cache is country-scoped under the base cache directory, for example:
 
 ```text
 <cache-dir>/
   CZ/
-    meta1.csv
-    meta2.csv
-    daily/
-      <station_id>/
-        daily-<station_id>.csv
   DE/
-    meta1.csv
-    meta2.csv
-    daily/
-      <station_id>/
-        daily-<station_id>.csv
   AT/
-    meta1.csv
-    meta2.csv
-    daily/
-      <station_id>/
-        daily-<station_id>.csv
+  NL/
 ```
 
-Default base cache directory:
+Each country directory stores:
 
-- `outputs/fao_cache`
+- `meta1.csv`
+- `meta2.csv`
+- `daily/<station_id>/daily-<station_id>.csv`
 
-## Export Modes
-
-Supported export formats:
-
-- `mat`
-- `parquet`
-- `both`
+## Default Outputs
 
 Default country-aware output names when you do not pass explicit paths:
 
 - `CZ` MAT: `outputs/fao_daily.cz.mat`
-- `CZ` Parquet bundle: `outputs/fao_daily.cz`
 - `DE` MAT: `outputs/fao_daily.de.mat`
-- `DE` Parquet bundle: `outputs/fao_daily.de`
 - `AT` MAT: `outputs/fao_daily.at.mat`
+- `NL` MAT: `outputs/fao_daily.nl.mat`
+- `CZ` Parquet bundle: `outputs/fao_daily.cz`
+- `DE` Parquet bundle: `outputs/fao_daily.de`
 - `AT` Parquet bundle: `outputs/fao_daily.at`
-
-### MAT bundle
-
-The `.mat` export contains:
-
-- `data_info`
-- `stations`
-- `series`
-
-### Parquet bundle
-
-The Parquet bundle directory contains:
-
-- `data_info.json`
-- `stations.parquet`
-- `series.parquet`
-
-`series.parquet` is long-form and contains only complete FAO-prep days with canonical variable names.
-
-`stations.parquet` uses normalized snake_case fields:
-
-- `station_id`
-- `full_name`
-- `latitude`
-- `longitude`
-- `elevation_m`
-- `num_complete_days`
-- `first_complete_date`
-- `last_complete_date`
-
-`series.parquet` uses:
-
-- `station_id`
-- `full_name`
-- `latitude`
-- `longitude`
-- `elevation_m`
-- `date`
-- `tas_mean`
-- `tas_max`
-- `tas_min`
-- `wind_speed`
-- `vapour_pressure`
-- `sunshine_duration`
-
-## Legacy Variable Names
-
-The old CHMI-style export names
-
-- `T`
-- `TMA`
-- `TMI`
-- `F`
-- `E`
-- `SSV`
-
-are not used in the final exported dataset.
-
-## Representative Station Row Rule
-
-If station metadata contain duplicate rows for the same canonical `station_id`, the workflow keeps the first matching row in the existing metadata order.
-
-This makes the workflow stable and prevents repeated processing for the same station.
-
-## Example Commands
-
-Cache raw inputs only for CZ:
-
-```powershell
-python examples/download_fao.py --country CZ --mode download --cache-dir outputs/fao_cache
-```
-
-Build only from cache and export Parquet for AT:
-
-```powershell
-python examples/download_fao.py --country AT --mode build --cache-dir outputs/fao_cache --export-format parquet
-```
-
-Run the full workflow and export both outputs for DE:
-
-```powershell
-python examples/download_fao.py --country DE --mode full --cache-dir outputs/fao_cache --export-format both
-```
+- `NL` Parquet bundle: `outputs/fao_daily.nl`
 
 ## Why This Stays In `examples/`
-
-This workflow is intentionally downstream-specific.
 
 The reusable parts stay in the core library:
 
 - provider-aware metadata loading
 - canonical element handling
 - country-aware daily observation downloading
-- DataFrame export helpers
+- export helpers
 
-The FAO preparation orchestration stays in the example layer because it is a specialized downstream workflow, not a general-purpose downloader API.
-
+The orchestration stays in `examples/` because it is a downstream packaging workflow, not part of the public provider API.

@@ -43,6 +43,13 @@ AT_REQUIRED_OBSERVED_ELEMENTS = (
     'wind_speed',
     'sunshine_duration',
 )
+NL_REQUIRED_OBSERVED_ELEMENTS = (
+    'tas_mean',
+    'tas_max',
+    'tas_min',
+    'wind_speed',
+    'sunshine_duration',
+)
 AT_ASSUMPTIONS = {
     'wind_height_handling': (
         'wind_speed uses GeoSphere daily vv_mittel as delivered. This shared workflow does not convert wind speed to FAO 2 m wind speed, '
@@ -73,6 +80,36 @@ AT_PROVIDER_ELEMENT_MAPPING = {
         'notes': 'Not directly available from the current Austria daily provider path. The shared workflow leaves this field empty instead of deriving it.',
     },
     'sunshine_duration': {'raw_codes': ['so_h'], 'selection_rule': None, 'status': 'observed'},
+}
+NL_ASSUMPTIONS = {
+    'observed_inputs_only': (
+        'The Netherlands branch packages only source-backed daily observations from the KNMI provider. '
+        'The shared workflow does not compute FAO-56 ET0 or derive any meteorological variables.'
+    ),
+    'vapour_pressure_availability': (
+        'KNMI NL historical daily support in this pass does not expose observed vapour_pressure in the provider path used here. '
+        'The shared workflow leaves vapour_pressure empty instead of deriving it from humidity or temperature.'
+    ),
+    'pressure_usage': (
+        'KNMI daily pressure is available in the provider, but this shared workflow does not use it to derive any new variables and does not export pressure in the FAO-oriented bundle.'
+    ),
+    'sunshine_duration_to_radiation': (
+        'sunshine_duration uses observed KNMI daily sunshine duration only. '
+        'The shared workflow does not derive solar radiation, net radiation, or extraterrestrial radiation.'
+    ),
+}
+NL_PROVIDER_ELEMENT_MAPPING = {
+    'tas_mean': {'raw_codes': ['TG'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['TX'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['TN'], 'selection_rule': None, 'status': 'observed'},
+    'wind_speed': {'raw_codes': ['FG'], 'selection_rule': None, 'status': 'observed'},
+    'vapour_pressure': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': 'Not directly available from the current Netherlands daily provider path. The shared workflow leaves this field empty instead of deriving it.',
+    },
+    'sunshine_duration': {'raw_codes': ['SQ'], 'selection_rule': None, 'status': 'observed'},
 }
 
 
@@ -275,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description='Prepare a country-aware daily dataset for later FAO processing.')
+    parser = argparse.ArgumentParser(description='Download and package a country-aware daily meteorological input bundle for later FAO workflow use.')
     parser.add_argument('--country', default='CZ', help='ISO 3166-1 alpha-2 country code. Defaults to CZ.')
     parser.add_argument('--mode', choices=['full', 'download', 'build'], default='full', help='Run the full pipeline, cache inputs only, or build only from cached inputs.')
     parser.add_argument('--cache-dir', type=Path, default=Path('outputs/fao_cache'), help='Base cache directory for metadata and daily inputs.')
@@ -283,7 +320,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--output-dir', type=Path, default=None, help='Portable Parquet bundle output directory.')
     parser.add_argument('--export-format', choices=['mat', 'parquet', 'both'], default='mat', help='Output format to produce in full or build mode.')
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional canonical station_id filter. Can be provided multiple times.')
-    parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete FAO-prep days required per station.')
+    parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete observed-input days required per station.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
     parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
@@ -299,7 +336,12 @@ def get_fao_country_config(country: str | None) -> FaoCountryConfig:
 
     canonical_to_raw = daily_spec.canonical_elements or {}
     raw_to_provider_canonical = raw_to_canonical_map_for_spec(daily_spec)
-    query_elements = AT_REQUIRED_OBSERVED_ELEMENTS if normalized_country == 'AT' else FAO_CANONICAL_ELEMENTS
+    if normalized_country == 'AT':
+        query_elements = AT_REQUIRED_OBSERVED_ELEMENTS
+    elif normalized_country == 'NL':
+        query_elements = NL_REQUIRED_OBSERVED_ELEMENTS
+    else:
+        query_elements = FAO_CANONICAL_ELEMENTS
 
     selected_canonical_to_raw: dict[str, tuple[str, ...]] = {}
     raw_to_canonical: dict[str, str] = {}
@@ -313,11 +355,13 @@ def get_fao_country_config(country: str | None) -> FaoCountryConfig:
             raw_to_canonical[raw_code.upper()] = canonical_name
 
     if normalized_country == 'CZ':
-        return FaoCountryConfig('CZ', 'historical_csv', 'daily', ('DLY',), selected_canonical_to_raw, raw_to_canonical, dict(CZ_TIMEFUNC_BY_CANONICAL), FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, dict(CZ_TIMEFUNC_BY_CANONICAL)), {}, 'CHMI daily meteorological dataset prepared for later FAO Penman-Monteith processing', 'CHMI OpenData historical_csv metadata and daily observations')
+        return FaoCountryConfig('CZ', 'historical_csv', 'daily', ('DLY',), selected_canonical_to_raw, raw_to_canonical, dict(CZ_TIMEFUNC_BY_CANONICAL), FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, dict(CZ_TIMEFUNC_BY_CANONICAL)), {}, 'CHMI observed daily input bundle prepared for later FAO workflow packaging', 'CHMI OpenData historical_csv metadata and daily observations')
     if normalized_country == 'DE':
-        return FaoCountryConfig('DE', 'historical', 'daily', ('DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, {}), {}, 'DWD daily meteorological dataset prepared for later FAO Penman-Monteith processing', 'DWD CDC historical daily metadata and observations')
+        return FaoCountryConfig('DE', 'historical', 'daily', ('DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, {}), {}, 'DWD observed daily input bundle prepared for later FAO workflow packaging', 'DWD CDC historical daily metadata and observations')
     if normalized_country == 'AT':
-        return FaoCountryConfig('AT', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, AT_REQUIRED_OBSERVED_ELEMENTS, AT_REQUIRED_OBSERVED_ELEMENTS, dict(AT_PROVIDER_ELEMENT_MAPPING), dict(AT_ASSUMPTIONS), 'GeoSphere Austria daily meteorological dataset prepared for later FAO processing', 'GeoSphere Austria Dataset API station historical daily klima-v2-1d')
+        return FaoCountryConfig('AT', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, AT_REQUIRED_OBSERVED_ELEMENTS, AT_REQUIRED_OBSERVED_ELEMENTS, dict(AT_PROVIDER_ELEMENT_MAPPING), dict(AT_ASSUMPTIONS), 'GeoSphere Austria observed daily input bundle prepared for later FAO workflow packaging', 'GeoSphere Austria Dataset API station historical daily klima-v2-1d')
+    if normalized_country == 'NL':
+        return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, NL_REQUIRED_OBSERVED_ELEMENTS, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
     raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.')
 
 
@@ -660,6 +704,10 @@ def _to_mat_value(value: Any) -> Any:
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
+
+
+
 
 
 
