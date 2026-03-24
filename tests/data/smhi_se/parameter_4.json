@@ -1,0 +1,20 @@
+﻿{
+  "key": "4",
+  "updated": 1774389600000,
+  "title": "Vindhastighet: Valj station (sedan tidsutsnitt)",
+  "summary": "medelvarde 10 min, 1 gang/tim",
+  "unit": "meter per sekund",
+  "station": [
+    {
+      "key": "98230",
+      "id": 98230,
+      "name": "Stockholm-Observatoriekullen A",
+      "height": 43.133,
+      "latitude": 59.3417,
+      "longitude": 18.0549,
+      "active": true,
+      "from": 859766400000,
+      "to": 904003199000
+    }
+  ]
+}

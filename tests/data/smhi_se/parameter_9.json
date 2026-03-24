@@ -1,0 +1,20 @@
+﻿{
+  "key": "9",
+  "updated": 1774389600000,
+  "title": "Lufttryck reducerat havsytans niva: Valj station (sedan tidsutsnitt)",
+  "summary": "vid havsytans niva, momentanvarde, 1 gang/tim",
+  "unit": "hektopascal",
+  "station": [
+    {
+      "key": "98230",
+      "id": 98230,
+      "name": "Stockholm-Observatoriekullen A",
+      "height": 43.133,
+      "latitude": 59.3417,
+      "longitude": 18.0549,
+      "active": true,
+      "from": 1351728000000,
+      "to": 1774389600000
+    }
+  ]
+}

@@ -70,7 +70,7 @@ NL notes:
 SE notes:
 
 - `SE` uses the shared daily example path through the official SMHI Meteorological Observations corrected-archive daily CSV path
-- station discovery merges the supported daily parameter station listings used by this provider
+- station discovery merges the supported daily and hourly parameter station listings used by this provider
 - `observation_date` comes from the published `Representativt dygn` field, and provider-defined interval windows stay behind the provider layer
 - raw SMHI `Kvalitet` codes are preserved in `flag` and normalized `quality` stays null
 - corrected-archive excludes the latest three months by source design
@@ -90,6 +90,7 @@ python examples/download_hourly.py
 python examples/download_hourly.py --country BE
 python examples/download_hourly.py --country DE
 python examples/download_hourly.py --country DK
+python examples/download_hourly.py --country SE
 ```
 
 BE hourly notes:
@@ -107,6 +108,14 @@ DK hourly notes:
 - the source hourly path is UTC and exposes `from` and `to` interval bounds; the example preserves that provider-defined hourly meaning behind the provider layer
 - raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
+
+SE hourly notes:
+
+- `SE` uses the shared hourly example path through the official SMHI Meteorological Observations corrected-archive CSV path
+- station discovery still uses the source-backed parameter station listings merged across the implemented Sweden parameters
+- the example preserves the published `Datum` + `Tid (UTC)` hour timestamp as the normalized UTC `timestamp`
+- raw SMHI `Kvalitet` codes are preserved in `flag` and normalized `quality` stays null
+- corrected-archive excludes the latest three months by source design
 
 ### `examples/download_tenmin.py`
 

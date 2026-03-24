@@ -9,6 +9,9 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_max',
     'tas_min',
     'precipitation',
+    'wind_speed',
+    'relative_humidity',
+    'pressure',
 )
 
 
@@ -29,7 +32,7 @@ PROVIDER = WeatherProvider(
     download_observations=_download_observations,
     supported_country_codes=('SE',),
     supported_dataset_scopes=('historical',),
-    supported_resolutions=('daily',),
+    supported_resolutions=('daily', '1hour'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )

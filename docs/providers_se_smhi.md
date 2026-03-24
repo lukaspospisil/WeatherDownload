@@ -8,13 +8,13 @@ This page documents the current conservative Sweden slice implemented through th
 
 ## Scope In This Pass
 
-Supported query shape in the shared public API:
+Supported query shapes in the shared public API:
 
 - `country="SE"`, `dataset_scope="historical"`, `resolution="daily"`
+- `country="SE"`, `dataset_scope="historical"`, `resolution="1hour"`
 
 Out of scope in this pass:
 
-- hourly support
 - `10min` support
 - FAO computation
 - ET0 computation
@@ -27,8 +27,8 @@ WeatherDownload uses the official SMHI Meteorological Observations open-data API
 Implemented source model in this pass:
 
 - parameter listing: `https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/{parameter_id}.json`
-- station listing for each supported daily parameter comes from the official `station` array in that parameter payload
-- historical daily observations come from the official corrected archive CSV path:
+- station listing for each supported parameter comes from the official `station` array in that parameter payload
+- historical daily and hourly observations both use the official corrected-archive CSV path:
   `https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/{parameter_id}/station/{station_id}/period/corrected-archive/data.csv`
 
 The provider keeps SMHI's parameter / station / period model behind the provider layer.
@@ -59,6 +59,18 @@ Important source-backed semantics in this pass:
 - provider-defined interval windows differ by parameter and stay behind the provider layer
 - WeatherDownload does not recompute or derive meteorological variables
 
+## Hourly Observation Semantics
+
+The hourly downloader also uses the official SMHI corrected-archive CSV path for each supported parameter and station.
+
+Important source-backed semantics in this pass:
+
+- WeatherDownload uses only `period="corrected-archive"` for the historical `1hour` slice
+- SMHI documents that corrected-archive excludes the latest three months while quality control is still in progress
+- `timestamp` is taken directly from the published `Datum` + `Tid (UTC)` columns in the hourly CSV
+- WeatherDownload preserves that published UTC hour timestamp and does not reinterpret it into a different meteorological meaning
+- provider-defined hourly field semantics stay behind the provider layer
+
 ## Supported Canonical Elements
 
 Current conservative daily mapping:
@@ -68,7 +80,15 @@ Current conservative daily mapping:
 - `tas_min` -> `19`
 - `precipitation` -> `5`
 
-These are mapped directly from documented SMHI daily parameters only.
+Current conservative hourly mapping:
+
+- `tas_mean` -> `1`
+- `wind_speed` -> `4`
+- `relative_humidity` -> `6`
+- `precipitation` -> `7`
+- `pressure` -> `9`
+
+These are mapped directly from documented SMHI parameters only.
 
 ## Quality And Flags
 
@@ -80,12 +100,12 @@ Current handling is intentionally conservative:
 
 ## Known Limitations
 
-- only the four conservative daily parameters above are implemented
-- other daily SMHI parameters are intentionally out of scope until they are added explicitly
+- only the conservative daily and hourly parameters above are implemented
+- other SMHI parameters are intentionally out of scope until they are added explicitly
 - corrected-archive excludes the latest three months by source design
 - there is no Sweden-specific public workflow shape; Sweden uses the same shared provider interface as the other countries
 
-## Shared Interface Example
+## Shared Interface Examples
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -98,6 +118,22 @@ query = ObservationQuery(
     start_date="1996-10-01",
     end_date="1996-10-03",
     elements=["tas_mean", "tas_max", "precipitation"],
+)
+
+observations = download_observations(query)
+```
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="SE",
+    dataset_scope="historical",
+    resolution="1hour",
+    station_ids=["98230"],
+    start="2012-11-29T11:00:00Z",
+    end="2012-11-29T13:00:00Z",
+    elements=["tas_mean", "pressure"],
 )
 
 observations = download_observations(query)

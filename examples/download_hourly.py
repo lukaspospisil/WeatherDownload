@@ -32,6 +32,13 @@ COUNTRY_DEFAULTS = {
         'end': '2024-01-01T02:00:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
+    'SE': {
+        'dataset_scope': 'historical',
+        'station_ids': ['98230'],
+        'start': '2012-11-29T11:00:00Z',
+        'end': '2012-11-29T13:00:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
 }
 
 

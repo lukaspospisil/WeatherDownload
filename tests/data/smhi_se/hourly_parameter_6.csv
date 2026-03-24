@@ -1,0 +1,13 @@
+﻿Stationsnamn;Stationsnummer;Stationsnat;Mathojd (meter over marken)
+Stockholm-Observatoriekullen A;98230;SMHIs stationsnat;2.0
+
+Parameternamn;Beskrivning;Enhet
+Relativ Luftfuktighet;momentanvarde, 1 gang/tim;procent
+
+Tidsperiod (fr.o.m);Tidsperiod (t.o.m);Hojd (meter over havet);Latitud (decimalgrader);Longitud (decimalgrader)
+2012-11-29 11:00:00;2012-11-29 13:00:00;43.133;59.3417;18.0549
+
+Datum;Tid (UTC);Relativ Luftfuktighet;Kvalitet;;Tidsutsnitt:
+2012-11-29;11:00:00;88;Y;;Kvalitetskontrollerade historiska data (utom de senaste 3 man)
+2012-11-29;12:00:00;86;Y;;Tidsperiod (fr.o.m.) = 2012-11-29 11:00:00 (UTC)
+2012-11-29;13:00:00;84;G;;Tidsperiod (t.o.m.) = 2012-11-29 13:00:00 (UTC)

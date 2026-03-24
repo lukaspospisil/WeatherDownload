@@ -6,17 +6,17 @@ import pandas as pd
 import requests
 
 from .se_parser import normalize_se_observation_metadata, normalize_se_station_metadata, parse_se_parameter_json, read_text_from_source
-from .se_registry import SE_DAILY_PARAMETER_IDS, SMHI_METOBS_API_BASE, get_dataset_spec
+from .se_registry import SE_IMPLEMENTED_PARAMETER_IDS, SMHI_METOBS_API_BASE
 
 
 def read_station_metadata_se(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    payloads = [_read_parameter_payload(parameter_id, source_url=source_url, timeout=timeout) for parameter_id in SE_DAILY_PARAMETER_IDS]
+    payloads = [_read_parameter_payload(parameter_id, source_url=source_url, timeout=timeout) for parameter_id in SE_IMPLEMENTED_PARAMETER_IDS]
     return normalize_se_station_metadata(payloads)
 
 
 def read_station_observation_metadata_se(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    payloads = [_read_parameter_payload(parameter_id, source_url=source_url, timeout=timeout) for parameter_id in SE_DAILY_PARAMETER_IDS]
-    return normalize_se_observation_metadata(payloads, get_dataset_spec('historical', 'daily'))
+    payloads = [_read_parameter_payload(parameter_id, source_url=source_url, timeout=timeout) for parameter_id in SE_IMPLEMENTED_PARAMETER_IDS]
+    return normalize_se_observation_metadata(payloads)
 
 
 def _read_parameter_payload(parameter_id: str, source_url: str | None, timeout: int) -> dict[str, object]:

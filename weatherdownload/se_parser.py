@@ -9,10 +9,15 @@ from typing import Any
 import pandas as pd
 
 from .metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
-from .se_registry import SE_DAILY_PARAMETER_METADATA, SMHI_DAILY_PERIOD_KEY
+from .se_registry import SE_PARAMETER_METADATA, SMHI_DAILY_PERIOD_KEY, SMHI_HOURLY_PERIOD_KEY
 
 SE_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
+    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+]
+
+SE_NORMALIZED_SUBDAILY_COLUMNS = [
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
 
@@ -74,11 +79,13 @@ def normalize_se_station_metadata(payloads: list[dict[str, object]]) -> pd.DataF
     return frame
 
 
-def normalize_se_observation_metadata(payloads: list[dict[str, object]], spec: Any) -> pd.DataFrame:
+def normalize_se_observation_metadata(payloads: list[dict[str, object]]) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for payload in payloads:
         parameter_id = _clean_string(payload.get('key'))
-        metadata = SE_DAILY_PARAMETER_METADATA.get(parameter_id, {})
+        metadata = SE_PARAMETER_METADATA.get(parameter_id, {})
+        if not metadata:
+            continue
         for station in payload.get('station', []):
             if not isinstance(station, dict):
                 continue
@@ -87,12 +94,12 @@ def normalize_se_observation_metadata(payloads: list[dict[str, object]], spec: A
                 continue
             rows.append(
                 {
-                    'obs_type': 'HISTORICAL_DAILY',
+                    'obs_type': metadata.get('obs_type', ''),
                     'station_id': station_id,
                     'begin_date': normalize_se_metadata_datetime(station.get('from')),
                     'end_date': normalize_se_metadata_datetime(station.get('to')),
                     'element': parameter_id,
-                    'schedule': f'P1D SMHI metObs {SMHI_DAILY_PERIOD_KEY}',
+                    'schedule': metadata.get('schedule', pd.NA),
                     'name': metadata.get('name', payload.get('title') or parameter_id),
                     'description': metadata.get('description', pd.NA),
                     'height': pd.NA,
@@ -107,7 +114,7 @@ def parse_se_daily_csv(csv_text: str) -> dict[str, object]:
     parameter_values = _value_row_after_header(rows, 'Parameternamn')
     period_values = _value_row_after_header(rows, 'Tidsperiod (fr.o.m)')
     data_header_index = _header_index(rows, 'Fran Datum Tid (UTC)')
-    data_rows = _parse_data_rows(rows[data_header_index + 1 :])
+    data_rows = _parse_daily_data_rows(rows[data_header_index + 1 :])
 
     return {
         'station_name': _value_at(station_values, 0),
@@ -125,6 +132,17 @@ def parse_se_daily_csv(csv_text: str) -> dict[str, object]:
         'records': pd.DataFrame.from_records(
             data_rows,
             columns=['from_utc', 'to_utc', 'observation_date', 'value', 'flag'],
+        ),
+    }
+
+
+def parse_se_hourly_csv(csv_text: str) -> dict[str, object]:
+    parsed = _parse_se_hourly_sections(csv_text)
+    return {
+        **parsed,
+        'records': pd.DataFrame.from_records(
+            _parse_hourly_data_rows(parsed['data_rows']),
+            columns=['timestamp', 'value', 'flag'],
         ),
     }
 
@@ -164,6 +182,29 @@ def build_se_flag(value: object) -> object:
     return cleaned or pd.NA
 
 
+def _parse_se_hourly_sections(csv_text: str) -> dict[str, object]:
+    rows = list(csv.reader(io.StringIO(csv_text.lstrip('\ufeff')), delimiter=';'))
+    station_values = _value_row_after_header(rows, 'Stationsnamn')
+    parameter_values = _value_row_after_header(rows, 'Parameternamn')
+    period_values = _value_row_after_header(rows, 'Tidsperiod (fr.o.m)')
+    data_header_index = _find_hourly_data_header_index(rows)
+    return {
+        'station_name': _value_at(station_values, 0),
+        'station_id': normalize_se_station_id(_value_at(station_values, 1)),
+        'station_network': _value_at(station_values, 2) or pd.NA,
+        'measurement_height_m': _parse_float(_value_at(station_values, 3)),
+        'parameter_name': _value_at(parameter_values, 0) or pd.NA,
+        'parameter_summary': _value_at(parameter_values, 1) or pd.NA,
+        'unit': _value_at(parameter_values, 2) or pd.NA,
+        'period_from': _value_at(period_values, 0) or '',
+        'period_to': _value_at(period_values, 1) or '',
+        'elevation_m': _parse_float(_value_at(period_values, 2)),
+        'latitude': _parse_float(_value_at(period_values, 3)),
+        'longitude': _parse_float(_value_at(period_values, 4)),
+        'data_rows': rows[data_header_index + 1 :],
+    }
+
+
 def _value_row_after_header(rows: list[list[str]], header_name: str) -> list[str]:
     header_index = _header_index(rows, header_name)
     for row in rows[header_index + 1 :]:
@@ -179,7 +220,14 @@ def _header_index(rows: list[list[str]], first_cell: str) -> int:
     raise ValueError(f'SMHI CSV is missing the header row {first_cell!r}.')
 
 
-def _parse_data_rows(rows: list[list[str]]) -> list[dict[str, object]]:
+def _find_hourly_data_header_index(rows: list[list[str]]) -> int:
+    for index, row in enumerate(rows):
+        if len(row) >= 2 and _clean_string(row[0]) == 'Datum' and _clean_string(row[1]) == 'Tid (UTC)':
+            return index
+    raise ValueError('SMHI hourly CSV is missing the data header row.')
+
+
+def _parse_daily_data_rows(rows: list[list[str]]) -> list[dict[str, object]]:
     records: list[dict[str, object]] = []
     for row in rows:
         if len(row) < 5:
@@ -196,6 +244,28 @@ def _parse_data_rows(rows: list[list[str]]) -> list[dict[str, object]]:
                 'observation_date': observation_date,
                 'value': _parse_float(row[3]),
                 'flag': build_se_flag(row[4]),
+            }
+        )
+    return records
+
+
+def _parse_hourly_data_rows(rows: list[list[str]]) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
+    for row in rows:
+        if len(row) < 4:
+            continue
+        day = _clean_string(row[0])
+        time_value = _clean_string(row[1])
+        if not day or not time_value:
+            continue
+        timestamp = pd.to_datetime(f'{day}T{time_value}Z', utc=True, errors='coerce')
+        if pd.isna(timestamp):
+            continue
+        records.append(
+            {
+                'timestamp': timestamp,
+                'value': _parse_float(row[2]),
+                'flag': build_se_flag(row[3]),
             }
         )
     return records
@@ -251,4 +321,3 @@ def _max_datetime_string(left: object, right: object) -> str:
     if not right_cleaned:
         return left_cleaned
     return max(left_cleaned, right_cleaned)
-

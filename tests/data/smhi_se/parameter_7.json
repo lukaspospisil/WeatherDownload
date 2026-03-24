@@ -1,0 +1,20 @@
+﻿{
+  "key": "7",
+  "updated": 1774389600000,
+  "title": "Nederbordsmangd: Valj station (sedan tidsutsnitt)",
+  "summary": "summa 1 timme, 1 gang/tim",
+  "unit": "millimeter",
+  "station": [
+    {
+      "key": "98230",
+      "id": 98230,
+      "name": "Stockholm-Observatoriekullen A",
+      "height": 43.133,
+      "latitude": 59.3417,
+      "longitude": 18.0549,
+      "active": true,
+      "from": 844128000000,
+      "to": 1774389600000
+    }
+  ]
+}

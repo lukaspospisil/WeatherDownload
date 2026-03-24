@@ -227,8 +227,20 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.dk_hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='DK', station_metadata=station_metadata)
-    raise AssertionError(f'unsupported test country: {country}')
+    if country == 'SE':
+        station_metadata = _read_station_metadata_fixture('SE')
+        query = ObservationQuery(country='SE', dataset_scope='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T12:00:00Z', elements=['tas_mean', 'pressure'])
 
+        def fake_get(url, timeout=60):
+            if '/parameter/1/' in url:
+                return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'hourly_parameter_1.csv').read_text(encoding='utf-8'))
+            if '/parameter/9/' in url:
+                return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'hourly_parameter_9.csv').read_text(encoding='utf-8'))
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.se_hourly.requests.get', side_effect=fake_get):
+            return download_observations(query, country='SE', station_metadata=station_metadata)
+    raise AssertionError(f'unsupported test country: {country}')
 
 def _download_tenmin_fixture(country: str) -> pd.DataFrame:
     if country == 'BE':
@@ -344,6 +356,21 @@ def test_hourly_download_contract_is_stable_for_supported_denmark_path() -> None
     assert observations['quality'].isna().all()
     assert str(observations['quality'].dtype) == 'Int64'
 
+def test_hourly_download_contract_is_stable_for_supported_sweden_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    observations = _download_hourly_fixture('SE')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].notna().all()
+    assert set(observations['flag'].dropna().unique()) <= {'G', 'Y'}
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
+
 def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
     observations = _download_tenmin_fixture('BE')
@@ -403,6 +430,8 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
+
+
 
 
 
