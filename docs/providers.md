@@ -1,4 +1,4 @@
-﻿# Provider Model And Coverage
+# Provider Model And Coverage
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -16,6 +16,7 @@ Use ISO 3166-1 alpha-2 country codes:
 - `DE`
 - `DK`
 - `NL`
+- `SE`
 - `SK` (experimental, limited to `recent / daily`)
 
 Examples:
@@ -29,6 +30,7 @@ cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
 dk_stations = read_station_metadata(country="DK")
 nl_stations = read_station_metadata(country="NL")
+se_stations = read_station_metadata(country="SE")
 sk_stations = read_station_metadata(country="SK")
 
 nl_daily_elements = list_supported_elements(
@@ -45,6 +47,7 @@ weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
 weatherdownload stations metadata --country DK
 weatherdownload stations metadata --country NL
+weatherdownload stations metadata --country SE
 weatherdownload stations metadata --country SK
 ```
 
@@ -87,6 +90,7 @@ What stays provider-specific internally:
 | `DE` | zero-padded DWD `Stations_id` |
 | `DK` | official DMI `stationId` from the Climate Data `station` collection |
 | `NL` | official KNMI station identifier from the station metadata CSV used by this provider |
+| `SE` | official SMHI station id from the parameter station listings used by this provider |
 | `SK` | SHMU `ind_kli` as string |
 
 `gh_id` remains an optional secondary field and is nullable when a provider does not expose an equivalent identifier.
@@ -101,6 +105,7 @@ What stays provider-specific internally:
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
 | `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
 | `NL` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official KNMI metadata file retrieved through the Open Data API; API key required |
+| `SE` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Official SMHI parameter station listings merged across the supported daily parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 
 ## Current Narrow Slices
@@ -165,9 +170,9 @@ Important current limitations:
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - hourly values are the official provider-side `aws_1hour` aggregates from 10-minute data
 - the documented hourly grouping window is from `(H-1):10` to `H:00` for hour `H`
-- the source documents hourly `PRESSURE` as the provider-side average of the 10-minute `PRESSURE` field
+- the source documents hourly `pressure` as the provider-side average of the 10-minute `pressure` field
 - 10-minute values come directly from `aws_10min` and WeatherDownload preserves the published timestamps
-- the source documents most mapped 10-minute fields over the last 10 minutes, while `pressure` is documented as a last-minute average on the same path
+- the source documents most mapped 10-minute fields over the last 10 minutes, while `pressure` is a last-minute average on the same path
 - WeatherDownload does not recompute daily or hourly aggregates from Belgium 10-minute data in this pass
 - `flag` carries the raw `qc_flags` source text when present
 - `quality` remains null because this pass does not speculate on provider QC semantics
@@ -242,7 +247,6 @@ Detailed notes:
 
 - [DMI Denmark Provider Notes](providers_dk_dmi.md)
 
-
 ### DK `historical / 10min`
 
 Supported canonical elements:
@@ -291,6 +295,30 @@ Important current limitations:
 Detailed notes:
 
 - [KNMI Netherlands Provider Notes](providers_nl_knmi.md)
+
+### SE `historical / daily`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `precipitation`
+
+Important current limitations:
+
+- the implemented path uses the official SMHI Meteorological Observations API only
+- only `SE / historical / daily` is implemented
+- station discovery merges the supported daily parameter station listings used by this provider
+- observations use the official `parameter/{parameter_id}/station/{station_id}/period/corrected-archive/data.csv` path
+- `observation_date` is normalized from the published `Representativt dygn` column, while provider-defined interval windows stay behind the provider layer
+- corrected-archive excludes the latest three months by source design
+- raw `Kvalitet` stays in `flag`; normalized `quality` remains null
+- no FAO computation and no derived meteorological variables are added
+
+Detailed notes:
+
+- [SMHI Sweden Provider Notes](providers_se_smhi.md)
 
 ### SK `recent / daily`
 
@@ -357,6 +385,15 @@ For DMI Denmark 10-minute files:
 - WeatherDownload preserves that `observed` timestamp as the normalized `timestamp` in UTC and does not reinterpret it into a different meteorological meaning
 - source QC/status fields are not exposed on the implemented `10min` path, so `flag` and normalized `quality` remain null
 
+For SMHI Sweden daily files:
+
+- station discovery merges the official station lists from the supported daily parameter endpoints
+- daily observations use the official `parameter/{parameter_id}/station/{station_id}/period/corrected-archive/data.csv` path
+- `observation_date` is taken from the published `Representativt dygn` column
+- provider-defined interval windows differ by parameter and stay behind the provider layer
+- corrected-archive excludes the latest three months while SMHI quality control is still in progress
+- raw `Kvalitet` stays in `flag`; normalized `quality` stays null
+
 For KNMI daily files:
 
 - files are handled through the Open Data API
@@ -384,8 +421,6 @@ weatherdownload observations daily --country DK --station-id 06180 --element tas
 weatherdownload observations hourly --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations daily --country SE --station-id 98230 --element tas_mean --element tas_max --element precipitation --start-date 1996-10-01 --end-date 1996-10-03
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
-
-
-

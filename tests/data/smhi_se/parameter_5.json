@@ -1,0 +1,27 @@
+{
+  "key": "5",
+  "updated": 1774382400000,
+  "title": "Nederbordsmangd: Valj station (sedan tidsutsnitt)",
+  "summary": "summa 1 dygn, 1 gang/dygn, kl 06",
+  "unit": "millimeter",
+  "valueType": "INTERVAL",
+  "station": [
+    {
+      "key": "98230",
+      "updated": 1774382400000,
+      "title": "Nederbordsmangd - Stockholm-Observatoriekullen A",
+      "summary": "Latitud: 59.3417 Longitud: 18.0549 Hojd: 43.133",
+      "name": "Stockholm-Observatoriekullen A",
+      "owner": "SMHI",
+      "ownerCategory": "CLIMATE",
+      "measuringStations": "CORE",
+      "id": 98230,
+      "height": 43.133,
+      "latitude": 59.3417,
+      "longitude": 18.0549,
+      "active": true,
+      "from": 844128000000,
+      "to": 1774382400000
+    }
+  ]
+}

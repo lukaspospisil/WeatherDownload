@@ -17,10 +17,10 @@ SPEC.loader.exec_module(download_daily)
 
 
 class DownloadDailyExampleTests(unittest.TestCase):
-    def test_build_parser_accepts_country_dk(self) -> None:
+    def test_build_parser_accepts_country_dk_and_se(self) -> None:
         parser = download_daily.build_parser()
-        args = parser.parse_args(['--country', 'DK'])
-        self.assertEqual(args.country, 'DK')
+        self.assertEqual(parser.parse_args(['--country', 'DK']).country, 'DK')
+        self.assertEqual(parser.parse_args(['--country', 'SE']).country, 'SE')
 
     def test_main_uses_shared_dk_query_shape(self) -> None:
         sample = pd.DataFrame([
@@ -51,6 +51,35 @@ class DownloadDailyExampleTests(unittest.TestCase):
         self.assertEqual(query.elements, ['mean_temp', 'acc_precip', 'bright_sunshine'])
         self.assertIn('06180', buffer.getvalue())
 
+    def test_main_uses_shared_se_query_shape(self) -> None:
+        sample = pd.DataFrame([
+            {
+                'station_id': '98230',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': '2',
+                'observation_date': '1996-10-01',
+                'time_function': None,
+                'value': 11.1,
+                'flag': 'Y',
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': 'daily',
+            }
+        ])
+        buffer = io.StringIO()
+        with patch.object(download_daily, 'download_observations', return_value=sample) as download_mock:
+            with patch.object(sys, 'argv', ['download_daily.py', '--country', 'SE']):
+                with redirect_stdout(buffer):
+                    download_daily.main()
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'SE')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(query.station_ids, ['98230'])
+        self.assertEqual(query.elements, ['2', '20', '5'])
+        self.assertIn('98230', buffer.getvalue())
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -35,7 +35,7 @@ class _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SK'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SE', 'SK'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
@@ -110,6 +110,17 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_query.elements, ['mean_temp', 'mean_pressure'])
         self.assertEqual(tenmin_query.elements, ['temp_dry', 'pressure'])
 
+    def test_discovery_country_se_includes_daily(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='SE'), ['historical'])
+        self.assertEqual(list_resolutions(country='SE', dataset_scope='historical'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='SE', dataset_scope='historical', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='SE', dataset_scope='historical', resolution='daily', provider_raw=True),
+            ['2', '20', '19', '5'],
+        )
     def test_read_station_metadata_preserves_positional_source_url_compatibility(self) -> None:
         with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)) as mock_get:
             stations = read_station_metadata('https://example.test/meta1.csv')
@@ -119,5 +130,8 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
 
 

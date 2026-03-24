@@ -1,4 +1,4 @@
-﻿# Examples And Workflows
+# Examples And Workflows
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -41,6 +41,7 @@ python examples/download_daily.py --country CZ
 python examples/download_daily.py --country DE
 python examples/download_daily.py --country DK
 python examples/download_daily.py --country NL
+python examples/download_daily.py --country SE
 ```
 
 BE notes:
@@ -65,6 +66,14 @@ NL notes:
 - set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
 - only `historical / daily` is implemented
 - hourly and EDR are intentionally out of scope for this pass
+
+SE notes:
+
+- `SE` uses the shared daily example path through the official SMHI Meteorological Observations corrected-archive daily CSV path
+- station discovery merges the supported daily parameter station listings used by this provider
+- `observation_date` comes from the published `Representativt dygn` field, and provider-defined interval windows stay behind the provider layer
+- raw SMHI `Kvalitet` codes are preserved in `flag` and normalized `quality` stays null
+- corrected-archive excludes the latest three months by source design
 
 ### `examples/download_hourly.py`
 
@@ -207,4 +216,3 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
-

@@ -46,6 +46,13 @@ COUNTRY_DEFAULTS = {
         'end_date': '2024-01-03',
         'elements': ['tas_mean', 'precipitation'],
     },
+    'SE': {
+        'dataset_scope': 'historical',
+        'station_ids': ['98230'],
+        'start_date': '1996-10-01',
+        'end_date': '1996-10-03',
+        'elements': ['tas_mean', 'tas_max', 'precipitation'],
+    },
 }
 
 
@@ -77,3 +84,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+

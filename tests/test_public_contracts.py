@@ -1,4 +1,4 @@
-﻿import importlib.util
+import importlib.util
 import io
 import json
 import sys
@@ -34,6 +34,7 @@ SAMPLE_DK_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(enc
 SAMPLE_DK_HOURLY_TEXT = Path('tests/data/sample_dk_dmi_hourly.json').read_text(encoding='utf-8')
 SAMPLE_DK_TENMIN_TEXT = Path('tests/data/sample_dk_dmi_tenmin.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
+SAMPLE_SE_FIXTURE_DIR = Path('tests/data/smhi_se')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
 SAMPLE_SHMU_INDEX_HTML = Path('tests/data/sample_shmu_recent_daily_index.html').read_text(encoding='utf-8')
@@ -85,6 +86,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
         return read_station_metadata(country='DK', source_url=str(SAMPLE_DK_STATIONS_PATH))
     if country == 'NL':
         return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_STATIONS_PATH))
+    if country == 'SE':
+        return read_station_metadata(country='SE', source_url=str(SAMPLE_SE_FIXTURE_DIR))
     if country == 'SK':
         return read_station_metadata(country='SK', source_url=str(SAMPLE_SHMU_PAYLOAD_PATH))
     raise AssertionError(f'unsupported test country: {country}')
@@ -168,6 +171,20 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 with patch('weatherdownload.knmi_daily.download_knmi_file_bytes', side_effect=[b'first', b'second']):
                     with patch('weatherdownload.knmi_daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
                         return download_observations(query, country='NL', station_metadata=station_metadata)
+
+    if country == 'SE':
+        station_metadata = _read_station_metadata_fixture('SE')
+        query = ObservationQuery(country='SE', dataset_scope='historical', resolution='daily', station_ids=['98230'], start_date='1996-10-01', end_date='1996-10-02', elements=['tas_mean', 'precipitation'])
+
+        def fake_get(url, timeout=60):
+            if '/parameter/2/' in url:
+                return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'daily_parameter_2.csv').read_text(encoding='utf-8'))
+            if '/parameter/5/' in url:
+                return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'daily_parameter_5.csv').read_text(encoding='utf-8'))
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.se_daily.requests.get', side_effect=fake_get):
+            return download_observations(query, country='SE', station_metadata=station_metadata)
     if country == 'SK':
         station_metadata = _read_station_metadata_fixture('SK')
         query = ObservationQuery(country='SK', dataset_scope='recent', resolution='daily', station_ids=['11800'], start_date='2025-01-01', end_date='2025-01-02', elements=['tas_max', 'precipitation'])
@@ -247,10 +264,11 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'DE': ['00003', '00044'],
         'DK': ['06030', '06180'],
         'NL': ['0-20000-0-06260', '0-20000-0-06310'],
+        'SE': ['98230'],
         'SK': ['11800', '11999'],
     }
 
-    for country in ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SK']:
+    for country in ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SE', 'SK']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         assert stations['station_id'].tolist() == expected_station_ids[country]
@@ -259,9 +277,9 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
-    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'NL': 'historical', 'SK': 'recent'}
+    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'NL': 'historical', 'SE': 'historical', 'SK': 'recent'}
 
-    for country in ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SK']:
+    for country in ['AT', 'BE', 'CZ', 'DE', 'DK', 'NL', 'SE', 'SK']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -270,7 +288,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         assert observations['dataset_scope'].eq(expected_dataset_scopes[country]).all()
         assert observations['resolution'].eq('daily').all()
 
-        if country in {'AT', 'BE', 'DE', 'DK', 'NL', 'SK'}:
+        if country in {'AT', 'BE', 'DE', 'DK', 'NL', 'SE', 'SK'}:
             assert observations['gh_id'].isna().all()
 
         if country == 'BE':
@@ -283,6 +301,11 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
             assert observations['flag'].notna().all()
             assert observations['flag'].str.contains('qcStatus').all()
             assert observations['flag'].str.contains('validity').all()
+            assert observations['quality'].isna().all()
+            assert str(observations['quality'].dtype) == 'Int64'
+        if country == 'SE':
+            assert observations['flag'].notna().all()
+            assert set(observations['flag'].dropna().unique()) <= {'G', 'Y'}
             assert observations['quality'].isna().all()
             assert str(observations['quality'].dtype) == 'Int64'
 
@@ -380,4 +403,9 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
+
+
+
+
+
 

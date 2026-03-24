@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 
@@ -31,11 +31,13 @@ from .dwd_daily import download_daily_observations_dwd
 from .dk_daily import download_daily_observations_dk
 from .dk_hourly import download_hourly_observations_dk
 from .dk_tenmin import download_tenmin_observations_dk
+from .se_daily import download_daily_observations_se
 from .dwd_subdaily import NORMALIZED_DWD_SUBDAILY_COLUMNS, download_subdaily_observations_dwd
 from .geosphere_daily import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, download_daily_observations_geosphere
 from .knmi_daily import download_daily_observations_knmi
 from .knmi_parser import KNMI_NORMALIZED_DAILY_COLUMNS
 from .dk_parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
+from .se_parser import SE_NORMALIZED_DAILY_COLUMNS
 from .chmi_registry import get_dataset_spec as get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
@@ -141,6 +143,15 @@ def _download_observations_dk(
         return download_tenmin_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('DMI Denmark support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
+def _download_observations_se(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+        return download_daily_observations_se(query, timeout=timeout, station_metadata=station_metadata).loc[:, SE_NORMALIZED_DAILY_COLUMNS]
+    raise NotImplementedError('SMHI Sweden support currently implements only historical/daily station observations.')
+
 def _download_observations_shmu(
     query: ObservationQuery,
     timeout: int = 60,
@@ -236,6 +247,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
 
 
 
