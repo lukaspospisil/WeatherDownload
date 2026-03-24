@@ -59,7 +59,7 @@ query = ObservationQuery(
 daily = download_observations(query, station_metadata=stations)
 ```
 
-The same API shape works for Belgium through the official RMI/KMI AWS daily layer:
+The same API shape works for Belgium through the official RMI/KMI AWS daily and 10-minute layers:
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -75,6 +75,22 @@ query = ObservationQuery(
 )
 
 daily = download_observations(query)
+```
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="BE",
+    dataset_scope="historical",
+    resolution="10min",
+    station_ids=["6414"],
+    start="2024-01-01T00:10:00Z",
+    end="2024-01-01T00:20:00Z",
+    elements=["tas_mean", "pressure"],
+)
+
+tenmin = download_observations(query)
 ```
 
 The same API shape works for Germany:
@@ -168,6 +184,7 @@ weatherdownload observations daily --country SK --station-id 11800 --element tas
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --all-history
 weatherdownload observations hourly --country DE --station-id 00044 --element tas_mean --element wind_speed --start 1999-12-31T22:00:00Z --end 2000-01-01T00:00:00Z
 weatherdownload observations 10min --country DE --station-id 00044 --element tas_mean --element relative_humidity --start 1999-12-31T22:50:00Z --end 2000-01-01T00:00:00Z
+weatherdownload observations 10min --country BE --station-id 6414 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --element tas_mean --all-history
 ```
 
@@ -178,7 +195,7 @@ weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --e
 | Country | Metadata | Discovery | Daily | 1hour | 10min |
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Yes | Yes | Yes, narrow slice | No | No |
-| `BE` | Yes | Yes | Yes, narrow slice | No | No |
+| `BE` | Yes | Yes | Yes, narrow slice | No | Yes, narrow slice |
 | `CZ` | Yes | Yes | Yes | Yes | Yes |
 | `DE` | Yes | Yes | Yes | Yes, narrow slice | Yes, narrow slice |
 | `NL` | Yes, API key required | Yes | Yes, narrow slice | No | No |
@@ -188,6 +205,7 @@ Current intentionally narrow slices:
 
 - `AT historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`
 - `BE historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
+- `BE historical / 10min`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 - `DE historical / 1hour`: `tas_mean`, `relative_humidity`, `wind_speed`
 - `DE historical / 10min`: `tas_mean`, `relative_humidity`, `wind_speed`
 - `NL historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`
@@ -203,12 +221,14 @@ NL scope limits for this pass:
 BE scope limits for this pass:
 
 - official RMI/KMI open-data platform only
-- historical daily station observations only
+- historical daily and 10-minute station observations only
 - daily values are the official provider-side `aws_1day` aggregates from 10-minute data
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
-- WeatherDownload does not recompute those daily aggregates
+- 10-minute values come directly from the official `aws_10min` layer and WeatherDownload preserves the published timestamps
+- source 10-minute field windows stay provider-defined; `pressure` is documented by the source as a last-minute average on the same path
+- WeatherDownload does not recompute daily or hourly aggregates from Belgium 10-minute data
 - raw `qc_flags` stay in `flag` as source text and normalized `quality` stays null
-- hourly and 10-minute public support are out of scope
+- hourly public support is out of scope
 - no FAO computation and no derived meteorological variables
 
 ## Docs
@@ -250,6 +270,7 @@ BE scope limits for this pass:
 - outputs stay DataFrame-first
 - provider-specific internals stay behind the provider layer
 - `AT` support is currently limited to `historical / daily` via the official GeoSphere Austria `klima-v2-1d` station dataset
-- `BE` support is currently limited to `historical / daily` via the official RMI/KMI AWS `aws_1day` layer; the source publishes provider-side daily aggregates from 10-minute data, and WeatherDownload does not recompute them
+- `BE` support is currently limited to `historical / daily` via the official RMI/KMI AWS `aws_1day` layer and `historical / 10min` via `aws_10min`; daily values are provider-side aggregates, 10-minute values are preserved as published, and WeatherDownload does not recompute hourly or daily aggregates
 - `NL` support is currently limited to KNMI `historical / daily` validated station observations via the Open Data API; hourly and EDR are intentionally out of scope for this pass
 - `SK` support is experimental, limited to `recent / daily`, and currently has incomplete probe-derived station metadata
+

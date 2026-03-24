@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 import pandas as pd
 
@@ -10,6 +11,22 @@ from weatherdownload.knmi_parser import (
     parse_knmi_station_metadata_csv,
 )
 from weatherdownload.knmi_registry import KNMI_PARAMETER_METADATA, get_dataset_spec
+
+
+def _import_netcdf4_for_knmi_tests() -> tuple[object, object]:
+    # netCDF4 currently emits this import-time RuntimeWarning under pytest warning
+    # capture in otherwise clean environments; keep the filter local to the exact
+    # upstream warning so unrelated warnings still fail loudly in tests.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore',
+            message=r'numpy\.ndarray size changed, may indicate binary incompatibility\. Expected 16 from C header, got 96 from PyObject',
+            category=RuntimeWarning,
+        )
+        import netCDF4
+        import numpy as np
+
+    return netCDF4, np
 
 
 class KnmiParserTests(unittest.TestCase):
@@ -55,8 +72,7 @@ class KnmiParserTests(unittest.TestCase):
 
     def test_parse_knmi_daily_netcdf_bytes_reads_documented_daily_shape(self) -> None:
         try:
-            import netCDF4
-            import numpy as np
+            netCDF4, np = _import_netcdf4_for_knmi_tests()
         except ImportError as exc:
             self.skipTest(f'netCDF4 not installed: {exc}')
 
@@ -114,6 +130,3 @@ class KnmiParserTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-

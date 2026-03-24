@@ -26,6 +26,7 @@ SAMPLE_GEOSPHERE_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1d.csv')
 SAMPLE_GEOSPHERE_CSV_TEXT = SAMPLE_GEOSPHERE_CSV_PATH.read_text(encoding='utf-8')
 SAMPLE_BE_STATIONS_PATH = Path('tests/data/sample_be_aws_station.json')
 SAMPLE_BE_DAILY_TEXT = Path('tests/data/sample_be_aws_1day.json').read_text(encoding='utf-8')
+SAMPLE_BE_TENMIN_TEXT = Path('tests/data/sample_be_aws_10min.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -207,6 +208,23 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
     raise AssertionError(f'unsupported test country: {country}')
 
 
+def _download_tenmin_fixture(country: str) -> pd.DataFrame:
+    if country == 'BE':
+        station_metadata = _read_station_metadata_fixture('BE')
+        query = ObservationQuery(
+            country='BE',
+            dataset_scope='historical',
+            resolution='10min',
+            station_ids=['6414'],
+            start='2024-01-01T00:10:00Z',
+            end='2024-01-01T00:20:00Z',
+            elements=['tas_mean', 'pressure'],
+        )
+        with patch('weatherdownload.be_tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_BE_TENMIN_TEXT)):
+            return download_observations(query, country='BE', station_metadata=station_metadata)
+    raise AssertionError(f'unsupported test country: {country}')
+
+
 def test_read_station_metadata_contract_is_stable_across_countries() -> None:
     expected_station_ids = {
         'AT': ['1', '2'],
@@ -261,9 +279,37 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
 
         if country == 'BE':
             assert observations['flag'].notna().all()
-            assert observations['flag'].str.startswith('{\"validated\"').all()
+            assert observations['flag'].str.startswith('{"validated"').all()
             assert observations['quality'].isna().all()
             assert str(observations['quality'].dtype) == 'Int64'
+
+
+def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None:
+    expected_columns = [
+        'station_id',
+        'gh_id',
+        'element',
+        'element_raw',
+        'timestamp',
+        'value',
+        'flag',
+        'quality',
+        'dataset_scope',
+        'resolution',
+    ]
+
+    observations = _download_tenmin_fixture('BE')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('10min').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].notna().all()
+    assert observations['flag'].str.startswith('{"validated"').all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
 
 
 def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() -> None:
@@ -343,6 +389,3 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
-
-
-

@@ -3,7 +3,8 @@ from __future__ import annotations
 import pandas as pd
 
 from .be_daily import download_daily_observations_be
-from .be_parser import BE_NORMALIZED_DAILY_COLUMNS
+from .be_parser import BE_NORMALIZED_DAILY_COLUMNS, BE_NORMALIZED_SUBDAILY_COLUMNS
+from .be_tenmin import download_tenmin_observations_be
 from .chmi_daily import (
     NORMALIZED_DAILY_COLUMNS,
     build_daily_download_targets,
@@ -82,7 +83,9 @@ def _download_observations_be(
 ) -> pd.DataFrame:
     if query.dataset_scope == 'historical' and query.resolution == 'daily':
         return download_daily_observations_be(query, timeout=timeout, station_metadata=station_metadata).loc[:, BE_NORMALIZED_DAILY_COLUMNS]
-    raise NotImplementedError('RMI/KMI Belgium support currently implements only historical/daily station observations.')
+    if query.dataset_scope == 'historical' and query.resolution == '10min':
+        return download_tenmin_observations_be(query, timeout=timeout, station_metadata=station_metadata).loc[:, BE_NORMALIZED_SUBDAILY_COLUMNS]
+    raise NotImplementedError('RMI/KMI Belgium support currently implements only historical/daily and historical/10min station observations.')
 
 
 def _download_observations_dwd(
@@ -212,6 +215,8 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
+
 
 
 

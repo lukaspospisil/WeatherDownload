@@ -8,19 +8,18 @@ This page documents the current conservative Belgium slice implemented through t
 
 ## Scope In This Pass
 
-Supported query shape:
+Supported query shapes:
 
-- `country="BE"`
-- `dataset_scope="historical"`
-- `resolution="daily"`
+- `country="BE"`, `dataset_scope="historical"`, `resolution="daily"`
+- `country="BE"`, `dataset_scope="historical"`, `resolution="10min"`
 
 Out of scope in this pass:
 
-- 10-minute downloads
 - hourly downloads
 - FAO computation
 - ET0 computation
 - derived meteorological variables
+- recomputing daily or hourly aggregates from subdaily data
 
 ## Official Source
 
@@ -31,6 +30,7 @@ Reference documentation:
 - AWS documentation: `https://opendata.meteo.be/documentation/?dataset=aws`
 - station metadata layer: `aws_station`
 - daily observation layer: `aws_1day`
+- 10-minute observation layer: `aws_10min`
 
 ## Station Metadata
 
@@ -63,9 +63,19 @@ The documented daily grouping window is:
 
 - for day `D`, use 10-minute values from `00:10` on day `D` to `00:00` on day `D+1`
 
+## 10-Minute Observation Semantics
+
+For the implemented `aws_10min` path:
+
+- values come directly from the official provider-published 10-minute layer
+- WeatherDownload preserves the published `timestamp` from `aws_10min` and does not reinterpret it into a different meteorological meaning
+- the source documentation describes most mapped fields as covering the last 10 minutes
+- the source documentation describes `PRESSURE` specifically as a station-level last-minute average published on the same 10-minute path
+- WeatherDownload does not recompute hourly or daily aggregates from these 10-minute values
+
 ## Supported Canonical Elements
 
-Current conservative mapping:
+Current conservative daily mapping:
 
 - `tas_mean` -> `temp_avg`
 - `tas_max` -> `temp_max`
@@ -76,11 +86,20 @@ Current conservative mapping:
 - `pressure` -> `pressure`
 - `sunshine_duration` -> `sun_duration`
 
-These are mapped directly from documented `aws_1day` properties only.
+Current conservative 10-minute mapping:
+
+- `tas_mean` -> `temp_dry_shelter_avg`
+- `precipitation` -> `precip_quantity`
+- `wind_speed` -> `wind_speed_10m`
+- `relative_humidity` -> `humidity_rel_shelter_avg`
+- `pressure` -> `pressure`
+- `sunshine_duration` -> `sun_duration`
+
+These are mapped directly from documented source properties only.
 
 ## Quality And Flags
 
-The source exposes a `qc_flags` field on daily features.
+The source exposes a `qc_flags` field on daily and 10-minute features.
 
 Current handling is intentionally conservative:
 
@@ -98,11 +117,11 @@ from weatherdownload import ObservationQuery, download_observations
 query = ObservationQuery(
     country="BE",
     dataset_scope="historical",
-    resolution="daily",
+    resolution="10min",
     station_ids=["6414"],
-    start_date="2024-01-01",
-    end_date="2024-01-03",
-    elements=["tas_mean", "precipitation", "sunshine_duration"],
+    start="2024-01-01T00:10:00Z",
+    end="2024-01-01T00:20:00Z",
+    elements=["tas_mean", "pressure"],
 )
 
 observations = download_observations(query)

@@ -17,7 +17,7 @@ from weatherdownload import (
 SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
 SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland Abgabe
 ----------- --------- --------- ------------- --------- --------- ----------------------------------------- ---------- ------
-00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\xfcrttemberg Frei
+00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\u00fcrttemberg Frei
 00044 20070401 20241231 79 52.9336 8.2370 Alfhausen Niedersachsen Frei
 '''.encode('latin-1')
 
@@ -72,6 +72,14 @@ class ProviderTests(unittest.TestCase):
         tenmin_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='10min', provider_raw=True)
         self.assertEqual(tenmin_elements, ['FF_10', 'RF_10', 'TT_10'])
 
+    def test_discovery_country_be_includes_daily_and_tenmin(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='BE'), ['historical'])
+        self.assertEqual(list_resolutions(country='BE', dataset_scope='historical'), ['10min', 'daily'])
+        daily_elements = list_supported_elements(country='BE', dataset_scope='historical', resolution='daily')
+        tenmin_elements = list_supported_elements(country='BE', dataset_scope='historical', resolution='10min')
+        self.assertEqual(daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
+        self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
+
     def test_de_subdaily_queries_are_now_provider_valid(self) -> None:
         hourly_query = ObservationQuery(
             country='DE',
@@ -94,6 +102,18 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_query.elements, ['TT_TU', 'FF'])
         self.assertEqual(tenmin_query.elements, ['TT_10', 'RF_10'])
 
+    def test_be_tenmin_query_is_provider_valid(self) -> None:
+        tenmin_query = ObservationQuery(
+            country='BE',
+            dataset_scope='historical',
+            resolution='10min',
+            station_ids=['6414'],
+            start='2024-01-01T00:10:00Z',
+            end='2024-01-01T00:20:00Z',
+            elements=['tas_mean', 'pressure'],
+        )
+        self.assertEqual(tenmin_query.elements, ['temp_dry_shelter_avg', 'pressure'])
+
     def test_read_station_metadata_preserves_positional_source_url_compatibility(self) -> None:
         with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)) as mock_get:
             stations = read_station_metadata('https://example.test/meta1.csv')
@@ -103,8 +123,5 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
 
 

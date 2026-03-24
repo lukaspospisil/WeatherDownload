@@ -13,6 +13,11 @@ BE_NORMALIZED_DAILY_COLUMNS = [
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
 
+BE_NORMALIZED_SUBDAILY_COLUMNS = [
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
+    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+]
+
 
 def parse_be_feature_collection_json(json_text: str) -> dict[str, Any]:
     try:
@@ -61,18 +66,20 @@ def normalize_be_station_metadata(payload: dict[str, object]) -> pd.DataFrame:
 
 
 def normalize_be_observation_metadata(stations: pd.DataFrame, spec: Any, parameter_metadata: dict[str, dict[str, str]]) -> pd.DataFrame:
+    schedule = 'P1D RMI/KMI AWS WFS' if spec.time_semantics == 'date' else 'PT10M RMI/KMI AWS WFS'
+    obs_type = 'HISTORICAL_DAILY' if spec.time_semantics == 'date' else 'HISTORICAL_10MIN'
     rows: list[dict[str, object]] = []
     for station in stations.itertuples(index=False):
         for raw_code in spec.supported_elements:
             metadata = parameter_metadata.get(raw_code, {})
             rows.append(
                 {
-                    'obs_type': 'HISTORICAL_DAILY',
+                    'obs_type': obs_type,
                     'station_id': station.station_id,
                     'begin_date': station.begin_date,
                     'end_date': station.end_date,
                     'element': raw_code,
-                    'schedule': 'P1D RMI/KMI AWS WFS',
+                    'schedule': schedule,
                     'name': metadata.get('name', raw_code),
                     'description': metadata.get('description', pd.NA),
                     'height': pd.NA,
