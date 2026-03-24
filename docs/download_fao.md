@@ -1,4 +1,4 @@
-﻿# FAO-Oriented Daily Input Packaging Workflow
+# FAO-Oriented Daily Input Packaging Workflow
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -21,6 +21,7 @@ Currently supported:
 - `BE`
 - `DK`
 - `NL`
+- `SE`
 
 ## CLI
 
@@ -31,6 +32,7 @@ python examples/download_fao.py --country AT
 python examples/download_fao.py --country BE
 python examples/download_fao.py --country DK
 python examples/download_fao.py --country NL
+python examples/download_fao.py --country SE
 ```
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
@@ -127,6 +129,22 @@ Unavailable in the current shared path:
 
 The NL branch uses only the existing KNMI provider through the unified public interface.
 
+### SE
+
+Observed inputs used:
+
+- `tas_mean` via `2`
+- `tas_max` via `20`
+- `tas_min` via `19`
+
+Unavailable in the current shared path:
+
+- `wind_speed` stays null
+- `vapour_pressure` stays null
+- `sunshine_duration` stays null
+
+The SE branch uses only the existing SMHI daily provider through the unified public interface. It uses the official corrected-archive daily CSV path and packages observed daily temperature inputs only in this pass; it does not derive missing FAO-oriented fields.
+
 ## What The Example Does
 
 1. load station metadata for the selected country
@@ -182,6 +200,13 @@ For `NL`, that assumptions block explicitly states that:
 - `vapour_pressure` is unavailable in the current provider path and remains null
 - the example does not derive radiation or other meteorological variables
 
+For `SE`, that assumptions block explicitly states that:
+
+- the branch packages observed inputs only
+- the current provider path uses the official SMHI corrected-archive daily CSV source, which excludes the latest three months by source design
+- `wind_speed`, `vapour_pressure`, and `sunshine_duration` are unavailable in the current daily provider path and remain null
+- the example does not derive radiation or other meteorological variables
+
 ## Cache Layout
 
 The cache is country-scoped under the base cache directory, for example:
@@ -194,6 +219,7 @@ The cache is country-scoped under the base cache directory, for example:
   BE/
   DK/
   NL/
+  SE/
 ```
 
 Each country directory stores:
@@ -212,12 +238,14 @@ Default country-aware output names when you do not pass explicit paths:
 - `BE` MAT: `outputs/fao_daily.be.mat`
 - `DK` MAT: `outputs/fao_daily.dk.mat`
 - `NL` MAT: `outputs/fao_daily.nl.mat`
+- `SE` MAT: `outputs/fao_daily.se.mat`
 - `CZ` Parquet bundle: `outputs/fao_daily.cz`
 - `DE` Parquet bundle: `outputs/fao_daily.de`
 - `AT` Parquet bundle: `outputs/fao_daily.at`
 - `BE` Parquet bundle: `outputs/fao_daily.be`
 - `DK` Parquet bundle: `outputs/fao_daily.dk`
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
+- `SE` Parquet bundle: `outputs/fao_daily.se`
 
 ## Why This Stays In `examples/`
 

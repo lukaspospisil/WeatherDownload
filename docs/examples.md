@@ -201,7 +201,7 @@ It prepares a clean daily FAO-prep bundle for later MATLAB, R, or Python process
 
 What it does:
 
-- supports `CZ`, `DE`, `AT`, `BE`, `DK`, and `NL`
+- supports `CZ`, `DE`, `AT`, `BE`, `DK`, `NL`, and `SE`
 - downloads and caches normalized country-aware observed daily inputs
 - screens candidate stations
 - applies country-specific observed-input selection rules
@@ -210,13 +210,14 @@ What it does:
 
 Important boundary:
 
-- `AT`, `BE`, `CZ`, `DE`, `DK`, and `NL` all use the same shared country-parameterized workflow shape
+- `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, and `SE` all use the same shared country-parameterized workflow shape
 - the workflow downloads, normalizes, filters, and packages observed daily inputs only
 - it does not compute FAO-56 ET0 or derive meteorological variables
 - if a field is unavailable in the current provider path, it remains null or missing instead of being derived
 - `BE` daily values come from the official provider-side `aws_1day` aggregation and are not recomputed from 10-minute data in the workflow
 - `DK` is included through the shared workflow using only observed Denmark daily inputs from the existing provider; Denmark daily values come from the DMI Climate Data `stationValue` path and the workflow remains Denmark-only in this pass
 - `NL` is included through the shared workflow using only observed KNMI daily inputs, and `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` is required
+- `SE` is included through the shared workflow using only observed SMHI daily inputs from the corrected-archive daily path; wind_speed, vapour_pressure, and sunshine_duration remain null when they are unavailable in the current provider path
 
 ## Recommended Reading Order
 

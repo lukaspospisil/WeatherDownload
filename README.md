@@ -32,7 +32,7 @@ Shared example coverage currently includes:
 - `examples/download_daily.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE`
 - `examples/download_hourly.py`: `BE`, `DE`, `DK`, `SE`
 - `examples/download_tenmin.py`: `BE`, `DE`, `DK`
-- `examples/download_fao.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL` for observed daily input packaging only
+- `examples/download_fao.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE` for observed daily input packaging only
 
 ## Install
 

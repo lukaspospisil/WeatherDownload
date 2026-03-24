@@ -64,6 +64,11 @@ NL_REQUIRED_OBSERVED_ELEMENTS = (
     'wind_speed',
     'sunshine_duration',
 )
+SE_REQUIRED_OBSERVED_ELEMENTS = (
+    'tas_mean',
+    'tas_max',
+    'tas_min',
+)
 AT_ASSUMPTIONS = {
     'wind_height_handling': (
         'wind_speed uses GeoSphere daily vv_mittel as delivered. This shared workflow does not convert wind speed to FAO 2 m wind speed, '
@@ -192,6 +197,51 @@ NL_PROVIDER_ELEMENT_MAPPING = {
         'notes': 'Not directly available from the current Netherlands daily provider path. The shared workflow leaves this field empty instead of deriving it.',
     },
     'sunshine_duration': {'raw_codes': ['SQ'], 'selection_rule': None, 'status': 'observed'},
+}
+SE_ASSUMPTIONS = {
+    'observed_inputs_only': (
+        'The Sweden branch packages only source-backed daily observations from the SMHI provider. '
+        'The shared workflow does not compute FAO-56 ET0 or derive any meteorological variables.'
+    ),
+    'corrected_archive_limit': (
+        'The current Sweden daily provider path uses the official SMHI corrected-archive daily CSV path. '
+        'That source excludes the latest three months while quality control is still in progress.'
+    ),
+    'wind_speed_availability': (
+        'The current Sweden daily provider path used by this shared workflow does not expose observed daily wind_speed. '
+        'The shared workflow leaves wind_speed empty instead of deriving it or substituting hourly data.'
+    ),
+    'vapour_pressure_availability': (
+        'The current Sweden daily provider path does not expose observed vapour_pressure for this shared workflow. '
+        'The shared workflow leaves vapour_pressure empty instead of deriving it from humidity or temperature.'
+    ),
+    'sunshine_duration_availability': (
+        'The current Sweden daily provider path used by this shared workflow does not expose observed daily sunshine_duration. '
+        'The shared workflow leaves sunshine_duration empty instead of estimating it from other fields.'
+    ),
+}
+SE_PROVIDER_ELEMENT_MAPPING = {
+    'tas_mean': {'raw_codes': ['2'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['20'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['19'], 'selection_rule': None, 'status': 'observed'},
+    'wind_speed': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': 'Not directly available from the current Sweden daily provider path. The shared workflow leaves this field empty instead of deriving it.',
+    },
+    'vapour_pressure': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': 'Not directly available from the current Sweden daily provider path. The shared workflow leaves this field empty instead of deriving it.',
+    },
+    'sunshine_duration': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': 'Not directly available from the current Sweden daily provider path. The shared workflow leaves this field empty instead of deriving it.',
+    },
 }
 
 
@@ -426,6 +476,8 @@ def get_fao_country_config(country: str | None) -> FaoCountryConfig:
         query_elements = DK_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'NL':
         query_elements = NL_REQUIRED_OBSERVED_ELEMENTS
+    elif normalized_country == 'SE':
+        query_elements = SE_REQUIRED_OBSERVED_ELEMENTS
     else:
         query_elements = FAO_CANONICAL_ELEMENTS
 
@@ -452,6 +504,8 @@ def get_fao_country_config(country: str | None) -> FaoCountryConfig:
         return FaoCountryConfig('DK', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, DK_REQUIRED_OBSERVED_ELEMENTS, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
     if normalized_country == 'NL':
         return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, NL_REQUIRED_OBSERVED_ELEMENTS, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
+    if normalized_country == 'SE':
+        return FaoCountryConfig('SE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, SE_REQUIRED_OBSERVED_ELEMENTS, SE_REQUIRED_OBSERVED_ELEMENTS, dict(SE_PROVIDER_ELEMENT_MAPPING), dict(SE_ASSUMPTIONS), 'SMHI Sweden observed daily input bundle prepared for later FAO workflow packaging', 'SMHI Meteorological Observations corrected-archive daily station observations')
     raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.')
 
 
