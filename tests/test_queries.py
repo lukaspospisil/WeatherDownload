@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from datetime import date
 
 from weatherdownload import ObservationQuery, QueryValidationError, list_dataset_scopes, list_resolutions, list_supported_elements, validate_observation_query
@@ -90,6 +90,13 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.elements, ['mean_temp', 'mean_pressure'])
         self.assertEqual(canonical_query.elements, ['mean_temp', 'mean_pressure'])
 
+
+    def test_dk_tenmin_query_accepts_dk_elements_and_canonical_names(self) -> None:
+        raw_query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['temp_dry', 'pressure'])
+        canonical_query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(raw_query.country, 'DK')
+        self.assertEqual(raw_query.elements, ['temp_dry', 'pressure'])
+        self.assertEqual(canonical_query.elements, ['temp_dry', 'pressure'])
     def test_query_rejects_unknown_canonical_element_for_path(self) -> None:
         with self.assertRaises(QueryValidationError):
             ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_period_max'])

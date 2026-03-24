@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from ..dk_metadata import read_station_metadata_dk, read_station_observation_metadata_dk
 from ..dk_registry import get_dataset_spec, list_dataset_specs, list_implemented_dataset_specs
@@ -14,6 +14,7 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'pressure',
     'sunshine_duration',
 )
+
 
 
 def _download_observations(*args, **kwargs):
@@ -33,7 +34,7 @@ PROVIDER = WeatherProvider(
     download_observations=_download_observations,
     supported_country_codes=('DK',),
     supported_dataset_scopes=('historical',),
-    supported_resolutions=('1hour', 'daily'),
+    supported_resolutions=('10min', '1hour', 'daily'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )

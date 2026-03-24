@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import sys
 import unittest
@@ -17,21 +17,21 @@ SPEC.loader.exec_module(download_tenmin)
 
 
 class DownloadTenminExampleTests(unittest.TestCase):
-    def test_build_parser_accepts_country_be(self) -> None:
+    def test_build_parser_accepts_country_dk(self) -> None:
         parser = download_tenmin.build_parser()
-        args = parser.parse_args(['--country', 'BE'])
-        self.assertEqual(args.country, 'BE')
+        args = parser.parse_args(['--country', 'DK'])
+        self.assertEqual(args.country, 'DK')
 
-    def test_main_uses_shared_be_query_shape(self) -> None:
+    def test_main_uses_shared_dk_query_shape(self) -> None:
         sample = pd.DataFrame([
             {
-                'station_id': '6414',
+                'station_id': '06180',
                 'gh_id': None,
                 'element': 'tas_mean',
-                'element_raw': 'temp_dry_shelter_avg',
+                'element_raw': 'temp_dry',
                 'timestamp': '2024-01-01T00:10:00Z',
-                'value': 4.15,
-                'flag': '{"validated":{"TEMP_DRY_SHELTER_AVG":true}}',
+                'value': 2.1,
+                'flag': None,
                 'quality': None,
                 'dataset_scope': 'historical',
                 'resolution': '10min',
@@ -39,16 +39,16 @@ class DownloadTenminExampleTests(unittest.TestCase):
         ])
         buffer = io.StringIO()
         with patch.object(download_tenmin, 'download_observations', return_value=sample) as download_mock:
-            with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'BE']):
+            with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'DK']):
                 with redirect_stdout(buffer):
                     download_tenmin.main()
         query = download_mock.call_args.args[0]
-        self.assertEqual(query.country, 'BE')
+        self.assertEqual(query.country, 'DK')
         self.assertEqual(query.dataset_scope, 'historical')
         self.assertEqual(query.resolution, '10min')
-        self.assertEqual(query.station_ids, ['6414'])
-        self.assertEqual(query.elements, ['temp_dry_shelter_avg', 'pressure'])
-        self.assertIn('6414', buffer.getvalue())
+        self.assertEqual(query.station_ids, ['06180'])
+        self.assertEqual(query.elements, ['temp_dry', 'pressure'])
+        self.assertIn('06180', buffer.getvalue())
 
 
 if __name__ == '__main__':

@@ -23,16 +23,17 @@ DK_NORMALIZED_SUBDAILY_COLUMNS = [
 _COPENHAGEN = ZoneInfo('Europe/Copenhagen')
 
 
+
 def parse_dk_feature_collection_json(json_text: str) -> dict[str, Any]:
     try:
         payload = json.loads(json_text.lstrip('\ufeff'))
     except json.JSONDecodeError as exc:
-        raise ValueError('DMI Climate Data response is not valid JSON.') from exc
+        raise ValueError('DMI response is not valid JSON.') from exc
     if not isinstance(payload, dict):
-        raise ValueError('DMI Climate Data response must be a top-level JSON object.')
+        raise ValueError('DMI response must be a top-level JSON object.')
     features = payload.get('features')
     if not isinstance(features, list):
-        raise ValueError('DMI Climate Data response is missing a features list.')
+        raise ValueError('DMI response is missing a features list.')
     return payload
 
 
@@ -159,7 +160,19 @@ def observation_date_from_interval_start(value: object) -> pd.Timestamp | None:
     return timestamp.tz_convert(_COPENHAGEN).date()
 
 
+
 def observation_timestamp_from_interval_end(value: object) -> pd.Timestamp | None:
+    cleaned = _clean_string(value)
+    if not cleaned:
+        return None
+    timestamp = pd.to_datetime(cleaned, utc=True, errors='coerce')
+    if pd.isna(timestamp):
+        return None
+    return timestamp
+
+
+
+def observation_timestamp_from_observed(value: object) -> pd.Timestamp | None:
     cleaned = _clean_string(value)
     if not cleaned:
         return None
@@ -185,6 +198,8 @@ def build_dk_flag(properties: dict[str, object]) -> object:
 
 
 def _metadata_schedule_and_type(resolution: str) -> tuple[str, str]:
+    if resolution == '10min':
+        return 'PT10M DMI metObs observation', 'HISTORICAL_10MIN'
     if resolution == '1hour':
         return 'PT1H DMI climateData stationValue', 'HISTORICAL_HOURLY'
     return 'P1D DMI climateData stationValue', 'HISTORICAL_DAILY'
@@ -217,4 +232,3 @@ def _parse_float(value: object) -> float | None:
 
 def _station_sort_key(station_id: str) -> tuple[int, str]:
     return (int(station_id), station_id) if station_id.isdigit() else (10**9, station_id)
-

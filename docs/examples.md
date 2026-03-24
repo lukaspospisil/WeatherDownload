@@ -50,7 +50,6 @@ BE notes:
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - WeatherDownload does not recompute those aggregates in this pass
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
-
 - `BE` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the same shared examples and public resolution tokens
 
 DK notes:
@@ -92,7 +91,6 @@ BE hourly notes:
 - the example preserves the published hourly timestamps and does not recompute hourly values from 10-minute data
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 
-
 DK hourly notes:
 
 - `DK` uses the shared hourly example path through the official DMI Climate Data `stationValue` collection with `timeResolution=hour`
@@ -100,6 +98,7 @@ DK hourly notes:
 - the source hourly path is UTC and exposes `from` and `to` interval bounds; the example preserves that provider-defined hourly meaning behind the provider layer
 - raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
+
 ### `examples/download_tenmin.py`
 
 Shows how to:
@@ -114,6 +113,7 @@ Run:
 python examples/download_tenmin.py
 python examples/download_tenmin.py --country BE
 python examples/download_tenmin.py --country DE
+python examples/download_tenmin.py --country DK
 ```
 
 BE 10-minute notes:
@@ -122,6 +122,15 @@ BE 10-minute notes:
 - the example preserves the published provider timestamps and does not reinterpret them into a different meteorological meaning
 - mapped fields stay source-backed only; no hourly or daily aggregates are recomputed from Belgium 10-minute data
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
+
+DK 10-minute notes:
+
+- `DK` uses the shared 10-minute example path through the official DMI Meteorological Observation API `observation` collection
+- station discovery still uses the official DMI Climate Data `station` collection filtered to Denmark stations only
+- the source `observed` timestamp is preserved as the normalized `timestamp` in UTC, with provider-defined 10-minute field semantics left intact behind the provider layer
+- the implemented metObs path is raw observation data; no hourly or daily values are recomputed from it
+- source QC/status fields are not exposed on the implemented `10min` path, so `flag` remains null and normalized `quality` stays null
+- Greenland and Faroe Islands differences are intentionally out of scope for this pass
 
 ### `examples/station_availability.py`
 
@@ -196,6 +205,3 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
-
-
-

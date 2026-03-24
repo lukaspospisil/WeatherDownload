@@ -1,0 +1,143 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "dk-10min-temp-1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:10:45Z",
+        "observed": "2024-01-01T00:10:00Z",
+        "parameterId": "temp_dry",
+        "stationId": "06180",
+        "value": 2.1
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-precip-1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:10:45Z",
+        "observed": "2024-01-01T00:10:00Z",
+        "parameterId": "precip_past10min",
+        "stationId": "06180",
+        "value": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-wind-1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:10:45Z",
+        "observed": "2024-01-01T00:10:00Z",
+        "parameterId": "wind_speed",
+        "stationId": "06180",
+        "value": 3.4
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-humidity-1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:10:45Z",
+        "observed": "2024-01-01T00:10:00Z",
+        "parameterId": "humidity",
+        "stationId": "06180",
+        "value": 87.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-pressure-1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:10:45Z",
+        "observed": "2024-01-01T00:10:00Z",
+        "parameterId": "pressure",
+        "stationId": "06180",
+        "value": 1007.1
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-sun-1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:10:45Z",
+        "observed": "2024-01-01T00:10:00Z",
+        "parameterId": "sun_last10min_glob",
+        "stationId": "06180",
+        "value": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-temp-2",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:20:45Z",
+        "observed": "2024-01-01T00:20:00Z",
+        "parameterId": "temp_dry",
+        "stationId": "06180",
+        "value": 2.3
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-pressure-2",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.6197, 55.4331]
+      },
+      "properties": {
+        "created": "2024-01-01T00:20:45Z",
+        "observed": "2024-01-01T00:20:00Z",
+        "parameterId": "pressure",
+        "stationId": "06180",
+        "value": 1007.4
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dk-10min-temp-other-station",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.0, 56.0]
+      },
+      "properties": {
+        "created": "2024-01-01T00:10:45Z",
+        "observed": "2024-01-01T00:10:00Z",
+        "parameterId": "temp_dry",
+        "stationId": "04250",
+        "value": 1.8
+      }
+    }
+  ],
+  "timeStamp": "2024-01-01T00:20:50Z",
+  "numberReturned": 9,
+  "links": []
+}

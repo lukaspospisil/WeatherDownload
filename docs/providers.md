@@ -99,7 +99,7 @@ What stays provider-specific internally:
 | `BE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, geometry-backed coordinates, altitude, and validity timestamps |
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` |
-| `DK` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
+| `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
 | `NL` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official KNMI metadata file retrieved through the Open Data API; API key required |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 
@@ -209,7 +209,7 @@ Supported canonical elements:
 Important current limitations:
 
 - the implemented path uses the official DMI Climate Data `station` and `stationValue` collections only
-- only `DK / historical / daily` and `DK / historical / 1hour` are implemented
+- only `DK / historical / daily`, `DK / historical / 1hour`, and `DK / historical / 10min` are implemented
 - the current slice is Denmark only; Greenland and Faroe Islands differences are intentionally out of scope for this pass
 - mapped daily parameters are source-backed local-day Denmark values; WeatherDownload does not recompute or derive meteorological variables
 - `flag` carries raw source-backed `qcStatus` and `validity` as JSON text; normalized `quality` remains null
@@ -232,7 +232,7 @@ Supported canonical elements:
 Important current limitations:
 
 - the implemented path uses the official DMI Climate Data `station` and `stationValue` collections only
-- only `DK / historical / daily` and `DK / historical / 1hour` are implemented
+- only `DK / historical / daily`, `DK / historical / 1hour`, and `DK / historical / 10min` are implemented
 - the current slice is Denmark only; Greenland and Faroe Islands differences are intentionally out of scope for this pass
 - hourly observations come from the official DMI Climate Data `stationValue` collection with `timeResolution=hour`
 - WeatherDownload preserves the provider-defined hourly interval semantics and does not recompute hourly values from any other Denmark source path
@@ -242,6 +242,29 @@ Detailed notes:
 
 - [DMI Denmark Provider Notes](providers_dk_dmi.md)
 
+
+### DK `historical / 10min`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `precipitation`
+- `wind_speed`
+- `relative_humidity`
+- `pressure`
+- `sunshine_duration`
+
+Important current limitations:
+
+- station discovery still uses the official DMI Climate Data `station` collection filtered to Denmark stations
+- 10-minute observations come from the official DMI Meteorological Observation API `observation` collection
+- the source `observed` timestamp is preserved as the normalized `timestamp` in UTC
+- mapped fields keep the provider-defined 10-minute meanings published by DMI; WeatherDownload does not recompute hourly or daily values from the 10-minute path
+- source QC/status fields are not exposed on the implemented `10min` path, so `flag` remains null and normalized `quality` remains null
+
+Detailed notes:
+
+- [DMI Denmark Provider Notes](providers_dk_dmi.md)
 
 ### NL `historical / daily`
 
@@ -326,6 +349,14 @@ For DMI Denmark hourly files:
 - WeatherDownload normalizes subdaily `timestamp` from the source `to` timestamp so the public interface keeps the provider-defined hourly interval meaning
 - raw source `qcStatus` and `validity` are preserved in `flag`; normalized `quality` stays null
 
+For DMI Denmark 10-minute files:
+
+- station discovery still uses the Climate Data `station` collection filtered to `country = DNK`
+- 10-minute observations use the Meteorological Observation API `observation` collection
+- the official metObs source path exposes the published `observed` timestamp for each raw observation
+- WeatherDownload preserves that `observed` timestamp as the normalized `timestamp` in UTC and does not reinterpret it into a different meteorological meaning
+- source QC/status fields are not exposed on the implemented `10min` path, so `flag` and normalized `quality` remain null
+
 For KNMI daily files:
 
 - files are handled through the Open Data API
@@ -351,6 +382,7 @@ weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --e
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DK --station-id 06180 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations hourly --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
+weatherdownload observations 10min --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```

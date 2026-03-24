@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import json
 import sys
@@ -32,6 +32,7 @@ SAMPLE_BE_TENMIN_TEXT = Path('tests/data/sample_be_aws_10min.json').read_text(en
 SAMPLE_DK_STATIONS_PATH = Path('tests/data/sample_dk_dmi_stations.json')
 SAMPLE_DK_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(encoding='utf-8')
 SAMPLE_DK_HOURLY_TEXT = Path('tests/data/sample_dk_dmi_hourly.json').read_text(encoding='utf-8')
+SAMPLE_DK_TENMIN_TEXT = Path('tests/data/sample_dk_dmi_tenmin.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -218,8 +219,25 @@ def _download_tenmin_fixture(country: str) -> pd.DataFrame:
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
         with patch('weatherdownload.be_tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_BE_TENMIN_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
-    raise AssertionError(f'unsupported test country: {country}')
+    if country == 'DK':
+        station_metadata = _read_station_metadata_fixture('DK')
+        query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        sample_payload = json.loads(SAMPLE_DK_TENMIN_TEXT)
 
+        def fake_get(url, params=None, timeout=60):
+            filtered = {
+                'type': 'FeatureCollection',
+                'features': [
+                    feature for feature in sample_payload['features']
+                    if feature['properties'].get('stationId') == params['stationId']
+                    and feature['properties'].get('parameterId') == params['parameterId']
+                ],
+            }
+            return _MockTextResponse(text=json.dumps(filtered))
+
+        with patch('weatherdownload.dk_tenmin.requests.get', side_effect=fake_get):
+            return download_observations(query, country='DK', station_metadata=station_metadata)
+    raise AssertionError(f'unsupported test country: {country}')
 
 def test_read_station_metadata_contract_is_stable_across_countries() -> None:
     expected_station_ids = {
@@ -302,6 +320,7 @@ def test_hourly_download_contract_is_stable_for_supported_denmark_path() -> None
     assert observations['flag'].str.contains('validity').all()
     assert observations['quality'].isna().all()
     assert str(observations['quality'].dtype) == 'Int64'
+
 def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
     observations = _download_tenmin_fixture('BE')
@@ -318,6 +337,20 @@ def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None
     assert str(observations['quality'].dtype) == 'Int64'
 
 
+
+def test_tenmin_download_contract_is_stable_for_supported_denmark_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    observations = _download_tenmin_fixture('DK')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('10min').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].isna().all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
 def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() -> None:
     expected_data_info_keys = {'created_at', 'dataset_type', 'source', 'country', 'elements', 'provider_element_mapping', 'min_complete_days', 'num_stations'}
     expected_station_columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'num_complete_days', 'first_complete_date', 'last_complete_date']
@@ -347,3 +380,4 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
+

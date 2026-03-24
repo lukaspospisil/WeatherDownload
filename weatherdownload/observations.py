@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 
@@ -30,6 +30,7 @@ from .chmi_tenmin import (
 from .dwd_daily import download_daily_observations_dwd
 from .dk_daily import download_daily_observations_dk
 from .dk_hourly import download_hourly_observations_dk
+from .dk_tenmin import download_tenmin_observations_dk
 from .dwd_subdaily import NORMALIZED_DWD_SUBDAILY_COLUMNS, download_subdaily_observations_dwd
 from .geosphere_daily import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, download_daily_observations_geosphere
 from .knmi_daily import download_daily_observations_knmi
@@ -136,7 +137,9 @@ def _download_observations_dk(
         return download_daily_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_DAILY_COLUMNS]
     if query.dataset_scope == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_SUBDAILY_COLUMNS]
-    raise NotImplementedError('DMI Denmark support currently implements only historical/daily and historical/1hour station observations.')
+    if query.dataset_scope == 'historical' and query.resolution == '10min':
+        return download_tenmin_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_SUBDAILY_COLUMNS]
+    raise NotImplementedError('DMI Denmark support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
 def _download_observations_shmu(
     query: ObservationQuery,
@@ -233,6 +236,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
 
 
 

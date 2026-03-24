@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -19,6 +19,8 @@ class DenmarkDatasetSpec:
 DMI_CLIMATE_API_BASE = 'https://opendataapi.dmi.dk/v2/climateData/collections'
 DMI_CLIMATE_STATION_URL = f'{DMI_CLIMATE_API_BASE}/station/items'
 DMI_CLIMATE_STATION_VALUE_URL = f'{DMI_CLIMATE_API_BASE}/stationValue/items'
+DMI_METOBS_API_BASE = 'https://opendataapi.dmi.dk/v2/metObs/collections'
+DMI_METOBS_OBSERVATION_URL = f'{DMI_METOBS_API_BASE}/observation/items'
 DMI_DENMARK_COUNTRY_CODE = 'DNK'
 
 _DK_DAILY_CANONICAL_ELEMENTS = {
@@ -39,6 +41,15 @@ _DK_HOURLY_CANONICAL_ELEMENTS = {
     'relative_humidity': ('mean_relative_hum',),
     'pressure': ('mean_pressure',),
     'sunshine_duration': ('bright_sunshine',),
+}
+
+_DK_TENMIN_CANONICAL_ELEMENTS = {
+    'tas_mean': ('temp_dry',),
+    'precipitation': ('precip_past10min',),
+    'wind_speed': ('wind_speed',),
+    'relative_humidity': ('humidity',),
+    'pressure': ('pressure',),
+    'sunshine_duration': ('sun_last10min_glob',),
 }
 
 
@@ -104,6 +115,33 @@ DK_HOURLY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     },
 }
 
+DK_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
+    'temp_dry': {
+        'name': 'Present air temperature',
+        'description': 'Official DMI Meteorological Observation API 10-minute present air temperature in degrees Celsius.',
+    },
+    'precip_past10min': {
+        'name': 'Accumulated precipitation in the latest 10 minutes',
+        'description': 'Official DMI Meteorological Observation API accumulated precipitation in millimetres for the latest 10 minutes.',
+    },
+    'wind_speed': {
+        'name': 'Latest 10 minutes mean wind speed',
+        'description': 'Official DMI Meteorological Observation API latest 10 minutes mean wind speed in metres per second.',
+    },
+    'humidity': {
+        'name': 'Present relative humidity',
+        'description': 'Official DMI Meteorological Observation API present relative humidity in percent.',
+    },
+    'pressure': {
+        'name': 'Atmospheric pressure at station level',
+        'description': 'Official DMI Meteorological Observation API atmospheric pressure at station level in hPa.',
+    },
+    'sun_last10min_glob': {
+        'name': 'Number of minutes with sunshine in the latest 10 minutes',
+        'description': 'Official DMI Meteorological Observation API sunshine duration in minutes for the latest 10 minutes.',
+    },
+}
+
 _DK_DATASET_SPECS = [
     DenmarkDatasetSpec(
         dataset_scope='historical',
@@ -140,6 +178,24 @@ _DK_DATASET_SPECS = [
             'bright_sunshine',
         ),
         canonical_elements=_DK_HOURLY_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
+        implemented=True,
+    ),
+    DenmarkDatasetSpec(
+        dataset_scope='historical',
+        resolution='10min',
+        label='DMI Meteorological Observation API historical 10-minute station observations',
+        metadata_url=f'{DMI_CLIMATE_STATION_URL}?limit=300000',
+        data_url=DMI_METOBS_OBSERVATION_URL,
+        supported_elements=(
+            'temp_dry',
+            'precip_past10min',
+            'wind_speed',
+            'humidity',
+            'pressure',
+            'sun_last10min_glob',
+        ),
+        canonical_elements=_DK_TENMIN_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,
     ),

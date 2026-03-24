@@ -1,4 +1,4 @@
-import json
+﻿import json
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -16,12 +16,15 @@ from weatherdownload import (
     read_station_observation_metadata,
 )
 from weatherdownload.dk_daily import DMI_CLIMATE_STATION_VALUE_URL
+from weatherdownload.dk_registry import DMI_METOBS_OBSERVATION_URL
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_dk_dmi_stations.json')
 SAMPLE_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(encoding='utf-8')
 SAMPLE_DAILY_PAYLOAD = json.loads(SAMPLE_DAILY_TEXT)
 SAMPLE_HOURLY_TEXT = Path('tests/data/sample_dk_dmi_hourly.json').read_text(encoding='utf-8')
 SAMPLE_HOURLY_PAYLOAD = json.loads(SAMPLE_HOURLY_TEXT)
+SAMPLE_TENMIN_TEXT = Path('tests/data/sample_dk_dmi_tenmin.json').read_text(encoding='utf-8')
+SAMPLE_TENMIN_PAYLOAD = json.loads(SAMPLE_TENMIN_TEXT)
 
 EXPECTED_DK_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
@@ -49,6 +52,14 @@ EXPECTED_DK_HOURLY_CANONICAL_MAPPING = {
     'pressure': 'mean_pressure',
     'sunshine_duration': 'bright_sunshine',
 }
+EXPECTED_DK_TENMIN_CANONICAL_MAPPING = {
+    'tas_mean': 'temp_dry',
+    'precipitation': 'precip_past10min',
+    'wind_speed': 'wind_speed',
+    'relative_humidity': 'humidity',
+    'pressure': 'pressure',
+    'sunshine_duration': 'sun_last10min_glob',
+}
 EXPECTED_RAW_FLAG = '{"qcStatus":"manual","validity":true}'
 
 
@@ -67,7 +78,7 @@ class DenmarkProviderTests(unittest.TestCase):
     def test_supported_countries_include_dk(self) -> None:
         self.assertIn('DK', list_supported_countries())
         self.assertEqual(list_dataset_scopes(country='DK'), ['historical'])
-        self.assertEqual(list_resolutions(country='DK', dataset_scope='historical'), ['1hour', 'daily'])
+        self.assertEqual(list_resolutions(country='DK', dataset_scope='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_dk_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
@@ -81,6 +92,7 @@ class DenmarkProviderTests(unittest.TestCase):
         self.assertIn('mean_temp', metadata['element'].tolist())
         self.assertIn('bright_sunshine', metadata['element'].tolist())
         self.assertIn('HISTORICAL_HOURLY', metadata['obs_type'].tolist())
+        self.assertNotIn('HISTORICAL_10MIN', metadata['obs_type'].tolist())
 
     def test_discovery_country_dk_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
@@ -92,8 +104,16 @@ class DenmarkProviderTests(unittest.TestCase):
             ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
+            list_supported_elements(country='DK', dataset_scope='historical', resolution='10min'),
+            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
+        )
+        self.assertEqual(
             list_supported_elements(country='DK', dataset_scope='historical', resolution='1hour', provider_raw=True),
             ['mean_temp', 'acc_precip', 'mean_wind_speed', 'mean_relative_hum', 'mean_pressure', 'bright_sunshine'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='DK', dataset_scope='historical', resolution='10min', provider_raw=True),
+            ['temp_dry', 'precip_past10min', 'wind_speed', 'humidity', 'pressure', 'sun_last10min_glob'],
         )
 
     def test_dk_daily_query_accepts_canonical_and_raw_codes(self) -> None:
@@ -107,6 +127,12 @@ class DenmarkProviderTests(unittest.TestCase):
         raw_query = ObservationQuery(country='DK', dataset_scope='historical', resolution='1hour', station_ids=['06180'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['mean_temp', 'mean_pressure'])
         self.assertEqual(canonical_query.elements, ['mean_temp', 'mean_pressure'])
         self.assertEqual(raw_query.elements, ['mean_temp', 'mean_pressure'])
+
+    def test_dk_tenmin_query_accepts_canonical_and_raw_codes(self) -> None:
+        canonical_query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['temp_dry', 'pressure'])
+        self.assertEqual(canonical_query.elements, ['temp_dry', 'pressure'])
+        self.assertEqual(raw_query.elements, ['temp_dry', 'pressure'])
 
     def test_download_daily_observations_country_dk_with_canonical_elements(self) -> None:
         station_metadata = read_station_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
@@ -165,6 +191,35 @@ class DenmarkProviderTests(unittest.TestCase):
         self.assertEqual(observations.iloc[0]['flag'], EXPECTED_RAW_FLAG)
         self.assertEqual(str(observations.iloc[0]['timestamp']), '2024-01-01 01:00:00+00:00')
 
+    def test_download_tenmin_observations_country_dk_with_canonical_elements(self) -> None:
+        station_metadata = read_station_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
+
+        def fake_get(url, params=None, timeout=60):
+            if url != DMI_METOBS_OBSERVATION_URL:
+                raise AssertionError(f'unexpected url: {url}')
+            self.assertEqual(params['stationId'], '06180')
+            self.assertIn(params['parameterId'], {'temp_dry', 'pressure'})
+            self.assertEqual(params['datetime'], '2024-01-01T00:10:00Z/2024-01-01T00:20:00Z')
+            filtered = {
+                'type': 'FeatureCollection',
+                'features': [
+                    feature for feature in SAMPLE_TENMIN_PAYLOAD['features']
+                    if feature['properties'].get('stationId') == params['stationId']
+                    and feature['properties'].get('parameterId') == params['parameterId']
+                ],
+            }
+            return _MockResponse(json.dumps(filtered))
+
+        query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.dk_tenmin.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='DK', station_metadata=station_metadata)
+        self.assertEqual(list(observations.columns), EXPECTED_DK_SUBDAILY_COLUMNS)
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['pressure', 'temp_dry'])
+        self.assertTrue(observations['flag'].isna().all())
+        self.assertEqual(str(observations.iloc[0]['timestamp']), '2024-01-01 00:10:00+00:00')
+        self.assertEqual(str(observations['quality'].dtype), 'Int64')
+
     def test_dk_daily_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
 
@@ -210,6 +265,30 @@ class DenmarkProviderTests(unittest.TestCase):
         lookup = observations.set_index(['element', 'timestamp'])['value']
         self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2024-01-01T01:00:00Z'))]), 2.8)
         self.assertAlmostEqual(float(lookup[('pressure', pd.Timestamp('2024-01-01T02:00:00Z'))]), 1007.4)
+
+    def test_dk_tenmin_contract_mapping_and_key_values_are_stable(self) -> None:
+        station_metadata = read_station_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
+
+        def fake_get(url, params=None, timeout=60):
+            filtered = {
+                'type': 'FeatureCollection',
+                'features': [
+                    feature for feature in SAMPLE_TENMIN_PAYLOAD['features']
+                    if feature['properties'].get('stationId') == params['stationId']
+                    and feature['properties'].get('parameterId') == params['parameterId']
+                ],
+            }
+            return _MockResponse(json.dumps(filtered))
+
+        query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=list(EXPECTED_DK_TENMIN_CANONICAL_MAPPING.keys()))
+        with patch('weatherdownload.dk_tenmin.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='DK', station_metadata=station_metadata)
+        mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
+        self.assertEqual(mapping, EXPECTED_DK_TENMIN_CANONICAL_MAPPING)
+        lookup = observations.set_index(['element', 'timestamp'])['value']
+        self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2024-01-01T00:10:00Z'))]), 2.1)
+        self.assertAlmostEqual(float(lookup[('pressure', pd.Timestamp('2024-01-01T00:20:00Z'))]), 1007.4)
+        self.assertTrue(observations['flag'].isna().all())
 
 
 if __name__ == '__main__':
