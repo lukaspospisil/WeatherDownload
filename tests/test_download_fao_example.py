@@ -373,6 +373,14 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['VV_MITTEL'], 'wind_speed')
 
+    def test_get_fao_country_config_returns_be_mapping(self) -> None:
+        config = download_fao.get_fao_country_config('BE')
+        self.assertEqual(config.country, 'BE')
+        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
+        self.assertEqual(config.raw_to_canonical['TEMP_AVG'], 'tas_mean')
+        self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
+
     def test_prepare_complete_station_series_handles_at_without_deriving_vapour_pressure(self) -> None:
         csv_text = GEOSPHERE_SAMPLE_CSV_PATH.read_text(encoding='utf-8')
         query = ObservationQuery(
@@ -408,6 +416,22 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(list(complete['date'].astype(str)), ['2024-01-01'])
         self.assertTrue(complete['vapour_pressure'].isna().all())
 
+    def test_prepare_complete_station_series_handles_be_without_deriving_vapour_pressure(self) -> None:
+        config = download_fao.get_fao_country_config('BE')
+        daily_table = pd.DataFrame([
+            {'station_id': '6414', 'element': 'tas_mean', 'element_raw': 'temp_avg', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '4.2'},
+            {'station_id': '6414', 'element': 'tas_max', 'element_raw': 'temp_max', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '7.5'},
+            {'station_id': '6414', 'element': 'tas_min', 'element_raw': 'temp_min', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '1.0'},
+            {'station_id': '6414', 'element': 'wind_speed', 'element_raw': 'wind_speed_10m', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '3.47'},
+            {'station_id': '6414', 'element': 'sunshine_duration', 'element_raw': 'sun_duration', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '380.92'},
+        ])
+
+        complete = download_fao.prepare_complete_station_series(daily_table, config=config)
+
+        self.assertEqual(list(complete.columns), ['date', 'tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration'])
+        self.assertEqual(list(complete['date'].astype(str)), ['2024-01-01'])
+        self.assertTrue(complete['vapour_pressure'].isna().all())
+
     def test_build_data_info_includes_nl_limitations(self) -> None:
         config = download_fao.get_fao_country_config('NL')
         info = download_fao.build_data_info(config, station_rows=[{'station_id': '0-20000-0-06260'}], min_complete_days=3650)
@@ -417,6 +441,16 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(info['provider_element_mapping']['vapour_pressure']['status'], 'unavailable')
         self.assertIn('observed_inputs_only', info['assumptions'])
         self.assertIn('vapour_pressure_availability', info['assumptions'])
+
+    def test_build_data_info_includes_be_limitations(self) -> None:
+        config = download_fao.get_fao_country_config('BE')
+        info = download_fao.build_data_info(config, station_rows=[{'station_id': '6414'}], min_complete_days=3650)
+
+        self.assertEqual(info['country'], 'BE')
+        self.assertIn('assumptions', info)
+        self.assertEqual(info['provider_element_mapping']['vapour_pressure']['status'], 'unavailable')
+        self.assertIn('observed_inputs_only', info['assumptions'])
+        self.assertIn('provider_daily_aggregation', info['assumptions'])
 
     def test_build_data_info_includes_at_assumptions(self) -> None:
         config = download_fao.get_fao_country_config('AT')
@@ -428,6 +462,8 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertIn('pressure_usage', info['assumptions'])
 if __name__ == '__main__':
     unittest.main()
+
+
 
 
 

@@ -136,7 +136,7 @@ It prepares a clean daily FAO-prep dataset for later MATLAB, R, or Python proces
 
 What it does:
 
-- supports `CZ`, `DE`, `AT`, and `NL`
+- supports `CZ`, `DE`, `AT`, `BE`, and `NL`
 - caches normalized country-aware daily inputs
 - screens candidate stations
 - applies country-specific daily selection rules
@@ -145,6 +145,9 @@ What it does:
 
 Important boundary:
 
+- `BE` is included through the shared country-parameterized workflow using only observed Belgium daily inputs from the existing provider
+- Belgium daily values come from the official provider-side `aws_1day` aggregation and are not recomputed from 10-minute data in the workflow
+- `vapour_pressure` remains null for `BE` because the current provider path does not expose it directly, and the workflow does not derive it
 - `NL` is included through the shared country-parameterized workflow using only observed KNMI daily inputs
 - `vapour_pressure` remains null for `NL` because the current provider path does not expose it directly, and the workflow does not derive it
 

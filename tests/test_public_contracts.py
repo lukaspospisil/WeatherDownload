@@ -297,7 +297,7 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         *download_fao.FINAL_SERIES_COLUMNS,
     ]
 
-    for country in ['CZ', 'DE', 'AT']:
+    for country in ['CZ', 'DE', 'AT', 'BE']:
         config = download_fao.get_fao_country_config(country)
         station_rows = [{
             'station_id': 'TEST1',
@@ -320,7 +320,7 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
             'tas_max': [3.0, 4.0],
             'tas_min': [-1.0, 0.0],
             'wind_speed': [2.5, 3.0],
-            'vapour_pressure': [pd.NA, pd.NA] if country == 'AT' else [7.0, 8.0],
+            'vapour_pressure': [pd.NA, pd.NA] if country in {'AT', 'BE'} else [7.0, 8.0],
             'sunshine_duration': [0.5, 0.8],
         }]
 
@@ -337,11 +337,12 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         assert list(series_table['date']) == ['2024-01-01', '2024-01-02']
         assert list(series_table['station_id']) == ['TEST1', 'TEST1']
 
-        if country == 'AT':
+        if country in {'AT', 'BE'}:
             assert series_table['vapour_pressure'].isna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
+
 
 

@@ -17,6 +17,7 @@ Currently supported:
 - `CZ`
 - `DE`
 - `AT`
+- `BE`
 - `NL`
 
 ## CLI
@@ -25,6 +26,7 @@ Currently supported:
 python examples/download_fao.py --country CZ
 python examples/download_fao.py --country DE
 python examples/download_fao.py --country AT
+python examples/download_fao.py --country BE
 python examples/download_fao.py --country NL
 ```
 
@@ -73,6 +75,22 @@ Observed inputs used:
 Unavailable in the current shared path:
 
 - `vapour_pressure` stays null
+
+### BE
+
+Observed inputs used:
+
+- `tas_mean` via `temp_avg`
+- `tas_max` via `temp_max`
+- `tas_min` via `temp_min`
+- `wind_speed` via `wind_speed_10m`
+- `sunshine_duration` via `sun_duration`
+
+Unavailable in the current shared path:
+
+- `vapour_pressure` stays null
+
+The BE branch uses only the existing Belgium provider through the unified public interface. Belgium daily values come from the official provider-side `aws_1day` aggregation and are not recomputed from 10-minute data in this example.
 
 ### NL
 
@@ -125,6 +143,13 @@ The NL branch uses only the existing KNMI provider through the unified public in
 
 If a country has important limitations, `data_info` also includes an `assumptions` block.
 
+For `BE`, that assumptions block explicitly states that:
+
+- the branch packages observed inputs only
+- `vapour_pressure` is unavailable in the current provider path and remains null
+- Belgium daily values come from the provider-side `aws_1day` aggregation and are not recomputed in this example
+- the example does not derive radiation or other meteorological variables
+
 For `NL`, that assumptions block explicitly states that:
 
 - the branch packages observed inputs only
@@ -140,6 +165,7 @@ The cache is country-scoped under the base cache directory, for example:
   CZ/
   DE/
   AT/
+  BE/
   NL/
 ```
 
@@ -156,10 +182,12 @@ Default country-aware output names when you do not pass explicit paths:
 - `CZ` MAT: `outputs/fao_daily.cz.mat`
 - `DE` MAT: `outputs/fao_daily.de.mat`
 - `AT` MAT: `outputs/fao_daily.at.mat`
+- `BE` MAT: `outputs/fao_daily.be.mat`
 - `NL` MAT: `outputs/fao_daily.nl.mat`
 - `CZ` Parquet bundle: `outputs/fao_daily.cz`
 - `DE` Parquet bundle: `outputs/fao_daily.de`
 - `AT` Parquet bundle: `outputs/fao_daily.at`
+- `BE` Parquet bundle: `outputs/fao_daily.be`
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
 
 ## Why This Stays In `examples/`
