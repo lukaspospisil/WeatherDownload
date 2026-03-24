@@ -28,6 +28,12 @@ FINAL_SERIES_COLUMNS = [
     'sunshine_duration',
 ]
 FAO_CANONICAL_ELEMENTS = tuple(FINAL_SERIES_COLUMNS)
+FILL_MISSING_CHOICES = ('none', 'allow-derived')
+DERIVED_VAPOUR_PRESSURE_RULE_NAME = 'vapour_pressure_from_tas_mean_and_relative_humidity'
+DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION = (
+    'Derived vapour_pressure from observed daily tas_mean and relative_humidity '
+    'using the Magnus saturation-vapour-pressure formula in hPa.'
+)
 CZ_TIMEFUNC_BY_CANONICAL = {
     'tas_mean': 'AVG',
     'wind_speed': 'AVG',
@@ -262,6 +268,16 @@ class FaoCountryConfig:
     source: str
 
 
+@dataclass(frozen=True)
+class FieldFillSummary:
+    field: str
+    status: str
+    rule: str
+    observed_count: int
+    derived_count: int
+    missing_count: int
+
+
 class CacheMissingError(FileNotFoundError):
     pass
 
@@ -351,10 +367,11 @@ def main(argv: list[str] | None = None) -> int:
         reporter = ProgressReporter(silent=args.silent)
         stats = CacheStats()
 
-        config = get_fao_country_config(args.country)
+        config = get_fao_country_config(args.country, fill_missing=args.fill_missing)
         country_cache_dir = resolve_country_cache_dir(args.cache_dir, config.country)
         mat_output_path = resolve_mat_output_path(args.output, country=config.country)
         parquet_output_dir = resolve_parquet_output_dir(args.output_dir, country=config.country)
+        export_timestamp = pd.Timestamp.now('UTC').isoformat()
 
         reporter.info(f'Using cache directory: {country_cache_dir}')
         meta1 = load_station_metadata_with_cache(country_cache_dir, country=config.country, mode=args.mode, timeout=args.timeout, reporter=reporter, stats=stats)
@@ -397,6 +414,8 @@ def main(argv: list[str] | None = None) -> int:
         unavailable_station_ids = set(missing_station_ids) | set(failed_station_ids)
         retained_series: list[dict[str, Any]] = []
         station_rows: list[dict[str, Any]] = []
+        provenance_tables: list[pd.DataFrame] = []
+        applied_rules_by_field: dict[str, set[str]] = {field: set() for field in FINAL_SERIES_COLUMNS}
 
         build_candidates = candidates[~candidates['station_id'].isin(unavailable_station_ids)].reset_index(drop=True)
         total_build_candidates = len(build_candidates)
@@ -405,7 +424,11 @@ def main(argv: list[str] | None = None) -> int:
         for index, station in enumerate(build_candidates.itertuples(index=False), start=1):
             reporter.info(f'[{index}/{total_build_candidates}] Processing {station.station_id} ({station.full_name}) from cache')
             daily_table = read_cached_daily_observations(station.station_id, cache_dir=country_cache_dir)
-            complete = prepare_complete_station_series(daily_table, config=config)
+            complete, provenance, applied_rules = prepare_complete_station_series_with_provenance(
+                daily_table,
+                config=config,
+                fill_missing=args.fill_missing,
+            )
             if complete.empty:
                 reporter.info('  No complete FAO-prep days after country-specific selection, skipping.')
                 continue
@@ -414,6 +437,10 @@ def main(argv: list[str] | None = None) -> int:
                 continue
 
             retained_series.append(build_series_record(complete, station_id=station.station_id, full_name=station.full_name, latitude=station.latitude, longitude=station.longitude, elevation=station.elevation_m))
+            provenance_tables.append(provenance)
+            for field_name, rule in applied_rules.items():
+                if rule:
+                    applied_rules_by_field[field_name].add(rule)
             station_rows.append({
                 'station_id': station.station_id,
                 'full_name': station.full_name,
@@ -426,12 +453,35 @@ def main(argv: list[str] | None = None) -> int:
             })
 
         data_info = build_data_info(config, station_rows, min_complete_days=args.min_complete_days)
+        field_summaries = summarize_field_fill_status(
+            provenance_tables,
+            fill_missing=args.fill_missing,
+            applied_rules_by_field=applied_rules_by_field,
+        )
         exported_targets: list[str] = []
         if args.export_format in {'mat', 'both'}:
             export_mat_bundle(mat_output_path, data_info=data_info, stations=station_rows, series=retained_series)
+            write_info_sidecar(
+                mat_output_path,
+                country=config.country,
+                export_timestamp=export_timestamp,
+                fill_missing=args.fill_missing,
+                field_summaries=field_summaries,
+                requested_fields=FINAL_SERIES_COLUMNS,
+                bundle_sections=('data_info', 'stations', 'series'),
+            )
             exported_targets.append(str(mat_output_path))
         if args.export_format in {'parquet', 'both'}:
             export_parquet_bundle(parquet_output_dir, data_info=data_info, stations=station_rows, series=retained_series)
+            write_info_sidecar(
+                parquet_output_dir,
+                country=config.country,
+                export_timestamp=export_timestamp,
+                fill_missing=args.fill_missing,
+                field_summaries=field_summaries,
+                requested_fields=FINAL_SERIES_COLUMNS,
+                bundle_sections=('data_info.json', 'stations.parquet', 'series.parquet'),
+            )
             exported_targets.append(str(parquet_output_dir))
         reporter.essential(f"Exported FAO-prep output to: {', '.join(exported_targets)}")
         print_final_summary(reporter, stats)
@@ -453,18 +503,21 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--export-format', choices=['mat', 'parquet', 'both'], default='mat', help='Output format to produce in full or build mode.')
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional canonical station_id filter. Can be provided multiple times.')
     parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete observed-input days required per station.')
+    parser.add_argument('--fill-missing', choices=FILL_MISSING_CHOICES, default='none', help='Keep missing FAO-oriented inputs empty, or explicitly allow the example layer to apply minimal documented fallback rules.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
     parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
 
 
-def get_fao_country_config(country: str | None) -> FaoCountryConfig:
+def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -> FaoCountryConfig:
     normalized_country = normalize_country_code(country)
     try:
         provider = get_provider(normalized_country)
         daily_spec = provider.get_dataset_spec('historical_csv' if normalized_country == 'CZ' else 'historical', 'daily')
     except Exception as exc:
         raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.') from exc
+    if fill_missing not in FILL_MISSING_CHOICES:
+        raise ValueError(f'Unsupported fill policy: {fill_missing}')
 
     canonical_to_raw = daily_spec.canonical_elements or {}
     raw_to_provider_canonical = raw_to_canonical_map_for_spec(daily_spec)
@@ -480,6 +533,9 @@ def get_fao_country_config(country: str | None) -> FaoCountryConfig:
         query_elements = SE_REQUIRED_OBSERVED_ELEMENTS
     else:
         query_elements = FAO_CANONICAL_ELEMENTS
+    query_elements = tuple(query_elements)
+    if fill_missing == 'allow-derived' and normalized_country in {'AT', 'BE', 'DK', 'NL'}:
+        query_elements = tuple(dict.fromkeys([*query_elements, 'relative_humidity']))
 
     selected_canonical_to_raw: dict[str, tuple[str, ...]] = {}
     raw_to_canonical: dict[str, str] = {}
@@ -493,19 +549,19 @@ def get_fao_country_config(country: str | None) -> FaoCountryConfig:
             raw_to_canonical[raw_code.upper()] = canonical_name
 
     if normalized_country == 'CZ':
-        return FaoCountryConfig('CZ', 'historical_csv', 'daily', ('DLY',), selected_canonical_to_raw, raw_to_canonical, dict(CZ_TIMEFUNC_BY_CANONICAL), FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, dict(CZ_TIMEFUNC_BY_CANONICAL)), {}, 'CHMI observed daily input bundle prepared for later FAO workflow packaging', 'CHMI OpenData historical_csv metadata and daily observations')
+        return FaoCountryConfig('CZ', 'historical_csv', 'daily', ('DLY',), selected_canonical_to_raw, raw_to_canonical, dict(CZ_TIMEFUNC_BY_CANONICAL), FAO_CANONICAL_ELEMENTS, query_elements, build_observed_provider_element_mapping(selected_canonical_to_raw, dict(CZ_TIMEFUNC_BY_CANONICAL)), {}, 'CHMI observed daily input bundle prepared for later FAO workflow packaging', 'CHMI OpenData historical_csv metadata and daily observations')
     if normalized_country == 'DE':
-        return FaoCountryConfig('DE', 'historical', 'daily', ('DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, FAO_CANONICAL_ELEMENTS, FAO_CANONICAL_ELEMENTS, build_observed_provider_element_mapping(selected_canonical_to_raw, {}), {}, 'DWD observed daily input bundle prepared for later FAO workflow packaging', 'DWD CDC historical daily metadata and observations')
+        return FaoCountryConfig('DE', 'historical', 'daily', ('DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, FAO_CANONICAL_ELEMENTS, query_elements, build_observed_provider_element_mapping(selected_canonical_to_raw, {}), {}, 'DWD observed daily input bundle prepared for later FAO workflow packaging', 'DWD CDC historical daily metadata and observations')
     if normalized_country == 'AT':
-        return FaoCountryConfig('AT', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, AT_REQUIRED_OBSERVED_ELEMENTS, AT_REQUIRED_OBSERVED_ELEMENTS, dict(AT_PROVIDER_ELEMENT_MAPPING), dict(AT_ASSUMPTIONS), 'GeoSphere Austria observed daily input bundle prepared for later FAO workflow packaging', 'GeoSphere Austria Dataset API station historical daily klima-v2-1d')
+        return FaoCountryConfig('AT', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, AT_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(AT_PROVIDER_ELEMENT_MAPPING), dict(AT_ASSUMPTIONS), 'GeoSphere Austria observed daily input bundle prepared for later FAO workflow packaging', 'GeoSphere Austria Dataset API station historical daily klima-v2-1d')
     if normalized_country == 'BE':
-        return FaoCountryConfig('BE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, BE_REQUIRED_OBSERVED_ELEMENTS, BE_REQUIRED_OBSERVED_ELEMENTS, dict(BE_PROVIDER_ELEMENT_MAPPING), dict(BE_ASSUMPTIONS), 'RMI/KMI Belgium observed daily input bundle prepared for later FAO workflow packaging', 'RMI/KMI open-data platform aws_1day daily station observations')
+        return FaoCountryConfig('BE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, BE_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(BE_PROVIDER_ELEMENT_MAPPING), dict(BE_ASSUMPTIONS), 'RMI/KMI Belgium observed daily input bundle prepared for later FAO workflow packaging', 'RMI/KMI open-data platform aws_1day daily station observations')
     if normalized_country == 'DK':
-        return FaoCountryConfig('DK', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, DK_REQUIRED_OBSERVED_ELEMENTS, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
+        return FaoCountryConfig('DK', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
     if normalized_country == 'NL':
-        return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, NL_REQUIRED_OBSERVED_ELEMENTS, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
+        return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
     if normalized_country == 'SE':
-        return FaoCountryConfig('SE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, SE_REQUIRED_OBSERVED_ELEMENTS, SE_REQUIRED_OBSERVED_ELEMENTS, dict(SE_PROVIDER_ELEMENT_MAPPING), dict(SE_ASSUMPTIONS), 'SMHI Sweden observed daily input bundle prepared for later FAO workflow packaging', 'SMHI Meteorological Observations corrected-archive daily station observations')
+        return FaoCountryConfig('SE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, SE_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(SE_PROVIDER_ELEMENT_MAPPING), dict(SE_ASSUMPTIONS), 'SMHI Sweden observed daily input bundle prepared for later FAO workflow packaging', 'SMHI Meteorological Observations corrected-archive daily station observations')
     raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.')
 
 
@@ -530,6 +586,128 @@ def build_data_info(config: FaoCountryConfig, station_rows: list[dict[str, Any]]
     if config.assumptions:
         data_info['assumptions'] = dict(config.assumptions)
     return data_info
+
+
+def resolve_info_sidecar_path(output_path: Path) -> Path:
+    if output_path.suffix:
+        return output_path.with_suffix('.info')
+    return output_path.with_name(output_path.name + '.info')
+
+
+def summarize_field_fill_status(
+    provenance_tables: list[pd.DataFrame],
+    *,
+    fill_missing: str,
+    applied_rules_by_field: dict[str, set[str]],
+) -> list[FieldFillSummary]:
+    summaries: list[FieldFillSummary] = []
+    for field_name in FINAL_SERIES_COLUMNS:
+        observed_count = 0
+        derived_count = 0
+        missing_count = 0
+        for provenance in provenance_tables:
+            if field_name not in provenance.columns:
+                continue
+            counts = provenance[field_name].astype('string').value_counts(dropna=False)
+            observed_count += int(counts.get('observed', 0))
+            derived_count += int(counts.get('derived', 0))
+            missing_count += int(counts.get('missing', 0))
+        if derived_count > 0 and observed_count > 0:
+            status = 'partially derived'
+        elif derived_count > 0:
+            status = 'fully derived'
+        elif observed_count > 0:
+            status = 'observed-only'
+        else:
+            status = 'still missing'
+        if applied_rules_by_field.get(field_name):
+            rule = '; '.join(sorted(applied_rules_by_field[field_name]))
+        elif fill_missing == 'allow-derived' and field_name == 'vapour_pressure':
+            rule = 'No fill rule applied.'
+        elif observed_count > 0:
+            rule = 'Observed source values only.'
+        else:
+            rule = 'No fill rule applied.'
+        summaries.append(
+            FieldFillSummary(
+                field=field_name,
+                status=status,
+                rule=rule,
+                observed_count=observed_count,
+                derived_count=derived_count,
+                missing_count=missing_count,
+            )
+        )
+    return summaries
+
+
+def render_info_sidecar_text(
+    *,
+    output_path: Path,
+    country: str,
+    export_timestamp: str,
+    fill_missing: str,
+    bundle_sections: tuple[str, ...],
+    requested_fields: list[str] | tuple[str, ...],
+    field_summaries: list[FieldFillSummary],
+) -> str:
+    lines = [
+        'WeatherDownload FAO-oriented input export info',
+        '',
+        f'Export timestamp: {export_timestamp}',
+        f'Output path: {output_path.resolve()}',
+        f'Country: {country}',
+        f'Selected fill policy: {fill_missing}',
+        f'Run mode: {"observed-only" if fill_missing == "none" else "allowed derived values"}',
+        f'Bundle sections exported: {", ".join(bundle_sections)}',
+        f'Requested FAO-oriented fields: {", ".join(requested_fields)}',
+        'ET0 computation: not performed',
+    ]
+    if any(summary.derived_count > 0 for summary in field_summaries):
+        lines.append('Warning: This export contains derived values from the example-layer fill policy.')
+    else:
+        lines.append('Warning: No derived values were used in this export.')
+    lines.extend(['', 'Field summary:'])
+    for summary in field_summaries:
+        lines.extend(
+            [
+                f'- {summary.field}',
+                f'  status: {summary.status}',
+                f'  rule: {summary.rule}',
+                f'  observed values: {summary.observed_count}',
+                f'  derived values: {summary.derived_count}',
+                f'  missing values: {summary.missing_count}',
+            ]
+        )
+    return '\n'.join(lines) + '\n'
+
+
+def write_info_sidecar(
+    output_path: Path,
+    *,
+    country: str,
+    export_timestamp: str,
+    fill_missing: str,
+    bundle_sections: tuple[str, ...],
+    requested_fields: list[str] | tuple[str, ...],
+    field_summaries: list[FieldFillSummary],
+) -> Path:
+    info_path = resolve_info_sidecar_path(output_path)
+    info_path.parent.mkdir(parents=True, exist_ok=True)
+    text = render_info_sidecar_text(
+        output_path=output_path,
+        country=country,
+        export_timestamp=export_timestamp,
+        fill_missing=fill_missing,
+        bundle_sections=bundle_sections,
+        requested_fields=requested_fields,
+        field_summaries=field_summaries,
+    )
+    if info_path.exists():
+        existing = info_path.read_text(encoding='utf-8').rstrip()
+        text = existing + '\n\n---\n\n' + text
+    info_path.write_text(text, encoding='utf-8')
+    return info_path
 
 def resolve_country_cache_dir(cache_dir: Path, country: str) -> Path:
     return cache_dir / normalize_country_code(country)
@@ -673,24 +851,73 @@ def cached_daily_observations_path(cache_dir: Path, station_id: str) -> Path:
     return cache_dir / 'daily' / station_id / f'daily-{station_id}.csv'
 
 
-def prepare_complete_station_series(daily_table: pd.DataFrame, *, config: FaoCountryConfig) -> pd.DataFrame:
-    selected_tables: list[pd.DataFrame] = []
-    for canonical_name in config.required_complete_elements:
+def prepare_complete_station_series(daily_table: pd.DataFrame, *, config: FaoCountryConfig, fill_missing: str = 'none') -> pd.DataFrame:
+    complete, _, _ = prepare_complete_station_series_with_provenance(
+        daily_table,
+        config=config,
+        fill_missing=fill_missing,
+    )
+    return complete
+
+
+def prepare_complete_station_series_with_provenance(
+    daily_table: pd.DataFrame,
+    *,
+    config: FaoCountryConfig,
+    fill_missing: str = 'none',
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, str | None]]:
+    selected_tables: dict[str, pd.DataFrame] = {}
+    selected_names = set(config.required_complete_elements) | set(FINAL_SERIES_COLUMNS)
+    if fill_missing == 'allow-derived':
+        selected_names.add('relative_humidity')
+    for canonical_name in selected_names:
         selected = select_daily_variable_rows(daily_table, canonical_name=canonical_name, config=config)
-        if selected.empty:
-            return pd.DataFrame(columns=['date', *FINAL_SERIES_COLUMNS])
-        selected_tables.append(selected)
+        if canonical_name in config.required_complete_elements and selected.empty:
+            empty = pd.DataFrame(columns=['date', *FINAL_SERIES_COLUMNS])
+            empty_provenance = pd.DataFrame(columns=['date', *FINAL_SERIES_COLUMNS])
+            return empty, empty_provenance, {field: None for field in FINAL_SERIES_COLUMNS}
+        if not selected.empty:
+            selected_tables[canonical_name] = selected
 
-    merged = selected_tables[0]
-    for table in selected_tables[1:]:
-        merged = merged.merge(table, on='date', how='inner')
+    merged = selected_tables[config.required_complete_elements[0]]
+    for canonical_name in config.required_complete_elements[1:]:
+        merged = merged.merge(selected_tables[canonical_name], on='date', how='inner')
 
-    for canonical_name in FINAL_SERIES_COLUMNS:
+    for canonical_name in (set(FINAL_SERIES_COLUMNS) | {'relative_humidity'}) - set(config.required_complete_elements):
+        table = selected_tables.get(canonical_name)
+        if table is not None:
+            merged = merged.merge(table, on='date', how='left')
+
+    for canonical_name in set(FINAL_SERIES_COLUMNS) | {'relative_humidity'}:
         if canonical_name not in merged.columns:
             merged[canonical_name] = pd.NA
 
     complete = merged.dropna(subset=list(config.required_complete_elements)).sort_values('date').reset_index(drop=True)
-    return complete.loc[:, ['date', *FINAL_SERIES_COLUMNS]]
+    provenance = pd.DataFrame({'date': complete['date']})
+    for canonical_name in FINAL_SERIES_COLUMNS:
+        provenance[canonical_name] = pd.Series(
+            np.where(complete[canonical_name].notna(), 'observed', 'missing'),
+            dtype='string',
+        )
+
+    applied_rules = {field: None for field in FINAL_SERIES_COLUMNS}
+    if fill_missing == 'allow-derived':
+        vapour_pressure_mask = (
+            complete['vapour_pressure'].isna()
+            & complete['tas_mean'].notna()
+            & complete['relative_humidity'].notna()
+        )
+        if vapour_pressure_mask.any():
+            relative_humidity = pd.to_numeric(complete.loc[vapour_pressure_mask, 'relative_humidity'], errors='coerce')
+            valid_mask = relative_humidity.between(0, 100, inclusive='both')
+            if valid_mask.any():
+                target_index = relative_humidity[valid_mask].index
+                tas_mean = pd.to_numeric(complete.loc[target_index, 'tas_mean'], errors='coerce')
+                complete.loc[target_index, 'vapour_pressure'] = 6.108 * np.exp((17.27 * tas_mean) / (tas_mean + 237.3)) * (relative_humidity.loc[target_index] / 100.0)
+                provenance.loc[target_index, 'vapour_pressure'] = 'derived'
+                applied_rules['vapour_pressure'] = DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION
+
+    return complete.loc[:, ['date', *FINAL_SERIES_COLUMNS]], provenance.loc[:, ['date', *FINAL_SERIES_COLUMNS]], applied_rules
 
 
 def select_daily_variable_rows(daily_table: pd.DataFrame, *, canonical_name: str, config: FaoCountryConfig) -> pd.DataFrame:
@@ -848,11 +1075,5 @@ def _to_mat_value(value: Any) -> Any:
 
 if __name__ == '__main__':
     raise SystemExit(main())
-
-
-
-
-
-
 
 

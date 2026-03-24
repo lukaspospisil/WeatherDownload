@@ -9,9 +9,9 @@
 Critical boundary:
 
 - it does not compute FAO-56 ET0
-- it does not derive FAO intermediate variables
+- it does not derive FAO intermediate variables unless you explicitly enable the optional example-layer fill mode
 - it only downloads, normalizes, filters, and packages observed daily meteorological inputs for later downstream FAO workflow use
-- unavailable fields remain null or missing instead of being derived
+- unavailable fields remain null or missing instead of being derived by default
 
 Currently supported:
 
@@ -33,9 +33,12 @@ python examples/download_fao.py --country BE
 python examples/download_fao.py --country DK
 python examples/download_fao.py --country NL
 python examples/download_fao.py --country SE
+python examples/download_fao.py --country NL --fill-missing allow-derived
 ```
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
+
+`--fill-missing` defaults to `none`. Use `--fill-missing allow-derived` only when you want the shared example layer to apply its documented fallback rules.
 
 For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
 
@@ -55,7 +58,7 @@ This keeps the downstream bundle shape stable across countries.
 Important interpretation:
 
 - these are packaging targets, not a promise that every country directly observes every field in the current provider path
-- if a field is unavailable in the provider path, the shared example keeps it null instead of deriving it
+- if a field is unavailable in the provider path, the shared example keeps it null instead of deriving it by default
 
 ## Country Mapping Summary
 
@@ -143,8 +146,42 @@ Unavailable in the current shared path:
 - `vapour_pressure` stays null
 - `sunshine_duration` stays null
 
-The SE branch uses only the existing SMHI daily provider through the unified public interface. It uses the official corrected-archive daily CSV path and packages observed daily temperature inputs only in this pass; it does not derive missing FAO-oriented fields.
+The SE branch uses only the existing SMHI daily provider through the unified public interface. It uses the official corrected-archive daily CSV path and packages observed daily temperature inputs only in this pass; even in optional fill mode, missing wind_speed and sunshine_duration remain missing because this shared example does not invent replacement observations.
 
+## Fill Policy
+
+Default behavior:
+
+- `--fill-missing none`
+- observed-only mode
+- missing unavailable fields stay null or missing
+- no ET0 or meteorological derivation happens
+
+Optional behavior:
+
+- `--fill-missing allow-derived`
+- still no ET0 computation
+- derivation stays in the shared example layer only, never in providers
+- the current explicit fallback rule is limited to `vapour_pressure`
+- `vapour_pressure` may be derived from observed daily `tas_mean` plus observed daily `relative_humidity` using the Magnus saturation-vapour-pressure formula in hPa
+- if the helper observations needed for that rule are unavailable, the field stays missing and the sidecar file records that outcome
+
+## Sidecar Info Files
+
+Every export writes a matching plain-text UTF-8 `.info` sidecar.
+
+Naming rule:
+
+- take the export path
+- remove its final extension if it has one
+- append `.info`
+
+Examples:
+
+- `outputs/fao_daily.cz.mat` -> `outputs/fao_daily.cz.info`
+- `outputs/fao_daily.cz` -> `outputs/fao_daily.info`
+
+The sidecar records the fill policy, whether derived values were allowed, field-by-field observed/derived/missing counts, the rule used for each field, and an explicit note that the workflow does not compute ET0.
 ## What The Example Does
 
 1. load station metadata for the selected country

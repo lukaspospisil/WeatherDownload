@@ -211,9 +211,9 @@ What it does:
 Important boundary:
 
 - `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, and `SE` all use the same shared country-parameterized workflow shape
-- the workflow downloads, normalizes, filters, and packages observed daily inputs only
-- it does not compute FAO-56 ET0 or derive meteorological variables
-- if a field is unavailable in the current provider path, it remains null or missing instead of being derived
+- the workflow downloads, normalizes, filters, and packages observed daily inputs only by default
+- it does not compute FAO-56 ET0, and derivation is only available through the explicit example-layer `--fill-missing allow-derived` mode
+- if a field is unavailable in the current provider path, it remains null or missing in the default observed-only mode
 - `BE` daily values come from the official provider-side `aws_1day` aggregation and are not recomputed from 10-minute data in the workflow
 - `DK` is included through the shared workflow using only observed Denmark daily inputs from the existing provider; Denmark daily values come from the DMI Climate Data `stationValue` path and the workflow remains Denmark-only in this pass
 - `NL` is included through the shared workflow using only observed KNMI daily inputs, and `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` is required
