@@ -32,6 +32,16 @@ _DK_DAILY_CANONICAL_ELEMENTS = {
     'sunshine_duration': ('bright_sunshine',),
 }
 
+_DK_HOURLY_CANONICAL_ELEMENTS = {
+    'tas_mean': ('mean_temp',),
+    'precipitation': ('acc_precip',),
+    'wind_speed': ('mean_wind_speed',),
+    'relative_humidity': ('mean_relative_hum',),
+    'pressure': ('mean_pressure',),
+    'sunshine_duration': ('bright_sunshine',),
+}
+
+
 DK_DAILY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     'mean_temp': {
         'name': 'Daily mean temperature',
@@ -67,6 +77,33 @@ DK_DAILY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     },
 }
 
+DK_HOURLY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
+    'mean_temp': {
+        'name': 'Hourly mean temperature',
+        'description': 'Official DMI Climate Data hourly mean temperature in degrees Celsius from the stationValue collection.',
+    },
+    'acc_precip': {
+        'name': 'Hourly accumulated precipitation',
+        'description': 'Official DMI Climate Data hourly accumulated precipitation in millimetres from the stationValue collection.',
+    },
+    'mean_wind_speed': {
+        'name': 'Hourly mean wind speed',
+        'description': 'Official DMI Climate Data hourly mean wind speed in metres per second from the stationValue collection.',
+    },
+    'mean_relative_hum': {
+        'name': 'Hourly mean relative humidity',
+        'description': 'Official DMI Climate Data hourly mean relative humidity in percent from the stationValue collection.',
+    },
+    'mean_pressure': {
+        'name': 'Hourly mean pressure',
+        'description': 'Official DMI Climate Data hourly mean pressure in hPa from the stationValue collection.',
+    },
+    'bright_sunshine': {
+        'name': 'Hourly bright sunshine duration',
+        'description': 'Official DMI Climate Data hourly bright sunshine duration in minutes from the stationValue collection.',
+    },
+}
+
 _DK_DATASET_SPECS = [
     DenmarkDatasetSpec(
         dataset_scope='historical',
@@ -86,6 +123,24 @@ _DK_DATASET_SPECS = [
         ),
         canonical_elements=_DK_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
+        implemented=True,
+    ),
+    DenmarkDatasetSpec(
+        dataset_scope='historical',
+        resolution='1hour',
+        label='DMI Climate Data historical hourly station observations',
+        metadata_url=f'{DMI_CLIMATE_STATION_URL}?limit=300000',
+        data_url=DMI_CLIMATE_STATION_VALUE_URL,
+        supported_elements=(
+            'mean_temp',
+            'acc_precip',
+            'mean_wind_speed',
+            'mean_relative_hum',
+            'mean_pressure',
+            'bright_sunshine',
+        ),
+        canonical_elements=_DK_HOURLY_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
         implemented=True,
     ),
 ]

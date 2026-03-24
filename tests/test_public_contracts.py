@@ -31,6 +31,7 @@ SAMPLE_BE_HOURLY_TEXT = Path('tests/data/sample_be_aws_1hour.json').read_text(en
 SAMPLE_BE_TENMIN_TEXT = Path('tests/data/sample_be_aws_10min.json').read_text(encoding='utf-8')
 SAMPLE_DK_STATIONS_PATH = Path('tests/data/sample_dk_dmi_stations.json')
 SAMPLE_DK_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(encoding='utf-8')
+SAMPLE_DK_HOURLY_TEXT = Path('tests/data/sample_dk_dmi_hourly.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -190,6 +191,24 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
         with patch('weatherdownload.be_hourly.requests.get', return_value=_MockTextResponse(SAMPLE_BE_HOURLY_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
+    if country == 'DK':
+        station_metadata = _read_station_metadata_fixture('DK')
+        query = ObservationQuery(country='DK', dataset_scope='historical', resolution='1hour', station_ids=['06180'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        sample_payload = json.loads(SAMPLE_DK_HOURLY_TEXT)
+
+        def fake_get(url, params=None, timeout=60):
+            filtered = {
+                'type': 'FeatureCollection',
+                'features': [
+                    feature for feature in sample_payload['features']
+                    if feature['properties'].get('stationId') == params['stationId']
+                    and feature['properties'].get('parameterId') == params['parameterId']
+                ],
+            }
+            return _MockTextResponse(text=json.dumps(filtered))
+
+        with patch('weatherdownload.dk_hourly.requests.get', side_effect=fake_get):
+            return download_observations(query, country='DK', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
 
@@ -266,6 +285,23 @@ def test_hourly_download_contract_is_stable_for_supported_belgium_path() -> None
     assert str(observations['quality'].dtype) == 'Int64'
 
 
+
+
+def test_hourly_download_contract_is_stable_for_supported_denmark_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    observations = _download_hourly_fixture('DK')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].notna().all()
+    assert observations['flag'].str.contains('qcStatus').all()
+    assert observations['flag'].str.contains('validity').all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
 def test_tenmin_download_contract_is_stable_for_supported_belgium_path() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
     observations = _download_tenmin_fixture('BE')

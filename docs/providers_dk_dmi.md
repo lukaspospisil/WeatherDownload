@@ -8,13 +8,13 @@ This page documents the current conservative Denmark slice implemented through t
 
 ## Scope In This Pass
 
-Supported query shape in the shared public API:
+Supported query shapes in the shared public API:
 
 - `country="DK"`, `dataset_scope="historical"`, `resolution="daily"`
+- `country="DK"`, `dataset_scope="historical"`, `resolution="1hour"`
 
 Out of scope in this pass:
 
-- hourly support
 - `10min` support
 - FAO computation
 - ET0 computation
@@ -25,10 +25,10 @@ Out of scope in this pass:
 
 WeatherDownload uses official DMI open-data APIs only.
 
-Implemented path in this pass:
+Implemented paths in this pass:
 
 - DMI Climate Data API station collection: `station`
-- DMI Climate Data API daily observations collection: `stationValue`
+- DMI Climate Data API observations collection: `stationValue`
 
 Related official DMI documentation that informed the conservative scope:
 
@@ -64,7 +64,18 @@ For the mapped Denmark daily parameters in this pass:
 - `observation_date` is normalized from the source interval start in `Europe/Copenhagen`
 - WeatherDownload does not derive or recompute meteorological variables
 
-This pass is intentionally Denmark only. Greenland and Faroe Islands daily differences are out of scope until they are implemented and documented separately.
+## Hourly Observation Semantics
+
+The current hourly downloader uses the Climate Data `stationValue` collection with `timeResolution=hour`.
+
+For the mapped Denmark hourly parameters in this pass:
+
+- DMI documents hourly station values in UTC
+- the source `from` and `to` fields define the exact interval covered by each value
+- WeatherDownload preserves the source hourly interval meaning and normalizes `timestamp` from the published interval end `to` in UTC
+- WeatherDownload does not derive or recompute meteorological variables
+
+This pass is intentionally Denmark only. Greenland and Faroe Islands daily and hourly differences are out of scope until they are implemented and documented separately.
 
 ## Supported Canonical Elements
 
@@ -73,6 +84,15 @@ Current conservative daily mapping:
 - `tas_mean` -> `mean_temp`
 - `tas_max` -> `mean_daily_max_temp`
 - `tas_min` -> `mean_daily_min_temp`
+- `precipitation` -> `acc_precip`
+- `wind_speed` -> `mean_wind_speed`
+- `relative_humidity` -> `mean_relative_hum`
+- `pressure` -> `mean_pressure`
+- `sunshine_duration` -> `bright_sunshine`
+
+Current conservative hourly mapping:
+
+- `tas_mean` -> `mean_temp`
 - `precipitation` -> `acc_precip`
 - `wind_speed` -> `mean_wind_speed`
 - `relative_humidity` -> `mean_relative_hum`
@@ -89,7 +109,7 @@ Current handling is intentionally conservative:
 - `quality` remains null in the normalized output
 - WeatherDownload does not reinterpret DMI QC semantics in this pass
 
-## Shared Interface Example
+## Shared Interface Examples
 
 Use the normal shared interface:
 
@@ -104,6 +124,22 @@ query = ObservationQuery(
     start_date="2024-01-01",
     end_date="2024-01-03",
     elements=["tas_mean", "precipitation", "sunshine_duration"],
+)
+
+observations = download_observations(query)
+```
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="DK",
+    dataset_scope="historical",
+    resolution="1hour",
+    station_ids=["06180"],
+    start="2024-01-01T01:00:00Z",
+    end="2024-01-01T02:00:00Z",
+    elements=["tas_mean", "pressure"],
 )
 
 observations = download_observations(query)

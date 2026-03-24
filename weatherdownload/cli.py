@@ -334,7 +334,7 @@ def _add_country_argument(parser: argparse.ArgumentParser) -> None:
 
 def _default_dataset_scope(country: str) -> str:
     normalized = country.strip().upper()
-    if normalized in {'DE', 'AT', 'BE', 'NL'}:
+    if normalized in {'DE', 'AT', 'BE', 'DK', 'NL'}:
         return 'historical'
     if normalized == 'SK':
         return 'recent'

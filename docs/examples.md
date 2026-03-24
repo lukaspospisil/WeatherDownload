@@ -1,4 +1,4 @@
-# Examples And Workflows
+﻿# Examples And Workflows
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -50,6 +50,7 @@ BE notes:
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - WeatherDownload does not recompute those aggregates in this pass
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
+
 - `BE` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the same shared examples and public resolution tokens
 
 DK notes:
@@ -80,6 +81,7 @@ Run:
 python examples/download_hourly.py
 python examples/download_hourly.py --country BE
 python examples/download_hourly.py --country DE
+python examples/download_hourly.py --country DK
 ```
 
 BE hourly notes:
@@ -90,6 +92,14 @@ BE hourly notes:
 - the example preserves the published hourly timestamps and does not recompute hourly values from 10-minute data
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 
+
+DK hourly notes:
+
+- `DK` uses the shared hourly example path through the official DMI Climate Data `stationValue` collection with `timeResolution=hour`
+- station discovery still uses the official DMI Climate Data `station` collection filtered to Denmark stations only
+- the source hourly path is UTC and exposes `from` and `to` interval bounds; the example preserves that provider-defined hourly meaning behind the provider layer
+- raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
+- Greenland and Faroe Islands differences are intentionally out of scope for this pass
 ### `examples/download_tenmin.py`
 
 Shows how to:
@@ -186,5 +196,6 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
 
 

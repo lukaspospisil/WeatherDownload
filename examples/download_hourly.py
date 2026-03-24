@@ -25,6 +25,13 @@ COUNTRY_DEFAULTS = {
         'end': '2024-01-01T02:00:00Z',
         'elements': ['tas_mean', 'wind_speed'],
     },
+    'DK': {
+        'dataset_scope': 'historical',
+        'station_ids': ['06180'],
+        'start': '2024-01-01T01:00:00Z',
+        'end': '2024-01-01T02:00:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
 }
 
 

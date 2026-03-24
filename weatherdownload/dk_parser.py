@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -12,6 +12,11 @@ from .dk_registry import DMI_DENMARK_COUNTRY_CODE
 
 DK_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
+    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+]
+
+DK_NORMALIZED_SUBDAILY_COLUMNS = [
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
 
@@ -69,6 +74,7 @@ def normalize_dk_station_metadata(payload: dict[str, object]) -> pd.DataFrame:
 
 
 def normalize_dk_observation_metadata(payload: dict[str, object], spec: Any, parameter_metadata: dict[str, dict[str, str]]) -> pd.DataFrame:
+    schedule, obs_type = _metadata_schedule_and_type(spec.resolution)
     rows: list[dict[str, object]] = []
     for feature in payload.get('features', []):
         if not isinstance(feature, dict):
@@ -92,12 +98,12 @@ def normalize_dk_observation_metadata(payload: dict[str, object], spec: Any, par
             metadata = parameter_metadata.get(raw_code, {})
             rows.append(
                 {
-                    'obs_type': 'HISTORICAL_DAILY',
+                    'obs_type': obs_type,
                     'station_id': station_id,
                     'begin_date': normalize_dk_metadata_datetime(properties.get('validFrom') or properties.get('operationFrom')),
                     'end_date': normalize_dk_metadata_datetime(properties.get('validTo') or properties.get('operationTo')),
                     'element': raw_code,
-                    'schedule': 'P1D DMI climateData stationValue',
+                    'schedule': schedule,
                     'name': metadata.get('name', raw_code),
                     'description': metadata.get('description', pd.NA),
                     'height': _parse_float(properties.get('stationHeight')),
@@ -153,6 +159,16 @@ def observation_date_from_interval_start(value: object) -> pd.Timestamp | None:
     return timestamp.tz_convert(_COPENHAGEN).date()
 
 
+def observation_timestamp_from_interval_end(value: object) -> pd.Timestamp | None:
+    cleaned = _clean_string(value)
+    if not cleaned:
+        return None
+    timestamp = pd.to_datetime(cleaned, utc=True, errors='coerce')
+    if pd.isna(timestamp):
+        return None
+    return timestamp
+
+
 
 def build_dk_flag(properties: dict[str, object]) -> object:
     flag_payload: dict[str, object] = {}
@@ -166,6 +182,12 @@ def build_dk_flag(properties: dict[str, object]) -> object:
         return pd.NA
     return json.dumps(flag_payload, separators=(',', ':'), sort_keys=True)
 
+
+
+def _metadata_schedule_and_type(resolution: str) -> tuple[str, str]:
+    if resolution == '1hour':
+        return 'PT1H DMI climateData stationValue', 'HISTORICAL_HOURLY'
+    return 'P1D DMI climateData stationValue', 'HISTORICAL_DAILY'
 
 
 def _extract_coordinates(geometry: object) -> tuple[float | None, float | None]:
@@ -195,3 +217,4 @@ def _parse_float(value: object) -> float | None:
 
 def _station_sort_key(station_id: str) -> tuple[int, str]:
     return (int(station_id), station_id) if station_id.isdigit() else (10**9, station_id)
+
