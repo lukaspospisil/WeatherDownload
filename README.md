@@ -59,7 +59,7 @@ query = ObservationQuery(
 daily = download_observations(query, station_metadata=stations)
 ```
 
-The same API shape works for Belgium through the official RMI/KMI AWS daily, hourly, and 10-minute layers:
+The same API shape works for Belgium through the official RMI/KMI AWS daily, `1hour`, and `10min` layers:
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -239,11 +239,11 @@ NL scope limits for this pass:
 BE scope limits for this pass:
 
 - official RMI/KMI open-data platform only
-- historical daily, hourly, and 10-minute station observations only
-- daily values are the official provider-side `aws_1day` aggregates from 10-minute data
+- historical `daily`, `1hour`, and `10min` station observations only
+- daily values are the official provider-side `aws_1day` aggregates from 10-minute data under the shared `resolution="daily"` path
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
-- hourly values are the official provider-side `aws_1hour` aggregates from 10-minute data
-- the documented hourly grouping window is from `(H-1):10` to `H:00` for hour `H`
+- `1hour` values are the official provider-side `aws_1hour` aggregates from 10-minute data under the shared `resolution="1hour"` path
+- the documented `1hour` grouping window is from `(H-1):10` to `H:00` for hour `H`
 - 10-minute values come directly from the official `aws_10min` layer and WeatherDownload preserves the published timestamps
 - source field windows stay provider-defined; 10-minute `pressure` is documented as a last-minute average and hourly `pressure` is the provider-side average of that field
 - WeatherDownload does not recompute daily or hourly aggregates from Belgium 10-minute data
@@ -292,7 +292,4 @@ BE scope limits for this pass:
 - `BE` support is currently limited to `historical / daily` via `aws_1day`, `historical / 1hour` via `aws_1hour`, and `historical / 10min` via `aws_10min`; daily and hourly values are provider-side aggregates, 10-minute values are preserved as published, and WeatherDownload does not recompute hourly or daily aggregates
 - `NL` support is currently limited to KNMI `historical / daily` validated station observations via the Open Data API; hourly and EDR are intentionally out of scope for this pass
 - `SK` support is experimental, limited to `recent / daily`, and currently has incomplete probe-derived station metadata
-
-
-
 

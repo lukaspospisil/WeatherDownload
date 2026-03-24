@@ -49,7 +49,7 @@ BE notes:
 - the documented daily grouping window is from `00:10` on day `D` to `00:00` on day `D+1`
 - WeatherDownload does not recompute those aggregates in this pass
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
-- `BE` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the same shared examples
+- `BE` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the same shared examples and public resolution tokens
 
 NL notes:
 
@@ -61,9 +61,9 @@ NL notes:
 
 Shows how to:
 
-- build an hourly query
-- use timestamp-based semantics
-- download normalized hourly observations
+- build a `1hour` query through the shared hourly example path
+- use timestamp-based semantics with the shared `resolution="1hour"` provider path
+- download normalized 1-hour observations
 
 Run:
 
@@ -75,7 +75,7 @@ python examples/download_hourly.py --country DE
 
 BE hourly notes:
 
-- `BE` uses the shared hourly example path through the official RMI/KMI `aws_1hour` layer
+- `BE` uses the shared hourly example path through the official RMI/KMI `aws_1hour` layer and the public `resolution="1hour"` token
 - hourly values are official provider-side aggregates from 10-minute data
 - the documented hourly grouping window is from `(H-1):10` to `H:00` for hour `H`
 - the example preserves the published hourly timestamps and does not recompute hourly values from 10-minute data
@@ -86,7 +86,7 @@ BE hourly notes:
 Shows how to:
 
 - build a 10-minute query
-- use timestamp-based semantics
+- use timestamp-based semantics with the shared `resolution="10min"` provider path
 - download normalized 10-minute observations
 
 Run:
@@ -151,15 +151,15 @@ Shows how to:
 
 This is a workflow-oriented example rather than a generic library quickstart.
 
-It prepares a clean daily FAO-prep dataset for later MATLAB, R, or Python processing.
+It prepares a clean daily FAO-prep bundle for later MATLAB, R, or Python processing.
 
 What it does:
 
 - supports `CZ`, `DE`, `AT`, `BE`, and `NL`
-- caches normalized country-aware daily inputs
+- downloads and caches normalized country-aware observed daily inputs
 - screens candidate stations
-- applies country-specific daily selection rules
-- keeps only complete days
+- applies country-specific observed-input selection rules
+- keeps only complete observed-input days
 - exports a MATLAB-oriented bundle, a Parquet bundle, or both
 
 Important boundary:
@@ -177,6 +177,4 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
-
-
 

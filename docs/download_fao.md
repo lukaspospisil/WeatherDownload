@@ -10,7 +10,7 @@ Critical boundary:
 
 - it does not compute FAO-56 ET0
 - it does not derive FAO intermediate variables
-- it only downloads, filters, and packages observed daily meteorological inputs for later downstream FAO workflow use
+- it only downloads, normalizes, filters, and packages observed daily meteorological inputs for later downstream FAO workflow use
 
 Currently supported:
 
@@ -90,7 +90,7 @@ Unavailable in the current shared path:
 
 - `vapour_pressure` stays null
 
-The BE branch uses only the existing Belgium provider through the unified public interface. Belgium daily values come from the official provider-side `aws_1day` aggregation and are not recomputed from 10-minute data in this example.
+The BE branch uses only the existing Belgium provider through the unified public interface. Belgium daily values come from the official provider-side `aws_1day` aggregation under the shared `resolution="daily"` path and are not recomputed from 10-minute data in this example.
 
 ### NL
 
@@ -115,7 +115,7 @@ The NL branch uses only the existing KNMI provider through the unified public in
 3. screen stations by required observed daily inputs
 4. estimate overlap from observation metadata
 5. cache normalized daily observations through the shared provider interface
-6. keep only complete observed-input days for the configured required fields
+6. keep only complete observed-input days for the configured required fields, leaving unavailable fields null rather than deriving them
 7. package the result into a stable MAT or Parquet bundle shape
 
 ## What The Example Explicitly Does Not Do
@@ -200,3 +200,4 @@ The reusable parts stay in the core library:
 - export helpers
 
 The orchestration stays in `examples/` because it is a downstream packaging workflow, not part of the public provider API.
+
