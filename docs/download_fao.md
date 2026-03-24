@@ -1,4 +1,4 @@
-# FAO-Oriented Daily Input Packaging Workflow
+﻿# FAO-Oriented Daily Input Packaging Workflow
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -209,13 +209,13 @@ Default country-aware output names when you do not pass explicit paths:
 - `DE` MAT: `outputs/fao_daily.de.mat`
 - `AT` MAT: `outputs/fao_daily.at.mat`
 - `BE` MAT: `outputs/fao_daily.be.mat`
-- `DK`
+- `DK` MAT: `outputs/fao_daily.dk.mat`
 - `NL` MAT: `outputs/fao_daily.nl.mat`
 - `CZ` Parquet bundle: `outputs/fao_daily.cz`
 - `DE` Parquet bundle: `outputs/fao_daily.de`
 - `AT` Parquet bundle: `outputs/fao_daily.at`
 - `BE` Parquet bundle: `outputs/fao_daily.be`
-- `DK`
+- `DK` Parquet bundle: `outputs/fao_daily.dk`
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
 
 ## Why This Stays In `examples/`
@@ -228,4 +228,3 @@ The reusable parts stay in the core library:
 - export helpers
 
 The orchestration stays in `examples/` because it is a downstream packaging workflow, not part of the public provider API.
-
