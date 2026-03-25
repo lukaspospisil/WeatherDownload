@@ -8,6 +8,8 @@
 
 WeatherDownload is a DataFrame-first Python library for country-aware weather metadata, discovery, and observation downloads through a unified interface.
 
+It retrieves and normalizes source-backed observations, and missing meteorological variables stay missing by default instead of being silently derived.
+
 Current implemented country coverage:
 
 - `AT` via GeoSphere Austria
@@ -26,6 +28,19 @@ What stays stable across countries:
 - canonical meteorological element names
 - normalized output schemas
 - country selection with ISO 3166-1 alpha-2 codes such as `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE`, and `SK`
+
+## Current Coverage At A Glance
+
+| Country | `daily` | `1hour` | `10min` | `download_fao` | Status |
+| --- | --- | --- | --- | --- | --- |
+| `AT` | Yes | No | No | Yes | Stable |
+| `BE` | Yes | Yes | Yes | Yes | Stable |
+| `CZ` | Yes | Yes | Yes | Yes | Stable |
+| `DE` | Yes | Yes | Yes | Yes | Stable |
+| `DK` | Yes | Yes | Yes | Yes | Stable |
+| `NL` | Yes | No | No | Yes | Stable |
+| `SE` | Yes | Yes | No | Yes | Stable |
+| `SK` | Yes, `recent / daily` only | No | No | No | Experimental |
 
 Shared example coverage currently includes:
 

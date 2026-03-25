@@ -218,6 +218,7 @@ Important boundary:
 - `DK` is included through the shared workflow using only observed Denmark daily inputs from the existing provider; Denmark daily values come from the DMI Climate Data `stationValue` path and the workflow remains Denmark-only in this pass
 - `NL` is included through the shared workflow using only observed KNMI daily inputs, and `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` is required
 - `SE` is included through the shared workflow using only observed SMHI daily inputs from the corrected-archive daily path; wind_speed, vapour_pressure, and sunshine_duration remain null when they are unavailable in the current provider path
+- every shared FAO export writes a matching human-readable `.info` sidecar that records the selected fill policy and field-level observed/derived/missing counts
 
 ## Recommended Reading Order
 
