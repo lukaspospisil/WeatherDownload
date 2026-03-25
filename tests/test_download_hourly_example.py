@@ -1,4 +1,4 @@
-﻿import importlib.util
+import importlib.util
 import io
 import sys
 import unittest
@@ -17,11 +17,12 @@ SPEC.loader.exec_module(download_hourly)
 
 
 class DownloadHourlyExampleTests(unittest.TestCase):
-    def test_build_parser_accepts_country_at_be_dk_and_se(self) -> None:
+    def test_build_parser_accepts_country_at_be_dk_nl_and_se(self) -> None:
         parser = download_hourly.build_parser()
         self.assertEqual(parser.parse_args(['--country', 'AT']).country, 'AT')
         self.assertEqual(parser.parse_args(['--country', 'BE']).country, 'BE')
         self.assertEqual(parser.parse_args(['--country', 'DK']).country, 'DK')
+        self.assertEqual(parser.parse_args(['--country', 'NL']).country, 'NL')
         self.assertEqual(parser.parse_args(['--country', 'SE']).country, 'SE')
 
     def test_main_uses_shared_at_query_shape(self) -> None:
@@ -107,6 +108,34 @@ class DownloadHourlyExampleTests(unittest.TestCase):
         self.assertEqual(query.station_ids, ['06180'])
         self.assertEqual(query.elements, ['mean_temp', 'mean_pressure'])
         self.assertIn('06180', buffer.getvalue())
+
+    def test_main_uses_shared_nl_query_shape(self) -> None:
+        sample = pd.DataFrame([
+            {
+                'station_id': '0-20000-0-06260',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': 'T',
+                'timestamp': '2024-01-01T01:00:00Z',
+                'value': 3.1,
+                'flag': None,
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': '1hour',
+            }
+        ])
+        buffer = io.StringIO()
+        with patch.object(download_hourly, 'download_observations', return_value=sample) as download_mock:
+            with patch.object(sys, 'argv', ['download_hourly.py', '--country', 'NL']):
+                with redirect_stdout(buffer):
+                    download_hourly.main()
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'NL')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, '1hour')
+        self.assertEqual(query.station_ids, ['0-20000-0-06260'])
+        self.assertEqual(query.elements, ['T', 'P'])
+        self.assertIn('0-20000-0-06260', buffer.getvalue())
 
     def test_main_uses_shared_se_query_shape(self) -> None:
         sample = pd.DataFrame([

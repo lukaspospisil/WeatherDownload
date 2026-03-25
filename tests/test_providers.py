@@ -89,6 +89,30 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
+    def test_discovery_country_nl_includes_daily_and_hourly(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='NL'), ['historical'])
+        self.assertEqual(list_resolutions(country='NL', dataset_scope='historical'), ['1hour', 'daily'])
+        self.assertEqual(
+            list_supported_elements(country='NL', dataset_scope='historical', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration', 'wind_speed', 'pressure', 'relative_humidity'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='NL', dataset_scope='historical', resolution='daily', provider_raw=True),
+            ['TG', 'TX', 'TN', 'RH', 'SQ', 'FG', 'PG', 'UG'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='NL', dataset_scope='historical', resolution='1hour'),
+            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='NL', dataset_scope='historical', resolution='1hour', provider_raw=True),
+            ['T', 'RH', 'FH', 'U', 'P', 'SQ'],
+        )
+
+    def test_nl_hourly_query_is_provider_valid(self) -> None:
+        hourly_query = ObservationQuery(country='NL', dataset_scope='historical', resolution='1hour', station_ids=['0-20000-0-06260'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(hourly_query.elements, ['T', 'P'])
+
     def test_discovery_country_dk_includes_daily(self) -> None:
         self.assertEqual(list_dataset_scopes(country='DK'), ['historical'])
         self.assertEqual(list_resolutions(country='DK', dataset_scope='historical'), ['10min', '1hour', 'daily'])
@@ -154,4 +178,6 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
 

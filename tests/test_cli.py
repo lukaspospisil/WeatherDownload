@@ -180,6 +180,22 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_nl_hourly_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '0-20000-0-06260',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': 'T',
+                'timestamp': '2024-01-01T01:00:00Z',
+                'value': 3.1,
+                'flag': None,
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': '1hour',
+            }
+        ])
+
     def test_tenmin_cli_screen_output_defaults_to_wide_layout(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
@@ -285,6 +301,23 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(query.elements, ['TT_TU'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
+        self.assertIn('tas_mean', buffer.getvalue())
+
+    def test_hourly_cli_explicit_country_nl_uses_nl_query_shape(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_nl_hourly_table()) as download_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'hourly', '--country', 'NL', '--station-id', '0-20000-0-06260', '--element', 'tas_mean', '--start', '2024-01-01T01:00:00Z', '--end', '2024-01-01T02:00:00Z'
+                ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'NL')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, '1hour')
+        self.assertEqual(query.elements, ['T'])
+        self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
+        self.assertIn('0-20000-0-06260', buffer.getvalue())
         self.assertIn('tas_mean', buffer.getvalue())
 
     def test_hourly_cli_rejects_mixed_all_history_and_explicit_range(self) -> None:
@@ -580,6 +613,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

@@ -16,6 +16,10 @@ KNMI_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
+KNMI_NORMALIZED_SUBDAILY_COLUMNS = [
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
+    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+]
 
 _STATION_ID_ALIASES = {'wsi', 'stationid', 'station_id', 'wigosstationidentifier', 'wigosstationid', 'wigosid'}
 _NAME_ALIASES = {'naam', 'name', 'stationname', 'station_name'}
@@ -96,18 +100,33 @@ def normalize_knmi_metadata_datetime(value: object) -> str:
 
 
 def normalize_knmi_observation_metadata(stations: pd.DataFrame, spec: Any, parameter_metadata: dict[str, dict[str, str]]) -> pd.DataFrame:
+    if spec.resolution == 'daily':
+        obs_type = 'HISTORICAL_DAILY'
+        schedule = 'P1D KNMI Open Data API'
+    elif spec.resolution == '1hour':
+        obs_type = 'HISTORICAL_HOURLY'
+        schedule = 'PT1H KNMI Open Data API'
+    else:
+        raise ValueError(f'Unsupported KNMI resolution for metadata normalization: {spec.resolution}')
+
     rows: list[dict[str, object]] = []
     for station in stations.itertuples(index=False):
         for raw_code in spec.supported_elements:
-            metadata = parameter_metadata.get(raw_code, {})
+            if raw_code == 'RH':
+                metadata_key = 'RH_DAILY' if spec.resolution == 'daily' else 'RH_HOUR'
+            elif raw_code == 'SQ':
+                metadata_key = 'SQ_DAILY' if spec.resolution == 'daily' else 'SQ_HOUR'
+            else:
+                metadata_key = raw_code
+            metadata = parameter_metadata.get(metadata_key, parameter_metadata.get(raw_code, {}))
             rows.append(
                 {
-                    'obs_type': 'HISTORICAL_DAILY',
+                    'obs_type': obs_type,
                     'station_id': station.station_id,
                     'begin_date': station.begin_date,
                     'end_date': station.end_date,
                     'element': raw_code,
-                    'schedule': 'P1D KNMI Open Data API',
+                    'schedule': schedule,
                     'name': metadata.get('name', raw_code),
                     'description': metadata.get('description', pd.NA),
                     'height': pd.NA,
@@ -117,6 +136,24 @@ def normalize_knmi_observation_metadata(stations: pd.DataFrame, spec: Any, param
 
 
 def parse_knmi_daily_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
+    payload = _parse_knmi_netcdf_bytes(netcdf_bytes)
+    return {
+        'observation_date': (payload['timestamp'] - timedelta(days=1)).date(),
+        'stations': payload['stations'],
+        'variables': payload['variables'],
+    }
+
+
+def parse_knmi_hourly_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
+    payload = _parse_knmi_netcdf_bytes(netcdf_bytes)
+    return {
+        'timestamp': payload['timestamp'],
+        'stations': payload['stations'],
+        'variables': payload['variables'],
+    }
+
+
+def _parse_knmi_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
     try:
         import netCDF4
     except ImportError as exc:
@@ -131,7 +168,7 @@ def parse_knmi_daily_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
         dataset = netCDF4.Dataset(temp_path, mode='r')
         station_ids = _extract_string_variable(dataset, _STATION_VARIABLE_ALIASES)
         if station_ids.empty:
-            raise ValueError('KNMI daily NetCDF is missing station identifiers.')
+            raise ValueError('KNMI NetCDF is missing station identifiers.')
         station_frame = pd.DataFrame(
             {
                 'station_id': station_ids,
@@ -152,9 +189,9 @@ def parse_knmi_daily_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
             if values is None:
                 continue
             variables[upper_name] = values
-        observation_date = _extract_observation_date(dataset, netCDF4)
+        timestamp = _extract_timestamp(dataset, netCDF4)
         return {
-            'observation_date': observation_date,
+            'timestamp': timestamp,
             'stations': station_frame,
             'variables': variables,
         }
@@ -165,16 +202,16 @@ def parse_knmi_daily_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
             Path(temp_path).unlink(missing_ok=True)
 
 
-def _extract_observation_date(dataset: Any, netcdf4_module: Any) -> object:
+def _extract_timestamp(dataset: Any, netcdf4_module: Any) -> pd.Timestamp:
     time_variable_name = _first_present_variable_name(dataset, _TIME_VARIABLE_ALIASES)
     if time_variable_name is None:
-        raise ValueError('KNMI daily NetCDF is missing a time variable.')
+        raise ValueError('KNMI NetCDF is missing a time variable.')
     variable = dataset.variables[time_variable_name]
     raw_values = variable[:]
     if hasattr(raw_values, 'shape') and len(getattr(raw_values, 'shape', ())) > 0:
         flattened = pd.Series(raw_values.reshape(-1))
         if flattened.empty:
-            raise ValueError('KNMI daily NetCDF time variable is empty.')
+            raise ValueError('KNMI NetCDF time variable is empty.')
         raw_value = flattened.iloc[0]
     else:
         raw_value = raw_values
@@ -187,7 +224,7 @@ def _extract_observation_date(dataset: Any, netcdf4_module: Any) -> object:
         timestamp = timestamp.tz_localize('UTC')
     else:
         timestamp = timestamp.tz_convert('UTC')
-    return (timestamp - timedelta(days=1)).date()
+    return timestamp
 
 
 def _extract_string_variable(dataset: Any, aliases: tuple[str, ...], expected_length: int | None = None) -> pd.Series:
@@ -238,7 +275,7 @@ def _coerce_data_vector(values: Any, expected_length: int) -> pd.Series | None:
     else:
         return None
     if len(series) != expected_length:
-        raise ValueError('KNMI daily NetCDF variable shape does not match the station dimension.')
+        raise ValueError('KNMI NetCDF variable shape does not match the station dimension.')
     return pd.Series(series.array.to_numpy(dtype=object, na_value=pd.NA)) if hasattr(series, 'array') else series
 
 
@@ -280,6 +317,4 @@ def _parse_float(value: object) -> float | None:
     if not cleaned:
         return None
     return float(cleaned)
-
-
 

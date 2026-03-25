@@ -4,35 +4,38 @@
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-WeatherDownload now includes a conservative KNMI slice for the Netherlands through the existing unified provider interface.
+WeatherDownload includes a conservative KNMI slice for the Netherlands through the existing unified provider interface.
 
 ## Scope
 
-Country and path:
+Country and paths:
 
 - `country="NL"`
 - `dataset_scope="historical"`
 - `resolution="daily"`
+- `resolution="1hour"`
 
 ## Official Source
 
 WeatherDownload uses the official KNMI Open Data API only.
 
-Source path used in this pass:
+Source paths used in this pass:
 
 - KNMI Open Data API
 - dataset: `daily-in-situ-meteorological-observations-validated`
+- dataset: `hourly-in-situ-meteorological-observations-validated`
 - version: `1.0`
 
 ## Implemented Paths
 
-Implemented public path in this pass:
+Implemented public paths in this pass:
 
 - `country="NL"`, `dataset_scope="historical"`, `resolution="daily"`
+- `country="NL"`, `dataset_scope="historical"`, `resolution="1hour"`
 
 This pass intentionally does not implement:
 
-- hourly KNMI downloads
+- KNMI `10min` downloads
 - KNMI EDR access paths
 - FAO computation
 - FAO-related or other derived meteorological variables such as ET0, extraterrestrial radiation, net radiation, psychrometric constant, or derived vapour pressure
@@ -55,7 +58,7 @@ If neither variable is set, the NL provider fails early with a clear error messa
 
 ## Station Metadata
 
-Station discovery for this slice is source-backed and uses official KNMI station metadata files retrieved through the Open Data API.
+Station discovery is source-backed and uses official KNMI station metadata files retrieved through the Open Data API.
 
 Normalized identifier choice:
 
@@ -64,7 +67,7 @@ Normalized identifier choice:
 
 ## Supported Canonical Elements
 
-The current conservative mapping is:
+### `daily`
 
 - `tas_mean` -> `TG`
 - `tas_max` -> `TX`
@@ -75,21 +78,39 @@ The current conservative mapping is:
 - `pressure` -> `PG`
 - `relative_humidity` -> `UG`
 
-Elements intentionally not exposed in this first slice are left behind the provider boundary until they are validated carefully.
+### `1hour`
 
-## Daily Observation Semantics
+- `tas_mean` -> `T`
+- `precipitation` -> `RH`
+- `wind_speed` -> `FH`
+- `relative_humidity` -> `U`
+- `pressure` -> `P`
+- `sunshine_duration` -> `SQ`
 
-KNMI documents daily file timestamps as the end of the daily UTC interval. WeatherDownload converts that end timestamp back to the represented `observation_date`.
+Elements not listed here stay behind the provider boundary until they are validated carefully.
+
+## Time Semantics
+
+Daily files:
+
+- KNMI documents daily file timestamps as the end of the daily UTC interval
+- WeatherDownload converts that end timestamp back to the represented `observation_date`
+
+Hourly files:
+
+- WeatherDownload preserves the published KNMI hourly file timestamp as the normalized UTC `timestamp`
+- the KNMI hourly validated dataset mixes provider-defined hourly interval aggregates and end-of-interval sampled values depending on the element
+- those source-defined meanings stay behind the provider layer and are not reinterpreted into a different public meteorological meaning
 
 ## Quality And Flags
 
 Current handling is intentionally conservative:
 
-- the upstream dataset is already the validated daily dataset
-- this pass does not normalize any extra KNMI quality semantics beyond that dataset choice
-- normalized `quality` and `flag` therefore remain null unless future source-backed semantics are added
+- the upstream datasets are already the validated daily and validated hourly datasets
+- this pass does not normalize extra KNMI quality semantics beyond that dataset choice
+- normalized `quality` and raw `flag` therefore remain null unless future source-backed semantics are added
 
-## Shared Interface Example
+## Shared Interface Examples
 
 Use the normal shared interface:
 
@@ -106,13 +127,29 @@ query = ObservationQuery(
     elements=["tas_mean", "precipitation"],
 )
 
-observations = download_observations(query)
+daily = download_observations(query)
+```
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="NL",
+    dataset_scope="historical",
+    resolution="1hour",
+    station_ids=["0-20000-0-06260"],
+    start="2024-01-01T01:00:00Z",
+    end="2024-01-01T02:00:00Z",
+    elements=["tas_mean", "pressure"],
+)
+
+hourly = download_observations(query)
 ```
 
 ## Known Limitations
 
-- only `NL / historical / daily` is implemented
+- only `NL / historical / daily` and `NL / historical / 1hour` are implemented
 - KNMI Open Data API access requires `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY`
-- hourly and EDR paths are intentionally out of scope in this pass
+- `10min` and EDR paths are intentionally out of scope in this pass
 - `quality` and `flag` remain null because this pass does not normalize extra KNMI quality semantics beyond the validated dataset choice
 - no FAO computation and no derived meteorological variables are added

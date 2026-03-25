@@ -46,14 +46,14 @@ What stays stable across countries:
 | `CZ` | Yes | Yes | Yes | Yes | Stable |
 | `DE` | Yes | Yes | Yes | Yes | Stable |
 | `DK` | Yes | Yes | Yes | Yes | Stable |
-| `NL` | Yes | No | No | Yes | Stable |
+| `NL` | Yes | Yes | No | Yes | Stable |
 | `SE` | Yes | Yes | No | Yes | Stable |
 | `SK` | Yes, `recent / daily` only | No | No | No | Experimental |
 
 Shared example coverage currently includes:
 
 - `examples/download_daily.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE`
-- `examples/download_hourly.py`: `AT`, `BE`, `DE`, `DK`, `SE`
+- `examples/download_hourly.py`: `AT`, `BE`, `DE`, `DK`, `NL`, `SE`
 - `examples/download_tenmin.py`: `AT`, `BE`, `DE`, `DK`
 - `examples/download_fao.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE` for observed daily input packaging by default, with optional example-layer `--fill-missing allow-derived` support and `.info` sidecars
 
@@ -258,7 +258,7 @@ query = ObservationQuery(
 
 tenmin = download_observations(query)
 ```
-The same API shape also works for the Netherlands via the official KNMI validated daily station dataset. Set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first:
+The same API shape also works for the Netherlands via the official KNMI validated daily and `1hour` station datasets. Set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first:
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -275,6 +275,32 @@ query = ObservationQuery(
 
 daily = download_observations(query)
 ```
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="NL",
+    dataset_scope="historical",
+    resolution="1hour",
+    station_ids=["0-20000-0-06260"],
+    start="2024-01-01T01:00:00Z",
+    end="2024-01-01T02:00:00Z",
+    elements=["tas_mean", "pressure"],
+)
+
+hourly = download_observations(query)
+```
+
+NL scope limits for this pass:
+
+- official KNMI Open Data API only
+- historical `daily` and `1hour` validated station observations only
+- `10min` and EDR are intentionally out of scope
+- station discovery uses the official KNMI station metadata CSV retrieved through the Open Data API
+- hourly `timestamp` preserves the published KNMI hourly file timestamp in UTC
+- raw `flag` and normalized `quality` remain null in this slice
+- no FAO computation and no derived meteorological variables
 
 The same API shape also works for Sweden via the official SMHI Meteorological Observations corrected-archive daily and `1hour` paths:
 
@@ -361,6 +387,7 @@ weatherdownload observations 10min --country AT --station-id 1 --element tas_mea
 weatherdownload observations hourly --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations hourly --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations daily --country SE --station-id 98230 --element tas_mean --element tas_max --element precipitation --start-date 1996-10-01 --end-date 1996-10-03
 weatherdownload observations hourly --country SE --station-id 98230 --element tas_mean --element pressure --start 2012-11-29T11:00:00Z --end 2012-11-29T13:00:00Z
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --element precipitation --start-date 2025-01-01 --end-date 2025-01-02
@@ -383,7 +410,7 @@ weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --e
 | `CZ` | Yes | Yes | Yes | Yes | Yes |
 | `DE` | Yes | Yes | Yes | Yes, narrow slice | Yes, narrow slice |
 | `DK` | Yes | Yes | Yes, narrow slice | Yes, narrow slice | Yes, narrow slice |
-| `NL` | Yes, API key required | Yes | Yes, narrow slice | No | No |
+| `NL` | Yes, API key required | Yes | Yes, narrow slice | Yes, narrow slice | No |
 | `SE` | Yes | Yes | Yes, narrow slice | Yes, narrow slice | No |
 | `SK` | Experimental, probe-derived | Experimental | Yes, narrow slice | No | No |
 
@@ -401,6 +428,7 @@ Current intentionally narrow slices:
 - `DK historical / 1hour`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 - `DK historical / 10min`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 - `NL historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`
+- `NL historical / 1hour`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 - `SE historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`
 - `SE historical / 1hour`: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure`
 - `SK recent / daily`: `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`
@@ -419,8 +447,8 @@ DK scope limits for this pass:
 NL scope limits for this pass:
 
 - KNMI Open Data API only
-- historical daily validated station observations only
-- hourly and EDR are out of scope
+- historical `daily` and `1hour` validated station observations only
+- `10min` and EDR are out of scope
 - no FAO computation and no FAO-related derived variables
 
 BE scope limits for this pass:
@@ -482,8 +510,11 @@ BE scope limits for this pass:
 - `AT` support is currently limited to `historical / daily` via the official GeoSphere Austria `klima-v2-1d` station dataset, `historical / 1hour` via the official GeoSphere Austria `klima-v2-1h` station dataset, and `historical / 10min` via the official GeoSphere Austria `klima-v2-10min` station dataset; subdaily `timestamp` preserves the published source `time`, raw GeoSphere subdaily `<parameter>_flag` values stay in `flag`, and normalized `quality` stays null
 - `BE` support is currently limited to `historical / daily` via `aws_1day`, `historical / 1hour` via `aws_1hour`, and `historical / 10min` via `aws_10min`; daily and hourly values are provider-side aggregates, 10-minute values are preserved as published, and WeatherDownload does not recompute hourly or daily aggregates
 - `DK` support is currently limited to Denmark `historical / daily` and `historical / 1hour` station observations via the DMI Climate Data `stationValue` path, `historical / 10min` observations via the DMI Meteorological Observation API `observation` path, and station discovery via the DMI Climate Data `station` collection; Greenland and Faroe Islands differences are intentionally out of scope for this pass
-- `NL` support is currently limited to KNMI `historical / daily` validated station observations via the Open Data API; hourly and EDR are intentionally out of scope for this pass
+- `NL` support is currently limited to KNMI `historical / daily` and `historical / 1hour` validated station observations via the Open Data API; `10min` and EDR are intentionally out of scope for this pass
 - `SE` support is currently limited to SMHI Meteorological Observations `historical / daily` and `historical / 1hour` corrected-archive station observations, station discovery via the supported daily and hourly parameter station listings, published UTC hourly timestamps preserved as source-backed `timestamp`, and raw `Kvalitet` codes preserved in `flag` while normalized `quality` stays null
 - `SK` support is experimental, limited to `recent / daily`, and currently has incomplete probe-derived station metadata
+
+
+
 
 

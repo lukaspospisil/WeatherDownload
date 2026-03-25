@@ -11,7 +11,7 @@ from .knmi_registry import (
     KNMI_PARAMETER_METADATA,
     KNMI_STATION_DATASET_NAME,
     KNMI_STATION_DATASET_VERSION,
-    get_dataset_spec,
+    list_implemented_dataset_specs,
 )
 
 
@@ -30,10 +30,18 @@ def read_station_metadata_knmi(source_url: str | None = None, timeout: int = 60)
     return parse_knmi_station_metadata_csv(csv_bytes.decode('utf-8'))
 
 
+
 def read_station_observation_metadata_knmi(source_url: str | None = None, timeout: int = 60):
     stations = read_station_metadata_knmi(source_url=source_url, timeout=timeout)
-    spec = get_dataset_spec('historical', 'daily')
-    return normalize_knmi_observation_metadata(stations, spec, KNMI_PARAMETER_METADATA)
+    metadata_frames = [
+        normalize_knmi_observation_metadata(stations, spec, KNMI_PARAMETER_METADATA)
+        for spec in list_implemented_dataset_specs()
+    ]
+    if not metadata_frames:
+        return normalize_knmi_observation_metadata(stations, list_implemented_dataset_specs()[0], KNMI_PARAMETER_METADATA)
+    import pandas as pd
+
+    return pd.concat(metadata_frames, ignore_index=True)
 
 
 def resolve_knmi_api_key() -> str:
@@ -46,6 +54,7 @@ def resolve_knmi_api_key() -> str:
     raise ValueError(
         'KNMI Open Data API key is required for NL support. Set WEATHERDOWNLOAD_KNMI_API_KEY or KNMI_API_KEY before using country="NL".'
     )
+
 
 
 def list_knmi_files(
@@ -61,6 +70,7 @@ def list_knmi_files(
     response.raise_for_status()
     response.encoding = 'utf-8'
     return parse_knmi_api_listing_json(response.text)
+
 
 
 def download_knmi_file_bytes(
@@ -86,6 +96,7 @@ def download_knmi_file_bytes(
     return download_response.content
 
 
+
 def _latest_station_metadata_filename(timeout: int, api_key: str) -> str:
     payload = list_knmi_files(
         dataset_name=KNMI_STATION_DATASET_NAME,
@@ -101,6 +112,7 @@ def _latest_station_metadata_filename(timeout: int, api_key: str) -> str:
     if not isinstance(filename, str) or not filename:
         raise DownloadError('KNMI station metadata dataset returned an invalid filename.')
     return filename
+
 
 
 def _read_text_from_source(source: str, timeout: int) -> str:

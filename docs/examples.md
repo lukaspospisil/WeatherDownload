@@ -72,8 +72,8 @@ DK notes:
 NL notes:
 
 - set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
-- only `historical / daily` is implemented
-- hourly and EDR are intentionally out of scope for this pass
+- `daily` and `1hour` are implemented through the official KNMI validated datasets
+- `10min` and EDR are intentionally out of scope for this pass
 
 SE notes:
 
@@ -105,6 +105,7 @@ python examples/download_hourly.py --country AT
 python examples/download_hourly.py --country BE
 python examples/download_hourly.py --country DE
 python examples/download_hourly.py --country DK
+python examples/download_hourly.py --country NL
 python examples/download_hourly.py --country SE
 ```
 
@@ -131,6 +132,14 @@ DK hourly notes:
 - the source hourly path is UTC and exposes `from` and `to` interval bounds; the example preserves that provider-defined hourly meaning behind the provider layer
 - raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
+
+NL hourly notes:
+
+- `NL` uses the shared hourly example path through the official KNMI Open Data API `hourly-in-situ-meteorological-observations-validated` dataset
+- set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
+- the example preserves the published KNMI hourly file timestamp as the normalized UTC `timestamp`
+- provider-defined hourly element semantics stay behind the provider layer; mapped fields stay source-backed only
+- raw `flag` and normalized `quality` both remain null in this slice
 
 SE hourly notes:
 
@@ -265,6 +274,8 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+
 
 
 
