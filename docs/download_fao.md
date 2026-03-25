@@ -195,13 +195,14 @@ The sidecar records the fill policy, whether derived values were allowed, field-
 ## What The Example Explicitly Does Not Do
 
 - no ET0 computation
-- no vapour-pressure derivation
-- no RH-based derivation
+- no vapour-pressure derivation by default
+- no RH-based derivation by default
 - no net-radiation derivation
 - no extraterrestrial-radiation derivation
 - no psychrometric-constant computation
 - no sunshine-to-radiation estimation
 - no hidden meteorological estimation
+- no derivation beyond the explicitly enabled and documented `--fill-missing allow-derived` fallback rule
 
 ## Metadata In `data_info`
 
