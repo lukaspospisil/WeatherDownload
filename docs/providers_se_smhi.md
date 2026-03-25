@@ -6,7 +6,7 @@
 
 This page documents the current conservative Sweden slice implemented through the shared provider architecture.
 
-## Scope In This Pass
+## Scope
 
 Supported query shapes in the shared public API:
 
@@ -122,6 +122,14 @@ query = ObservationQuery(
 
 observations = download_observations(query)
 ```
+
+## Known Limitations
+
+- only the conservative `historical / daily` and `historical / 1hour` Sweden slices documented on this page are implemented
+- `10min` support is intentionally out of scope in this pass
+- corrected-archive excludes the latest three months by source design
+- `quality` remains null and raw `Kvalitet` stays in `flag`
+- no FAO computation and no derived meteorological variables are added
 
 ```python
 from weatherdownload import ObservationQuery, download_observations

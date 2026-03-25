@@ -6,7 +6,7 @@
 
 This page documents the current conservative Denmark slice implemented through the shared provider architecture.
 
-## Scope In This Pass
+## Scope
 
 Supported query shapes in the shared public API:
 
@@ -188,3 +188,10 @@ observations = download_observations(query)
 ```
 
 There is no Denmark-specific public workflow shape. Denmark is exposed through the same shared provider interface as the other countries.
+
+## Known Limitations
+
+- only the conservative `historical / daily`, `historical / 1hour`, and `historical / 10min` Denmark slices documented on this page are implemented
+- the current slice is Denmark only; Greenland and Faroe Islands differences remain out of scope
+- `quality` remains null for all Denmark paths in this pass
+- no FAO computation and no derived meteorological variables are added

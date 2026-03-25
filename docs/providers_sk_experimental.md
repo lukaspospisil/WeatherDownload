@@ -1,5 +1,9 @@
 # Experimental Slovakia Provider Notes
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 ## Scope
 
 The Slovakia provider is currently an experimental SHMU OpenDATA integration.
@@ -14,7 +18,11 @@ Its scope is intentionally limited to:
 
 This provider does not currently implement a validated historical climate download path.
 
-## Implemented Endpoints
+## Official Source
+
+WeatherDownload uses the public SHMU OpenDATA paths documented below for this experimental slice.
+
+## Implemented Paths
 
 Implemented SHMU endpoints:
 
@@ -27,7 +35,11 @@ Implemented SHMU endpoints:
 
 The current implementation treats these monthly JSON files as the only supported SHMU observation source.
 
-## Canonical Element Mappings
+Implemented public path in this pass:
+
+- `country="SK"`, `dataset_scope="recent"`, `resolution="daily"`
+
+## Supported Canonical Elements
 
 Current canonical-to-raw mappings for `SK / recent / daily`:
 
@@ -38,23 +50,7 @@ Current canonical-to-raw mappings for `SK / recent / daily`:
 
 No other SHMU raw fields are mapped into the public canonical element layer at this time.
 
-## Known Limitations
-
-The current SHMU provider has the following explicit limitations:
-
-- only `recent / daily` is implemented
-- only the four canonical elements listed above are implemented
-- `all_history` is not implemented
-- `flag` is always null
-- `quality` is always null
-- daily files are discovered from directory listings and monthly JSON file names
-
-Operational distinction:
-
-- implemented now: recent operational daily JSON data from SHMU OpenDATA
-- not implemented yet: validated historical climate data with a stable long-term archive contract
-
-## Metadata Gaps
+## Station Metadata
 
 The current SHMU provider does not expose an authoritative station metadata source equivalent to the CHMI and DWD station metadata layers.
 
@@ -82,6 +78,49 @@ Current minimal station discovery behavior:
 These `begin_date` and `end_date` values describe only the coverage visible in the currently sampled recent payload. They are not authoritative historical station coverage bounds.
 
 `read_station_observation_metadata(country="SK")` is also probe-derived from sampled payloads plus SHMU metadata JSON. It is useful for discovery, but it is not an authoritative availability registry.
+
+## Quality And Flags
+
+Current handling is intentionally conservative:
+
+- `flag` is always null in the implemented `SK / recent / daily` path
+- `quality` is always null in the implemented `SK / recent / daily` path
+- WeatherDownload does not infer SHMU QC semantics that are not explicitly documented in the current source path
+
+## Shared Interface Example
+
+Use the normal shared interface:
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="SK",
+    dataset_scope="recent",
+    resolution="daily",
+    station_ids=["11800"],
+    start_date="2025-01-01",
+    end_date="2025-01-02",
+    elements=["tas_max", "precipitation"],
+)
+
+observations = download_observations(query)
+```
+
+## Known Limitations
+
+The current SHMU provider has the following explicit limitations:
+
+- `SK` support is experimental
+- only `recent / daily` is implemented
+- only the four canonical elements listed above are implemented
+- `all_history` is not implemented
+- daily files are discovered from directory listings and monthly JSON file names
+
+Operational distinction:
+
+- implemented now: recent operational daily JSON data from SHMU OpenDATA
+- not implemented yet: validated historical climate data with a stable long-term archive contract
 
 ## Open Questions
 

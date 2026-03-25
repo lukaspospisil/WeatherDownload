@@ -34,6 +34,14 @@ Reference documentation:
 - hourly observation layer: `aws_1hour`
 - 10-minute observation layer: `aws_10min`
 
+## Implemented Paths
+
+Implemented public paths in this pass:
+
+- `country="BE"`, `dataset_scope="historical"`, `resolution="daily"` via `aws_1day`
+- `country="BE"`, `dataset_scope="historical"`, `resolution="1hour"` via `aws_1hour`
+- `country="BE"`, `dataset_scope="historical"`, `resolution="10min"` via `aws_10min`
+
 ## Station Metadata
 
 `station_id` is the official RMI/KMI AWS station code from the `aws_station` metadata layer, normalized as a string.
@@ -160,3 +168,10 @@ observations = download_observations(query)
 ```
 
 There is no Belgium-specific public workflow shape. Belgium is exposed through the same shared provider interface as the other countries.
+
+## Known Limitations
+
+- only the conservative `historical / daily`, `historical / 1hour`, and `historical / 10min` Belgium slices documented on this page are implemented
+- daily and hourly values are official provider-side aggregates; WeatherDownload does not recompute them from Belgium 10-minute data
+- `quality` remains null because this pass does not normalize Belgium QC semantics beyond preserving raw `qc_flags`
+- no FAO computation and no derived meteorological variables are added

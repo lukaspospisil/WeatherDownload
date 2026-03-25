@@ -1,5 +1,9 @@
 # GeoSphere Austria Provider Notes
 
+<p align="right">
+  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+</p>
+
 ## Scope
 
 The Austria provider is currently implemented as a conservative GeoSphere Austria station-observation integration.
@@ -35,6 +39,12 @@ Official API endpoints used:
 - historical daily data:
   - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d`
 
+## Implemented Paths
+
+Implemented public path in this pass:
+
+- `country="AT"`, `dataset_scope="historical"`, `resolution="daily"`
+
 ## Station Metadata
 
 Station discovery is derived from the official metadata endpoint.
@@ -52,7 +62,7 @@ Normalized fields:
 
 The provider does not guess any secondary identifier analogous to `gh_id`.
 
-## Supported Canonical Daily Elements
+## Supported Canonical Elements
 
 Current canonical-to-raw mappings for `AT / historical / daily`:
 
@@ -78,7 +88,7 @@ WeatherDownload normalizes this daily path as date-based data:
 
 The raw GeoSphere timestamp is used only to derive the calendar date.
 
-## Quality Handling
+## Quality And Flags
 
 GeoSphere documents daily parameter quality via companion `_flag` parameters and the `q21` code list in the metadata response.
 
@@ -89,7 +99,27 @@ Current normalization:
 
 The downloader requests both the raw parameter and its `_flag` companion for each selected element.
 
-## Example API Shape
+## Shared Interface Example
+
+Use the normal shared interface:
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country="AT",
+    dataset_scope="historical",
+    resolution="daily",
+    station_ids=["1"],
+    start_date="2024-01-01",
+    end_date="2024-01-03",
+    elements=["tas_mean", "precipitation"],
+)
+
+observations = download_observations(query)
+```
+
+Source request shape:
 
 Example request:
 
@@ -105,7 +135,7 @@ Example CSV columns from the official API:
 
 The current provider ignores `substation` in the normalized public output.
 
-## Current Limitations
+## Known Limitations
 
 - only `AT / historical / daily` is implemented
 - no Austria hourly downloader yet
