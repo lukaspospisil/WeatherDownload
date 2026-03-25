@@ -16,11 +16,12 @@
 Critical boundary:
 
 - it does not compute FAO-56 ET0
+- observed-only mode is the default
 - it does not derive FAO intermediate variables unless you explicitly enable the optional example-layer fill mode
 - it only downloads, normalizes, filters, and packages observed daily meteorological inputs for later downstream FAO workflow use
 - unavailable fields remain null or missing instead of being derived by default
 
-Currently supported:
+Currently supported in the shared workflow:
 
 - `CZ`
 - `DE`
@@ -65,7 +66,8 @@ This keeps the downstream bundle shape stable across countries.
 Important interpretation:
 
 - these are packaging targets, not a promise that every country directly observes every field in the current provider path
-- if a field is unavailable in the provider path, the shared example keeps it null instead of deriving it by default
+- if a field is unavailable in the provider path, the shared example keeps it null in the default observed-only mode
+- only the explicit opt-in fill policy may apply a documented fallback rule, and only for fields covered by that rule
 
 ## Country Mapping Summary
 
@@ -168,7 +170,7 @@ Optional behavior:
 
 - `--fill-missing allow-derived`
 - still no ET0 computation
-- derivation stays in the shared example layer only, never in providers
+- derivation is opt-in and stays in the shared example layer only, never in providers
 - the current explicit fallback rule is limited to `vapour_pressure`
 - `vapour_pressure` may be derived from observed daily `tas_mean` plus observed daily `relative_humidity` using the Magnus saturation-vapour-pressure formula in hPa
 - if the helper observations needed for that rule are unavailable, the field stays missing and the sidecar file records that outcome
@@ -188,7 +190,8 @@ Examples:
 - `outputs/fao_daily.cz.mat` -> `outputs/fao_daily.cz.info`
 - `outputs/fao_daily.cz` -> `outputs/fao_daily.info`
 
-The sidecar records the fill policy, whether derived values were allowed, field-by-field observed/derived/missing counts, the rule used for each field, and an explicit note that the workflow does not compute ET0.
+The sidecar is the export-level provenance record for the workflow. It records the selected fill policy, whether derived values were allowed, field-by-field observed/derived/missing counts, the rule used for each field, and an explicit note that the workflow does not compute ET0.
+
 ## What The Example Does
 
 1. load station metadata for the selected country
@@ -198,6 +201,7 @@ The sidecar records the fill policy, whether derived values were allowed, field-
 5. cache normalized daily observations through the shared provider interface
 6. keep only complete observed-input days for the configured required fields, leaving unavailable fields null rather than deriving them
 7. package the result into a stable MAT or Parquet bundle shape
+8. write a matching `.info` sidecar that records observed-versus-derived provenance for the export
 
 ## What The Example Explicitly Does Not Do
 
