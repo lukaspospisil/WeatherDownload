@@ -6,6 +6,14 @@
 
 This page helps you find the example scripts quickly.
 
+## Where To Start
+
+- Station metadata: [`examples/read_metadata.py`](#examplesread_metadatapy) and [Normalized Output Schemas](output_schema.md)
+- Daily downloads: [`examples/download_daily.py`](#examplesdownloaddailypy)
+- Subdaily downloads: [`examples/download_hourly.py`](#examplesdownload_hourlypy) and [`examples/download_tenmin.py`](#examplesdownload_tenminpy)
+- FAO-oriented daily input bundle: [`examples/download_fao.py`](#examplesdownload_faopy) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
+- Provider coverage and country-specific limits: [Provider Model And Coverage](providers.md)
+
 ## Library Examples
 
 ### `examples/read_metadata.py`

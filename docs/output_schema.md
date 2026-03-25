@@ -8,6 +8,13 @@ WeatherDownload keeps its public outputs normalized across providers and countri
 
 This page documents the stable public columns, not the provider-specific raw files behind them.
 
+## Where To Start
+
+- Station/provider coverage and supported country paths: [Provider Model And Coverage](providers.md)
+- Shared example entry points: [Examples And Workflows](examples.md)
+- FAO-oriented fixed-shape daily packaging workflow: [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
+- Project overview and install/CLI quick start: [README](../README.md)
+
 ## General Principles
 
 - outputs are pandas `DataFrame` objects

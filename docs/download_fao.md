@@ -6,6 +6,13 @@
 
 `examples/download_fao.py` is a shared, country-aware example built on top of the core WeatherDownload library.
 
+## Where To Start
+
+- Main project entry point: [README](../README.md)
+- Shared example overview: [Examples And Workflows](examples.md)
+- Provider coverage and country limits: [Provider Model And Coverage](providers.md)
+- Shared normalized station and observation columns: [Normalized Output Schemas](output_schema.md)
+
 Critical boundary:
 
 - it does not compute FAO-56 ET0

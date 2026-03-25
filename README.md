@@ -10,6 +10,14 @@ WeatherDownload is a DataFrame-first Python library for country-aware weather me
 
 It retrieves and normalizes source-backed observations, and missing meteorological variables stay missing by default instead of being silently derived.
 
+## Where To Start
+
+- Station metadata and discovery: [Provider Model And Coverage](docs/providers.md)
+- Daily downloads: [Examples And Workflows](docs/examples.md#examplesdownloaddailypy)
+- Subdaily downloads: [Examples And Workflows](docs/examples.md#examplesdownload_hourlypy) and [Examples And Workflows](docs/examples.md#examplesdownload_tenminpy)
+- FAO-oriented daily input bundle: [FAO-Oriented Daily Input Packaging Workflow](docs/download_fao.md)
+- Normalized station and observation columns: [Normalized Output Schemas](docs/output_schema.md)
+
 Current implemented country coverage:
 
 - `AT` via GeoSphere Austria

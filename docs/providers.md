@@ -6,6 +6,14 @@
 
 WeatherDownload uses a provider layer so the public API can stay stable while provider-specific logic remains internal.
 
+## Where To Start
+
+- Station metadata and identifiers: [Canonical Station Identifier](#canonical-station-identifier)
+- Daily, `1hour`, and `10min` country coverage: [Capability Matrix](#capability-matrix)
+- Shared examples for each workflow: [Examples And Workflows](examples.md)
+- FAO-oriented daily input packaging example: [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
+- Shared station and observation columns: [Normalized Output Schemas](output_schema.md)
+
 ## Country Selection
 
 Use ISO 3166-1 alpha-2 country codes:
