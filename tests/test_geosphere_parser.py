@@ -3,11 +3,13 @@ import unittest
 
 import pandas as pd
 
+from weatherdownload.geosphere_registry import get_dataset_spec
 from weatherdownload.geosphere_parser import (
     normalize_geosphere_metadata_datetime,
     normalize_geosphere_observation_metadata,
     normalize_geosphere_station_metadata,
     parse_geosphere_daily_csv,
+    parse_geosphere_hourly_csv,
     parse_geosphere_metadata_json,
 )
 
@@ -55,7 +57,7 @@ class GeosphereParserTests(unittest.TestCase):
         self.assertTrue(all(isinstance(value, str) for value in stations['begin_date']))
         self.assertTrue(all(isinstance(value, str) for value in stations['end_date']))
 
-    def test_normalize_geosphere_observation_metadata_builds_station_parameter_rows(self) -> None:
+    def test_normalize_geosphere_observation_metadata_builds_daily_station_parameter_rows(self) -> None:
         payload = {
             'stations': [
                 {
@@ -77,10 +79,38 @@ class GeosphereParserTests(unittest.TestCase):
                 },
             ],
         }
-        metadata = normalize_geosphere_observation_metadata(payload, ('tl_mittel',))
+        metadata = normalize_geosphere_observation_metadata(payload, get_dataset_spec('historical', 'daily'))
         self.assertEqual(metadata.iloc[0]['station_id'], '1')
         self.assertEqual(metadata.iloc[0]['element'], 'tl_mittel')
+        self.assertEqual(metadata.iloc[0]['obs_type'], 'HISTORICAL_DAILY')
         self.assertIn('Daily mean air temperature', metadata.iloc[0]['description'])
+
+    def test_normalize_geosphere_observation_metadata_builds_hourly_station_parameter_rows(self) -> None:
+        payload = {
+            'stations': [
+                {
+                    'id': 1,
+                    'name': 'Aflenz',
+                    'lat': 47.5,
+                    'lon': 15.2,
+                    'altitude': 783.2,
+                    'valid_from': '1983-05-01T00:00:00+00:00',
+                    'valid_to': '2100-12-31T00:00:00+00:00',
+                },
+            ],
+            'parameters': [
+                {
+                    'name': 'tl',
+                    'long_name': 'Air temperature 2m',
+                    'description': 'Hourly air temperature',
+                    'unit': 'degC',
+                },
+            ],
+        }
+        metadata = normalize_geosphere_observation_metadata(payload, get_dataset_spec('historical', '1hour'))
+        self.assertEqual(metadata.iloc[0]['element'], 'tl')
+        self.assertEqual(metadata.iloc[0]['obs_type'], 'HISTORICAL_HOURLY')
+        self.assertEqual(metadata.iloc[0]['schedule'], 'PT1H GeoSphere station API')
 
     def test_parse_geosphere_daily_csv_rejects_missing_required_columns(self) -> None:
         with self.assertRaisesRegex(ValueError, r"GeoSphere daily CSV is missing required columns: \['station'\]"):
@@ -90,6 +120,11 @@ class GeosphereParserTests(unittest.TestCase):
         table = parse_geosphere_daily_csv('time,station,tl_mittel,tl_mittel_flag\n2024-01-01T00:00+00:00,1,2.2,20\n')
         self.assertEqual(list(table.columns), ['time', 'station', 'tl_mittel', 'tl_mittel_flag'])
         self.assertEqual(table.iloc[0]['station'], '1')
+
+    def test_parse_geosphere_hourly_csv_accepts_documented_shape(self) -> None:
+        table = parse_geosphere_hourly_csv('time,station,tl,tl_flag\n2024-01-01T01:00:00+00:00,1,2.4,21\n')
+        self.assertEqual(list(table.columns), ['time', 'station', 'tl', 'tl_flag'])
+        self.assertEqual(table.iloc[0]['tl'], '2.4')
 
     def test_normalize_geosphere_metadata_datetime_converts_to_project_format(self) -> None:
         self.assertEqual(normalize_geosphere_metadata_datetime('2024-01-01T00:00:00+00:00'), '2024-01-01T00:00Z')

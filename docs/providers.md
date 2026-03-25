@@ -115,7 +115,7 @@ Subdaily variability is expected across providers:
 
 | Country | Status | Supported dataset scopes | Implemented resolutions | Supported canonical elements | Station metadata quality |
 | --- | --- | --- | --- | --- | --- |
-| `AT` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
+| `AT` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
 | `BE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, geometry-backed coordinates, altitude, and validity timestamps |
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` | CHMI station metadata with official identifiers, names, coordinates, elevation, and validity fields where exposed by the implemented paths |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
@@ -139,10 +139,29 @@ Supported canonical elements:
 - `pressure`
 - `relative_humidity`
 
+### AT `historical / 1hour`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `precipitation`
+- `wind_speed`
+- `relative_humidity`
+- `pressure`
+- `sunshine_duration`
+
+Important current limitations:
+
+- the implemented path uses the official GeoSphere Austria station datasets only
+- only `AT / historical / daily` and `AT / historical / 1hour` are implemented
+- hourly observations use the official `klima-v2-1h` station path
+- the normalized `timestamp` preserves the published GeoSphere hourly `time` value in UTC
+- raw GeoSphere hourly `<parameter>_flag` values stay in `flag`; normalized `quality` stays null
+- no FAO computation and no derived meteorological variables are added
+
 Detailed notes:
 
 - [GeoSphere Austria Provider Notes](providers_at_geosphere.md)
-
 ### BE `historical / daily`
 
 Supported canonical elements:
@@ -385,6 +404,14 @@ Subdaily paths are timestamp-based:
 - use `start` and `end`
 - output uses `timestamp`
 
+For GeoSphere Austria hourly files:
+
+- station discovery uses the official GeoSphere metadata endpoint shared by the Austria provider
+- hourly observations use the official `station/historical/klima-v2-1h` path
+- `timestamp` in the normalized hourly output preserves the published GeoSphere `time` value in UTC
+- provider-defined hourly field semantics stay behind the provider layer
+- raw GeoSphere hourly `<parameter>_flag` values stay in `flag`; normalized `quality` stays null
+
 For RMI/KMI Belgium files:
 
 - station discovery uses the `aws_station` layer
@@ -460,6 +487,7 @@ Examples:
 ```powershell
 weatherdownload observations daily --country AT --station-id 1 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country BE --station-id 6414 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations hourly --country AT --station-id 1 --element tas_mean --element pressure --start 2024-01-01T00:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations hourly --country BE --station-id 6414 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country BE --station-id 6414 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
@@ -472,3 +500,6 @@ weatherdownload observations daily --country SE --station-id 98230 --element tas
 weatherdownload observations hourly --country SE --station-id 98230 --element tas_mean --element pressure --start 2012-11-29T11:00:00Z --end 2012-11-29T13:00:00Z
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
+
+
+

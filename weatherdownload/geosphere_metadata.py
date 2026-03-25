@@ -1,5 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
+import pandas as pd
 import requests
 
 from .geosphere_parser import (
@@ -8,7 +9,7 @@ from .geosphere_parser import (
     parse_geosphere_metadata_json,
     read_text_from_source,
 )
-from .geosphere_registry import get_dataset_spec
+from .geosphere_registry import get_dataset_spec, list_implemented_dataset_specs
 
 
 def read_station_metadata_geosphere(source_url: str | None = None, timeout: int = 60):
@@ -17,7 +18,14 @@ def read_station_metadata_geosphere(source_url: str | None = None, timeout: int 
 
 
 def read_station_observation_metadata_geosphere(source_url: str | None = None, timeout: int = 60):
-    spec = get_dataset_spec('historical', 'daily')
-    metadata_text = read_text_from_source(source_url or spec.metadata_url, timeout, requests)
-    payload = parse_geosphere_metadata_json(metadata_text)
-    return normalize_geosphere_observation_metadata(payload, spec.supported_elements)
+    frames = []
+    for spec in list_implemented_dataset_specs():
+        metadata_text = read_text_from_source(source_url or spec.metadata_url, timeout, requests)
+        payload = parse_geosphere_metadata_json(metadata_text)
+        frames.append(normalize_geosphere_observation_metadata(payload, spec))
+    if not frames:
+        spec = get_dataset_spec('historical', 'daily')
+        metadata_text = read_text_from_source(source_url or spec.metadata_url, timeout, requests)
+        payload = parse_geosphere_metadata_json(metadata_text)
+        return normalize_geosphere_observation_metadata(payload, spec)
+    return pd.concat(frames, ignore_index=True)

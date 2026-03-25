@@ -101,11 +101,20 @@ Run:
 
 ```powershell
 python examples/download_hourly.py
+python examples/download_hourly.py --country AT
 python examples/download_hourly.py --country BE
 python examples/download_hourly.py --country DE
 python examples/download_hourly.py --country DK
 python examples/download_hourly.py --country SE
 ```
+
+AT hourly notes:
+
+- `AT` uses the shared hourly example path through the official GeoSphere Austria `klima-v2-1h` station dataset and the public `resolution="1hour"` token
+- station discovery still uses the official GeoSphere station metadata path used by the Austria provider
+- the example preserves the published GeoSphere hourly `time` value as the normalized UTC `timestamp`
+- raw GeoSphere hourly `<parameter>_flag` values are preserved in `flag` and normalized `quality` stays null
+- no Austria `10min` support is added in this pass
 
 BE hourly notes:
 
@@ -247,3 +256,5 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+

@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import json
 import sys
@@ -25,6 +25,8 @@ SAMPLE_GEOSPHERE_METADATA_PATH = Path('tests/data/sample_geosphere_klima_v2_1d_m
 SAMPLE_GEOSPHERE_METADATA_TEXT = SAMPLE_GEOSPHERE_METADATA_PATH.read_text(encoding='utf-8')
 SAMPLE_GEOSPHERE_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1d.csv')
 SAMPLE_GEOSPHERE_CSV_TEXT = SAMPLE_GEOSPHERE_CSV_PATH.read_text(encoding='utf-8')
+SAMPLE_GEOSPHERE_HOURLY_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1h.csv')
+SAMPLE_GEOSPHERE_HOURLY_CSV_TEXT = SAMPLE_GEOSPHERE_HOURLY_CSV_PATH.read_text(encoding='utf-8')
 SAMPLE_BE_STATIONS_PATH = Path('tests/data/sample_be_aws_station.json')
 SAMPLE_BE_DAILY_TEXT = Path('tests/data/sample_be_aws_1day.json').read_text(encoding='utf-8')
 SAMPLE_BE_HOURLY_TEXT = Path('tests/data/sample_be_aws_1hour.json').read_text(encoding='utf-8')
@@ -204,6 +206,11 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
 
 
 def _download_hourly_fixture(country: str) -> pd.DataFrame:
+    if country == 'AT':
+        station_metadata = _read_station_metadata_fixture('AT')
+        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.geosphere_hourly.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_HOURLY_CSV_TEXT)):
+            return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':
         station_metadata = _read_station_metadata_fixture('BE')
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
@@ -320,6 +327,22 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
             assert set(observations['flag'].dropna().unique()) <= {'G', 'Y'}
             assert observations['quality'].isna().all()
             assert str(observations['quality'].dtype) == 'Int64'
+
+
+def test_hourly_download_contract_is_stable_for_supported_austria_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    observations = _download_hourly_fixture('AT')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].notna().all()
+    assert set(observations['flag'].dropna().unique()) <= {'20', '21', '22'}
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
 
 
 def test_hourly_download_contract_is_stable_for_supported_belgium_path() -> None:
@@ -444,3 +467,6 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
+
+

@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import sys
 import unittest
@@ -17,15 +17,40 @@ SPEC.loader.exec_module(download_hourly)
 
 
 class DownloadHourlyExampleTests(unittest.TestCase):
-    def test_build_parser_accepts_country_be(self) -> None:
+    def test_build_parser_accepts_country_at_be_dk_and_se(self) -> None:
         parser = download_hourly.build_parser()
-        args = parser.parse_args(['--country', 'BE'])
-        self.assertEqual(args.country, 'BE')
-
-    def test_build_parser_accepts_country_dk_and_se(self) -> None:
-        parser = download_hourly.build_parser()
+        self.assertEqual(parser.parse_args(['--country', 'AT']).country, 'AT')
+        self.assertEqual(parser.parse_args(['--country', 'BE']).country, 'BE')
         self.assertEqual(parser.parse_args(['--country', 'DK']).country, 'DK')
         self.assertEqual(parser.parse_args(['--country', 'SE']).country, 'SE')
+
+    def test_main_uses_shared_at_query_shape(self) -> None:
+        sample = pd.DataFrame([
+            {
+                'station_id': '1',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': 'tl',
+                'timestamp': '2024-01-01T00:00:00Z',
+                'value': 2.1,
+                'flag': '20',
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': '1hour',
+            }
+        ])
+        buffer = io.StringIO()
+        with patch.object(download_hourly, 'download_observations', return_value=sample) as download_mock:
+            with patch.object(sys, 'argv', ['download_hourly.py', '--country', 'AT']):
+                with redirect_stdout(buffer):
+                    download_hourly.main()
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'AT')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, '1hour')
+        self.assertEqual(query.station_ids, ['1'])
+        self.assertEqual(query.elements, ['tl', 'p'])
+        self.assertIn('1', buffer.getvalue())
 
     def test_main_uses_shared_be_query_shape(self) -> None:
         sample = pd.DataFrame([

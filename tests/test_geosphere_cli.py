@@ -1,4 +1,4 @@
-import io
+﻿import io
 import unittest
 from unittest.mock import patch
 
@@ -48,6 +48,48 @@ class GeosphereCliTests(unittest.TestCase):
         self.assertEqual(query.dataset_scope, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['tl_mittel'])
+        self.assertEqual(captured['country'], 'AT')
+        self.assertIn('tas_mean', stdout.getvalue())
+
+    def test_hourly_cli_country_at_uses_historical_dataset_scope(self) -> None:
+        captured: dict[str, object] = {}
+
+        def fake_download(query, country=None):
+            captured['query'] = query
+            captured['country'] = country
+            return pd.DataFrame([
+                {
+                    'station_id': '1',
+                    'gh_id': pd.NA,
+                    'element': 'tas_mean',
+                    'element_raw': 'tl',
+                    'timestamp': pd.Timestamp('2024-01-01T00:00:00Z'),
+                    'value': 2.1,
+                    'flag': '20',
+                    'quality': pd.NA,
+                    'dataset_scope': 'historical',
+                    'resolution': '1hour',
+                }
+            ])
+
+        with patch('weatherdownload.cli.download_observations', side_effect=fake_download):
+            with patch('sys.stdout', new_callable=io.StringIO) as stdout:
+                exit_code = main([
+                    'observations',
+                    'hourly',
+                    '--country', 'AT',
+                    '--station-id', '1',
+                    '--element', 'tas_mean',
+                    '--start', '2024-01-01T00:00:00Z',
+                    '--end', '2024-01-01T01:00:00Z',
+                ])
+
+        self.assertEqual(exit_code, 0)
+        query = captured['query']
+        self.assertEqual(query.country, 'AT')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, '1hour')
+        self.assertEqual(query.elements, ['tl'])
         self.assertEqual(captured['country'], 'AT')
         self.assertIn('tas_mean', stdout.getvalue())
 

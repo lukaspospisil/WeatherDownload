@@ -1,9 +1,16 @@
-import argparse
+﻿import argparse
 
 from weatherdownload import ObservationQuery, download_observations
 
 
 COUNTRY_DEFAULTS = {
+    'AT': {
+        'dataset_scope': 'historical',
+        'station_ids': ['1'],
+        'start': '2024-01-01T00:00:00Z',
+        'end': '2024-01-01T02:00:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
     'BE': {
         'dataset_scope': 'historical',
         'station_ids': ['6414'],

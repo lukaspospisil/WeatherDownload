@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -71,6 +71,14 @@ class ProviderTests(unittest.TestCase):
         tenmin_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='10min', provider_raw=True)
         self.assertEqual(tenmin_elements, ['FF_10', 'RF_10', 'TT_10'])
 
+    def test_discovery_country_at_includes_daily_and_hourly(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='AT'), ['historical'])
+        self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['1hour', 'daily'])
+        daily_elements = list_supported_elements(country='AT', dataset_scope='historical', resolution='daily')
+        hourly_elements = list_supported_elements(country='AT', dataset_scope='historical', resolution='1hour')
+        self.assertEqual(daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration', 'wind_speed', 'pressure', 'relative_humidity'])
+        self.assertEqual(hourly_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
+
     def test_discovery_country_be_includes_daily_hourly_and_tenmin(self) -> None:
         self.assertEqual(list_dataset_scopes(country='BE'), ['historical'])
         self.assertEqual(list_resolutions(country='BE', dataset_scope='historical'), ['10min', '1hour', 'daily'])
@@ -96,6 +104,10 @@ class ProviderTests(unittest.TestCase):
         tenmin_query = ObservationQuery(country='DE', dataset_scope='historical', resolution='10min', station_ids=['00003'], start='2024-01-01T00:00:00Z', end='2024-01-01T00:10:00Z', elements=['tas_mean', 'relative_humidity'])
         self.assertEqual(hourly_query.elements, ['TT_TU', 'FF'])
         self.assertEqual(tenmin_query.elements, ['TT_10', 'RF_10'])
+
+    def test_at_hourly_query_is_provider_valid(self) -> None:
+        hourly_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(hourly_query.elements, ['tl', 'p'])
 
     def test_be_subdaily_queries_are_provider_valid(self) -> None:
         hourly_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])

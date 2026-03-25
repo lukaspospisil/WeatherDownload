@@ -1,0 +1,89 @@
+﻿{
+  "stations": [
+    {
+      "type": "COMBINED",
+      "id": 1,
+      "group_id": null,
+      "name": "Aflenz",
+      "state": "Steiermark",
+      "lat": 47.54594,
+      "lon": 15.24069,
+      "altitude": 783.2,
+      "valid_from": "1983-05-01T00:00:00+00:00",
+      "valid_to": "2100-12-31T00:00:00+00:00",
+      "has_sunshine": true,
+      "has_global_radiation": true,
+      "is_active": true
+    },
+    {
+      "type": "COMBINED",
+      "id": 2,
+      "group_id": null,
+      "name": "Aigen im Ennstal",
+      "state": "Steiermark",
+      "lat": 47.53278,
+      "lon": 14.13826,
+      "altitude": 641.0,
+      "valid_from": "1939-03-01T00:00:00+00:00",
+      "valid_to": "2100-12-31T00:00:00+00:00",
+      "has_sunshine": true,
+      "has_global_radiation": true,
+      "is_active": true
+    }
+  ],
+  "parameters": [
+    {
+      "name": "tl",
+      "long_name": "Air temperature 2m",
+      "description": "Air temperature 2m hourly value",
+      "unit": "degC"
+    },
+    {
+      "name": "rr",
+      "long_name": "Precipitation 1h sum",
+      "description": "Precipitation hourly sum",
+      "unit": "mm"
+    },
+    {
+      "name": "ff",
+      "long_name": "Wind speed",
+      "description": "Wind speed hourly mean",
+      "unit": "m/s"
+    },
+    {
+      "name": "rf",
+      "long_name": "Relative humidity",
+      "description": "Relative humidity hourly mean",
+      "unit": "%"
+    },
+    {
+      "name": "p",
+      "long_name": "Pressure",
+      "description": "Pressure hourly mean",
+      "unit": "hPa"
+    },
+    {
+      "name": "so",
+      "long_name": "Sunshine duration",
+      "description": "Sunshine duration hourly sum",
+      "unit": "h"
+    }
+  ],
+  "title": "Station hourly climate data v2",
+  "frequency": "PT1H",
+  "type": "station",
+  "mode": "historical",
+  "response_formats": ["geojson", "csv"],
+  "start_time": "1775-01-01T00:00:00+00:00",
+  "end_time": "2026-03-23T23:00:00+00:00",
+  "id_type": "Klima",
+  "code_lists": {
+    "q21": [
+      {"key": null, "value": "undefined"},
+      {"key": 0, "value": "unchecked"},
+      {"key": 20, "value": "manual checked unknown"},
+      {"key": 21, "value": "manual checked changed"},
+      {"key": 22, "value": "manual checked original"}
+    ]
+  }
+}

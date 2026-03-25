@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import io
 import json
@@ -10,6 +10,11 @@ from .metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COL
 
 GEOSPHERE_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
+    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+]
+
+GEOSPHERE_NORMALIZED_SUBDAILY_COLUMNS = [
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
 
@@ -56,7 +61,9 @@ def normalize_geosphere_station_metadata(payload: dict[str, object]) -> pd.DataF
     return frame
 
 
-def normalize_geosphere_observation_metadata(payload: dict[str, object], supported_elements: tuple[str, ...]) -> pd.DataFrame:
+def normalize_geosphere_observation_metadata(payload: dict[str, object], spec: object) -> pd.DataFrame:
+    supported_elements = tuple(getattr(spec, 'supported_elements', ()))
+    schedule, obs_type = _metadata_schedule_and_type(getattr(spec, 'resolution', 'daily'))
     parameter_lookup = {
         _clean_string(parameter.get('name')): parameter
         for parameter in payload.get('parameters', [])
@@ -69,12 +76,12 @@ def normalize_geosphere_observation_metadata(payload: dict[str, object], support
             parameter = parameter_lookup.get(raw_code, {})
             rows.append(
                 {
-                    'obs_type': 'HISTORICAL_DAILY',
+                    'obs_type': obs_type,
                     'station_id': station.station_id,
                     'begin_date': station.begin_date,
                     'end_date': station.end_date,
                     'element': raw_code,
-                    'schedule': 'P1D GeoSphere station API',
+                    'schedule': schedule,
                     'name': _clean_string(parameter.get('long_name')) or raw_code,
                     'description': _compose_parameter_description(parameter),
                     'height': pd.NA,
@@ -83,13 +90,21 @@ def normalize_geosphere_observation_metadata(payload: dict[str, object], support
     return pd.DataFrame.from_records(rows, columns=STATION_OBSERVATION_METADATA_COLUMNS)
 
 
-def parse_geosphere_daily_csv(csv_text: str) -> pd.DataFrame:
+def parse_geosphere_station_csv(csv_text: str, resolution_label: str) -> pd.DataFrame:
     table = pd.read_csv(io.StringIO(csv_text), dtype=str)
     expected_columns = {'time', 'station'}
     missing = expected_columns.difference(table.columns)
     if missing:
-        raise ValueError(f'GeoSphere daily CSV is missing required columns: {sorted(missing)}')
+        raise ValueError(f'GeoSphere {resolution_label} CSV is missing required columns: {sorted(missing)}')
     return table
+
+
+def parse_geosphere_daily_csv(csv_text: str) -> pd.DataFrame:
+    return parse_geosphere_station_csv(csv_text, 'daily')
+
+
+def parse_geosphere_hourly_csv(csv_text: str) -> pd.DataFrame:
+    return parse_geosphere_station_csv(csv_text, 'hourly')
 
 
 def normalize_geosphere_station_id(value: object) -> str:
@@ -139,6 +154,17 @@ def _station_sort_key(station_id: str) -> tuple[int, str]:
     return (int(station_id), station_id) if station_id.isdigit() else (10**9, station_id)
 
 
+def build_geosphere_flag(value: object) -> object:
+    cleaned = _clean_string(value)
+    return cleaned or pd.NA
+
+
+def _metadata_schedule_and_type(resolution: str) -> tuple[str, str]:
+    if resolution == '1hour':
+        return 'PT1H GeoSphere station API', 'HISTORICAL_HOURLY'
+    return 'P1D GeoSphere station API', 'HISTORICAL_DAILY'
+
+
 def read_text_from_source(source: str, timeout: int, requests_module) -> str:
     local_path = Path(source)
     if local_path.exists():
@@ -147,4 +173,3 @@ def read_text_from_source(source: str, timeout: int, requests_module) -> str:
     response.raise_for_status()
     response.encoding = 'utf-8'
     return response.text
-
