@@ -4,17 +4,21 @@
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-WeatherDownload keeps its public outputs normalized across providers.
+WeatherDownload keeps its public outputs normalized across providers and countries.
 
 This page documents the stable public columns, not the provider-specific raw files behind them.
 
 ## General Principles
 
 - outputs are pandas `DataFrame` objects
-- `station_id` is normalized across countries
+- `station_id` is the canonical public station identifier for the selected country/provider path
 - `gh_id` is optional and nullable when a provider does not expose it
 - canonical elements are exposed in `element`
 - provider provenance is preserved in `element_raw`
+- raw provider quality or status information is preserved in `flag` when the source exposes it
+- normalized `quality` is only populated where WeatherDownload has an explicit provider-specific normalization; otherwise it remains null
+- the public schema stays stable even when countries expose different subsets of canonical elements
+- unavailable fields are not synthesized by default; they remain null/missing in fixed-shape downstream packaging workflows
 
 ## Station Metadata Schema
 
@@ -33,8 +37,9 @@ Returned by `read_station_metadata(...)`.
 
 Notes:
 
-- `CZ`: `station_id` is CHMI `WSI`
-- `DE`: `station_id` is zero-padded DWD `Stations_id`
+- `station_id` keeps a stable public identifier while preserving provider-backed station identity
+- `gh_id` is present only for provider paths that expose a reliable secondary identifier
+- metadata coverage can differ by country; unsupported metadata fields remain null rather than inferred
 
 ## Observation Metadata Schema
 
@@ -66,9 +71,9 @@ Returned by `download_observations(...)` for `resolution="daily"`.
 | `element_raw` | Raw provider element code |
 | `observation_date` | Daily date |
 | `time_function` | Provider time-function field when available, nullable otherwise |
-| `value` | Observation value |
-| `flag` | Provider flag, nullable |
-| `quality` | Provider quality indicator, nullable |
+| `value` | Source-backed observation value |
+| `flag` | Raw provider flag or status field, nullable |
+| `quality` | Normalized quality indicator, nullable when no cross-provider normalization is defined |
 | `dataset_scope` | Dataset scope used in the query |
 | `resolution` | `daily` |
 
@@ -77,6 +82,7 @@ Daily semantics:
 - use `start_date` and `end_date`
 - output uses `observation_date`
 - `time_function` is provider-dependent
+- countries can expose different daily element coverage while keeping the same column contract
 
 For example:
 
@@ -94,9 +100,9 @@ Returned by `download_observations(...)` for `resolution="1hour"` and `resolutio
 | `element` | Canonical meteorological element name |
 | `element_raw` | Raw provider element code |
 | `timestamp` | Timezone-aware UTC timestamp |
-| `value` | Observation value |
-| `flag` | Provider flag, nullable |
-| `quality` | Provider quality indicator, nullable |
+| `value` | Source-backed observation value |
+| `flag` | Raw provider flag or status field, nullable |
+| `quality` | Normalized quality indicator, nullable when no cross-provider normalization is defined |
 | `dataset_scope` | Dataset scope used in the query |
 | `resolution` | `1hour` or `10min` |
 
@@ -105,6 +111,17 @@ Subdaily semantics:
 - use `start` and `end`
 - output uses `timestamp`
 - timestamps are normalized to UTC
+- countries can expose different subdaily element coverage while keeping the same column contract
+
+## `flag`, `quality`, and missing values
+
+WeatherDownload separates source provenance from any library-level normalization:
+
+- `flag` keeps the raw provider-side flag, QC text, or status code when one is available from the source
+- `quality` is reserved for normalized quality values only where the library defines a clear provider-specific mapping
+- if a provider does not expose a usable raw flag, `flag` remains null
+- if the library does not define a normalized quality mapping for a provider path, `quality` remains null
+- if a country or resolution does not support a canonical field, that field is simply absent from the returned observations selection; downstream fixed-shape bundles may represent it as null/missing
 
 ## `element` vs `element_raw`
 
