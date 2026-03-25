@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from ..geosphere_metadata import read_station_metadata_geosphere, read_station_observation_metadata_geosphere
 from ..geosphere_registry import get_dataset_spec, list_dataset_specs, list_implemented_dataset_specs
@@ -33,7 +33,8 @@ PROVIDER = WeatherProvider(
     download_observations=_download_observations,
     supported_country_codes=('AT',),
     supported_dataset_scopes=('historical',),
-    supported_resolutions=('daily', '1hour'),
+    supported_resolutions=('daily', '1hour', '10min'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )
+

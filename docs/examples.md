@@ -114,7 +114,7 @@ AT hourly notes:
 - station discovery still uses the official GeoSphere station metadata path used by the Austria provider
 - the example preserves the published GeoSphere hourly `time` value as the normalized UTC `timestamp`
 - raw GeoSphere hourly `<parameter>_flag` values are preserved in `flag` and normalized `quality` stays null
-- no Austria `10min` support is added in this pass
+- Austria `10min` support is implemented separately through the shared `examples/download_tenmin.py` path
 
 BE hourly notes:
 
@@ -158,10 +158,19 @@ Run:
 
 ```powershell
 python examples/download_tenmin.py
+python examples/download_tenmin.py --country AT
 python examples/download_tenmin.py --country BE
 python examples/download_tenmin.py --country DE
 python examples/download_tenmin.py --country DK
 ```
+
+AT 10-minute notes:
+
+- `AT` uses the shared 10-minute example path through the official GeoSphere Austria `klima-v2-10min` station dataset and the public `resolution="10min"` token
+- station discovery still uses the official GeoSphere station metadata path used by the Austria provider
+- the example preserves the published GeoSphere `time` value as the normalized UTC `timestamp`
+- raw GeoSphere 10-minute `<parameter>_flag` values are preserved in `flag` and normalized `quality` stays null
+- mapped fields stay source-backed only; no hourly or daily values are recomputed from Austria 10-minute data
 
 BE 10-minute notes:
 
@@ -256,5 +265,8 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+
+
 
 

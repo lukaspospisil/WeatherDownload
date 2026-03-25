@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import json
@@ -107,6 +107,10 @@ def parse_geosphere_hourly_csv(csv_text: str) -> pd.DataFrame:
     return parse_geosphere_station_csv(csv_text, 'hourly')
 
 
+def parse_geosphere_tenmin_csv(csv_text: str) -> pd.DataFrame:
+    return parse_geosphere_station_csv(csv_text, '10min')
+
+
 def normalize_geosphere_station_id(value: object) -> str:
     if value is None or pd.isna(value):
         return ''
@@ -160,6 +164,8 @@ def build_geosphere_flag(value: object) -> object:
 
 
 def _metadata_schedule_and_type(resolution: str) -> tuple[str, str]:
+    if resolution == '10min':
+        return 'PT10M GeoSphere station API', 'HISTORICAL_10MIN'
     if resolution == '1hour':
         return 'PT1H GeoSphere station API', 'HISTORICAL_HOURLY'
     return 'P1D GeoSphere station API', 'HISTORICAL_DAILY'

@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from datetime import date
 
 from weatherdownload import ObservationQuery, QueryValidationError, list_dataset_scopes, list_resolutions, list_supported_elements, validate_observation_query
@@ -76,6 +76,12 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.elements, ['tl', 'p'])
         self.assertEqual(canonical_query.elements, ['tl', 'p'])
 
+    def test_at_tenmin_query_accepts_at_elements_and_canonical_names(self) -> None:
+        raw_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tl', 'p'])
+        canonical_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(raw_query.country, 'AT')
+        self.assertEqual(raw_query.elements, ['tl', 'p'])
+        self.assertEqual(canonical_query.elements, ['tl', 'p'])
     def test_be_hourly_query_accepts_be_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
         canonical_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
@@ -143,6 +149,7 @@ class ObservationQueryValidationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

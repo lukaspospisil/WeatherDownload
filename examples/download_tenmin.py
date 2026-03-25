@@ -1,9 +1,16 @@
-﻿import argparse
+import argparse
 
 from weatherdownload import ObservationQuery, download_observations
 
 
 COUNTRY_DEFAULTS = {
+    'AT': {
+        'dataset_scope': 'historical',
+        'station_ids': ['1'],
+        'start': '2024-01-01T00:10:00Z',
+        'end': '2024-01-01T00:20:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
     'BE': {
         'dataset_scope': 'historical',
         'station_ids': ['6414'],
@@ -35,12 +42,10 @@ COUNTRY_DEFAULTS = {
 }
 
 
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Download a small 10-minute slice through the unified public API.')
     parser.add_argument('--country', default='CZ', choices=sorted(COUNTRY_DEFAULTS), help='Country code for the example query.')
     return parser
-
 
 
 def main() -> None:

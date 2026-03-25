@@ -1,0 +1,80 @@
+{
+  "stations": [
+    {
+      "type": "COMBINED",
+      "id": 1,
+      "group_id": null,
+      "name": "Aflenz",
+      "state": "Steiermark",
+      "lat": 47.54594,
+      "lon": 15.24069,
+      "altitude": 783.2,
+      "valid_from": "1983-05-01T00:00:00+00:00",
+      "valid_to": "2100-12-31T00:00:00+00:00",
+      "has_sunshine": true,
+      "has_global_radiation": true,
+      "is_active": true
+    },
+    {
+      "type": "COMBINED",
+      "id": 2,
+      "group_id": null,
+      "name": "Aigen im Ennstal",
+      "state": "Steiermark",
+      "lat": 47.53278,
+      "lon": 14.13826,
+      "altitude": 641.0,
+      "valid_from": "1993-02-01T00:00:00+00:00",
+      "valid_to": "2100-12-31T00:00:00+00:00",
+      "has_sunshine": true,
+      "has_global_radiation": true,
+      "is_active": true
+    }
+  ],
+  "parameters": [
+    {
+      "name": "tl",
+      "long_name": "Lufttemperatur 2m",
+      "description": "Lufttemperatur in 2m H\u00f6he, 10-Minuten-Messwert",
+      "unit": "\u00b0C"
+    },
+    {
+      "name": "rr",
+      "long_name": "Niederschlagssumme",
+      "description": "Niederschlagssumme, berechnet aus 1-Minuten-Niederschlags-Daten",
+      "unit": "mm"
+    },
+    {
+      "name": "ff",
+      "long_name": "Windgeschwindigkeit 10m, vektorieller Mittelwert",
+      "description": "Windgeschwindigkeit in 10m H\u00f6he, vektorieller 10-Minuten-Mittelwert",
+      "unit": "m/s"
+    },
+    {
+      "name": "rf",
+      "long_name": "Relative Feuchte",
+      "description": "Relative Feuchte, 10-Minuten-Messwert",
+      "unit": "%"
+    },
+    {
+      "name": "p",
+      "long_name": "Luftdruck",
+      "description": "Luftdruck, 10-Minuten-Messwert",
+      "unit": "hPa"
+    },
+    {
+      "name": "so",
+      "long_name": "Sonnenscheindauer",
+      "description": "Sonnenscheindauer in Sekunden, 10-Minutensumme",
+      "unit": "s"
+    }
+  ],
+  "title": "Messstationen Zehnminutendaten v2",
+  "frequency": "PT10M",
+  "type": "station",
+  "mode": "historical",
+  "response_formats": ["geojson", "csv"],
+  "start_time": "1992-05-20T06:10:00+00:00",
+  "end_time": "2026-03-25T21:30:00",
+  "id_type": "Klima"
+}

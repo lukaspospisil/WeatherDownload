@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -73,7 +73,7 @@ class ProviderTests(unittest.TestCase):
 
     def test_discovery_country_at_includes_daily_and_hourly(self) -> None:
         self.assertEqual(list_dataset_scopes(country='AT'), ['historical'])
-        self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['1hour', 'daily'])
+        self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         daily_elements = list_supported_elements(country='AT', dataset_scope='historical', resolution='daily')
         hourly_elements = list_supported_elements(country='AT', dataset_scope='historical', resolution='1hour')
         self.assertEqual(daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration', 'wind_speed', 'pressure', 'relative_humidity'])
@@ -154,3 +154,4 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

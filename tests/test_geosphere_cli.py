@@ -1,4 +1,4 @@
-﻿import io
+import io
 import unittest
 from unittest.mock import patch
 
@@ -94,5 +94,47 @@ class GeosphereCliTests(unittest.TestCase):
         self.assertIn('tas_mean', stdout.getvalue())
 
 
+    def test_tenmin_cli_country_at_uses_historical_dataset_scope(self) -> None:
+        captured: dict[str, object] = {}
+
+        def fake_download(query, country=None):
+            captured['query'] = query
+            captured['country'] = country
+            return pd.DataFrame([
+                {
+                    'station_id': '1',
+                    'gh_id': pd.NA,
+                    'element': 'tas_mean',
+                    'element_raw': 'tl',
+                    'timestamp': pd.Timestamp('2024-01-01T00:10:00Z'),
+                    'value': 0.1,
+                    'flag': '12',
+                    'quality': pd.NA,
+                    'dataset_scope': 'historical',
+                    'resolution': '10min',
+                }
+            ])
+
+        with patch('weatherdownload.cli.download_observations', side_effect=fake_download):
+            with patch('sys.stdout', new_callable=io.StringIO) as stdout:
+                exit_code = main([
+                    'observations',
+                    '10min',
+                    '--country', 'AT',
+                    '--station-id', '1',
+                    '--element', 'tas_mean',
+                    '--start', '2024-01-01T00:10:00Z',
+                    '--end', '2024-01-01T00:20:00Z',
+                ])
+
+        self.assertEqual(exit_code, 0)
+        query = captured['query']
+        self.assertEqual(query.country, 'AT')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, '10min')
+        self.assertEqual(query.elements, ['tl'])
+        self.assertEqual(captured['country'], 'AT')
+        self.assertIn('tas_mean', stdout.getvalue())
 if __name__ == '__main__':
     unittest.main()
+

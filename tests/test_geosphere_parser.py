@@ -1,4 +1,4 @@
-﻿import json
+import json
 import unittest
 
 import pandas as pd
@@ -11,6 +11,7 @@ from weatherdownload.geosphere_parser import (
     parse_geosphere_daily_csv,
     parse_geosphere_hourly_csv,
     parse_geosphere_metadata_json,
+    parse_geosphere_tenmin_csv,
 )
 
 
@@ -112,6 +113,33 @@ class GeosphereParserTests(unittest.TestCase):
         self.assertEqual(metadata.iloc[0]['obs_type'], 'HISTORICAL_HOURLY')
         self.assertEqual(metadata.iloc[0]['schedule'], 'PT1H GeoSphere station API')
 
+    def test_normalize_geosphere_observation_metadata_builds_tenmin_station_parameter_rows(self) -> None:
+        payload = {
+            'stations': [
+                {
+                    'id': 1,
+                    'name': 'Aflenz',
+                    'lat': 47.5,
+                    'lon': 15.2,
+                    'altitude': 783.2,
+                    'valid_from': '1983-05-01T00:00:00+00:00',
+                    'valid_to': '2100-12-31T00:00:00+00:00',
+                },
+            ],
+            'parameters': [
+                {
+                    'name': 'tl',
+                    'long_name': 'Air temperature 2m',
+                    'description': '10-minute air temperature',
+                    'unit': 'degC',
+                },
+            ],
+        }
+        metadata = normalize_geosphere_observation_metadata(payload, get_dataset_spec('historical', '10min'))
+        self.assertEqual(metadata.iloc[0]['element'], 'tl')
+        self.assertEqual(metadata.iloc[0]['obs_type'], 'HISTORICAL_10MIN')
+        self.assertEqual(metadata.iloc[0]['schedule'], 'PT10M GeoSphere station API')
+
     def test_parse_geosphere_daily_csv_rejects_missing_required_columns(self) -> None:
         with self.assertRaisesRegex(ValueError, r"GeoSphere daily CSV is missing required columns: \['station'\]"):
             parse_geosphere_daily_csv('time,tl_mittel\n2024-01-01T00:00+00:00,2.2\n')
@@ -125,6 +153,11 @@ class GeosphereParserTests(unittest.TestCase):
         table = parse_geosphere_hourly_csv('time,station,tl,tl_flag\n2024-01-01T01:00:00+00:00,1,2.4,21\n')
         self.assertEqual(list(table.columns), ['time', 'station', 'tl', 'tl_flag'])
         self.assertEqual(table.iloc[0]['tl'], '2.4')
+
+    def test_parse_geosphere_tenmin_csv_accepts_documented_shape(self) -> None:
+        table = parse_geosphere_tenmin_csv('time,station,tl,tl_flag\n2024-01-01T00:10:00+00:00,1,0.1,12\n')
+        self.assertEqual(list(table.columns), ['time', 'station', 'tl', 'tl_flag'])
+        self.assertEqual(table.iloc[0]['tl'], '0.1')
 
     def test_normalize_geosphere_metadata_datetime_converts_to_project_format(self) -> None:
         self.assertEqual(normalize_geosphere_metadata_datetime('2024-01-01T00:00:00+00:00'), '2024-01-01T00:00Z')

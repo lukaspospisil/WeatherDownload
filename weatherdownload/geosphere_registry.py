@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -36,6 +36,15 @@ _GEOSPHERE_HOURLY_CANONICAL_ELEMENTS = {
     'sunshine_duration': ('so',),
 }
 
+_GEOSPHERE_TENMIN_CANONICAL_ELEMENTS = {
+    'tas_mean': ('tl',),
+    'precipitation': ('rr',),
+    'wind_speed': ('ff',),
+    'relative_humidity': ('rf',),
+    'pressure': ('p',),
+    'sunshine_duration': ('so',),
+}
+
 _GEOSPHERE_DATASET_SPECS = [
     GeosphereDatasetSpec(
         dataset_scope='historical',
@@ -56,6 +65,17 @@ _GEOSPHERE_DATASET_SPECS = [
         metadata_url='https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1h/metadata',
         supported_elements=('tl', 'rr', 'ff', 'rf', 'p', 'so'),
         canonical_elements=_GEOSPHERE_HOURLY_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
+        implemented=True,
+    ),
+    GeosphereDatasetSpec(
+        dataset_scope='historical',
+        resolution='10min',
+        source_id='klima-v2-10min',
+        label='GeoSphere Austria station historical 10-minute climate observations v2',
+        metadata_url='https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min/metadata',
+        supported_elements=('tl', 'rr', 'ff', 'rf', 'p', 'so'),
+        canonical_elements=_GEOSPHERE_TENMIN_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,
     ),
