@@ -88,6 +88,14 @@ What stays provider-specific internally:
 - authentication requirements
 - provider-side aggregation semantics
 
+Subdaily variability is expected across providers:
+
+- some countries implement only `daily`
+- some implement `daily` plus `1hour` but not `10min`
+- some expose fewer canonical subdaily fields than others
+- some expose raw QC/status fields in subdaily paths while others do not
+- the shared normalized contract stays the same; unsupported subdaily fields remain unavailable for that slice, while row-level missing values remain null
+
 ## Canonical Station Identifier
 
 | Country | Normalized `station_id` |

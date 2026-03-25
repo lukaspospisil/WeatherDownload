@@ -120,6 +120,14 @@ Subdaily semantics:
 - timestamps are normalized to UTC
 - countries can expose different subdaily element coverage while keeping the same column contract
 
+Subdaily missing-data semantics:
+
+- a supported `1hour` or `10min` field is returned as one row per `station_id` + `timestamp` + `element`
+- if a supported field has no usable value for a particular row, `value` is null for that row
+- `flag` may still carry raw provider QC or status text for that same row when the source exposes it
+- `quality` may still remain null for that same row when WeatherDownload does not define a normalized quality mapping
+- if a country or provider slice does not support a requested subdaily canonical field at all, that field is unavailable for that slice rather than represented by synthetic rows
+
 ## `flag`, `quality`, and missing values
 
 WeatherDownload separates source provenance from any library-level normalization:
@@ -129,6 +137,23 @@ WeatherDownload separates source provenance from any library-level normalization
 - if a provider does not expose a usable raw flag, `flag` remains null
 - if the library does not define a normalized quality mapping for a provider path, `quality` remains null
 - if a country or resolution does not support a canonical field, that field is simply absent from the returned observations selection; downstream fixed-shape bundles may represent it as null/missing
+
+For `1hour` and `10min` outputs, distinguish these cases explicitly:
+
+| Situation | Interpretation |
+| --- | --- |
+| `value` present, `flag` null, `quality` null | observed value with no raw provider flag and no normalized quality mapping |
+| `value` present, `flag` present, `quality` null | observed value with raw provider-side QC/status preserved, but no normalized quality mapping |
+| `value` null for a returned row | the field is supported for that provider path, but the value is missing for that specific `station_id` / `timestamp` / `element` row |
+| no rows for a requested canonical field because the provider path does not support it | the field is unavailable for that country / dataset scope / resolution slice |
+
+Subdaily provider variability is expected:
+
+- some countries implement only `daily`
+- some countries implement `daily` plus `1hour` but not `10min`
+- some countries expose fewer canonical subdaily fields than others
+- some providers expose raw QC/status fields and others do not
+- the normalized subdaily schema stays stable while unsupported fields remain unavailable and row-level missing values remain null
 
 ## `element` vs `element_raw`
 

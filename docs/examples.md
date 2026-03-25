@@ -91,6 +91,12 @@ Shows how to:
 - use timestamp-based semantics with the shared `resolution="1hour"` provider path
 - download normalized 1-hour observations
 
+Subdaily interpretation note:
+
+- if a country does not implement a requested `1hour` field, that field is unavailable for that provider slice rather than backfilled
+- if a returned `1hour` row has no usable source value, `value` stays null for that row
+- raw provider QC/status may appear in `flag`; normalized `quality` may still remain null
+
 Run:
 
 ```powershell
@@ -132,6 +138,12 @@ Shows how to:
 - build a 10-minute query
 - use timestamp-based semantics with the shared `resolution="10min"` provider path
 - download normalized 10-minute observations
+
+Subdaily interpretation note:
+
+- if a country does not implement a requested `10min` field, that field is unavailable for that provider slice rather than backfilled
+- if a returned `10min` row has no usable source value, `value` stays null for that row
+- raw provider QC/status may appear in `flag`; normalized `quality` may still remain null
 
 Run:
 
