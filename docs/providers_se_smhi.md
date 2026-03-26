@@ -31,6 +31,14 @@ Implemented source model in this pass:
 - historical daily and hourly observations both use the official corrected-archive CSV path:
   `https://opendata-download-metobs.smhi.se/api/version/1.0/parameter/{parameter_id}/station/{station_id}/period/corrected-archive/data.csv`
 
+Why `10min` is not implemented:
+
+- the official SMHI parameter catalog used by this provider clearly exposes daily and hourly historical paths
+- the same catalog also exposes some 15-minute parameters such as precipitation amount `summa 15 min, 4 gånger/tim`
+- some hourly parameters are explicitly documented as hourly outputs based on 10-minute sampling, for example wind speed `medelvärde 10 min, 1 gång/tim`
+- this is not the same as a true historical `resolution="10min"` source path
+- WeatherDownload therefore does not implement Sweden `10min` by reinterpreting 15-minute or hourly data as 10-minute observations
+
 The provider keeps SMHI's parameter / station / period model behind the provider layer.
 
 ## Station Metadata
@@ -98,13 +106,6 @@ Current handling is intentionally conservative:
 - normalized `quality` remains null in the public output
 - WeatherDownload does not reinterpret SMHI quality semantics in this pass
 
-## Known Limitations
-
-- only the conservative daily and hourly parameters above are implemented
-- other SMHI parameters are intentionally out of scope until they are added explicitly
-- corrected-archive excludes the latest three months by source design
-- there is no Sweden-specific public workflow shape; Sweden uses the same shared provider interface as the other countries
-
 ## Shared Interface Examples
 
 ```python
@@ -123,14 +124,6 @@ query = ObservationQuery(
 observations = download_observations(query)
 ```
 
-## Known Limitations
-
-- only the conservative `historical / daily` and `historical / 1hour` Sweden slices documented on this page are implemented
-- `10min` support is intentionally out of scope in this pass
-- corrected-archive excludes the latest three months by source design
-- `quality` remains null and raw `Kvalitet` stays in `flag`
-- no FAO computation and no derived meteorological variables are added
-
 ```python
 from weatherdownload import ObservationQuery, download_observations
 
@@ -146,3 +139,12 @@ query = ObservationQuery(
 
 observations = download_observations(query)
 ```
+
+## Known Limitations
+
+- only the conservative `historical / daily` and `historical / 1hour` Sweden slices documented on this page are implemented
+- Sweden `10min` is not implemented because the official SMHI path used by this provider does not verify a true historical 10-minute observation path with matching semantics
+- official SMHI hourly outputs derived from 10-minute sampling and official 15-minute parameters are not treated as `resolution="10min"`
+- corrected-archive excludes the latest three months by source design
+- `quality` remains null and raw `Kvalitet` stays in `flag`
+- no FAO computation and no derived meteorological variables are added

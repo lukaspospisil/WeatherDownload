@@ -872,12 +872,12 @@ python -c "import pandas as pd; df = pd.read_parquet('outputs/kopisty_daily.parq
 ### 27.2 Univerzální inspect utility
 
 ```bash
-python examples/inspect_file.py outputs/kopisty_daily.parquet
-python examples/inspect_file.py outputs/fao_daily.cz.mat
-python examples/inspect_file.py outputs/fao_daily.cz
+python utils/inspect_file.py outputs/kopisty_daily.parquet
+python utils/inspect_file.py outputs/fao_daily.cz.mat
+python utils/inspect_file.py outputs/fao_daily.cz
 ```
 
-### 27.3 Co můžeš od `inspect_file.py` očekávat
+### 27.3 Co můžeš od `utils/inspect_file.py` očekávat
 
 - path,
 - file type,
@@ -989,7 +989,7 @@ Používej:
 
 ### Pro rychlou kontrolu výstupu
 Používej:
-- `examples/inspect_file.py`
+- `utils/inspect_file.py`
 
 ---
 

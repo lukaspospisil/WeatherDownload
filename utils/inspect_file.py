@@ -1,3 +1,8 @@
+﻿"""Maintainer utility for inspecting WeatherDownload export files and bundles.
+
+This script is internal repository tooling rather than a public workflow example.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -235,3 +240,5 @@ def _mat_preview(value: Any) -> str | None:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+

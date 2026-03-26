@@ -222,7 +222,9 @@ Run:
 python examples/station_availability.py
 ```
 
-### `examples/inspect_file.py`
+## Maintainer Utility
+
+### `utils/inspect_file.py`
 
 Shows how to:
 
@@ -233,9 +235,9 @@ Shows how to:
 Run:
 
 ```powershell
-python examples/inspect_file.py outputs/some_file.parquet
-python examples/inspect_file.py outputs/fao_daily.cz.mat
-python examples/inspect_file.py outputs/fao_daily.cz
+python utils/inspect_file.py outputs/some_file.parquet
+python utils/inspect_file.py outputs/fao_daily.cz.mat
+python utils/inspect_file.py outputs/fao_daily.cz
 ```
 
 ## Experimental Provider Example

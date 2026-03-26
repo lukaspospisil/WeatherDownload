@@ -370,10 +370,12 @@ Important current limitations:
 
 - the implemented path uses the official SMHI Meteorological Observations API only
 - only `SE / historical / daily` and `SE / historical / 1hour` are implemented
+- Sweden `10min` is not implemented because the official SMHI path used by this provider does not verify a true historical 10-minute observation path with matching semantics
 - station discovery merges the supported daily and hourly parameter station listings used by this provider
 - daily observations use the official `parameter/{parameter_id}/station/{station_id}/period/corrected-archive/data.csv` path
 - `observation_date` is normalized from the published `Representativt dygn` column, while provider-defined interval windows stay behind the provider layer
 - corrected-archive excludes the latest three months by source design
+- official hourly outputs derived from 10-minute sampling and official 15-minute parameters are not treated as `resolution="10min"`
 - raw `Kvalitet` stays in `flag`; normalized `quality` remains null
 - no FAO computation and no derived meteorological variables are added
 
@@ -391,11 +393,13 @@ Important current limitations:
 
 - the implemented path uses the official SMHI Meteorological Observations API only
 - only `SE / historical / daily` and `SE / historical / 1hour` are implemented
+- Sweden `10min` is not implemented because the official SMHI path used by this provider does not verify a true historical 10-minute observation path with matching semantics
 - station discovery merges the supported daily and hourly parameter station listings used by this provider
 - hourly observations use the official `parameter/{parameter_id}/station/{station_id}/period/corrected-archive/data.csv` path
 - `timestamp` is taken directly from the published `Datum` + `Tid (UTC)` columns and preserved in UTC
 - provider-defined hourly field semantics stay behind the provider layer
 - corrected-archive excludes the latest three months by source design
+- official hourly outputs derived from 10-minute sampling and official 15-minute parameters are not treated as `resolution="10min"`
 - raw `Kvalitet` stays in `flag`; normalized `quality` remains null
 - no FAO computation and no derived meteorological variables are added
 

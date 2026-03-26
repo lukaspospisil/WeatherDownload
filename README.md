@@ -358,10 +358,12 @@ SE scope limits for this pass:
 
 - official SMHI Meteorological Observations API only
 - historical `daily` and `1hour` station observations only via the corrected-archive path
+- Sweden `10min` is not implemented because the official SMHI source used by this provider does not verify a true historical 10-minute path with matching semantics
 - station discovery merges the supported daily and hourly parameter station listings used by this provider
 - `observation_date` comes from the published `Representativt dygn` field for daily data
 - hourly `timestamp` comes directly from the published `Datum` + `Tid (UTC)` columns and stays provider-defined
 - raw `Kvalitet` stays in `flag` and normalized `quality` stays null
+- official hourly outputs based on 10-minute sampling and official 15-minute parameters are not reinterpreted as `10min` support
 - corrected-archive excludes the latest three months by source design
 - no FAO computation and no derived meteorological variables
 
