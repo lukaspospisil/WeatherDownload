@@ -106,6 +106,9 @@ def normalize_knmi_observation_metadata(stations: pd.DataFrame, spec: Any, param
     elif spec.resolution == '1hour':
         obs_type = 'HISTORICAL_HOURLY'
         schedule = 'PT1H KNMI Open Data API'
+    elif spec.resolution == '10min':
+        obs_type = 'HISTORICAL_10MIN'
+        schedule = 'PT10M KNMI Open Data API'
     else:
         raise ValueError(f'Unsupported KNMI resolution for metadata normalization: {spec.resolution}')
 
@@ -116,6 +119,8 @@ def normalize_knmi_observation_metadata(stations: pd.DataFrame, spec: Any, param
                 metadata_key = 'RH_DAILY' if spec.resolution == 'daily' else 'RH_HOUR'
             elif raw_code == 'SQ':
                 metadata_key = 'SQ_DAILY' if spec.resolution == 'daily' else 'SQ_HOUR'
+            elif spec.resolution == '10min':
+                metadata_key = f'{raw_code}_10MIN'
             else:
                 metadata_key = raw_code
             metadata = parameter_metadata.get(metadata_key, parameter_metadata.get(raw_code, {}))
@@ -145,6 +150,14 @@ def parse_knmi_daily_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
 
 
 def parse_knmi_hourly_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
+    payload = _parse_knmi_netcdf_bytes(netcdf_bytes)
+    return {
+        'timestamp': payload['timestamp'],
+        'stations': payload['stations'],
+        'variables': payload['variables'],
+    }
+
+def parse_knmi_tenmin_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
     payload = _parse_knmi_netcdf_bytes(netcdf_bytes)
     return {
         'timestamp': payload['timestamp'],
@@ -188,7 +201,7 @@ def _parse_knmi_netcdf_bytes(netcdf_bytes: bytes) -> dict[str, object]:
             values = _coerce_data_vector(dataset.variables[variable_name][:], expected_length=len(station_ids))
             if values is None:
                 continue
-            variables[upper_name] = values
+            variables[variable_name.strip()] = values
         timestamp = _extract_timestamp(dataset, netCDF4)
         return {
             'timestamp': timestamp,
@@ -317,4 +330,5 @@ def _parse_float(value: object) -> float | None:
     if not cleaned:
         return None
     return float(cleaned)
+
 

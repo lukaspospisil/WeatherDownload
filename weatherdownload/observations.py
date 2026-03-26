@@ -40,6 +40,7 @@ from .geosphere_tenmin import download_tenmin_observations_geosphere
 from .geosphere_parser import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, GEOSPHERE_NORMALIZED_SUBDAILY_COLUMNS
 from .knmi_daily import download_daily_observations_knmi
 from .knmi_hourly import download_hourly_observations_knmi
+from .knmi_tenmin import download_tenmin_observations_knmi
 from .knmi_parser import KNMI_NORMALIZED_DAILY_COLUMNS, KNMI_NORMALIZED_SUBDAILY_COLUMNS
 from .dk_parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
 from .se_parser import SE_NORMALIZED_DAILY_COLUMNS, SE_NORMALIZED_SUBDAILY_COLUMNS
@@ -138,7 +139,9 @@ def _download_observations_knmi(
         return download_daily_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_DAILY_COLUMNS]
     if query.dataset_scope == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_SUBDAILY_COLUMNS]
-    raise NotImplementedError('KNMI Netherlands support currently implements only historical/daily and historical/1hour station observations.')
+    if query.dataset_scope == 'historical' and query.resolution == '10min':
+        return download_tenmin_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_SUBDAILY_COLUMNS]
+    raise NotImplementedError('KNMI Netherlands support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
 
 def _download_observations_dk(
@@ -260,6 +263,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
 
 
 

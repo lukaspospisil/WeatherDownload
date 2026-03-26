@@ -27,6 +27,11 @@ class DownloadTenminExampleTests(unittest.TestCase):
         args = parser.parse_args(['--country', 'DK'])
         self.assertEqual(args.country, 'DK')
 
+    def test_build_parser_accepts_country_nl(self) -> None:
+        parser = download_tenmin.build_parser()
+        args = parser.parse_args(['--country', 'NL'])
+        self.assertEqual(args.country, 'NL')
+
     def test_main_uses_shared_at_query_shape(self) -> None:
         sample = pd.DataFrame([
             {
@@ -83,8 +88,34 @@ class DownloadTenminExampleTests(unittest.TestCase):
         self.assertEqual(query.elements, ['temp_dry', 'pressure'])
         self.assertIn('06180', buffer.getvalue())
 
+    def test_main_uses_shared_nl_query_shape(self) -> None:
+        sample = pd.DataFrame([
+            {
+                'station_id': '0-20000-0-06260',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': 'ta',
+                'timestamp': '2024-01-01T09:10:00Z',
+                'value': 3.1,
+                'flag': None,
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': '10min',
+            }
+        ])
+        buffer = io.StringIO()
+        with patch.object(download_tenmin, 'download_observations', return_value=sample) as download_mock:
+            with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'NL']):
+                with redirect_stdout(buffer):
+                    download_tenmin.main()
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'NL')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, '10min')
+        self.assertEqual(query.station_ids, ['0-20000-0-06260'])
+        self.assertEqual(query.elements, ['ta', 'pp'])
+        self.assertIn('0-20000-0-06260', buffer.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()
-
-

@@ -73,7 +73,8 @@ NL notes:
 
 - set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
 - `daily` and `1hour` are implemented through the official KNMI validated datasets
-- `10min` and EDR are intentionally out of scope for this pass
+- `10min` is implemented through the official KNMI near-real-time Open Data path and is not documented as validated in the same way
+- KNMI EDR remains out of scope in this pass
 
 SE notes:
 
@@ -171,6 +172,7 @@ python examples/download_tenmin.py --country AT
 python examples/download_tenmin.py --country BE
 python examples/download_tenmin.py --country DE
 python examples/download_tenmin.py --country DK
+python examples/download_tenmin.py --country NL
 ```
 
 AT 10-minute notes:
@@ -197,6 +199,15 @@ DK 10-minute notes:
 - source QC/status fields are not exposed on the implemented `10min` path, so `flag` remains null and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
 
+
+NL 10-minute notes:
+
+- `NL` uses the shared 10-minute example path through the official KNMI Open Data API `10-minute-in-situ-meteorological-observations` dataset
+- set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
+- the example preserves the published KNMI 10-minute file timestamp as the normalized UTC `timestamp`
+- this KNMI path is official and source-backed, but it is a near-real-time dataset and is not documented as validated in the same way as the KNMI daily and hourly validated datasets
+- mapped fields stay source-backed only; this first slice does not derive missing variables or recompute hourly or daily values from 10-minute data
+- raw `flag` and normalized `quality` both remain null in this slice
 ### `examples/station_availability.py`
 
 Shows how to:

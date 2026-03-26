@@ -120,7 +120,7 @@ Subdaily variability is expected across providers:
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` | CHMI station metadata with official identifiers, names, coordinates, elevation, and validity fields where exposed by the implemented paths |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
 | `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
-| `NL` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official KNMI metadata file retrieved through the Open Data API; API key required |
+| `NL` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official KNMI metadata file retrieved through the Open Data API; API key required |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 
@@ -331,16 +331,27 @@ Supported canonical elements:
 - `pressure`
 - `sunshine_duration`
 
+### NL `historical / 10min`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `wind_speed`
+- `relative_humidity`
+- `pressure`
+- `sunshine_duration`
+
 Important current limitations:
 
 - KNMI access requires an API key
-- only `NL / historical / daily` and `NL / historical / 1hour` are implemented
+- only `NL / historical / daily`, `NL / historical / 1hour`, and `NL / historical / 10min` are implemented
 - the implemented paths use the official KNMI Open Data API only
-- `10min` and EDR are intentionally out of scope for this pass
-- the normalized hourly `timestamp` preserves the published KNMI hourly file timestamp in UTC
-- provider-defined hourly element semantics stay behind the provider layer
+- `daily` and `1hour` use validated KNMI datasets, while `10min` uses the official near-real-time KNMI path and is not documented as validated in the same way
+- the normalized hourly and 10-minute `timestamp` preserve the published KNMI file timestamp in UTC
+- provider-defined hourly and 10-minute element semantics stay behind the provider layer
+- the current `10min` slice is intentionally conservative and does not map precipitation in this pass
 - no FAO computation and no FAO-related meteorological derivations are added
-- `quality` and `flag` remain null because this pass does not speculate on KNMI quality semantics beyond the validated dataset boundary
+- `quality` and `flag` remain null because this pass does not speculate on KNMI quality semantics beyond the documented dataset boundary
 
 Detailed notes:
 
@@ -504,6 +515,13 @@ For KNMI hourly files:
 - the normalized hourly `timestamp` preserves the published KNMI hourly file timestamp in UTC
 - provider-defined hourly element semantics stay behind the provider layer
 
+For KNMI 10-minute files:
+
+- files are handled through the Open Data API
+- the normalized `timestamp` preserves the published KNMI 10-minute file timestamp in UTC
+- this KNMI path is official and source-backed, but it is a near-real-time dataset and is not documented as validated in the same way as the KNMI daily and hourly validated datasets
+- provider-defined 10-minute element semantics stay behind the provider layer
+
 ## CLI Notes
 
 The CLI mirrors the provider model:
@@ -528,6 +546,7 @@ weatherdownload observations hourly --country DK --station-id 06180 --element ta
 weatherdownload observations 10min --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations hourly --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
+weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T09:10:00Z --end 2024-01-01T09:20:00Z
 weatherdownload observations daily --country SE --station-id 98230 --element tas_mean --element tas_max --element precipitation --start-date 1996-10-01 --end-date 1996-10-03
 weatherdownload observations hourly --country SE --station-id 98230 --element tas_mean --element pressure --start 2012-11-29T11:00:00Z --end 2012-11-29T13:00:00Z
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02

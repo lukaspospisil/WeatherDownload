@@ -89,9 +89,9 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
-    def test_discovery_country_nl_includes_daily_and_hourly(self) -> None:
+    def test_discovery_country_nl_includes_daily_hourly_and_tenmin(self) -> None:
         self.assertEqual(list_dataset_scopes(country='NL'), ['historical'])
-        self.assertEqual(list_resolutions(country='NL', dataset_scope='historical'), ['1hour', 'daily'])
+        self.assertEqual(list_resolutions(country='NL', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         self.assertEqual(
             list_supported_elements(country='NL', dataset_scope='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration', 'wind_speed', 'pressure', 'relative_humidity'],
@@ -108,10 +108,20 @@ class ProviderTests(unittest.TestCase):
             list_supported_elements(country='NL', dataset_scope='historical', resolution='1hour', provider_raw=True),
             ['T', 'RH', 'FH', 'U', 'P', 'SQ'],
         )
+        self.assertEqual(
+            list_supported_elements(country='NL', dataset_scope='historical', resolution='10min'),
+            ['tas_mean', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='NL', dataset_scope='historical', resolution='10min', provider_raw=True),
+            ['ta', 'ff', 'rh', 'pp', 'ss'],
+        )
 
-    def test_nl_hourly_query_is_provider_valid(self) -> None:
+    def test_nl_subdaily_queries_are_provider_valid(self) -> None:
         hourly_query = ObservationQuery(country='NL', dataset_scope='historical', resolution='1hour', station_ids=['0-20000-0-06260'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        tenmin_query = ObservationQuery(country='NL', dataset_scope='historical', resolution='10min', station_ids=['0-20000-0-06260'], start='2024-01-01T09:10:00Z', end='2024-01-01T09:20:00Z', elements=['tas_mean', 'pressure'])
         self.assertEqual(hourly_query.elements, ['T', 'P'])
+        self.assertEqual(tenmin_query.elements, ['ta', 'pp'])
 
     def test_discovery_country_dk_includes_daily(self) -> None:
         self.assertEqual(list_dataset_scopes(country='DK'), ['historical'])
@@ -178,6 +188,3 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-

@@ -21,6 +21,7 @@ KNMI_STATION_DATASET_VERSION = '1.0'
 KNMI_OPEN_DATA_BASE_URL = 'https://api.dataplatform.knmi.nl/open-data/v1'
 KNMI_DAILY_FILENAME_PREFIX = 'daily-observations-'
 KNMI_HOURLY_FILENAME_PREFIX = 'hourly-observations-'
+KNMI_TENMIN_FILENAME_PREFIX = 'KMDS__OPER_P___10M_OBS_L2_'
 
 _KNMI_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('TG',),
@@ -40,6 +41,14 @@ _KNMI_HOURLY_CANONICAL_ELEMENTS = {
     'relative_humidity': ('U',),
     'pressure': ('P',),
     'sunshine_duration': ('SQ',),
+}
+
+_KNMI_TENMIN_CANONICAL_ELEMENTS = {
+    'tas_mean': ('ta',),
+    'wind_speed': ('ff',),
+    'relative_humidity': ('rh',),
+    'pressure': ('pp',),
+    'sunshine_duration': ('ss',),
 }
 
 KNMI_PARAMETER_METADATA: dict[str, dict[str, str]] = {
@@ -99,6 +108,26 @@ KNMI_PARAMETER_METADATA: dict[str, dict[str, str]] = {
         'name': 'Hourly precipitation amount',
         'description': 'Hourly precipitation amount during the past hourly interval, in millimeters.',
     },
+    'ta_10MIN': {
+        'name': '10-minute air temperature',
+        'description': 'Past minute mean air temperature at 1.50 meters, in degrees Celsius.',
+    },
+    'ff_10MIN': {
+        'name': '10-minute mean wind speed',
+        'description': 'Past 10 minute mean wind speed, representative for 10 meters, in meters per second.',
+    },
+    'rh_10MIN': {
+        'name': '10-minute relative humidity',
+        'description': 'Past minute mean relative humidity at 1.50 meters, in percent.',
+    },
+    'pp_10MIN': {
+        'name': '10-minute sea level pressure',
+        'description': 'Past minute mean air pressure at mean sea level, in hectopascal.',
+    },
+    'ss_10MIN': {
+        'name': '10-minute sunshine duration',
+        'description': 'Past 10 minute sunshine duration, in minutes.',
+    },
 }
 
 _KNMI_DATASET_SPECS = [
@@ -121,6 +150,17 @@ _KNMI_DATASET_SPECS = [
         label='KNMI validated hourly in-situ meteorological observations',
         supported_elements=('T', 'RH', 'FH', 'U', 'P', 'SQ'),
         canonical_elements=_KNMI_HOURLY_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
+        implemented=True,
+    ),
+    KnmiDatasetSpec(
+        dataset_scope='historical',
+        resolution='10min',
+        dataset_name='10-minute-in-situ-meteorological-observations',
+        dataset_version='1.0',
+        label='KNMI near real-time 10-minute in-situ meteorological observations',
+        supported_elements=('ta', 'ff', 'rh', 'pp', 'ss'),
+        canonical_elements=_KNMI_TENMIN_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,
     ),

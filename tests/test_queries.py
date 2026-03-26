@@ -82,6 +82,7 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.country, 'AT')
         self.assertEqual(raw_query.elements, ['tl', 'p'])
         self.assertEqual(canonical_query.elements, ['tl', 'p'])
+
     def test_be_hourly_query_accepts_be_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
         canonical_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
@@ -103,19 +104,27 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.elements, ['mean_temp', 'mean_pressure'])
         self.assertEqual(canonical_query.elements, ['mean_temp', 'mean_pressure'])
 
-
     def test_dk_tenmin_query_accepts_dk_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['temp_dry', 'pressure'])
         canonical_query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
         self.assertEqual(raw_query.country, 'DK')
         self.assertEqual(raw_query.elements, ['temp_dry', 'pressure'])
         self.assertEqual(canonical_query.elements, ['temp_dry', 'pressure'])
+
+    def test_nl_tenmin_query_accepts_nl_elements_and_canonical_names(self) -> None:
+        raw_query = ObservationQuery(country='NL', dataset_scope='historical', resolution='10min', station_ids=['0-20000-0-06260'], start='2024-01-01T09:10:00Z', end='2024-01-01T09:20:00Z', elements=['ta', 'pp'])
+        canonical_query = ObservationQuery(country='NL', dataset_scope='historical', resolution='10min', station_ids=['0-20000-0-06260'], start='2024-01-01T09:10:00Z', end='2024-01-01T09:20:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(raw_query.country, 'NL')
+        self.assertEqual(raw_query.elements, ['ta', 'pp'])
+        self.assertEqual(canonical_query.elements, ['ta', 'pp'])
+
     def test_se_hourly_query_accepts_se_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='SE', dataset_scope='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T13:00:00Z', elements=['1', '9'])
         canonical_query = ObservationQuery(country='SE', dataset_scope='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T13:00:00Z', elements=['tas_mean', 'pressure'])
         self.assertEqual(raw_query.country, 'SE')
         self.assertEqual(raw_query.elements, ['1', '9'])
         self.assertEqual(canonical_query.elements, ['1', '9'])
+
     def test_query_rejects_unknown_canonical_element_for_path(self) -> None:
         with self.assertRaises(QueryValidationError):
             ObservationQuery(country='DE', dataset_scope='historical', resolution='daily', station_ids=['00003'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_period_max'])
@@ -149,7 +158,3 @@ class ObservationQueryValidationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
