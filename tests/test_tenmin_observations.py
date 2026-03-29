@@ -1,9 +1,9 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from weatherdownload import get_dataset_spec
-from weatherdownload.chmi_tenmin import NORMALIZED_TENMIN_COLUMNS, build_tenmin_download_targets, normalize_tenmin_observations, parse_tenmin_csv
+from weatherdownload.providers.cz.tenmin import NORMALIZED_TENMIN_COLUMNS, build_tenmin_download_targets, normalize_tenmin_observations, parse_tenmin_csv
 from weatherdownload.metadata import _parse_station_metadata_csv
 from weatherdownload.queries import ObservationQuery
 
@@ -53,7 +53,7 @@ class TenMinObservationTests(unittest.TestCase):
             raise AssertionError(f'unexpected URL: {url}')
 
         query = ObservationQuery(dataset_scope='historical_csv', resolution='10min', station_ids=['0-20000-0-11406'], all_history=True, elements=['tas_mean'])
-        with patch('weatherdownload.chmi_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.cz.tenmin.requests.get', side_effect=fake_get):
             targets = build_tenmin_download_targets(query)
         self.assertEqual(len(targets), 2)
         self.assertEqual([target.year_month for target in targets], ['202312', '202401'])
@@ -98,3 +98,4 @@ class TenMinObservationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

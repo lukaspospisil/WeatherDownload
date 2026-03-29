@@ -1,10 +1,10 @@
-import json
+﻿import json
 import unittest
 
 import pandas as pd
 
-from weatherdownload.geosphere_registry import get_dataset_spec
-from weatherdownload.geosphere_parser import (
+from weatherdownload.providers.at.registry import get_dataset_spec
+from weatherdownload.providers.at.parser import (
     normalize_geosphere_metadata_datetime,
     normalize_geosphere_observation_metadata,
     normalize_geosphere_station_metadata,
@@ -165,3 +165,4 @@ class GeosphereParserTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

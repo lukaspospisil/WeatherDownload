@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import unittest
 from pathlib import Path
@@ -168,9 +168,9 @@ class KnmiProviderTests(unittest.TestCase):
         }
         filename_order = iter(parsed_payloads.keys())
 
-        with patch('weatherdownload.knmi_daily.list_knmi_files', return_value=json.loads(SAMPLE_FILES_JSON)):
-            with patch('weatherdownload.knmi_daily.download_knmi_file_bytes', side_effect=lambda **kwargs: next(filename_order).encode('utf-8')):
-                with patch('weatherdownload.knmi_daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
+        with patch('weatherdownload.providers.nl.daily.list_knmi_files', return_value=json.loads(SAMPLE_FILES_JSON)):
+            with patch('weatherdownload.providers.nl.daily.download_knmi_file_bytes', side_effect=lambda **kwargs: next(filename_order).encode('utf-8')):
+                with patch('weatherdownload.providers.nl.daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
                     query = ObservationQuery(
                         country='NL',
                         dataset_scope='historical',
@@ -222,9 +222,9 @@ class KnmiProviderTests(unittest.TestCase):
         }
         filename_order = iter(parsed_payloads.keys())
 
-        with patch('weatherdownload.knmi_hourly.list_knmi_files', return_value=json.loads(SAMPLE_HOURLY_FILES_JSON)):
-            with patch('weatherdownload.knmi_hourly.download_knmi_file_bytes', side_effect=lambda **kwargs: next(filename_order).encode('utf-8')):
-                with patch('weatherdownload.knmi_hourly.parse_knmi_hourly_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
+        with patch('weatherdownload.providers.nl.hourly.list_knmi_files', return_value=json.loads(SAMPLE_HOURLY_FILES_JSON)):
+            with patch('weatherdownload.providers.nl.hourly.download_knmi_file_bytes', side_effect=lambda **kwargs: next(filename_order).encode('utf-8')):
+                with patch('weatherdownload.providers.nl.hourly.parse_knmi_hourly_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
                     query = ObservationQuery(
                         country='NL',
                         dataset_scope='historical',
@@ -275,9 +275,9 @@ class KnmiProviderTests(unittest.TestCase):
         }
         filename_order = iter(parsed_payloads.keys())
 
-        with patch('weatherdownload.knmi_tenmin.list_knmi_files', return_value=json.loads(SAMPLE_TENMIN_FILES_JSON)):
-            with patch('weatherdownload.knmi_tenmin.download_knmi_file_bytes', side_effect=lambda **kwargs: next(filename_order).encode('utf-8')):
-                with patch('weatherdownload.knmi_tenmin.parse_knmi_tenmin_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
+        with patch('weatherdownload.providers.nl.tenmin.list_knmi_files', return_value=json.loads(SAMPLE_TENMIN_FILES_JSON)):
+            with patch('weatherdownload.providers.nl.tenmin.download_knmi_file_bytes', side_effect=lambda **kwargs: next(filename_order).encode('utf-8')):
+                with patch('weatherdownload.providers.nl.tenmin.parse_knmi_tenmin_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
                     query = ObservationQuery(
                         country='NL',
                         dataset_scope='historical',
@@ -308,3 +308,4 @@ class KnmiProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

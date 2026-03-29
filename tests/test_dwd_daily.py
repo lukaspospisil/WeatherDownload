@@ -1,4 +1,4 @@
-import io
+﻿import io
 import unittest
 import zipfile
 from unittest.mock import patch
@@ -66,7 +66,7 @@ class DwdDailyDownloaderTests(unittest.TestCase):
             elements=['tas_mean', 'precipitation', 'wind_speed'],
         )
 
-        with patch('weatherdownload.dwd_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DE', station_metadata=station_metadata)
 
         self.assertEqual(
@@ -94,3 +94,4 @@ class DwdDailyDownloaderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

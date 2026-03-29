@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -18,9 +18,9 @@ from weatherdownload import (
     read_station_observation_metadata,
 )
 from weatherdownload.errors import UnsupportedQueryError
-from weatherdownload.shmu_observations import build_recent_daily_month_urls, resolve_latest_recent_daily_data_url
-from weatherdownload.shmu_metadata import discover_recent_daily_stations_shmu
-from weatherdownload.shmu_registry import get_dataset_spec
+from weatherdownload.providers.sk.observations import build_recent_daily_month_urls, resolve_latest_recent_daily_data_url
+from weatherdownload.providers.sk.metadata import discover_recent_daily_stations_shmu
+from weatherdownload.providers.sk.registry import get_dataset_spec
 
 SAMPLE_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_METADATA_PATH = Path('tests/data/sample_shmu_kli_inter_metadata.json')
@@ -166,7 +166,7 @@ class ShmuProviderTests(unittest.TestCase):
         self.assertEqual(by_station.loc['11999', 'end_date'], '2025-01-03T00:00Z')
         self.assertTrue(by_station[['gh_id', 'full_name', 'longitude', 'latitude', 'elevation_m']].isna().all().all())
     def test_discover_recent_daily_stations_shmu_handles_empty_payload_conservatively(self) -> None:
-        with patch('weatherdownload.shmu_metadata._load_recent_daily_payload_text', return_value='{"id": "kli_inter", "data": []}'):
+        with patch('weatherdownload.providers.sk.metadata._load_recent_daily_payload_text', return_value='{"id": "kli_inter", "data": []}'):
             stations = discover_recent_daily_stations_shmu(timeout=60)
         self.assertTrue(stations.empty)
         self.assertEqual(
@@ -181,7 +181,7 @@ class ShmuProviderTests(unittest.TestCase):
                 return SAMPLE_METADATA_TEXT
             raise AssertionError(f'unexpected source: {source}')
 
-        with patch('weatherdownload.shmu_metadata._read_text', side_effect=fake_read_text):
+        with patch('weatherdownload.providers.sk.metadata._read_text', side_effect=fake_read_text):
             observation_metadata = read_station_observation_metadata(country='SK', source_url=str(SAMPLE_PAYLOAD_PATH))
 
         self.assertEqual(
@@ -223,7 +223,7 @@ class ShmuProviderTests(unittest.TestCase):
                 return '<html><body><a href="kli-inter - 2025-02.json">kli-inter - 2025-02.json</a></body></html>'
             raise AssertionError(f'unexpected source: {source}')
 
-        with patch('weatherdownload.shmu_observations._read_text', side_effect=fake_read_text):
+        with patch('weatherdownload.providers.sk.observations._read_text', side_effect=fake_read_text):
             latest_url = resolve_latest_recent_daily_data_url(timeout=60)
 
         self.assertTrue(latest_url.endswith('/recent/data/daily/2025-02/kli-inter - 2025-02.json'))
@@ -246,7 +246,7 @@ class ShmuProviderTests(unittest.TestCase):
                 return SAMPLE_MONTH_INDEX_HTML
             raise AssertionError(f'unexpected source: {source}')
 
-        with patch('weatherdownload.shmu_observations._read_text', side_effect=fake_read_text):
+        with patch('weatherdownload.providers.sk.observations._read_text', side_effect=fake_read_text):
             urls = build_recent_daily_month_urls(query, spec=get_dataset_spec('recent', 'daily'), timeout=60)
 
         self.assertEqual(urls, ['https://opendata.shmu.sk/meteorology/climate/recent/data/daily/2025-01/kli-inter - 2025-01.json'])
@@ -291,7 +291,7 @@ class ShmuProviderTests(unittest.TestCase):
         )
         station_metadata = read_station_metadata(country='SK', source_url=str(SAMPLE_PAYLOAD_PATH))
 
-        with patch('weatherdownload.shmu_observations._read_text', side_effect=fake_read_text):
+        with patch('weatherdownload.providers.sk.observations._read_text', side_effect=fake_read_text):
             observations = download_observations(query, country='SK', station_metadata=station_metadata)
 
         self.assertEqual(list(observations.columns), EXPECTED_SK_DAILY_COLUMNS)
@@ -335,7 +335,7 @@ class ShmuProviderTests(unittest.TestCase):
             elements=['t_max'],
         )
 
-        with patch('weatherdownload.shmu_observations._read_text', side_effect=fake_read_text):
+        with patch('weatherdownload.providers.sk.observations._read_text', side_effect=fake_read_text):
             observations = download_observations(query, country='SK')
 
         self.assertEqual(list(observations['element'].unique()), ['tas_max'])
@@ -362,12 +362,13 @@ class ShmuProviderTests(unittest.TestCase):
         )
         station_metadata = read_station_metadata(country='SK', source_url=str(SAMPLE_PAYLOAD_PATH))
 
-        with patch('weatherdownload.shmu_observations._read_text', side_effect=fake_read_text):
+        with patch('weatherdownload.providers.sk.observations._read_text', side_effect=fake_read_text):
             return download_observations(query, country='SK', station_metadata=station_metadata)
 
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

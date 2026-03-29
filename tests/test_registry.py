@@ -1,7 +1,7 @@
-import unittest
+﻿import unittest
 
 from weatherdownload import DatasetNotImplementedError, ObservationQuery, download_observations, get_dataset_spec, list_dataset_scopes, list_resolutions, list_supported_elements
-from weatherdownload.chmi_registry import list_implemented_dataset_specs
+from weatherdownload.providers.cz.registry import list_implemented_dataset_specs
 
 
 class RegistryTests(unittest.TestCase):
@@ -78,3 +78,4 @@ class RegistryTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

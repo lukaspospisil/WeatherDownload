@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -41,9 +41,9 @@ def test_nl_tenmin_download_contract_matches_shared_subdaily_schema() -> None:
     file_listing = {'files': [{'filename': 'KMDS__OPER_P___10M_OBS_L2_202401010910.nc'}, {'filename': 'KMDS__OPER_P___10M_OBS_L2_202401010920.nc'}]}
 
     with patch.dict(os.environ, {'WEATHERDOWNLOAD_KNMI_API_KEY': 'test-key'}, clear=False):
-        with patch('weatherdownload.knmi_tenmin.list_knmi_files', return_value=file_listing):
-            with patch('weatherdownload.knmi_tenmin.download_knmi_file_bytes', side_effect=[b'first', b'second']):
-                with patch('weatherdownload.knmi_tenmin.parse_knmi_tenmin_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
+        with patch('weatherdownload.providers.nl.tenmin.list_knmi_files', return_value=file_listing):
+            with patch('weatherdownload.providers.nl.tenmin.download_knmi_file_bytes', side_effect=[b'first', b'second']):
+                with patch('weatherdownload.providers.nl.tenmin.parse_knmi_tenmin_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
                     observations = download_observations(query, country='NL', station_metadata=station_metadata)
 
     assert list(observations.columns) == ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']

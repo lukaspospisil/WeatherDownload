@@ -1,8 +1,8 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 
 from weatherdownload import get_dataset_spec
-from weatherdownload.chmi_daily import NORMALIZED_DAILY_COLUMNS, build_daily_download_targets, normalize_daily_observations, parse_daily_csv
+from weatherdownload.providers.cz.daily import NORMALIZED_DAILY_COLUMNS, build_daily_download_targets, normalize_daily_observations, parse_daily_csv
 from weatherdownload.metadata import _parse_station_metadata_csv
 from weatherdownload.queries import ObservationQuery
 
@@ -46,3 +46,4 @@ class DailyObservationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -41,9 +41,9 @@ def test_nl_hourly_download_contract_matches_shared_subdaily_schema() -> None:
     file_listing = {'files': [{'filename': 'hourly-observations-20240101-01.nc'}, {'filename': 'hourly-observations-20240101-02.nc'}]}
 
     with patch.dict(os.environ, {'WEATHERDOWNLOAD_KNMI_API_KEY': 'test-key'}, clear=False):
-        with patch('weatherdownload.knmi_hourly.list_knmi_files', return_value=file_listing):
-            with patch('weatherdownload.knmi_hourly.download_knmi_file_bytes', side_effect=[b'first', b'second']):
-                with patch('weatherdownload.knmi_hourly.parse_knmi_hourly_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
+        with patch('weatherdownload.providers.nl.hourly.list_knmi_files', return_value=file_listing):
+            with patch('weatherdownload.providers.nl.hourly.download_knmi_file_bytes', side_effect=[b'first', b'second']):
+                with patch('weatherdownload.providers.nl.hourly.parse_knmi_hourly_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
                     observations = download_observations(query, country='NL', station_metadata=station_metadata)
 
     assert list(observations.columns) == ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
@@ -56,3 +56,4 @@ def test_nl_hourly_download_contract_matches_shared_subdaily_schema() -> None:
     assert observations['flag'].isna().all()
     assert observations['quality'].isna().all()
     assert str(observations['quality'].dtype) == 'Int64'
+

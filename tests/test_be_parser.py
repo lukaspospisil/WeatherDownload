@@ -1,14 +1,14 @@
-import unittest
+﻿import unittest
 
 import pandas as pd
 
-from weatherdownload.be_parser import (
+from weatherdownload.providers.be.parser import (
     normalize_be_metadata_datetime,
     normalize_be_observation_metadata,
     normalize_be_station_metadata,
     parse_be_feature_collection_json,
 )
-from weatherdownload.be_registry import BE_DAILY_PARAMETER_METADATA, BE_HOURLY_PARAMETER_METADATA, BE_TENMIN_PARAMETER_METADATA, get_dataset_spec
+from weatherdownload.providers.be.registry import BE_DAILY_PARAMETER_METADATA, BE_HOURLY_PARAMETER_METADATA, BE_TENMIN_PARAMETER_METADATA, get_dataset_spec
 
 
 class BelgiumParserTests(unittest.TestCase):
@@ -116,3 +116,4 @@ class BelgiumParserTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

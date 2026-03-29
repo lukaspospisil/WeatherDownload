@@ -1,4 +1,4 @@
-import io
+﻿import io
 import unittest
 import zipfile
 from unittest.mock import patch
@@ -108,7 +108,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
             elements=['tas_mean', 'relative_humidity', 'wind_speed'],
         )
 
-        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.subdaily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
 
         self.assertEqual(
@@ -153,7 +153,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
             elements=['TT_TU'],
         )
 
-        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.subdaily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
 
         self.assertEqual(list(observations['element'].unique()), ['tas_mean'])
@@ -178,7 +178,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
             elements=['tas_mean'],
         )
 
-        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.subdaily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
 
         self.assertEqual(len(observations), 2)
@@ -210,7 +210,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
             elements=['tas_mean', 'relative_humidity', 'wind_speed'],
         )
 
-        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.subdaily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
 
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['relative_humidity', 'tas_mean', 'wind_speed'])
@@ -245,7 +245,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
             elements=['TT_10'],
         )
 
-        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.subdaily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
 
         self.assertEqual(list(observations['element'].unique()), ['tas_mean'])
@@ -270,7 +270,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
             elements=['tas_mean'],
         )
 
-        with patch('weatherdownload.dwd_subdaily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.subdaily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DE', station_metadata=self._station_metadata())
 
         self.assertEqual(len(observations), 2)
@@ -280,3 +280,4 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

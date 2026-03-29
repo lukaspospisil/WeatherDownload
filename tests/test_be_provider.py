@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,7 +14,7 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
-from weatherdownload.be_daily import RMI_AWS_WFS_URL
+from weatherdownload.providers.be.daily import RMI_AWS_WFS_URL
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_be_aws_station.json')
 SAMPLE_DAILY_TEXT = Path('tests/data/sample_be_aws_1day.json').read_text(encoding='utf-8')
@@ -145,7 +145,7 @@ class BelgiumProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
-        with patch('weatherdownload.be_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.be.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_BE_DAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean'])
@@ -164,7 +164,7 @@ class BelgiumProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.be_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.be.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_BE_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
@@ -184,7 +184,7 @@ class BelgiumProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.be_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.be.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_BE_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
@@ -194,7 +194,7 @@ class BelgiumProviderTests(unittest.TestCase):
     def test_be_daily_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=list(EXPECTED_BE_DAILY_CANONICAL_MAPPING.keys()))
-        with patch('weatherdownload.be_daily.requests.get', return_value=_MockResponse(SAMPLE_DAILY_TEXT)):
+        with patch('weatherdownload.providers.be.daily.requests.get', return_value=_MockResponse(SAMPLE_DAILY_TEXT)):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_BE_DAILY_CANONICAL_MAPPING)
@@ -204,7 +204,7 @@ class BelgiumProviderTests(unittest.TestCase):
     def test_be_hourly_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=list(EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING.keys()))
-        with patch('weatherdownload.be_hourly.requests.get', return_value=_MockResponse(SAMPLE_HOURLY_TEXT)):
+        with patch('weatherdownload.providers.be.hourly.requests.get', return_value=_MockResponse(SAMPLE_HOURLY_TEXT)):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING)
@@ -215,7 +215,7 @@ class BelgiumProviderTests(unittest.TestCase):
     def test_be_tenmin_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=list(EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING.keys()))
-        with patch('weatherdownload.be_tenmin.requests.get', return_value=_MockResponse(SAMPLE_TENMIN_TEXT)):
+        with patch('weatherdownload.providers.be.tenmin.requests.get', return_value=_MockResponse(SAMPLE_TENMIN_TEXT)):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING)
@@ -226,3 +226,4 @@ class BelgiumProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

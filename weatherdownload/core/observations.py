@@ -2,63 +2,63 @@
 
 import pandas as pd
 
-from ..be_daily import download_daily_observations_be
-from ..ch_daily import download_daily_observations_ch
-from ..ch_hourly import download_hourly_observations_ch
-from ..ch_parser import CH_NORMALIZED_DAILY_COLUMNS, CH_NORMALIZED_SUBDAILY_COLUMNS
-from ..ch_tenmin import download_tenmin_observations_ch
-from ..be_hourly import download_hourly_observations_be
-from ..be_parser import BE_NORMALIZED_DAILY_COLUMNS, BE_NORMALIZED_SUBDAILY_COLUMNS
-from ..be_tenmin import download_tenmin_observations_be
-from ..chmi_daily import (
+from ..providers.be.daily import download_daily_observations_be
+from ..providers.ch.daily import download_daily_observations_ch
+from ..providers.ch.hourly import download_hourly_observations_ch
+from ..providers.ch.parser import CH_NORMALIZED_DAILY_COLUMNS, CH_NORMALIZED_SUBDAILY_COLUMNS
+from ..providers.ch.tenmin import download_tenmin_observations_ch
+from ..providers.be.hourly import download_hourly_observations_be
+from ..providers.be.parser import BE_NORMALIZED_DAILY_COLUMNS, BE_NORMALIZED_SUBDAILY_COLUMNS
+from ..providers.be.tenmin import download_tenmin_observations_be
+from ..providers.cz.daily import (
     NORMALIZED_DAILY_COLUMNS,
     build_daily_download_targets,
     download_daily_csv,
     normalize_daily_observations,
     parse_daily_csv,
 )
-from ..chmi_hourly import (
+from ..providers.cz.hourly import (
     NORMALIZED_HOURLY_COLUMNS,
     build_hourly_download_targets,
     download_hourly_csv,
     normalize_hourly_observations,
     parse_hourly_csv,
 )
-from ..chmi_tenmin import (
+from ..providers.cz.tenmin import (
     NORMALIZED_TENMIN_COLUMNS,
     build_tenmin_download_targets,
     download_tenmin_csv,
     normalize_tenmin_observations,
     parse_tenmin_csv,
 )
-from ..dwd_daily import download_daily_observations_dwd
-from ..dk_daily import download_daily_observations_dk
-from ..dk_hourly import download_hourly_observations_dk
-from ..dk_tenmin import download_tenmin_observations_dk
-from ..se_daily import download_daily_observations_se
-from ..se_hourly import download_hourly_observations_se
-from ..dwd_subdaily import NORMALIZED_DWD_SUBDAILY_COLUMNS, download_subdaily_observations_dwd
-from ..geosphere_daily import download_daily_observations_geosphere
-from ..geosphere_hourly import download_hourly_observations_geosphere
-from ..geosphere_tenmin import download_tenmin_observations_geosphere
-from ..geosphere_parser import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, GEOSPHERE_NORMALIZED_SUBDAILY_COLUMNS
-from ..hu_daily import download_daily_observations_hu
-from ..hu_hourly import download_hourly_observations_hu
-from ..hu_tenmin import download_tenmin_observations_hu
-from ..hu_tenmin_wind import download_tenmin_wind_observations_hu
-from ..hu_parser import HU_NORMALIZED_DAILY_COLUMNS, HU_NORMALIZED_SUBDAILY_COLUMNS
-from ..knmi_daily import download_daily_observations_knmi
-from ..pl_daily import download_daily_observations_pl
-from ..knmi_hourly import download_hourly_observations_knmi
-from ..knmi_tenmin import download_tenmin_observations_knmi
-from ..knmi_parser import KNMI_NORMALIZED_DAILY_COLUMNS, KNMI_NORMALIZED_SUBDAILY_COLUMNS
-from ..dk_parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
-from ..se_parser import SE_NORMALIZED_DAILY_COLUMNS, SE_NORMALIZED_SUBDAILY_COLUMNS
-from ..pl_parser import PL_NORMALIZED_DAILY_COLUMNS
-from ..chmi_registry import get_dataset_spec as get_chmi_dataset_spec
+from ..providers.de.daily import download_daily_observations_dwd
+from ..providers.dk.daily import download_daily_observations_dk
+from ..providers.dk.hourly import download_hourly_observations_dk
+from ..providers.dk.tenmin import download_tenmin_observations_dk
+from ..providers.se.daily import download_daily_observations_se
+from ..providers.se.hourly import download_hourly_observations_se
+from ..providers.de.subdaily import NORMALIZED_DWD_SUBDAILY_COLUMNS, download_subdaily_observations_dwd
+from ..providers.at.daily import download_daily_observations_geosphere
+from ..providers.at.hourly import download_hourly_observations_geosphere
+from ..providers.at.tenmin import download_tenmin_observations_geosphere
+from ..providers.at.parser import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, GEOSPHERE_NORMALIZED_SUBDAILY_COLUMNS
+from ..providers.hu.daily import download_daily_observations_hu
+from ..providers.hu.hourly import download_hourly_observations_hu
+from ..providers.hu.tenmin import download_tenmin_observations_hu
+from ..providers.hu.tenmin_wind import download_tenmin_wind_observations_hu
+from ..providers.hu.parser import HU_NORMALIZED_DAILY_COLUMNS, HU_NORMALIZED_SUBDAILY_COLUMNS
+from ..providers.nl.daily import download_daily_observations_knmi
+from ..providers.pl.daily import download_daily_observations_pl
+from ..providers.nl.hourly import download_hourly_observations_knmi
+from ..providers.nl.tenmin import download_tenmin_observations_knmi
+from ..providers.nl.parser import KNMI_NORMALIZED_DAILY_COLUMNS, KNMI_NORMALIZED_SUBDAILY_COLUMNS
+from ..providers.dk.parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
+from ..providers.se.parser import SE_NORMALIZED_DAILY_COLUMNS, SE_NORMALIZED_SUBDAILY_COLUMNS
+from ..providers.pl.parser import PL_NORMALIZED_DAILY_COLUMNS
+from ..providers.cz.registry import get_dataset_spec as get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
-from ..shmu_observations import NORMALIZED_SHMU_DAILY_COLUMNS, download_daily_observations_shmu
+from ..providers.sk.observations import NORMALIZED_SHMU_DAILY_COLUMNS, download_daily_observations_shmu
 
 
 def download_observations(
@@ -311,6 +311,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
 
 
 

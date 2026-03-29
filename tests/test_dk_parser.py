@@ -5,9 +5,9 @@ from pathlib import Path
 import pandas as pd
 
 from weatherdownload import ObservationQuery
-from weatherdownload.dk_daily import normalize_daily_observations_dk
-from weatherdownload.dk_hourly import normalize_hourly_observations_dk
-from weatherdownload.dk_parser import (
+from weatherdownload.providers.dk.daily import normalize_daily_observations_dk
+from weatherdownload.providers.dk.hourly import normalize_hourly_observations_dk
+from weatherdownload.providers.dk.parser import (
     build_dk_flag,
     normalize_dk_observation_metadata,
     normalize_dk_station_metadata,
@@ -16,8 +16,8 @@ from weatherdownload.dk_parser import (
     observation_timestamp_from_observed,
     parse_dk_feature_collection_json,
 )
-from weatherdownload.dk_registry import DK_DAILY_PARAMETER_METADATA, DK_HOURLY_PARAMETER_METADATA, DK_TENMIN_PARAMETER_METADATA, get_dataset_spec
-from weatherdownload.dk_tenmin import normalize_tenmin_observations_dk
+from weatherdownload.providers.dk.registry import DK_DAILY_PARAMETER_METADATA, DK_HOURLY_PARAMETER_METADATA, DK_TENMIN_PARAMETER_METADATA, get_dataset_spec
+from weatherdownload.providers.dk.tenmin import normalize_tenmin_observations_dk
 
 SAMPLE_STATIONS_TEXT = Path('tests/data/sample_dk_dmi_stations.json').read_text(encoding='utf-8')
 SAMPLE_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(encoding='utf-8')
@@ -140,3 +140,4 @@ class DenmarkParserTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

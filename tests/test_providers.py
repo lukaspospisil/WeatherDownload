@@ -40,7 +40,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(normalize_country_code(None), 'CZ')
 
     def test_read_station_metadata_country_de(self) -> None:
-        with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
+        with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
             stations = read_station_metadata(country='DE')
         self.assertEqual(list(stations.columns), ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'])
         self.assertEqual(stations.iloc[0]['station_id'], '00003')
@@ -49,7 +49,7 @@ class ProviderTests(unittest.TestCase):
         self.assertNotIn('\ufffd', stations.iloc[0]['full_name'])
 
     def test_read_station_observation_metadata_country_de(self) -> None:
-        with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
+        with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
             observation_metadata = read_station_observation_metadata(country='DE')
         self.assertEqual(list(observation_metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('TMK', observation_metadata['element'].tolist())
@@ -252,5 +252,6 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 

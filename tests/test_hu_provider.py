@@ -1,4 +1,4 @@
-import io
+﻿import io
 import unittest
 import zipfile
 from pathlib import Path
@@ -17,15 +17,15 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
-from weatherdownload.hu_daily import HU_DAILY_HISTORICAL_URL, HU_DAILY_RECENT_URL
-from weatherdownload.hu_hourly import HU_HOURLY_HISTORICAL_URL, HU_HOURLY_RECENT_URL
-from weatherdownload.hu_parser import (
+from weatherdownload.providers.hu.daily import HU_DAILY_HISTORICAL_URL, HU_DAILY_RECENT_URL
+from weatherdownload.providers.hu.hourly import HU_HOURLY_HISTORICAL_URL, HU_HOURLY_RECENT_URL
+from weatherdownload.providers.hu.parser import (
     HU_NORMALIZED_DAILY_COLUMNS,
     HU_NORMALIZED_SUBDAILY_COLUMNS,
     parse_hu_daily_csv,
     parse_hu_subdaily_csv,
 )
-from weatherdownload.hu_registry import (
+from weatherdownload.providers.hu.registry import (
     HU_TENMIN_HISTORICAL_URL,
     HU_TENMIN_RECENT_URL,
     HU_TENMIN_WIND_HISTORICAL_URL,
@@ -121,7 +121,7 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(text=wind_text)
             return _MockResponse(status_code=404)
 
-        with patch('weatherdownload.hu_metadata.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.metadata.requests.get', side_effect=fake_get):
             stations = read_station_metadata(country='HU')
         self.assertIn('26327', stations['station_id'].tolist())
         self.assertIn('13704', stations['station_id'].tolist())
@@ -145,7 +145,7 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(text=wind_text)
             return _MockResponse(status_code=404)
 
-        with patch('weatherdownload.hu_metadata.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.metadata.requests.get', side_effect=fake_get):
             metadata = read_station_observation_metadata(country='HU')
         self.assertIn('HISTORICAL_10MIN_WIND', set(metadata['obs_type']))
         wind_rows = metadata[metadata['station_id'] == '26327']
@@ -236,7 +236,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2026-01-02', elements=['tas_mean', 'precipitation', 'sunshine_duration'])
-        with patch('weatherdownload.hu_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_DAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'sunshine_duration', 'tas_mean'])
@@ -262,7 +262,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
-        with patch('weatherdownload.hu_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'pressure', 'tas_mean'])
@@ -288,7 +288,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
-        with patch('weatherdownload.hu_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'pressure', 'tas_mean'])
@@ -316,7 +316,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['wind_speed', 'wind_speed_max'])
-        with patch('weatherdownload.hu_tenmin_wind.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.tenmin_wind.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['wind_speed', 'wind_speed_max'])
@@ -342,7 +342,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical', resolution='daily', station_ids=['13704'], start_date='2005-07-28', end_date='2005-07-29', elements=list(EXPECTED_HU_DAILY_MAPPING.keys()))
-        with patch('weatherdownload.hu_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_HU_DAILY_MAPPING)
@@ -368,7 +368,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=list(EXPECTED_HU_HOURLY_MAPPING.keys()))
-        with patch('weatherdownload.hu_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_HU_HOURLY_MAPPING)
@@ -391,7 +391,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_HU_TENMIN_MAPPING.keys()))
-        with patch('weatherdownload.hu_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_HU_TENMIN_MAPPING)
@@ -414,7 +414,7 @@ class HungaryProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='HU', dataset_scope='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_HU_TENMIN_WIND_MAPPING.keys()))
-        with patch('weatherdownload.hu_tenmin_wind.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.tenmin_wind.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_HU_TENMIN_WIND_MAPPING)
@@ -425,3 +425,4 @@ class HungaryProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

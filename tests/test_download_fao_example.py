@@ -9,8 +9,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
-from weatherdownload.geosphere_daily import normalize_daily_observations_geosphere
-from weatherdownload.geosphere_parser import parse_geosphere_daily_csv
+from weatherdownload.providers.at.daily import normalize_daily_observations_geosphere
+from weatherdownload.providers.at.parser import parse_geosphere_daily_csv
 from weatherdownload.queries import ObservationQuery
 
 
@@ -758,6 +758,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

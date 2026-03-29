@@ -1,9 +1,9 @@
-import json
+﻿import json
 import unittest
 
 import pandas as pd
 
-from weatherdownload.shmu_parser import (
+from weatherdownload.providers.sk.parser import (
     extract_recent_daily_station_date_ranges,
     extract_recent_daily_begin_end_dates,
     extract_recent_daily_station_ids,
@@ -131,3 +131,4 @@ class ShmuParserTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

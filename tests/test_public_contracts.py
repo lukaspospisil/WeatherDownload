@@ -109,14 +109,14 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
         with patch('weatherdownload.metadata.requests.get', return_value=_MockTextResponse(SAMPLE_META1_TEXT)):
             return read_station_metadata(country='CZ')
     if country == 'AT':
-        with patch('weatherdownload.geosphere_metadata.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_METADATA_TEXT)):
+        with patch('weatherdownload.providers.at.metadata.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_METADATA_TEXT)):
             return read_station_metadata(country='AT')
     if country == 'BE':
         return read_station_metadata(country='BE', source_url=str(SAMPLE_BE_STATIONS_PATH))
     if country == 'CH':
         return read_station_metadata(country='CH', source_url=str(SAMPLE_CH_STATIONS_PATH))
     if country == 'DE':
-        with patch('weatherdownload.dwd_metadata.requests.get', return_value=_MockTextResponse(content=SAMPLE_DWD_STATIONS)):
+        with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockTextResponse(content=SAMPLE_DWD_STATIONS)):
             return read_station_metadata(country='DE')
     if country == 'DK':
         return read_station_metadata(country='DK', source_url=str(SAMPLE_DK_STATIONS_PATH))
@@ -143,12 +143,12 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
     if country == 'AT':
         station_metadata = _read_station_metadata_fixture('AT')
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
-        with patch('weatherdownload.geosphere_daily.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_CSV_TEXT)):
+        with patch('weatherdownload.providers.at.daily.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':
         station_metadata = _read_station_metadata_fixture('BE')
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
-        with patch('weatherdownload.be_daily.requests.get', return_value=_MockTextResponse(SAMPLE_BE_DAILY_TEXT)):
+        with patch('weatherdownload.providers.be.daily.requests.get', return_value=_MockTextResponse(SAMPLE_BE_DAILY_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
     if country == 'CH':
         station_metadata = _read_station_metadata_fixture('CH')
@@ -163,7 +163,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=SAMPLE_CH_DAILY_RECENT_PATH.read_bytes())
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.ch_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.ch.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='CH', station_metadata=station_metadata)
     if country == 'DE':
         station_metadata = _read_station_metadata_fixture('DE')
@@ -178,7 +178,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=zip_bytes)
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.dwd_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.de.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='DE', station_metadata=station_metadata)
     if country == 'DK':
         station_metadata = _read_station_metadata_fixture('DK')
@@ -196,7 +196,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             }
             return _MockTextResponse(text=json.dumps(filtered))
 
-        with patch('weatherdownload.dk_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.dk.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='DK', station_metadata=station_metadata)
     if country == 'HU':
         station_metadata = _read_station_metadata_fixture('HU')
@@ -213,7 +213,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=recent_zip)
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.hu_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='HU', station_metadata=station_metadata)
     if country == 'NL':
         station_metadata = _read_station_metadata_fixture('NL')
@@ -239,9 +239,9 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
         file_listing = {'files': [{'filename': 'daily-observations-20240101.nc'}, {'filename': 'daily-observations-20240102.nc'}]}
 
         with patch.dict('os.environ', {'WEATHERDOWNLOAD_KNMI_API_KEY': 'test-key'}, clear=False):
-            with patch('weatherdownload.knmi_daily.list_knmi_files', return_value=file_listing):
-                with patch('weatherdownload.knmi_daily.download_knmi_file_bytes', side_effect=[b'first', b'second']):
-                    with patch('weatherdownload.knmi_daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
+            with patch('weatherdownload.providers.nl.daily.list_knmi_files', return_value=file_listing):
+                with patch('weatherdownload.providers.nl.daily.download_knmi_file_bytes', side_effect=[b'first', b'second']):
+                    with patch('weatherdownload.providers.nl.daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
                         return download_observations(query, country='NL', station_metadata=station_metadata)
     if country == 'PL':
         station_metadata = _read_station_metadata_fixture('PL')
@@ -256,7 +256,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=month_zip)
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.pl_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.pl.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='PL', station_metadata=station_metadata)
 
     if country == 'SE':
@@ -270,7 +270,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'daily_parameter_5.csv').read_text(encoding='utf-8'))
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.se_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.se.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='SE', station_metadata=station_metadata)
     if country == 'SK':
         station_metadata = _read_station_metadata_fixture('SK')
@@ -285,7 +285,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 return SAMPLE_SHMU_PAYLOAD_TEXT
             raise AssertionError(f'unexpected source: {source}')
 
-        with patch('weatherdownload.shmu_observations._read_text', side_effect=fake_read_text):
+        with patch('weatherdownload.providers.sk.observations._read_text', side_effect=fake_read_text):
             return download_observations(query, country='SK', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
@@ -293,12 +293,12 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
     if country == 'AT':
         station_metadata = _read_station_metadata_fixture('AT')
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.geosphere_hourly.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_HOURLY_CSV_TEXT)):
+        with patch('weatherdownload.providers.at.hourly.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_HOURLY_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':
         station_metadata = _read_station_metadata_fixture('BE')
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.be_hourly.requests.get', return_value=_MockTextResponse(SAMPLE_BE_HOURLY_TEXT)):
+        with patch('weatherdownload.providers.be.hourly.requests.get', return_value=_MockTextResponse(SAMPLE_BE_HOURLY_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
     if country == 'CH':
         station_metadata = _read_station_metadata_fixture('CH')
@@ -313,7 +313,7 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=SAMPLE_CH_HOURLY_RECENT_PATH.read_bytes())
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.ch_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.ch.hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='CH', station_metadata=station_metadata)
     if country == 'DK':
         station_metadata = _read_station_metadata_fixture('DK')
@@ -331,7 +331,7 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
             }
             return _MockTextResponse(text=json.dumps(filtered))
 
-        with patch('weatherdownload.dk_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.dk.hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='DK', station_metadata=station_metadata)
     if country == 'HU':
         station_metadata = _read_station_metadata_fixture('HU')
@@ -348,7 +348,7 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=recent_zip)
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.hu_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='HU', station_metadata=station_metadata)
 
     if country == 'SE':
@@ -362,7 +362,7 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'hourly_parameter_9.csv').read_text(encoding='utf-8'))
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.se_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.se.hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='SE', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
@@ -371,12 +371,12 @@ def _download_tenmin_fixture(country: str) -> pd.DataFrame:
     if country == 'AT':
         station_metadata = _read_station_metadata_fixture('AT')
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.geosphere_tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_TENMIN_CSV_TEXT)):
+        with patch('weatherdownload.providers.at.tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_TENMIN_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':
         station_metadata = _read_station_metadata_fixture('BE')
         query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.be_tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_BE_TENMIN_TEXT)):
+        with patch('weatherdownload.providers.be.tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_BE_TENMIN_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
     if country == 'CH':
         station_metadata = _read_station_metadata_fixture('CH')
@@ -391,7 +391,7 @@ def _download_tenmin_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=SAMPLE_CH_TENMIN_RECENT_PATH.read_bytes())
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.ch_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.ch.tenmin.requests.get', side_effect=fake_get):
             return download_observations(query, country='CH', station_metadata=station_metadata)
     if country == 'DK':
         station_metadata = _read_station_metadata_fixture('DK')
@@ -409,7 +409,7 @@ def _download_tenmin_fixture(country: str) -> pd.DataFrame:
             }
             return _MockTextResponse(text=json.dumps(filtered))
 
-        with patch('weatherdownload.dk_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.dk.tenmin.requests.get', side_effect=fake_get):
             return download_observations(query, country='DK', station_metadata=station_metadata)
     if country == 'HU':
         station_metadata = _read_station_metadata_fixture('HU')
@@ -426,7 +426,7 @@ def _download_tenmin_fixture(country: str) -> pd.DataFrame:
                 return _MockTextResponse(content=recent_zip)
             raise AssertionError(f'unexpected URL: {url}')
 
-        with patch('weatherdownload.hu_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.hu.tenmin.requests.get', side_effect=fake_get):
             return download_observations(query, country='HU', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
@@ -623,6 +623,7 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
 
 
 

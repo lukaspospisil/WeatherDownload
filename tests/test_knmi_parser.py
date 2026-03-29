@@ -1,9 +1,9 @@
-import unittest
+﻿import unittest
 import warnings
 
 import pandas as pd
 
-from weatherdownload.knmi_parser import (
+from weatherdownload.providers.nl.parser import (
     normalize_knmi_metadata_datetime,
     normalize_knmi_observation_metadata,
     parse_knmi_api_listing_json,
@@ -12,7 +12,7 @@ from weatherdownload.knmi_parser import (
     parse_knmi_station_metadata_csv,
     parse_knmi_tenmin_netcdf_bytes,
 )
-from weatherdownload.knmi_registry import KNMI_PARAMETER_METADATA, get_dataset_spec
+from weatherdownload.providers.nl.registry import KNMI_PARAMETER_METADATA, get_dataset_spec
 
 
 def _import_netcdf4_for_knmi_tests() -> tuple[object, object]:
@@ -203,3 +203,4 @@ class KnmiParserTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

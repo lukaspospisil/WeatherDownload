@@ -1,9 +1,9 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from weatherdownload import get_dataset_spec
-from weatherdownload.chmi_hourly import NORMALIZED_HOURLY_COLUMNS, build_hourly_download_targets, normalize_hourly_observations, parse_hourly_csv
+from weatherdownload.providers.cz.hourly import NORMALIZED_HOURLY_COLUMNS, build_hourly_download_targets, normalize_hourly_observations, parse_hourly_csv
 from weatherdownload.metadata import _parse_station_metadata_csv
 from weatherdownload.queries import ObservationQuery
 
@@ -53,7 +53,7 @@ class HourlyObservationTests(unittest.TestCase):
             raise AssertionError(f'unexpected URL: {url}')
 
         query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], all_history=True, elements=['vapour_pressure'])
-        with patch('weatherdownload.chmi_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.cz.hourly.requests.get', side_effect=fake_get):
             targets = build_hourly_download_targets(query)
         self.assertEqual(len(targets), 2)
         self.assertEqual([target.year_month for target in targets], ['202312', '202401'])
@@ -98,3 +98,4 @@ class HourlyObservationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -17,8 +17,8 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
-from weatherdownload.pl_daily import PL_DAILY_SYNOP_BASE_URL, build_pl_daily_download_targets
-from weatherdownload.pl_parser import PL_NORMALIZED_DAILY_COLUMNS, parse_pl_daily_synop_csv
+from weatherdownload.providers.pl.daily import PL_DAILY_SYNOP_BASE_URL, build_pl_daily_download_targets
+from weatherdownload.providers.pl.parser import PL_NORMALIZED_DAILY_COLUMNS, parse_pl_daily_synop_csv
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_pl_wykaz_stacji.csv')
 SAMPLE_STATION_2025_PATH = Path('tests/data/sample_pl_synop_station_2025.csv')
@@ -130,7 +130,7 @@ class PolandProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='PL', dataset_scope='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2026-01-02', elements=['tas_mean', 'precipitation', 'sunshine_duration'])
-        with patch('weatherdownload.pl_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.pl.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='PL', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), PL_NORMALIZED_DAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'sunshine_duration', 'tas_mean'])
@@ -154,7 +154,7 @@ class PolandProviderTests(unittest.TestCase):
             return _MockResponse(status_code=404)
 
         query = ObservationQuery(country='PL', dataset_scope='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2025-01-02', elements=list(EXPECTED_PL_DAILY_MAPPING.keys()))
-        with patch('weatherdownload.pl_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.pl.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='PL', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_PL_DAILY_MAPPING)
@@ -166,5 +166,6 @@ class PolandProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
 
 

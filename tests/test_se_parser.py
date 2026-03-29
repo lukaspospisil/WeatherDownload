@@ -1,8 +1,8 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 import pandas as pd
 
-from weatherdownload.se_parser import (
+from weatherdownload.providers.se.parser import (
     normalize_se_observation_metadata,
     normalize_se_station_metadata,
     parse_se_daily_csv,
@@ -80,3 +80,4 @@ def test_parse_se_hourly_csv_extracts_timestamp_value_and_raw_quality_flag() -> 
     ]
     assert records['value'].tolist() == [1006.6, 1006.2, 1005.9]
     assert records['flag'].tolist() == ['G', 'G', 'Y']
+

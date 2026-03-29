@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,9 +14,9 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
-from weatherdownload.geosphere_daily import GEOSPHERE_DAILY_API_URL
-from weatherdownload.geosphere_hourly import GEOSPHERE_HOURLY_API_URL
-from weatherdownload.geosphere_tenmin import GEOSPHERE_TENMIN_API_URL
+from weatherdownload.providers.at.daily import GEOSPHERE_DAILY_API_URL
+from weatherdownload.providers.at.hourly import GEOSPHERE_HOURLY_API_URL
+from weatherdownload.providers.at.tenmin import GEOSPHERE_TENMIN_API_URL
 
 SAMPLE_METADATA_PATH = Path('tests/data/sample_geosphere_klima_v2_1d_metadata.json')
 SAMPLE_METADATA_TEXT = SAMPLE_METADATA_PATH.read_text(encoding='utf-8')
@@ -83,7 +83,7 @@ class GeosphereProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_at_from_sample(self) -> None:
-        with patch('weatherdownload.geosphere_metadata.requests.get', return_value=_MockResponse(SAMPLE_METADATA_TEXT)):
+        with patch('weatherdownload.providers.at.metadata.requests.get', return_value=_MockResponse(SAMPLE_METADATA_TEXT)):
             stations = read_station_metadata(country='AT')
         self.assertEqual(list(stations.columns), ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'])
         self.assertEqual(stations['station_id'].tolist(), ['1', '2'])
@@ -101,7 +101,7 @@ class GeosphereProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_TENMIN_METADATA_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        with patch('weatherdownload.geosphere_metadata.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.at.metadata.requests.get', side_effect=fake_get):
             observation_metadata = read_station_observation_metadata(country='AT')
         self.assertEqual(list(observation_metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('tl_mittel', observation_metadata['element'].tolist())
@@ -168,7 +168,7 @@ class GeosphereProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
-        with patch('weatherdownload.geosphere_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.at.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
 
         self.assertEqual(list(observations.columns), EXPECTED_AT_DAILY_COLUMNS)
@@ -193,7 +193,7 @@ class GeosphereProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.geosphere_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.at.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
 
         self.assertEqual(list(observations.columns), EXPECTED_AT_SUBDAILY_COLUMNS)
@@ -218,7 +218,7 @@ class GeosphereProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.geosphere_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.at.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
 
         self.assertEqual(list(observations.columns), EXPECTED_AT_SUBDAILY_COLUMNS)
@@ -233,7 +233,7 @@ class GeosphereProviderTests(unittest.TestCase):
     def test_at_daily_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=list(EXPECTED_AT_CANONICAL_MAPPING.keys()))
-        with patch('weatherdownload.geosphere_daily.requests.get', return_value=_MockResponse(SAMPLE_CSV_TEXT)):
+        with patch('weatherdownload.providers.at.daily.requests.get', return_value=_MockResponse(SAMPLE_CSV_TEXT)):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_AT_CANONICAL_MAPPING)
@@ -246,7 +246,7 @@ class GeosphereProviderTests(unittest.TestCase):
     def test_at_hourly_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=list(EXPECTED_AT_HOURLY_MAPPING.keys()))
-        with patch('weatherdownload.geosphere_hourly.requests.get', return_value=_MockResponse(SAMPLE_HOURLY_CSV_TEXT)):
+        with patch('weatherdownload.providers.at.hourly.requests.get', return_value=_MockResponse(SAMPLE_HOURLY_CSV_TEXT)):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_AT_HOURLY_MAPPING)
@@ -259,7 +259,7 @@ class GeosphereProviderTests(unittest.TestCase):
     def test_at_tenmin_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
         query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:30:00Z', elements=list(EXPECTED_AT_TENMIN_MAPPING.keys()))
-        with patch('weatherdownload.geosphere_tenmin.requests.get', return_value=_MockResponse(SAMPLE_TENMIN_CSV_TEXT)):
+        with patch('weatherdownload.providers.at.tenmin.requests.get', return_value=_MockResponse(SAMPLE_TENMIN_CSV_TEXT)):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_AT_TENMIN_MAPPING)
@@ -278,7 +278,7 @@ class GeosphereProviderTests(unittest.TestCase):
             captured['params'] = params
             return _MockResponse(SAMPLE_CSV_TEXT)
 
-        with patch('weatherdownload.geosphere_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.at.daily.requests.get', side_effect=fake_get):
             download_observations(query, country='AT', station_metadata=station_metadata)
         self.assertIn(('start', '1983-05-01'), captured['params'])
         self.assertIn(('end', '2100-12-31'), captured['params'])
@@ -292,7 +292,7 @@ class GeosphereProviderTests(unittest.TestCase):
             captured['params'] = params
             return _MockResponse(SAMPLE_HOURLY_CSV_TEXT)
 
-        with patch('weatherdownload.geosphere_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.at.hourly.requests.get', side_effect=fake_get):
             download_observations(query, country='AT', station_metadata=station_metadata)
         start_value = dict(captured['params'])['start']
         end_value = dict(captured['params'])['end']
@@ -308,7 +308,7 @@ class GeosphereProviderTests(unittest.TestCase):
             captured['params'] = params
             return _MockResponse(SAMPLE_TENMIN_CSV_TEXT)
 
-        with patch('weatherdownload.geosphere_tenmin.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.at.tenmin.requests.get', side_effect=fake_get):
             download_observations(query, country='AT', station_metadata=station_metadata)
         start_value = dict(captured['params'])['start']
         end_value = dict(captured['params'])['end']
@@ -318,3 +318,4 @@ class GeosphereProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

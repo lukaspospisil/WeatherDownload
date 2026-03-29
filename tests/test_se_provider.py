@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -110,7 +110,7 @@ class SwedenProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='SE', dataset_scope='historical', resolution='daily', station_ids=['98230'], start_date='1996-10-01', end_date='1996-10-02', elements=['tas_mean', 'precipitation'])
-        with patch('weatherdownload.se_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.se.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='SE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_DAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean'])
@@ -130,7 +130,7 @@ class SwedenProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='SE', dataset_scope='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T12:00:00Z', elements=['tas_mean', 'pressure'])
-        with patch('weatherdownload.se_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.se.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='SE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_HOURLY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
@@ -154,7 +154,7 @@ class SwedenProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='SE', dataset_scope='historical', resolution='daily', station_ids=['98230'], start_date='1996-10-01', end_date='1996-10-03', elements=list(EXPECTED_DAILY_MAPPING.keys()))
-        with patch('weatherdownload.se_daily.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.se.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='SE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_DAILY_MAPPING)
@@ -179,7 +179,7 @@ class SwedenProviderTests(unittest.TestCase):
             raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(country='SE', dataset_scope='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T13:00:00Z', elements=list(EXPECTED_HOURLY_MAPPING.keys()))
-        with patch('weatherdownload.se_hourly.requests.get', side_effect=fake_get):
+        with patch('weatherdownload.providers.se.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='SE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_HOURLY_MAPPING)
@@ -190,3 +190,4 @@ class SwedenProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
