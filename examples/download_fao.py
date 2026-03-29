@@ -63,6 +63,13 @@ DK_REQUIRED_OBSERVED_ELEMENTS = (
     'wind_speed',
     'sunshine_duration',
 )
+CH_REQUIRED_OBSERVED_ELEMENTS = (
+    'tas_mean',
+    'tas_max',
+    'tas_min',
+    'wind_speed',
+    'sunshine_duration',
+)
 HU_REQUIRED_OBSERVED_ELEMENTS = (
     'tas_mean',
     'tas_max',
@@ -180,6 +187,33 @@ DK_PROVIDER_ELEMENT_MAPPING = {
         'notes': 'Not directly available from the current Denmark daily provider path. The shared workflow leaves this field empty instead of deriving it.',
     },
     'sunshine_duration': {'raw_codes': ['bright_sunshine'], 'selection_rule': None, 'status': 'observed'},
+}
+CH_ASSUMPTIONS = {
+    'observed_inputs_only': (
+        'The Switzerland branch packages source-backed daily observations from the MeteoSwiss A1 provider slice for later FAO-oriented processing. '
+        'It does not compute FAO-56 ET0.'
+    ),
+    'vapour_pressure_availability': (
+        'Observed daily vapour_pressure is available from the implemented MeteoSwiss A1 daily provider path and is used directly when present.'
+    ),
+    'fallback_policy': (
+        'If the shared allow-derived policy is enabled and observed vapour_pressure is missing on some rows, the existing shared fallback from '
+        'observed tas_mean plus observed relative_humidity may be used. No CH-specific derivation logic is introduced.'
+    ),
+    'sunshine_duration_to_radiation': (
+        'Observed daily sunshine_duration is exported as input only. The workflow does not derive solar radiation, net radiation, or extraterrestrial radiation.'
+    ),
+    'daily_precipitation_window': (
+        'MeteoSwiss daily precipitation semantics remain provider-defined. This FAO-prep workflow does not reinterpret or recompute them.'
+    ),
+}
+CH_PROVIDER_ELEMENT_MAPPING = {
+    'tas_mean': {'raw_codes': ['tre200d0'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['tre200dx'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['tre200dn'], 'selection_rule': None, 'status': 'observed'},
+    'wind_speed': {'raw_codes': ['fkl010d0'], 'selection_rule': None, 'status': 'observed'},
+    'vapour_pressure': {'raw_codes': ['pva200d0'], 'selection_rule': None, 'status': 'observed'},
+    'sunshine_duration': {'raw_codes': ['sre000d0'], 'selection_rule': None, 'status': 'observed'},
 }
 HU_ASSUMPTIONS = {
     'observed_inputs_only': (
@@ -566,6 +600,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         query_elements = AT_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'BE':
         query_elements = BE_REQUIRED_OBSERVED_ELEMENTS
+    elif normalized_country == 'CH':
+        query_elements = FAO_CANONICAL_ELEMENTS
     elif normalized_country == 'DK':
         query_elements = DK_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'HU':
@@ -577,7 +613,7 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
     else:
         query_elements = FAO_CANONICAL_ELEMENTS
     query_elements = tuple(query_elements)
-    if fill_missing == 'allow-derived' and normalized_country in {'AT', 'BE', 'DK', 'HU', 'NL'}:
+    if fill_missing == 'allow-derived' and normalized_country in {'AT', 'BE', 'CH', 'DK', 'HU', 'NL'}:
         query_elements = tuple(dict.fromkeys([*query_elements, 'relative_humidity']))
 
     selected_canonical_to_raw: dict[str, tuple[str, ...]] = {}
@@ -599,6 +635,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         return FaoCountryConfig('AT', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, AT_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(AT_PROVIDER_ELEMENT_MAPPING), dict(AT_ASSUMPTIONS), 'GeoSphere Austria observed daily input bundle prepared for later FAO workflow packaging', 'GeoSphere Austria Dataset API station historical daily klima-v2-1d')
     if normalized_country == 'BE':
         return FaoCountryConfig('BE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, BE_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(BE_PROVIDER_ELEMENT_MAPPING), dict(BE_ASSUMPTIONS), 'RMI/KMI Belgium observed daily input bundle prepared for later FAO workflow packaging', 'RMI/KMI open-data platform aws_1day daily station observations')
+    if normalized_country == 'CH':
+        return FaoCountryConfig('CH', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, CH_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(CH_PROVIDER_ELEMENT_MAPPING), dict(CH_ASSUMPTIONS), 'MeteoSwiss Switzerland observed daily input bundle prepared for later FAO workflow packaging', 'MeteoSwiss A1 automatic weather stations historical daily observations')
     if normalized_country == 'DK':
         return FaoCountryConfig('DK', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
     if normalized_country == 'HU':
@@ -1120,4 +1158,3 @@ def _to_mat_value(value: Any) -> Any:
 
 if __name__ == '__main__':
     raise SystemExit(main())
-

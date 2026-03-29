@@ -27,6 +27,7 @@ Currently supported in the shared workflow:
 - `DE`
 - `AT`
 - `BE`
+- `CH`
 - `DK`
 - `HU`
 - `NL`
@@ -39,6 +40,7 @@ python examples/download_fao.py --country CZ
 python examples/download_fao.py --country DE
 python examples/download_fao.py --country AT
 python examples/download_fao.py --country BE
+python examples/download_fao.py --country CH
 python examples/download_fao.py --country DK
 python examples/download_fao.py --country HU
 python examples/download_fao.py --country NL
@@ -52,7 +54,7 @@ python examples/download_fao.py --country NL --fill-missing allow-derived
 
 For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
 
-For `HU`, no extra API key is required for the current provider slice.
+For `CH` and `HU`, no extra API key is required for the current provider slices.
 
 ## Fixed Export Shape
 
@@ -128,6 +130,25 @@ Unavailable in the current shared path:
 - `vapour_pressure` stays null
 
 The DK branch uses only the existing Denmark daily provider through the unified public interface. Denmark daily values come from the official DMI Climate Data `stationValue` path, and the workflow remains Denmark-only in this pass without broadening to Greenland or Faroe Islands support.
+
+### CH
+
+Observed inputs used:
+
+- `tas_mean` via `tre200d0`
+- `tas_max` via `tre200dx`
+- `tas_min` via `tre200dn`
+- `wind_speed` via `fkl010d0`
+- `vapour_pressure` via `pva200d0`
+- `sunshine_duration` via `sre000d0`
+
+Observed `vapour_pressure` is available in the current shared path and is exported directly when present.
+
+Optional shared fallback in `--fill-missing allow-derived` mode:
+
+- if observed `vapour_pressure` is missing on some rows, the existing shared example-layer fallback may fill it from observed daily `tas_mean` plus observed daily `relative_humidity`
+
+The CH branch uses only the existing MeteoSwiss A1 daily provider slice through the unified public interface. This workflow prepares a clean observed daily input bundle for later FAO-oriented processing, does not compute FAO-56 ET0, does not derive radiation terms, and does not reinterpret MeteoSwiss provider-defined daily precipitation semantics.
 
 ### HU
 
@@ -252,6 +273,13 @@ The sidecar is the export-level provenance record for the workflow. It records t
 - `num_stations`
 
 If a country has important limitations, `data_info` also includes an `assumptions` block.
+
+For `CH`, that assumptions block explicitly states that:
+
+- the branch packages observed MeteoSwiss A1 daily inputs for later FAO-oriented processing only
+- observed `vapour_pressure` is available in the current provider path and is used directly when present
+- the shared optional fill mode may reuse the existing `tas_mean` plus `relative_humidity` fallback only when observed `vapour_pressure` is missing on some rows
+- the workflow does not compute FAO-56 ET0 and does not reinterpret MeteoSwiss provider-defined daily precipitation semantics
 
 For `BE`, that assumptions block explicitly states that:
 

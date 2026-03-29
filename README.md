@@ -57,7 +57,7 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Yes* | Yes* | Yes* | Yes | Stable |
 | `BE` | Yes* | Yes* | Yes* | Yes | Stable |
-| `CH` | Yes* | Yes* | Yes* | No | Stable |
+| `CH` | Yes* | Yes* | Yes* | Yes | Stable |
 | `CZ` | Yes | Yes | Yes | Yes | Stable |
 | `DE` | Yes | Yes* | Yes* | Yes | Stable |
 | `DK` | Yes* | Yes* | Yes* | Yes | Stable |
