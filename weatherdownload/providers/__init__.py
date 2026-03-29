@@ -3,15 +3,15 @@
 from .base import WeatherProvider
 from .be import PROVIDER as BE_PROVIDER
 from .ch import PROVIDER as CH_PROVIDER
-from .chmi import PROVIDER as CHMI_PROVIDER
+from .cz import PROVIDER as CHMI_PROVIDER
 from .dk import PROVIDER as DK_PROVIDER
-from .dwd import PROVIDER as DWD_PROVIDER
-from .geosphere import PROVIDER as GEOSPHERE_PROVIDER
+from .de import PROVIDER as DWD_PROVIDER
+from .at import PROVIDER as GEOSPHERE_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
-from .knmi import PROVIDER as KNMI_PROVIDER
+from .nl import PROVIDER as KNMI_PROVIDER
 from .pl import PROVIDER as PL_PROVIDER
 from .se import PROVIDER as SE_PROVIDER
-from .shmu import PROVIDER as SHMU_PROVIDER
+from .sk import PROVIDER as SHMU_PROVIDER
 
 PROVIDERS: dict[str, WeatherProvider] = {
     'AT': GEOSPHERE_PROVIDER,
@@ -48,4 +48,5 @@ def get_provider(country: str | None = None) -> WeatherProvider:
 
 def list_supported_countries() -> list[str]:
     return sorted(PROVIDERS)
+
 

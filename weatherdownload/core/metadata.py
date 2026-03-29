@@ -1,0 +1,196 @@
+﻿from __future__ import annotations
+
+import csv
+import io
+from collections.abc import Sequence
+from datetime import date, datetime
+from numbers import Real
+
+import pandas as pd
+import requests
+
+DEFAULT_META1_URL = 'https://opendata.chmi.cz/meteorology/climate/historical_csv/metadata/meta1.csv'
+DEFAULT_META2_URL = 'https://opendata.chmi.cz/meteorology/climate/historical_csv/metadata/meta2.csv'
+
+STATION_METADATA_COLUMNS = [
+    'station_id',
+    'gh_id',
+    'begin_date',
+    'end_date',
+    'full_name',
+    'longitude',
+    'latitude',
+    'elevation_m',
+]
+
+STATION_OBSERVATION_METADATA_COLUMNS = [
+    'obs_type',
+    'station_id',
+    'begin_date',
+    'end_date',
+    'element',
+    'schedule',
+    'name',
+    'description',
+    'height',
+]
+
+
+def read_station_metadata(country: str = 'CZ', source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
+    from ..providers import get_provider
+
+    resolved_country, resolved_source_url = _resolve_metadata_call(country, source_url)
+    provider = get_provider(resolved_country)
+    return provider.read_station_metadata(resolved_source_url, timeout)
+
+
+def read_station_observation_metadata(country: str = 'CZ', source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
+    from ..providers import get_provider
+
+    resolved_country, resolved_source_url = _resolve_metadata_call(country, source_url)
+    provider = get_provider(resolved_country)
+    return provider.read_station_observation_metadata(resolved_source_url, timeout)
+
+
+def _resolve_metadata_call(country: str, source_url: str | None) -> tuple[str, str | None]:
+    if source_url is None and '://' in country:
+        return 'CZ', country
+    return country, source_url
+
+
+def _read_station_metadata_chmi(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
+    response = requests.get(source_url or DEFAULT_META1_URL, timeout=timeout)
+    response.raise_for_status()
+    response.encoding = 'utf-8'
+    return _parse_station_metadata_csv(response.text)
+
+
+def _read_station_observation_metadata_chmi(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
+    response = requests.get(source_url or DEFAULT_META2_URL, timeout=timeout)
+    response.raise_for_status()
+    response.encoding = 'utf-8'
+    return _parse_station_observation_metadata_csv(response.text)
+
+
+def filter_stations(
+    stations: pd.DataFrame,
+    station_ids: Sequence[str] | None = None,
+    gh_ids: Sequence[str] | None = None,
+    name_contains: str | None = None,
+    active_on: date | datetime | str | None = None,
+    bbox: tuple[float, float, float, float] | None = None,
+) -> pd.DataFrame:
+    filtered = stations.copy()
+
+    if station_ids:
+        station_id_set = {station_id.strip().upper() for station_id in station_ids}
+        filtered = filtered[filtered['station_id'].str.upper().isin(station_id_set)]
+
+    if gh_ids:
+        gh_id_set = {gh_id.strip().upper() for gh_id in gh_ids}
+        filtered = filtered[filtered['gh_id'].str.upper().isin(gh_id_set)]
+
+    if name_contains:
+        filtered = filtered[
+            filtered['full_name'].str.contains(name_contains, case=False, na=False)
+        ]
+
+    if bbox is not None:
+        min_longitude, min_latitude, max_longitude, max_latitude = _normalize_bbox(bbox)
+        filtered = filtered[
+            filtered['longitude'].between(min_longitude, max_longitude, inclusive='both')
+            & filtered['latitude'].between(min_latitude, max_latitude, inclusive='both')
+        ]
+
+    if active_on is not None:
+        active_ts = pd.Timestamp(active_on)
+        if active_ts.tzinfo is None:
+            active_ts = active_ts.tz_localize('UTC')
+        else:
+            active_ts = active_ts.tz_convert('UTC')
+        begin = pd.to_datetime(filtered['begin_date'], utc=True)
+        end = pd.to_datetime(filtered['end_date'], utc=True)
+        filtered = filtered[(begin <= active_ts) & (end >= active_ts)]
+
+    return filtered.reset_index(drop=True)
+
+
+def _parse_station_metadata_csv(csv_text: str) -> pd.DataFrame:
+    reader = csv.DictReader(io.StringIO(csv_text.lstrip('\ufeff')))
+    records: list[dict[str, object]] = []
+
+    for row in reader:
+        if not row.get('WSI') or not row.get('GH_ID'):
+            continue
+
+        records.append(
+            {
+                'station_id': row['WSI'].strip(),
+                'gh_id': row['GH_ID'].strip(),
+                'begin_date': _normalize_datetime(row['BEGIN_DATE']),
+                'end_date': _normalize_datetime(row['END_DATE']),
+                'full_name': row['FULL_NAME'].strip(),
+                'longitude': _parse_float(row['GEOGR1']),
+                'latitude': _parse_float(row['GEOGR2']),
+                'elevation_m': _parse_float(row['ELEVATION']),
+            }
+        )
+
+    return pd.DataFrame.from_records(records, columns=STATION_METADATA_COLUMNS)
+
+
+def _parse_station_observation_metadata_csv(csv_text: str) -> pd.DataFrame:
+    reader = csv.DictReader(io.StringIO(csv_text.lstrip('\ufeff')))
+    records: list[dict[str, object]] = []
+
+    for row in reader:
+        if not row.get('WSI') or not row.get('OBS_TYPE'):
+            continue
+
+        records.append(
+            {
+                'obs_type': row['OBS_TYPE'].strip(),
+                'station_id': row['WSI'].strip(),
+                'begin_date': _normalize_datetime(row['BEGIN_DATE']),
+                'end_date': _normalize_datetime(row['END_DATE']),
+                'element': row['EG_EL_ABBREVIATION'].strip(),
+                'schedule': row['SCHEDULE'].strip().strip('"'),
+                'name': row.get('NAME', '').strip(),
+                'description': row.get('UN_DESCRIPTION', '').strip(),
+                'height': _parse_float(row.get('HEIGHT', '')),
+            }
+        )
+
+    return pd.DataFrame.from_records(records, columns=STATION_OBSERVATION_METADATA_COLUMNS)
+
+
+def _normalize_datetime(value: str) -> str:
+    cleaned = value.strip()
+    if not cleaned:
+        return cleaned
+    parsed = datetime.strptime(cleaned, '%Y-%m-%dT%H:%MZ')
+    return parsed.isoformat(timespec='minutes') + 'Z'
+
+
+def _parse_float(value: str) -> float | None:
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    return float(cleaned)
+
+
+def _normalize_bbox(bbox: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    if len(bbox) != 4:
+        raise ValueError('bbox must contain exactly four numbers: (min_longitude, min_latitude, max_longitude, max_latitude).')
+    min_longitude, min_latitude, max_longitude, max_latitude = bbox
+    coordinates = (min_longitude, min_latitude, max_longitude, max_latitude)
+    if not all(isinstance(value, Real) for value in coordinates):
+        raise ValueError('bbox values must be numeric.')
+    if min_longitude > max_longitude:
+        raise ValueError('bbox min_longitude must be less than or equal to max_longitude.')
+    if min_latitude > max_latitude:
+        raise ValueError('bbox min_latitude must be less than or equal to max_latitude.')
+    return float(min_longitude), float(min_latitude), float(max_longitude), float(max_latitude)
+
+
+
