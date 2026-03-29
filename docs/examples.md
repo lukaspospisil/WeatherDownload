@@ -45,6 +45,7 @@ Run:
 python examples/download_daily.py
 python examples/download_daily.py --country AT
 python examples/download_daily.py --country BE
+python examples/download_daily.py --country CH
 python examples/download_daily.py --country CZ
 python examples/download_daily.py --country DE
 python examples/download_daily.py --country DK
@@ -62,6 +63,13 @@ BE notes:
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 - `BE` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the same shared examples and public resolution tokens
 
+CH notes:
+
+- `CH` uses the shared daily example path through the official MeteoSwiss A1 station product
+- station metadata and discovery use the official MeteoSwiss A1 metadata tables and STAC station assets
+- daily observations stay source-backed only and preserve the provider-defined MeteoSwiss daily interval semantics behind the provider layer
+- `gh_id` is populated from the official MeteoSwiss `station_wigos_id`
+- raw `flag` and normalized `quality` both remain null on the implemented A1 slice
 DK notes:
 
 - `DK` uses the shared daily example path through the official DMI Climate Data `stationValue` collection
@@ -112,6 +120,7 @@ Run:
 python examples/download_hourly.py
 python examples/download_hourly.py --country AT
 python examples/download_hourly.py --country BE
+python examples/download_hourly.py --country CH
 python examples/download_hourly.py --country DE
 python examples/download_hourly.py --country DK
 python examples/download_hourly.py --country HU
@@ -135,6 +144,13 @@ BE hourly notes:
 - the example preserves the published hourly timestamps and does not recompute hourly values from 10-minute data
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 
+CH hourly notes:
+
+- `CH` uses the shared hourly example path through the official MeteoSwiss A1 station assets
+- the example preserves the published MeteoSwiss UTC reference timestamp as the normalized `timestamp`
+- mapped fields stay source-backed only; WeatherDownload does not recompute hourly values from any other Swiss product
+- `gh_id` is populated from the official MeteoSwiss `station_wigos_id`
+- raw `flag` and normalized `quality` both remain null on the implemented A1 slice
 DK hourly notes:
 
 - `DK` uses the shared hourly example path through the official DMI Climate Data `stationValue` collection with `timeResolution=hour`
@@ -187,6 +203,7 @@ Run:
 python examples/download_tenmin.py
 python examples/download_tenmin.py --country AT
 python examples/download_tenmin.py --country BE
+python examples/download_tenmin.py --country CH
 python examples/download_tenmin.py --country DE
 python examples/download_tenmin.py --country DK
 python examples/download_tenmin.py --country HU
@@ -208,6 +225,13 @@ BE 10-minute notes:
 - mapped fields stay source-backed only; no hourly or daily aggregates are recomputed from Belgium 10-minute data
 - raw `qc_flags` are preserved in `flag` and normalized `quality` stays null
 
+CH 10-minute notes:
+
+- `CH` uses the shared 10-minute example path through the official MeteoSwiss A1 station assets
+- the example preserves the published MeteoSwiss UTC reference timestamp as the normalized `timestamp`
+- mapped fields stay source-backed only; no hourly or daily values are recomputed from Swiss 10-minute data
+- `gh_id` is populated from the official MeteoSwiss `station_wigos_id`
+- raw `flag` and normalized `quality` both remain null on the implemented A1 slice
 DK 10-minute notes:
 
 - `DK` uses the shared 10-minute example path through the official DMI Meteorological Observation API `observation` collection
@@ -315,6 +339,9 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+
+
 
 
 

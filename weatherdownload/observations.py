@@ -3,6 +3,10 @@ from __future__ import annotations
 import pandas as pd
 
 from .be_daily import download_daily_observations_be
+from .ch_daily import download_daily_observations_ch
+from .ch_hourly import download_hourly_observations_ch
+from .ch_parser import CH_NORMALIZED_DAILY_COLUMNS, CH_NORMALIZED_SUBDAILY_COLUMNS
+from .ch_tenmin import download_tenmin_observations_ch
 from .be_hourly import download_hourly_observations_be
 from .be_parser import BE_NORMALIZED_DAILY_COLUMNS, BE_NORMALIZED_SUBDAILY_COLUMNS
 from .be_tenmin import download_tenmin_observations_be
@@ -106,6 +110,19 @@ def _download_observations_be(
     if query.dataset_scope == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_be(query, timeout=timeout, station_metadata=station_metadata).loc[:, BE_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('RMI/KMI Belgium support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
+
+def _download_observations_ch(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+        return download_daily_observations_ch(query, timeout=timeout, station_metadata=station_metadata).loc[:, CH_NORMALIZED_DAILY_COLUMNS]
+    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+        return download_hourly_observations_ch(query, timeout=timeout, station_metadata=station_metadata).loc[:, CH_NORMALIZED_SUBDAILY_COLUMNS]
+    if query.dataset_scope == 'historical' and query.resolution == '10min':
+        return download_tenmin_observations_ch(query, timeout=timeout, station_metadata=station_metadata).loc[:, CH_NORMALIZED_SUBDAILY_COLUMNS]
+    raise NotImplementedError('MeteoSwiss Switzerland support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
 
 def _download_observations_dwd(

@@ -35,7 +35,7 @@ class _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CZ', 'DE', 'DK', 'HU', 'NL', 'SE', 'SK'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'SE', 'SK'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
@@ -89,6 +89,21 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
+    def test_discovery_country_ch_includes_daily_hourly_and_tenmin(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='CH'), ['historical'])
+        self.assertEqual(list_resolutions(country='CH', dataset_scope='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(
+            list_supported_elements(country='CH', dataset_scope='historical', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'vapour_pressure', 'pressure', 'sunshine_duration'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='CH', dataset_scope='historical', resolution='1hour'),
+            ['tas_mean', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'vapour_pressure', 'pressure', 'sunshine_duration'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='CH', dataset_scope='historical', resolution='10min'),
+            ['tas_mean', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'vapour_pressure', 'pressure', 'sunshine_duration'],
+        )
     def test_discovery_country_hu_includes_daily_hourly_tenmin_and_wind_scope(self) -> None:
         self.assertEqual(list_dataset_scopes(country='HU'), ['historical', 'historical_wind'])
         self.assertEqual(list_resolutions(country='HU', dataset_scope='historical'), ['10min', '1hour', 'daily'])
@@ -176,6 +191,11 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_query.elements, ['mean_temp', 'mean_pressure'])
         self.assertEqual(tenmin_query.elements, ['temp_dry', 'pressure'])
 
+    def test_ch_subdaily_queries_are_provider_valid(self) -> None:
+        hourly_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='1hour', station_ids=['AIG'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
+        tenmin_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='10min', station_ids=['AIG'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(hourly_query.elements, ['tre200h0', 'prestah0'])
+        self.assertEqual(tenmin_query.elements, ['tre200s0', 'prestas0'])
     def test_hu_subdaily_queries_are_provider_valid(self) -> None:
         hourly_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2026-01-01T00:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
         tenmin_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2026-01-01T00:00:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure'])

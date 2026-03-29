@@ -20,6 +20,7 @@ Use ISO 3166-1 alpha-2 country codes:
 
 - `AT`
 - `BE`
+- `CH`
 - `CZ`
 - `DE`
 - `DK`
@@ -35,6 +36,7 @@ from weatherdownload import read_station_metadata, list_supported_elements
 
 at_stations = read_station_metadata(country="AT")
 be_stations = read_station_metadata(country="BE")
+ch_stations = read_station_metadata(country="CH")
 cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
 dk_stations = read_station_metadata(country="DK")
@@ -53,6 +55,7 @@ nl_daily_elements = list_supported_elements(
 ```powershell
 weatherdownload stations metadata --country AT
 weatherdownload stations metadata --country BE
+weatherdownload stations metadata --country CH
 weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
 weatherdownload stations metadata --country DK
@@ -105,6 +108,7 @@ Subdaily variability is expected across providers:
 | --- | --- |
 | `AT` | GeoSphere Klima station id as string |
 | `BE` | official RMI/KMI AWS station code from the `aws_station` layer |
+| `CH` | official MeteoSwiss A1 `station_abbr` as string |
 | `CZ` | CHMI `WSI` |
 | `DE` | zero-padded DWD `Stations_id` |
 | `DK` | official DMI `stationId` from the Climate Data `station` collection |
@@ -121,6 +125,7 @@ Subdaily variability is expected across providers:
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
 | `BE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, geometry-backed coordinates, altitude, and validity timestamps |
+| `CH` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration` | Official MeteoSwiss A1 station metadata with source-backed station identifier, WIGOS id, name, coordinates, elevation, and validity range |
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` | CHMI station metadata with official identifiers, names, coordinates, elevation, and validity fields where exposed by the implemented paths |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
 | `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
@@ -224,6 +229,62 @@ Detailed notes:
 
 - [RMI/KMI Belgium Provider Notes](providers_be_rmi.md)
 
+### CH `historical / daily`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `precipitation`
+- `wind_speed`
+- `wind_speed_max`
+- `relative_humidity`
+- `vapour_pressure`
+- `pressure`
+- `sunshine_duration`
+
+### CH `historical / 1hour`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `precipitation`
+- `wind_speed`
+- `wind_speed_max`
+- `relative_humidity`
+- `vapour_pressure`
+- `pressure`
+- `sunshine_duration`
+
+### CH `historical / 10min`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `precipitation`
+- `wind_speed`
+- `wind_speed_max`
+- `relative_humidity`
+- `vapour_pressure`
+- `pressure`
+- `sunshine_duration`
+
+Important current limitations:
+
+- the implemented path uses only the official MeteoSwiss A1 automatic weather station product
+- only `CH / historical / daily`, `CH / historical / 1hour`, and `CH / historical / 10min` are implemented
+- WeatherDownload does not mix A1 with Swiss A2, A3, climate-series, or other MeteoSwiss product families in this pass
+- `station_id` is the official MeteoSwiss A1 `station_abbr`, normalized as string
+- `gh_id` carries the official MeteoSwiss `station_wigos_id`
+- subdaily `timestamp` values preserve the published MeteoSwiss UTC timestamps
+- daily precipitation keeps the official MeteoSwiss A1 `6 UTC -> 6 UTC next day` daily window semantics behind the provider layer
+- raw flags are not exposed on the implemented A1 slice, so `flag` remains null and normalized `quality` remains null
+- no FAO computation and no derived meteorological variables are added
+
+Detailed notes:
+
+- [MeteoSwiss Switzerland Provider Notes](providers_ch_meteoswiss.md)
 ### DE `historical / 1hour`
 
 Supported canonical elements:
@@ -569,6 +630,14 @@ For SMHI Sweden hourly files:
 - corrected-archive excludes the latest three months while SMHI quality control is still in progress
 - raw `Kvalitet` stays in `flag`; normalized `quality` stays null
 
+For MeteoSwiss Switzerland A1 files:
+
+- station discovery and metadata use the official `ogd-smn_meta_stations.csv`, `ogd-smn_meta_parameters.csv`, and `ogd-smn_meta_datainventory.csv` metadata files
+- daily, hourly, and 10-minute observations are selected from the official MeteoSwiss STAC station assets for the requested station
+- daily `observation_date` is normalized from the published reference timestamp date while provider-defined daily interval semantics stay behind the provider layer
+- hourly and 10-minute `timestamp` values are normalized from the published UTC reference timestamps
+- MeteoSwiss A1 station pressure is mapped from the official `prestad0` / `prestah0` / `prestas0` station-pressure fields
+- the implemented slice does not mix Swiss A1 with other MeteoSwiss product families or derive missing variables
 For HungaroMet Hungary files:
 
 - station discovery and metadata use the official `meta/station_meta_auto.csv` file for the generic product family plus `10_minutes_wind/station_meta_auto_wind.csv` for the separate wind-only product
@@ -613,15 +682,18 @@ Examples:
 ```powershell
 weatherdownload observations daily --country AT --station-id 1 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country BE --station-id 6414 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations daily --country CH --station-id AIG --element tas_mean --element precipitation --element sunshine_duration --start-date 2025-12-31 --end-date 2026-01-02
 weatherdownload observations hourly --country AT --station-id 1 --element tas_mean --element pressure --start 2024-01-01T00:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country AT --station-id 1 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations hourly --country BE --station-id 6414 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
+weatherdownload observations hourly --country CH --station-id AIG --element tas_mean --element pressure --start 2025-12-31T23:00:00Z --end 2026-01-01T01:00:00Z
 weatherdownload observations 10min --country BE --station-id 6414 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DK --station-id 06180 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations hourly --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
+weatherdownload observations 10min --country CH --station-id AIG --element tas_mean --element pressure --start 2025-12-31T23:50:00Z --end 2026-01-01T00:10:00Z
 weatherdownload observations daily --country HU --station-id 13704 --element tas_mean --element precipitation --element sunshine_duration --start-date 2025-07-28 --end-date 2025-07-30
 weatherdownload observations hourly --country HU --station-id 13704 --element tas_mean --element pressure --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z
 weatherdownload observations 10min --country HU --station-id 13704 --element tas_mean --element pressure --start 2026-01-01T00:00:00Z --end 2026-01-01T00:10:00Z
@@ -632,6 +704,12 @@ weatherdownload observations daily --country SE --station-id 98230 --element tas
 weatherdownload observations hourly --country SE --station-id 98230 --element tas_mean --element pressure --start 2012-11-29T11:00:00Z --end 2012-11-29T13:00:00Z
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
+
+
+
+
+
+
 
 
 

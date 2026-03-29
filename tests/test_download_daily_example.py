@@ -17,10 +17,40 @@ SPEC.loader.exec_module(download_daily)
 
 
 class DownloadDailyExampleTests(unittest.TestCase):
-    def test_build_parser_accepts_country_dk_and_se(self) -> None:
+    def test_build_parser_accepts_country_ch_dk_and_se(self) -> None:
         parser = download_daily.build_parser()
+        self.assertEqual(parser.parse_args(['--country', 'CH']).country, 'CH')
         self.assertEqual(parser.parse_args(['--country', 'DK']).country, 'DK')
         self.assertEqual(parser.parse_args(['--country', 'SE']).country, 'SE')
+
+    def test_main_uses_shared_ch_query_shape(self) -> None:
+        sample = pd.DataFrame([
+            {
+                'station_id': 'AIG',
+                'gh_id': '0-20000-0-06712',
+                'element': 'tas_mean',
+                'element_raw': 'tre200d0',
+                'observation_date': '2025-12-31',
+                'time_function': None,
+                'value': -2.2,
+                'flag': None,
+                'quality': None,
+                'dataset_scope': 'historical',
+                'resolution': 'daily',
+            }
+        ])
+        buffer = io.StringIO()
+        with patch.object(download_daily, 'download_observations', return_value=sample) as download_mock:
+            with patch.object(sys, 'argv', ['download_daily.py', '--country', 'CH']):
+                with redirect_stdout(buffer):
+                    download_daily.main()
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'CH')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(query.station_ids, ['AIG'])
+        self.assertEqual(query.elements, ['tre200d0', 'rre150d0', 'sre000d0'])
+        self.assertIn('AIG', buffer.getvalue())
 
     def test_main_uses_shared_dk_query_shape(self) -> None:
         sample = pd.DataFrame([
@@ -80,6 +110,6 @@ class DownloadDailyExampleTests(unittest.TestCase):
         self.assertEqual(query.elements, ['2', '20', '5'])
         self.assertIn('98230', buffer.getvalue())
 
+
 if __name__ == '__main__':
     unittest.main()
-

@@ -57,6 +57,7 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Yes* | Yes* | Yes* | Yes | Stable |
 | `BE` | Yes* | Yes* | Yes* | Yes | Stable |
+| `CH` | Yes* | Yes* | Yes* | No | Stable |
 | `CZ` | Yes | Yes | Yes | Yes | Stable |
 | `DE` | Yes | Yes* | Yes* | Yes | Stable |
 | `DK` | Yes* | Yes* | Yes* | Yes | Stable |
@@ -73,6 +74,7 @@ Hungary also exposes a separate wind-only `historical_wind / 10min` capability a
 
 - `AT` via GeoSphere Austria
 - `BE` via RMI/KMI open-data AWS platform
+- `CH` via MeteoSwiss A1 automatic weather stations
 - `CZ` via CHMI
 - `DE` via DWD
 - `DK` via DMI open-data APIs
@@ -96,6 +98,7 @@ Hungary also exposes a separate wind-only `historical_wind / 10min` capability a
 - [Canonical Elements](docs/canonical_elements.md)
 - [GeoSphere Austria Provider Notes](docs/providers_at_geosphere.md)
 - [RMI/KMI Belgium Provider Notes](docs/providers_be_rmi.md)
+- [MeteoSwiss Switzerland Provider Notes](docs/providers_ch_meteoswiss.md)
 - [DMI Denmark Provider Notes](docs/providers_dk_dmi.md)
 - [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md)
 - [KNMI Netherlands Provider Notes](docs/providers_nl_knmi.md)

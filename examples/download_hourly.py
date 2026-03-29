@@ -18,6 +18,13 @@ COUNTRY_DEFAULTS = {
         'end': '2024-01-01T02:00:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
+    'CH': {
+        'dataset_scope': 'historical',
+        'station_ids': ['AIG'],
+        'start': '2025-12-31T23:00:00Z',
+        'end': '2026-01-01T01:00:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
     'CZ': {
         'dataset_scope': 'historical_csv',
         'station_ids': ['0-20000-0-11406'],
