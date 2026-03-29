@@ -1,4 +1,4 @@
-# Examples And Workflows
+﻿# Examples And Workflows
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -48,6 +48,7 @@ python examples/download_daily.py --country BE
 python examples/download_daily.py --country CZ
 python examples/download_daily.py --country DE
 python examples/download_daily.py --country DK
+python examples/download_daily.py --country HU
 python examples/download_daily.py --country NL
 python examples/download_daily.py --country SE
 ```
@@ -69,6 +70,13 @@ DK notes:
 - raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
 
+HU notes:
+
+- `HU` uses the shared daily example path through the official HungaroMet open-data tree on `odp.met.hu`
+- station metadata use the official `climate/observations_hungary/meta/station_meta_auto.csv` file
+- daily observations use the official `climate/observations_hungary/daily/historical/` archives and the official `daily/recent/` current-year archives when needed by the requested date range
+- raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
+- `HU` currently supports `historical / daily` only through the shared daily example
 NL notes:
 
 - set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first

@@ -1,0 +1,4 @@
+﻿StationNumber;StartDate; EndDate;Latitude;Longitude;Elevation;StationName                             ;RegioName             ;EOR
+        13704; 19950422;20040317; 47.6783;  16.6022;    232.8;Sopron Kuruc-domb                       ;Győr-Moson-Sopron     ;EOR
+        13704; 20050727;20260329; 47.6783;  16.6022;    232.8;Sopron Kuruc-domb                       ;Győr-Moson-Sopron     ;EOR
+        13711; 20031107;20260329; 47.7147;  16.6658;    116.8;Fertőrákos                              ;Győr-Moson-Sopron     ;EOR

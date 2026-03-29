@@ -1,4 +1,4 @@
-# Provider Model And Coverage
+﻿# Provider Model And Coverage
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -23,6 +23,7 @@ Use ISO 3166-1 alpha-2 country codes:
 - `CZ`
 - `DE`
 - `DK`
+- `HU`
 - `NL`
 - `SE`
 - `SK` (experimental, limited to `recent / daily`)
@@ -37,6 +38,7 @@ be_stations = read_station_metadata(country="BE")
 cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
 dk_stations = read_station_metadata(country="DK")
+hu_stations = read_station_metadata(country="HU")
 nl_stations = read_station_metadata(country="NL")
 se_stations = read_station_metadata(country="SE")
 sk_stations = read_station_metadata(country="SK")
@@ -54,6 +56,7 @@ weatherdownload stations metadata --country BE
 weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
 weatherdownload stations metadata --country DK
+weatherdownload stations metadata --country HU
 weatherdownload stations metadata --country NL
 weatherdownload stations metadata --country SE
 weatherdownload stations metadata --country SK
@@ -105,6 +108,7 @@ Subdaily variability is expected across providers:
 | `CZ` | CHMI `WSI` |
 | `DE` | zero-padded DWD `Stations_id` |
 | `DK` | official DMI `stationId` from the Climate Data `station` collection |
+| `HU` | official HungaroMet `StationNumber` as string |
 | `NL` | official KNMI station identifier from the station metadata CSV used by this provider |
 | `SE` | official SMHI station id from the parameter station listings used by this provider |
 | `SK` | SHMU `ind_kli` as string |
@@ -120,6 +124,7 @@ Subdaily variability is expected across providers:
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` | CHMI station metadata with official identifiers, names, coordinates, elevation, and validity fields where exposed by the implemented paths |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
 | `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
+| `HU` | Stable | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration` | Official HungaroMet station metadata CSV with source-backed station identifier, name, coordinates, elevation, and validity range |
 | `NL` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official KNMI metadata file retrieved through the Open Data API; API key required |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
@@ -307,6 +312,33 @@ Detailed notes:
 
 - [DMI Denmark Provider Notes](providers_dk_dmi.md)
 
+
+### HU `historical / daily`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `precipitation`
+- `wind_speed`
+- `relative_humidity`
+- `sunshine_duration`
+
+Important current limitations:
+
+- the implemented path uses the official HungaroMet `odp.met.hu/climate/observations_hungary` tree only
+- only `HU / historical / daily` is implemented
+- station discovery and metadata use the official `meta/station_meta_auto.csv` file
+- daily observations use the official `daily/historical/` archives plus the official `daily/recent/` `HABP_1D_<station>_akt.zip` path when the requested date range reaches the current year
+- `station_id` is the official HungaroMet `StationNumber` normalized as string
+- raw HungaroMet `Q_<field>` values stay in `flag`; normalized `quality` remains null
+- no `1hour` or `10min` slice is exposed in this pass
+- no provider-side derivations are added for unsupported variables
+
+Detailed notes:
+
+- [HungaroMet Hungary Provider Notes](providers_hu_hungaromet.md)
 ### NL `historical / daily`
 
 Supported canonical elements:
@@ -507,6 +539,14 @@ For SMHI Sweden hourly files:
 - corrected-archive excludes the latest three months while SMHI quality control is still in progress
 - raw `Kvalitet` stays in `flag`; normalized `quality` stays null
 
+For HungaroMet Hungary daily files:
+
+- station discovery and metadata use the official `meta/station_meta_auto.csv` file
+- daily observations use the official `daily/historical/` archive listing and `daily/recent/` current-year archives from the same source tree
+- `observation_date` is normalized from the published `Time` field
+- provider-defined daily field meanings stay behind the provider layer
+- raw `Q_<field>` values stay in `flag`; normalized `quality` stays null
+
 For KNMI daily files:
 
 - files are handled through the Open Data API
@@ -548,6 +588,7 @@ weatherdownload observations daily --country DE --station-id 00044 --element tas
 weatherdownload observations daily --country DK --station-id 06180 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations hourly --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
+weatherdownload observations daily --country HU --station-id 13704 --element tas_mean --element precipitation --element sunshine_duration --start-date 2025-07-28 --end-date 2025-07-30
 weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations hourly --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T09:10:00Z --end 2024-01-01T09:20:00Z

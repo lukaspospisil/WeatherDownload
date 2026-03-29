@@ -1,0 +1,8 @@
+﻿##Meta
+#StationNumber;StartDate; EndDate;Latitude;Longitude;Elevation;StationName                             ;EOR
+#        13704; 20050727;20260329; 47.6783;  16.6022;    232.8;Sopron Kuruc-domb                       ;EOR
+##Meta END
+
+StationNumber;    Time;   rau;Q_rau;    t; Q_t;   tn;Q_tn;   tx;Q_tx;      v; Q_v;      p; Q_p;   u; Q_u;      sg;Q_sg;     sr;Q_sr;    suv;Q_suv;   fs;Q_fs;  fud;Q_fud;   fx;Q_fx; fxd;Q_fxd;fxdat;Q_fxdat;     p0;Q_p0;    f; Q_f;   upe;Q_upe;  et5;Q_et5; et10;Q_et10; et20;Q_et20; et50;Q_et50;et100;Q_et100;tsn24;Q_tsn24; tviz;Q_tviz;EOR
+        13704;20260101;   0.0;    ;  2.5;    ; -0.3;    ;  8.2;    ;   -999;    ;   -999;    ;  55;    ;    -999;    ;  526.6;    ;   -999;     ;  2.4;    ;NyÉNy;     ; 11.7;    ; 309;     ;00:00;       ;   -999;    ;  2.4;    ;   1.9;     ; -999;     ; -999;      ; -999;      ; -999;      ; -999;       ; -2.7;       ; -999;      ;EOR
+        13704;20260102;   2.4; A  ;  1.1;    ; -2.1;    ;  5.2; B  ;   -999;    ;   -999;    ;  63;    ;    -999;    ;  302.0;    ;   -999;     ;  2.0;    ; DDNy;     ;  9.2;    ; 321;     ;16:31;       ;   -999;    ;  1.9;    ;   1.5;     ; -999;     ; -999;      ; -999;      ; -999;      ; -999;       ; -2.9;       ; -999;      ;EOR

@@ -1,4 +1,4 @@
-# WeatherDownload
+﻿# WeatherDownload
 
 [![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
@@ -25,6 +25,7 @@ Current implemented country coverage:
 - `CZ` via CHMI
 - `DE` via DWD
 - `DK` via DMI open-data APIs
+- `HU` via HungaroMet open data on `odp.met.hu`
 - `NL` via KNMI Data Platform
 - `SE` via SMHI Meteorological Observations API
 - `SK` via SHMU OpenDATA (experimental, limited to `recent / daily` station observations and minimal station discovery)
@@ -35,7 +36,7 @@ What stays stable across countries:
 - canonical `station_id`
 - canonical meteorological element names
 - normalized output schemas
-- country selection with ISO 3166-1 alpha-2 codes such as `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE`, and `SK`
+- country selection with ISO 3166-1 alpha-2 codes such as `AT`, `BE`, `CZ`, `DE`, `DK`, `HU`, `NL`, `SE`, and `SK`
 
 ## Current Coverage At A Glance
 
@@ -46,13 +47,14 @@ What stays stable across countries:
 | `CZ` | Yes | Yes | Yes | Yes | Stable |
 | `DE` | Yes | Yes | Yes | Yes | Stable |
 | `DK` | Yes | Yes | Yes | Yes | Stable |
+| `HU` | Yes | No | No | No | Stable |
 | `NL` | Yes | Yes | Yes | Yes | Stable |
 | `SE` | Yes | Yes | No | Yes | Stable |
 | `SK` | Yes, `recent / daily` only | No | No | No | Experimental |
 
 Shared example coverage currently includes:
 
-- `examples/download_daily.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE`
+- `examples/download_daily.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `HU`, `NL`, `SE`
 - `examples/download_hourly.py`: `AT`, `BE`, `DE`, `DK`, `NL`, `SE`
 - `examples/download_tenmin.py`: `AT`, `BE`, `DE`, `DK`, `NL`
 - `examples/download_fao.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE` for observed daily input packaging by default, with optional example-layer `--fill-missing allow-derived` support and `.info` sidecars
@@ -394,6 +396,7 @@ weatherdownload stations metadata --country BE --format screen
 weatherdownload stations metadata --country CZ --format screen
 weatherdownload stations metadata --country DE --format screen
 weatherdownload stations metadata --country DK --format screen
+weatherdownload stations metadata --country HU --format screen
 weatherdownload stations metadata --country NL --format screen
 weatherdownload stations metadata --country SE --format screen
 weatherdownload stations metadata --country SK --format screen
@@ -402,6 +405,7 @@ weatherdownload observations daily --country BE --station-id 6414 --element tas_
 weatherdownload observations daily --country CZ --station-id 0-20000-0-11406 --element tas_mean --element tas_max --element tas_min --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations daily --country DK --station-id 06180 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations daily --country HU --station-id 13704 --element tas_mean --element precipitation --element sunshine_duration --start-date 2025-07-28 --end-date 2025-07-30
 weatherdownload observations hourly --country AT --station-id 1 --element tas_mean --element pressure --start 2024-01-01T00:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country AT --station-id 1 --element tas_mean --element pressure --start 2024-01-01T00:10:00Z --end 2024-01-01T00:20:00Z
 weatherdownload observations hourly --country DK --station-id 06180 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
@@ -431,6 +435,7 @@ weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --e
 | `CZ` | Yes | Yes | Yes | Yes | Yes |
 | `DE` | Yes | Yes | Yes | Yes, narrow slice | Yes, narrow slice |
 | `DK` | Yes | Yes | Yes, narrow slice | Yes, narrow slice | Yes, narrow slice |
+| `HU` | Yes | Yes | Yes, narrow slice | No | No |
 | `NL` | Yes, API key required | Yes | Yes, narrow slice | Yes, narrow slice | Yes, narrow slice |
 | `SE` | Yes | Yes | Yes, narrow slice | Yes, narrow slice | No |
 | `SK` | Experimental, probe-derived | Experimental | Yes, narrow slice | No | No |
@@ -448,6 +453,7 @@ Current intentionally narrow slices:
 - `DK historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 - `DK historical / 1hour`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 - `DK historical / 10min`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
+- `HU historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration`
 - `NL historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`
 - `NL historical / 1hour`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 - `NL historical / 10min`: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
@@ -495,6 +501,7 @@ BE scope limits for this pass:
 - [GeoSphere Austria Provider Notes](docs/providers_at_geosphere.md)
 - [RMI/KMI Belgium Provider Notes](docs/providers_be_rmi.md)
 - [DMI Denmark Provider Notes](docs/providers_dk_dmi.md)
+- [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md)
 - [KNMI Netherlands Provider Notes](docs/providers_nl_knmi.md)
 - [SMHI Sweden Provider Notes](docs/providers_se_smhi.md)
 - [Canonical Elements](docs/canonical_elements.md)
@@ -525,6 +532,7 @@ BE scope limits for this pass:
   - `CZ`: CHMI `WSI`
   - `DE`: zero-padded DWD `Stations_id`
   - `DK`: official DMI `stationId` from the Climate Data `station` collection
+  - `HU`: official HungaroMet `StationNumber` as string
   - `NL`: official KNMI station identifier from the station metadata CSV used by this provider
   - `SE`: official SMHI station id from the parameter station listings used by this provider
   - `SK`: SHMU `ind_kli` as string
@@ -534,6 +542,7 @@ BE scope limits for this pass:
 - `AT` support is currently limited to `historical / daily` via the official GeoSphere Austria `klima-v2-1d` station dataset, `historical / 1hour` via the official GeoSphere Austria `klima-v2-1h` station dataset, and `historical / 10min` via the official GeoSphere Austria `klima-v2-10min` station dataset; subdaily `timestamp` preserves the published source `time`, raw GeoSphere subdaily `<parameter>_flag` values stay in `flag`, and normalized `quality` stays null
 - `BE` support is currently limited to `historical / daily` via `aws_1day`, `historical / 1hour` via `aws_1hour`, and `historical / 10min` via `aws_10min`; daily and hourly values are provider-side aggregates, 10-minute values are preserved as published, and WeatherDownload does not recompute hourly or daily aggregates
 - `DK` support is currently limited to Denmark `historical / daily` and `historical / 1hour` station observations via the DMI Climate Data `stationValue` path, `historical / 10min` observations via the DMI Meteorological Observation API `observation` path, and station discovery via the DMI Climate Data `station` collection; Greenland and Faroe Islands differences are intentionally out of scope for this pass
+- `HU` support is currently limited to HungaroMet `historical / daily` station observations and station metadata via the official `odp.met.hu/climate/observations_hungary` tree; the current slice uses source-backed `station_meta_auto.csv`, `daily/historical/`, and `daily/recent/` files, preserves raw `Q_<field>` values in `flag`, keeps normalized `quality` null, and does not implement `1hour`, `10min`, or derived variables in this pass
 - `NL` support is currently limited to KNMI `historical / daily` and `historical / 1hour` validated station observations plus the official KNMI `historical / 10min` near-real-time dataset via the Open Data API; the current `10min` slice is intentionally conservative, is not documented as validated in the same way, and does not map precipitation in this pass
 - `SE` support is currently limited to SMHI Meteorological Observations `historical / daily` and `historical / 1hour` corrected-archive station observations, station discovery via the supported daily and hourly parameter station listings, published UTC hourly timestamps preserved as source-backed `timestamp`, and raw `Kvalitet` codes preserved in `flag` while normalized `quality` stays null
 - `SK` support is experimental, limited to `recent / daily`, and currently has incomplete probe-derived station metadata
