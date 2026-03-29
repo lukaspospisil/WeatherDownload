@@ -98,6 +98,41 @@ What stays explicit:
 - WeatherDownload does not silently backfill generic `historical / 10min` wind requests from `10_minutes_wind`
 - station coverage differs across those products and discovery reflects that difference through the dataset scope
 
+## Wind-Only 10-Minute Example
+
+Use the explicit `historical_wind / 10min` capability when you want the separate HungaroMet wind-only product.
+
+Python download example:
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+query = ObservationQuery(
+    country='HU',
+    dataset_scope='historical_wind',
+    resolution='10min',
+    station_ids=['26327'],
+    start='2025-12-31T23:50:00Z',
+    end='2026-01-01T00:10:00Z',
+    elements=['wind_speed', 'wind_speed_max'],
+)
+
+observations = download_observations(query)
+print(observations.head().to_string(index=False))
+```
+
+CLI discovery example:
+
+```powershell
+weatherdownload stations elements --country HU --station-id 26327 --dataset-scope historical_wind --resolution 10min --include-mapping
+```
+
+Important notes:
+
+- this is the separate HungaroMet `10_minutes_wind` product, not the generic `historical / 10min` product
+- only `wind_speed` and `wind_speed_max` are currently mapped on this scope
+- the simplified `weatherdownload observations 10min` CLI keeps using each country's default dataset scope, so the explicit wind-only download path is currently clearest through the Python API
+
 ## Current Limits
 
 - only the official `station_meta_auto.csv` and `station_meta_auto_wind.csv` station metadata files are used in this pass
