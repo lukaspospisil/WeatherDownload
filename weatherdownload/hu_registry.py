@@ -25,6 +25,10 @@ HU_HOURLY_HISTORICAL_URL = f'{HU_BASE_URL}/hourly/historical/'
 HU_HOURLY_RECENT_URL = f'{HU_BASE_URL}/hourly/recent/'
 HU_TENMIN_HISTORICAL_URL = f'{HU_BASE_URL}/10_minutes/historical/'
 HU_TENMIN_RECENT_URL = f'{HU_BASE_URL}/10_minutes/recent/'
+HU_TENMIN_WIND_BASE_URL = f'{HU_BASE_URL}/10_minutes_wind'
+HU_TENMIN_WIND_METADATA_URL = f'{HU_TENMIN_WIND_BASE_URL}/station_meta_auto_wind.csv'
+HU_TENMIN_WIND_HISTORICAL_URL = f'{HU_TENMIN_WIND_BASE_URL}/historical/'
+HU_TENMIN_WIND_RECENT_URL = f'{HU_TENMIN_WIND_BASE_URL}/recent/'
 
 HU_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('t',),
@@ -163,6 +167,26 @@ HU_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     },
 }
 
+HU_TENMIN_WIND_CANONICAL_ELEMENTS = {
+    'wind_speed': ('fs',),
+    'wind_speed_max': ('fx',),
+}
+
+HU_TENMIN_WIND_PARAMETER_METADATA: dict[str, dict[str, str]] = {
+    'fs': {
+        'name': '10-minute mean wind speed',
+        'description': 'Official HungaroMet 10-minute mean wind speed from the HABP_10MWIND station observation files.',
+        'obs_type': 'HISTORICAL_10MIN_WIND',
+        'schedule': 'PT10M HungaroMet HABP_10MWIND',
+    },
+    'fx': {
+        'name': '10-minute maximum wind speed',
+        'description': 'Official HungaroMet 10-minute maximum wind speed from the HABP_10MWIND station observation files.',
+        'obs_type': 'HISTORICAL_10MIN_WIND',
+        'schedule': 'PT10M HungaroMet HABP_10MWIND',
+    },
+}
+
 _HU_DATASET_SPECS = [
     HungaryDatasetSpec(
         dataset_scope='historical',
@@ -197,6 +221,18 @@ _HU_DATASET_SPECS = [
         recent_data_url=HU_TENMIN_RECENT_URL,
         supported_elements=tuple(HU_TENMIN_PARAMETER_METADATA),
         canonical_elements=HU_TENMIN_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
+        implemented=True,
+    ),
+    HungaryDatasetSpec(
+        dataset_scope='historical_wind',
+        resolution='10min',
+        label='HungaroMet historical 10-minute wind station observations',
+        metadata_url=HU_TENMIN_WIND_METADATA_URL,
+        historical_data_url=HU_TENMIN_WIND_HISTORICAL_URL,
+        recent_data_url=HU_TENMIN_WIND_RECENT_URL,
+        supported_elements=tuple(HU_TENMIN_WIND_PARAMETER_METADATA),
+        canonical_elements=HU_TENMIN_WIND_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,
     ),

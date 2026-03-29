@@ -41,6 +41,7 @@ from .geosphere_parser import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, GEOSPHERE_NORM
 from .hu_daily import download_daily_observations_hu
 from .hu_hourly import download_hourly_observations_hu
 from .hu_tenmin import download_tenmin_observations_hu
+from .hu_tenmin_wind import download_tenmin_wind_observations_hu
 from .hu_parser import HU_NORMALIZED_DAILY_COLUMNS, HU_NORMALIZED_SUBDAILY_COLUMNS
 from .knmi_daily import download_daily_observations_knmi
 from .knmi_hourly import download_hourly_observations_knmi
@@ -184,7 +185,9 @@ def _download_observations_hu(
         return download_hourly_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
     if query.dataset_scope == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
-    raise NotImplementedError('HungaroMet Hungary support currently implements historical/daily, historical/1hour, and historical/10min station observations.')
+    if query.dataset_scope == 'historical_wind' and query.resolution == '10min':
+        return download_tenmin_wind_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
+    raise NotImplementedError('HungaroMet Hungary support currently implements historical/daily, historical/1hour, historical/10min, and historical_wind/10min station observations.')
 def _download_observations_shmu(
     query: ObservationQuery,
     timeout: int = 60,
@@ -280,6 +283,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
 
 
 

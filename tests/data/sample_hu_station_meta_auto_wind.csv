@@ -1,0 +1,3 @@
+﻿StationNumber;StartDate; EndDate;Latitude;Longitude;Elevation;StationName                             ;RegioName             ;EOR
+        26327; 20010504;20260329; 46.8717;  17.7086;    104.2;Zanka                                   ;Veszprem              ;EOR
+        26420; 20210729;20260329; 46.8528;  17.7842;    104.0;Balatonszemes platform                  ;Somogy                ;EOR

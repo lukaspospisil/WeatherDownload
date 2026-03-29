@@ -124,7 +124,7 @@ Subdaily variability is expected across providers:
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` | CHMI station metadata with official identifiers, names, coordinates, elevation, and validity fields where exposed by the implemented paths |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
 | `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
-| `HU` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration`; 1hour: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed`; 10min: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed` | Official HungaroMet station metadata CSV with source-backed station identifier, name, coordinates, elevation, and validity range |
+| `HU` | Stable | `historical`, `historical_wind` | `historical`: `daily`, `1hour`, `10min`; `historical_wind`: `10min` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration`; `historical / 1hour`: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed`; `historical / 10min`: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed`; `historical_wind / 10min`: `wind_speed`, `wind_speed_max` | Official HungaroMet station metadata CSVs with source-backed station identifier, name, coordinates, elevation, and validity range |
 | `NL` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official KNMI metadata file retrieved through the Open Data API; API key required |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
@@ -345,17 +345,25 @@ Supported canonical elements:
 - `relative_humidity`
 - `wind_speed`
 
+### HU `historical_wind / 10min`
+
+Supported canonical elements:
+
+- `wind_speed`
+- `wind_speed_max`
+
 Important current limitations:
 
 - the implemented path uses the official HungaroMet `odp.met.hu/climate/observations_hungary` tree only
-- `HU / historical / daily`, `HU / historical / 1hour`, and `HU / historical / 10min` are implemented
-- station discovery and metadata use the official `meta/station_meta_auto.csv` file
+- `HU / historical / daily`, `HU / historical / 1hour`, `HU / historical / 10min`, and `HU / historical_wind / 10min` are implemented
+- station discovery and metadata use the official `meta/station_meta_auto.csv` file for the generic product family plus `10_minutes_wind/station_meta_auto_wind.csv` for the separate wind-only product
 - daily observations use the official `daily/historical/` archives plus the official `daily/recent/` `HABP_1D_<station>_akt.zip` path when the requested date range reaches the current year
 - hourly observations use the official `hourly/historical/` archives plus the official `hourly/recent/` `HABP_1H_<station>_akt.zip` path when the requested range reaches the current year
 - generic 10-minute observations use the official `10_minutes/historical/` archives plus the official `10_minutes/recent/` `HABP_10M_<station>_akt.zip` path when the requested range reaches the current year
+- wind-only 10-minute observations use the separate official `10_minutes_wind/historical/` archives plus the official `10_minutes_wind/recent/` `HABP_10MWIND_<station>_akt.zip` path when the requested range reaches the current year
 - `station_id` is the official HungaroMet `StationNumber` normalized as string
 - raw HungaroMet `Q_<field>` values stay in `flag`; normalized `quality` remains null
-- the separate `10_minutes_wind` product is not exposed in this pass because it is a separate wind-only source path with different station coverage
+- WeatherDownload does not merge the generic `10_minutes` and separate `10_minutes_wind` products into one mixed HU `10min` abstraction
 - no provider-side derivations are added for unsupported variables
 
 Detailed notes:
@@ -563,15 +571,16 @@ For SMHI Sweden hourly files:
 
 For HungaroMet Hungary files:
 
-- station discovery and metadata use the official `meta/station_meta_auto.csv` file
+- station discovery and metadata use the official `meta/station_meta_auto.csv` file for the generic product family plus `10_minutes_wind/station_meta_auto_wind.csv` for the separate wind-only product
 - daily observations use the official `daily/historical/` archive listing and `daily/recent/` current-year archives from the same source tree
 - hourly observations use the official `hourly/historical/` archive listing and `hourly/recent/` current-year archives from the same source tree
 - generic 10-minute observations use the official `10_minutes/historical/` archive listing and `10_minutes/recent/` current-year archives from the same source tree
+- wind-only 10-minute observations use the separate official `10_minutes_wind/historical/` archive listing and `10_minutes_wind/recent/` current-year archives from that source tree
 - daily `observation_date` is normalized from the published `Time` field
-- hourly and generic 10-minute `timestamp` are normalized from the published `Time` field in UTC, as documented by the official HungaroMet dataset descriptions
+- hourly, generic 10-minute, and wind-only 10-minute `timestamp` values are normalized from the published `Time` field in UTC, as documented by the official HungaroMet dataset descriptions
 - provider-defined field meanings stay behind the provider layer
 - raw `Q_<field>` values stay in `flag`; normalized `quality` stays null
-
+- the separate `historical_wind / 10min` capability keeps `10_minutes_wind` distinct from the generic `historical / 10min` product
 For KNMI daily files:
 
 - files are handled through the Open Data API
@@ -623,6 +632,7 @@ weatherdownload observations daily --country SE --station-id 98230 --element tas
 weatherdownload observations hourly --country SE --station-id 98230 --element tas_mean --element pressure --start 2012-11-29T11:00:00Z --end 2012-11-29T13:00:00Z
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
+
 
 
 

@@ -224,7 +224,7 @@ HU 10-minute notes:
 - station discovery still uses the official `meta/station_meta_auto.csv` metadata file used by the Hungary provider
 - the example preserves the published HungaroMet 10-minute `Time` value as the normalized UTC `timestamp`
 - raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
-- the separate HungaroMet `10_minutes_wind` product is not merged into the shared `10min` example in this pass
+- the separate HungaroMet `10_minutes_wind` product is exposed through the distinct `dataset_scope="historical_wind"` capability in the library, but it is intentionally not merged into the shared default `10min` example path
 
 NL 10-minute notes:
 
@@ -314,6 +314,7 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
 
 
 

@@ -1,0 +1,8 @@
+﻿##Meta
+#StationNumber;StartDate;EndDate ;Latitude;Longitude;Elevation;StationName                             ;EOR
+#        26327;20010504 ;20260329; 46.8717;  17.7086;    104.2;Zanka                                   ;EOR
+##Meta END
+
+StationNumber;        Time;   fs;Q_fs; fsd;Q_fsd;   fx;Q_fx; fxd;Q_fxd;EOR
+        26327;202512312350;  2.4;    ; 243;     ;  3.8;    ; 230;     ;EOR
+        26327;202601010000;  1.5;    ; 258;     ;  2.6;    ; 243;     ;EOR
