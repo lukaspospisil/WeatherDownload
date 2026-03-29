@@ -67,6 +67,8 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 
 `Yes*` means the path is implemented, but element coverage or dataset scope is intentionally conservative for that provider slice. See [Provider Model And Coverage](docs/providers.md) and the provider-specific notes for exact limits.
 
+Hungary also exposes a separate wind-only `historical_wind / 10min` capability alongside the generic `historical / 10min` path; see the [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md) for details.
+
 ## Supported Countries
 
 - `AT` via GeoSphere Austria
