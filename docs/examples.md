@@ -1,4 +1,4 @@
-# Examples And Workflows
+﻿# Examples And Workflows
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -51,6 +51,7 @@ python examples/download_daily.py --country DE
 python examples/download_daily.py --country DK
 python examples/download_daily.py --country HU
 python examples/download_daily.py --country NL
+python examples/download_daily.py --country PL
 python examples/download_daily.py --country SE
 ```
 
@@ -85,6 +86,14 @@ HU notes:
 - daily observations use the official `climate/observations_hungary/daily/historical/` archives and the official `daily/recent/` current-year archives when needed by the requested date range
 - raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
 - `HU` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the shared examples
+PL notes:
+
+- `PL` uses the shared daily example path through the official IMGW-PIB public `dobowe/synop` archive only
+- station metadata use the official `dane_meteorologiczne/wykaz_stacji.csv` station list, with the 5-character IMGW station code as canonical `station_id`
+- daily observations use deterministic yearly station archives for completed years and current-year monthly all-station archives when the requested range reaches the current year
+- raw IMGW daily status codes such as `WSTD`, `WSMDB`, and `WUSL` are preserved in `flag`, while normalized `quality` stays null
+- `PL` currently supports only `historical / daily` through the shared daily example
+
 NL notes:
 
 - set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
@@ -339,6 +348,9 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+
+
 
 
 

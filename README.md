@@ -1,4 +1,4 @@
-# WeatherDownload
+﻿# WeatherDownload
 
 [![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
@@ -63,6 +63,7 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 | `DK` | Yes* | Yes* | Yes* | Yes | Stable |
 | `HU` | Yes* | Yes* | Yes* | Yes | Stable |
 | `NL` | Yes* | Yes* | Yes* | Yes | Stable |
+| `PL` | Yes* | No | No | No | Stable |
 | `SE` | Yes* | Yes* | No | Yes | Stable |
 | `SK` | Yes* | No | No | No | Experimental |
 
@@ -80,6 +81,7 @@ Hungary also exposes a separate wind-only `historical_wind / 10min` capability a
 - `DK` via DMI open-data APIs
 - `HU` via HungaroMet open data on `odp.met.hu`
 - `NL` via KNMI Data Platform
+- `PL` via IMGW-PIB public synop daily archive
 - `SE` via SMHI Meteorological Observations API
 - `SK` via SHMU OpenDATA (experimental, currently limited to `recent / daily`)
 
@@ -102,6 +104,7 @@ Hungary also exposes a separate wind-only `historical_wind / 10min` capability a
 - [DMI Denmark Provider Notes](docs/providers_dk_dmi.md)
 - [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md)
 - [KNMI Netherlands Provider Notes](docs/providers_nl_knmi.md)
+- [IMGW-PIB Poland Provider Notes](docs/providers_pl_imgw.md)
 - [SMHI Sweden Provider Notes](docs/providers_se_smhi.md)
 - [Experimental Slovakia Provider Notes](docs/providers_sk_experimental.md)
 - [Changelog](docs/changelog.md)
@@ -113,3 +116,4 @@ Hungary also exposes a separate wind-only `historical_wind / 10min` capability a
 - canonical meteorological element names stay shared across countries
 - normalized output schemas stay stable and DataFrame-first
 - missing variables stay missing by default instead of being silently derived
+

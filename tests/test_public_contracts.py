@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import json
 import sys
@@ -42,6 +42,9 @@ SAMPLE_DK_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(enc
 SAMPLE_DK_HOURLY_TEXT = Path('tests/data/sample_dk_dmi_hourly.json').read_text(encoding='utf-8')
 SAMPLE_DK_TENMIN_TEXT = Path('tests/data/sample_dk_dmi_tenmin.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
+SAMPLE_PL_STATIONS_PATH = Path('tests/data/sample_pl_wykaz_stacji.csv')
+SAMPLE_PL_STATION_2025_CSV = Path('tests/data/sample_pl_synop_station_2025.csv').read_text(encoding='utf-8')
+SAMPLE_PL_MONTH_2026_01_CSV = Path('tests/data/sample_pl_synop_month_2026_01.csv').read_text(encoding='utf-8')
 SAMPLE_HU_STATIONS_PATH = Path('tests/data/sample_hu_station_meta_auto.csv')
 SAMPLE_HU_HISTORICAL_INDEX_HTML = Path('tests/data/sample_hu_daily_historical_index.html').read_text(encoding='utf-8')
 SAMPLE_HU_HISTORICAL_CSV = Path('tests/data/sample_hu_daily_hist_13704.csv').read_text(encoding='utf-8')
@@ -94,6 +97,12 @@ def _build_sample_hu_zip(filename: str, csv_text: str) -> bytes:
         archive.writestr(filename, csv_text.encode('utf-8'))
     return buffer.getvalue()
 
+def _build_sample_pl_zip(filename: str, csv_text: str) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(filename, csv_text.replace(chr(65279), '').encode('cp1250'))
+    return buffer.getvalue()
+
 
 def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'CZ':
@@ -115,6 +124,9 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
         return read_station_metadata(country='HU', source_url=str(SAMPLE_HU_STATIONS_PATH))
     if country == 'NL':
         return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_STATIONS_PATH))
+    if country == 'PL':
+        return read_station_metadata(country='PL', source_url=str(SAMPLE_PL_STATIONS_PATH))
+
     if country == 'SE':
         return read_station_metadata(country='SE', source_url=str(SAMPLE_SE_FIXTURE_DIR))
     if country == 'SK':
@@ -231,6 +243,22 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
                 with patch('weatherdownload.knmi_daily.download_knmi_file_bytes', side_effect=[b'first', b'second']):
                     with patch('weatherdownload.knmi_daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
                         return download_observations(query, country='NL', station_metadata=station_metadata)
+    if country == 'PL':
+        station_metadata = _read_station_metadata_fixture('PL')
+        query = ObservationQuery(country='PL', dataset_scope='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
+        station_zip = _build_sample_pl_zip('2025_375_s.csv', SAMPLE_PL_STATION_2025_CSV)
+        month_zip = _build_sample_pl_zip('2026_01_s.csv', SAMPLE_PL_MONTH_2026_01_CSV)
+
+        def fake_get(url, timeout=60):
+            if url.endswith('/2025/2025_375_s.zip'):
+                return _MockTextResponse(content=station_zip)
+            if url.endswith('/2026/2026_01_s.zip'):
+                return _MockTextResponse(content=month_zip)
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.pl_daily.requests.get', side_effect=fake_get):
+            return download_observations(query, country='PL', station_metadata=station_metadata)
+
     if country == 'SE':
         station_metadata = _read_station_metadata_fixture('SE')
         query = ObservationQuery(country='SE', dataset_scope='historical', resolution='daily', station_ids=['98230'], start_date='1996-10-01', end_date='1996-10-02', elements=['tas_mean', 'precipitation'])
@@ -322,6 +350,7 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.hu_hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='HU', station_metadata=station_metadata)
+
     if country == 'SE':
         station_metadata = _read_station_metadata_fixture('SE')
         query = ObservationQuery(country='SE', dataset_scope='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T12:00:00Z', elements=['tas_mean', 'pressure'])
@@ -411,11 +440,12 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'DK': ['06030', '06180'],
         'HU': ['13704', '13704', '13711'],
         'NL': ['0-20000-0-06260', '0-20000-0-06310'],
+        'PL': ['00375', '00400', '00600'],
         'SE': ['98230'],
         'SK': ['11800', '11999'],
     }
 
-    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'SE', 'SK']:
+    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         actual_station_ids = stations['station_id'].tolist()
@@ -428,9 +458,9 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
-    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'HU': 'historical', 'NL': 'historical', 'SE': 'historical', 'SK': 'recent'}
+    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'HU': 'historical', 'NL': 'historical', 'PL': 'historical', 'SE': 'historical', 'SK': 'recent'}
 
-    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'SE', 'SK']:
+    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -441,6 +471,9 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
 
         if country in {'AT', 'BE', 'CH', 'DE', 'DK', 'HU', 'NL', 'SE', 'SK'}:
             assert observations['gh_id'].isna().all()
+        elif country == 'PL':
+            assert observations['gh_id'].notna().all()
+            assert observations['gh_id'].str.isnumeric().all()
 
         if country == 'BE':
             assert observations['flag'].notna().all()
@@ -501,7 +534,6 @@ def _assert_subdaily_contract(observations: pd.DataFrame, resolution: str, gh_ex
         assert set(observations['flag'].dropna().unique()) <= {'12'}
     assert observations['quality'].isna().all()
     assert str(observations['quality'].dtype) == 'Int64'
-
 
 def test_hourly_download_contract_is_stable_for_supported_austria_path() -> None:
     _assert_subdaily_contract(_download_hourly_fixture('AT'), '1hour', 'null', 'at_hourly')
@@ -591,6 +623,12 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
+
+
+
+
+
 
 
 

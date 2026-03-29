@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 
 from weatherdownload import ObservationQuery, download_observations
 
@@ -60,6 +60,13 @@ COUNTRY_DEFAULTS = {
         'end_date': '2024-01-03',
         'elements': ['tas_mean', 'precipitation'],
     },
+    'PL': {
+        'dataset_scope': 'historical',
+        'station_ids': ['00375'],
+        'start_date': '2025-01-01',
+        'end_date': '2025-01-03',
+        'elements': ['tas_mean', 'precipitation', 'sunshine_duration'],
+    },
     'SE': {
         'dataset_scope': 'historical',
         'station_ids': ['98230'],
@@ -98,3 +105,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from .base import WeatherProvider
 from .be import PROVIDER as BE_PROVIDER
@@ -9,6 +9,7 @@ from .dwd import PROVIDER as DWD_PROVIDER
 from .geosphere import PROVIDER as GEOSPHERE_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
 from .knmi import PROVIDER as KNMI_PROVIDER
+from .pl import PROVIDER as PL_PROVIDER
 from .se import PROVIDER as SE_PROVIDER
 from .shmu import PROVIDER as SHMU_PROVIDER
 
@@ -21,6 +22,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'DK': DK_PROVIDER,
     'HU': HU_PROVIDER,
     'NL': KNMI_PROVIDER,
+    'PL': PL_PROVIDER,
     'SE': SE_PROVIDER,
     'SK': SHMU_PROVIDER,
 }
@@ -46,3 +48,4 @@ def get_provider(country: str | None = None) -> WeatherProvider:
 
 def list_supported_countries() -> list[str]:
     return sorted(PROVIDERS)
+

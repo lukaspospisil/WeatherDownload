@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 
@@ -48,11 +48,13 @@ from .hu_tenmin import download_tenmin_observations_hu
 from .hu_tenmin_wind import download_tenmin_wind_observations_hu
 from .hu_parser import HU_NORMALIZED_DAILY_COLUMNS, HU_NORMALIZED_SUBDAILY_COLUMNS
 from .knmi_daily import download_daily_observations_knmi
+from .pl_daily import download_daily_observations_pl
 from .knmi_hourly import download_hourly_observations_knmi
 from .knmi_tenmin import download_tenmin_observations_knmi
 from .knmi_parser import KNMI_NORMALIZED_DAILY_COLUMNS, KNMI_NORMALIZED_SUBDAILY_COLUMNS
 from .dk_parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
 from .se_parser import SE_NORMALIZED_DAILY_COLUMNS, SE_NORMALIZED_SUBDAILY_COLUMNS
+from .pl_parser import PL_NORMALIZED_DAILY_COLUMNS
 from .chmi_registry import get_dataset_spec as get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
@@ -205,6 +207,15 @@ def _download_observations_hu(
     if query.dataset_scope == 'historical_wind' and query.resolution == '10min':
         return download_tenmin_wind_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('HungaroMet Hungary support currently implements historical/daily, historical/1hour, historical/10min, and historical_wind/10min station observations.')
+
+def _download_observations_pl(
+    query: ObservationQuery,
+    timeout: int = 60,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+        return download_daily_observations_pl(query, timeout=timeout, station_metadata=station_metadata).loc[:, PL_NORMALIZED_DAILY_COLUMNS]
+    raise NotImplementedError('IMGW Poland support currently implements only historical/daily station observations.')
 def _download_observations_shmu(
     query: ObservationQuery,
     timeout: int = 60,
@@ -300,6 +311,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
 
 
 
