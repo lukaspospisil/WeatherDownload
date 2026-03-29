@@ -521,7 +521,7 @@ Opět long-format tabulku, tedy:
 
 ## 14. Hourly observations – CZ
 
-Aktuální narrow slice pro `CZ historical_csv 1hour` zahrnuje zejména:
+Aktuální konzervativni subset pro `CZ historical_csv 1hour` zahrnuje zejména:
 
 - `vapour_pressure`
 - `pressure`
@@ -547,7 +547,7 @@ weatherdownload observations hourly --country CZ --station-id 0-20000-0-11406 --
 
 ## 15. 10-minute observations – CZ
 
-Aktuální narrow slice pro `CZ historical_csv 10min` zahrnuje zejména:
+Aktuální konzervativni subset pro `CZ historical_csv 10min` zahrnuje zejména:
 
 - `tas_mean`
 - `tas_max`
@@ -1008,6 +1008,8 @@ Nejdůležitější praktická věc je rozlišovat:
 - wide-format,
 - country-aware,
 - vhodný jako čistý vstup pro další fyzikální nebo modelovací kroky.
+
+
 
 
 

@@ -517,7 +517,7 @@ Again, a long-format table:
 
 ## 14. Hourly observations – CZ
 
-The current narrow slice for `CZ historical_csv 1hour` includes for example:
+The current conservative subset for `CZ historical_csv 1hour` includes for example:
 
 - `vapour_pressure`
 - `pressure`
@@ -543,7 +543,7 @@ weatherdownload observations hourly --country CZ --station-id 0-20000-0-11406 --
 
 ## 15. 10-minute observations – CZ
 
-The current narrow slice for `CZ historical_csv 10min` includes for example:
+The current conservative subset for `CZ historical_csv 10min` includes for example:
 
 - `tas_mean`
 - `tas_max`
@@ -1007,6 +1007,7 @@ The most important practical distinction is:
 - wide-format,
 - country-aware,
 - suitable as a clean input dataset for later physical/model-based processing.
+
 
 
 
