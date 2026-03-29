@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -9,10 +9,10 @@ import requests
 
 from weatherdownload import ObservationQuery, export_table, read_station_metadata
 from weatherdownload.providers import get_provider
-from weatherdownload.shmu_observations import normalize_daily_observations_shmu
-from weatherdownload.shmu_parser import parse_recent_daily_payload_json
-from weatherdownload.shmu_probe import probe_shmu_observation_feeds, resolve_latest_recent_daily_probe_url
-from weatherdownload.shmu_registry import get_dataset_spec
+from weatherdownload.providers.sk.observations import normalize_daily_observations_shmu
+from weatherdownload.providers.sk.parser import parse_recent_daily_payload_json
+from weatherdownload.providers.sk.probe import probe_shmu_observation_feeds, resolve_latest_recent_daily_probe_url
+from weatherdownload.providers.sk.registry import get_dataset_spec
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -162,3 +162,4 @@ def _format_provenance_summary(provenance_path: Path) -> str:
 
 if __name__ == '__main__':
     raise SystemExit(main())
+
