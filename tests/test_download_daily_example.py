@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-MODULE_PATH = Path('examples/download_daily.py')
+MODULE_PATH = Path('examples/basic/download_daily.py')
 SPEC = importlib.util.spec_from_file_location('download_daily_example', MODULE_PATH)
 download_daily = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = download_daily

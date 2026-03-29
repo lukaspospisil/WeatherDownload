@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import sys
 import unittest
@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-MODULE_PATH = Path('examples/download_tenmin.py')
+MODULE_PATH = Path('examples/basic/download_tenmin.py')
 SPEC = importlib.util.spec_from_file_location('download_tenmin_example', MODULE_PATH)
 download_tenmin = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = download_tenmin
@@ -103,3 +103,7 @@ class DownloadTenminExampleTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+

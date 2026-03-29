@@ -12,7 +12,7 @@ from weatherdownload import ObservationQuery, download_observations, read_statio
 from weatherdownload.metadata import STATION_METADATA_COLUMNS
 
 
-FAO_MODULE_PATH = Path('examples/download_fao.py')
+FAO_MODULE_PATH = Path('examples/workflows/download_fao.py')
 FAO_SPEC = importlib.util.spec_from_file_location('download_fao_contract_example', FAO_MODULE_PATH)
 download_fao = importlib.util.module_from_spec(FAO_SPEC)
 sys.modules[FAO_SPEC.name] = download_fao
@@ -623,6 +623,12 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
+
+
+
+
+
 
 
 

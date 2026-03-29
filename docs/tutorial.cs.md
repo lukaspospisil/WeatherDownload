@@ -1,4 +1,4 @@
-# WeatherDownload Tutorial (čeština)
+﻿# WeatherDownload Tutorial (čeština)
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -684,7 +684,7 @@ Vrací **long-format** data:
 - jeden řádek = jedna veličina pro jedno datum / čas,
 - hodnota je ve sloupci `value`.
 
-### 20.2 `examples/download_fao.py`
+### 20.2 `examples/workflows/download_fao.py`
 Vrací **wide-format workflow dataset**, připravený pro pozdější FAO výpočty.
 
 To znamená:
@@ -789,25 +789,25 @@ Provider-specific mapping je uložený v:
 ### 23.1 CZ, full pipeline, Parquet
 
 ```bash
-python examples/download_fao.py --country CZ --mode full --export-format parquet
+python examples/workflows/download_fao.py --country CZ --mode full --export-format parquet
 ```
 
 ### 23.2 DE, full pipeline, Parquet
 
 ```bash
-python examples/download_fao.py --country DE --mode full --export-format parquet
+python examples/workflows/download_fao.py --country DE --mode full --export-format parquet
 ```
 
 ### 23.3 Jen download/cache
 
 ```bash
-python examples/download_fao.py --country CZ --mode download --cache-dir outputs/fao_cache
+python examples/workflows/download_fao.py --country CZ --mode download --cache-dir outputs/fao_cache
 ```
 
 ### 23.4 Build pouze z cache
 
 ```bash
-python examples/download_fao.py --country CZ --mode build --cache-dir outputs/fao_cache --export-format both
+python examples/workflows/download_fao.py --country CZ --mode build --cache-dir outputs/fao_cache --export-format both
 ```
 
 ---
@@ -856,7 +856,7 @@ Progress reporting ukazuje:
 Tichý režim:
 
 ```bash
-python examples/download_fao.py --silent
+python examples/workflows/download_fao.py --silent
 ```
 
 ---
@@ -872,12 +872,12 @@ python -c "import pandas as pd; df = pd.read_parquet('outputs/kopisty_daily.parq
 ### 27.2 Univerzální inspect utility
 
 ```bash
-python utils/inspect_file.py outputs/kopisty_daily.parquet
-python utils/inspect_file.py outputs/fao_daily.cz.mat
-python utils/inspect_file.py outputs/fao_daily.cz
+python scripts/dev/inspect_file.py outputs/kopisty_daily.parquet
+python scripts/dev/inspect_file.py outputs/fao_daily.cz.mat
+python scripts/dev/inspect_file.py outputs/fao_daily.cz
 ```
 
-### 27.3 Co můžeš od `utils/inspect_file.py` očekávat
+### 27.3 Co můžeš od `scripts/dev/inspect_file.py` očekávat
 
 - path,
 - file type,
@@ -914,13 +914,13 @@ Pokud chceš **wide-format** dataset pro další modelování, použij vlastní 
 ### CZ
 
 ```bash
-python examples/download_fao.py --country CZ --mode full --export-format parquet
+python examples/workflows/download_fao.py --country CZ --mode full --export-format parquet
 ```
 
 ### DE
 
 ```bash
-python examples/download_fao.py --country DE --mode full --export-format parquet
+python examples/workflows/download_fao.py --country DE --mode full --export-format parquet
 ```
 
 ### Co čekat
@@ -985,11 +985,11 @@ Používej:
 
 ### Pro konkrétní workflow
 Používej:
-- `examples/download_fao.py`
+- `examples/workflows/download_fao.py`
 
 ### Pro rychlou kontrolu výstupu
 Používej:
-- `utils/inspect_file.py`
+- `scripts/dev/inspect_file.py`
 
 ---
 
@@ -1008,6 +1008,7 @@ Nejdůležitější praktická věc je rozlišovat:
 - wide-format,
 - country-aware,
 - vhodný jako čistý vstup pro další fyzikální nebo modelovací kroky.
+
 
 
 

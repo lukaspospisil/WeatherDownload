@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 ## Unreleased
 
@@ -20,7 +20,7 @@
   - `relative_humidity`
 - GeoSphere Austria station discovery from the official `klima-v2-1d` metadata endpoint
 - Austria provider notes and a minimal daily example script
-- shared `examples/download_fao.py` workflow for observed daily FAO-oriented input packaging across the implemented supported countries
+- shared `examples/workflows/download_fao.py` workflow for observed daily FAO-oriented input packaging across the implemented supported countries
 - optional `.info` sidecar files for shared `download_fao` exports, recording fill policy plus observed/derived/missing field counts
 - experimental Slovakia provider via SHMU OpenDATA for the narrow `SK / recent / daily` station-observation slice
 - canonical element support for the current SHMU slice:

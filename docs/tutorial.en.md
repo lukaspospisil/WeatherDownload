@@ -1,4 +1,4 @@
-# WeatherDownload Tutorial (English)
+﻿# WeatherDownload Tutorial (English)
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -682,7 +682,7 @@ Returns **long-format** data:
 - one row = one variable for one date/time,
 - the actual measurement goes into `value`.
 
-### 20.2 `examples/download_fao.py`
+### 20.2 `examples/workflows/download_fao.py`
 Returns a **wide-format workflow dataset**, prepared for later FAO work.
 
 This means:
@@ -788,25 +788,25 @@ Provider-specific mapping is preserved in:
 ### 23.1 CZ, full pipeline, Parquet
 
 ```bash
-python examples/download_fao.py --country CZ --mode full --export-format parquet
+python examples/workflows/download_fao.py --country CZ --mode full --export-format parquet
 ```
 
 ### 23.2 DE, full pipeline, Parquet
 
 ```bash
-python examples/download_fao.py --country DE --mode full --export-format parquet
+python examples/workflows/download_fao.py --country DE --mode full --export-format parquet
 ```
 
 ### 23.3 Download/cache only
 
 ```bash
-python examples/download_fao.py --country CZ --mode download --cache-dir outputs/fao_cache
+python examples/workflows/download_fao.py --country CZ --mode download --cache-dir outputs/fao_cache
 ```
 
 ### 23.4 Build only from cache
 
 ```bash
-python examples/download_fao.py --country CZ --mode build --cache-dir outputs/fao_cache --export-format both
+python examples/workflows/download_fao.py --country CZ --mode build --cache-dir outputs/fao_cache --export-format both
 ```
 
 ---
@@ -855,7 +855,7 @@ Progress reporting shows:
 Silent mode:
 
 ```bash
-python examples/download_fao.py --silent
+python examples/workflows/download_fao.py --silent
 ```
 
 ---
@@ -871,12 +871,12 @@ python -c "import pandas as pd; df = pd.read_parquet('outputs/kopisty_daily.parq
 ### 27.2 Universal inspection utility
 
 ```bash
-python utils/inspect_file.py outputs/kopisty_daily.parquet
-python utils/inspect_file.py outputs/fao_daily.cz.mat
-python utils/inspect_file.py outputs/fao_daily.cz
+python scripts/dev/inspect_file.py outputs/kopisty_daily.parquet
+python scripts/dev/inspect_file.py outputs/fao_daily.cz.mat
+python scripts/dev/inspect_file.py outputs/fao_daily.cz
 ```
 
-### 27.3 What `utils/inspect_file.py` should show
+### 27.3 What `scripts/dev/inspect_file.py` should show
 
 - path,
 - file type,
@@ -913,13 +913,13 @@ If you want a **wide-format** dataset for later modelling, use your own pivot or
 ### CZ
 
 ```bash
-python examples/download_fao.py --country CZ --mode full --export-format parquet
+python examples/workflows/download_fao.py --country CZ --mode full --export-format parquet
 ```
 
 ### DE
 
 ```bash
-python examples/download_fao.py --country DE --mode full --export-format parquet
+python examples/workflows/download_fao.py --country DE --mode full --export-format parquet
 ```
 
 ### What to expect
@@ -984,11 +984,11 @@ Use:
 
 ### For a specific workflow
 Use:
-- `examples/download_fao.py`
+- `examples/workflows/download_fao.py`
 
 ### For quick output inspection
 Use:
-- `utils/inspect_file.py`
+- `scripts/dev/inspect_file.py`
 
 ---
 
@@ -1007,6 +1007,7 @@ The most important practical distinction is:
 - wide-format,
 - country-aware,
 - suitable as a clean input dataset for later physical/model-based processing.
+
 
 
 

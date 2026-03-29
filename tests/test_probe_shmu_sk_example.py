@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import json
 import tempfile
@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-MODULE_PATH = Path('examples/probe_shmu_sk.py')
+MODULE_PATH = Path('scripts/dev/probe_shmu_sk.py')
 SPEC = importlib.util.spec_from_file_location('probe_shmu_sk_example', MODULE_PATH)
 probe_shmu_sk = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -111,3 +111,8 @@ class ProbeShmuSkExampleTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+

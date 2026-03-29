@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import json
 import sys
@@ -14,7 +14,7 @@ from weatherdownload.geosphere_parser import parse_geosphere_daily_csv
 from weatherdownload.queries import ObservationQuery
 
 
-MODULE_PATH = Path('examples/download_fao.py')
+MODULE_PATH = Path('examples/workflows/download_fao.py')
 GEOSPHERE_SAMPLE_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1d.csv')
 SPEC = importlib.util.spec_from_file_location('download_fao_example', MODULE_PATH)
 download_fao = importlib.util.module_from_spec(SPEC)
@@ -758,3 +758,8 @@ class DownloadFaoExampleTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+

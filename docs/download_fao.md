@@ -1,10 +1,10 @@
-# FAO-Oriented Daily Input Packaging Workflow
+﻿# FAO-Oriented Daily Input Packaging Workflow
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-`examples/download_fao.py` is a shared, country-aware example built on top of the core WeatherDownload library.
+`examples/workflows/download_fao.py` is a shared, country-aware workflow example built on top of the core WeatherDownload library.
 
 ## Where To Start
 
@@ -36,16 +36,16 @@ Currently supported in the shared workflow:
 ## CLI
 
 ```powershell
-python examples/download_fao.py --country CZ
-python examples/download_fao.py --country DE
-python examples/download_fao.py --country AT
-python examples/download_fao.py --country BE
-python examples/download_fao.py --country CH
-python examples/download_fao.py --country DK
-python examples/download_fao.py --country HU
-python examples/download_fao.py --country NL
-python examples/download_fao.py --country SE
-python examples/download_fao.py --country NL --fill-missing allow-derived
+python examples/workflows/download_fao.py --country CZ
+python examples/workflows/download_fao.py --country DE
+python examples/workflows/download_fao.py --country AT
+python examples/workflows/download_fao.py --country BE
+python examples/workflows/download_fao.py --country CH
+python examples/workflows/download_fao.py --country DK
+python examples/workflows/download_fao.py --country HU
+python examples/workflows/download_fao.py --country NL
+python examples/workflows/download_fao.py --country SE
+python examples/workflows/download_fao.py --country NL --fill-missing allow-derived
 ```
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
@@ -358,7 +358,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
 - `SE` Parquet bundle: `outputs/fao_daily.se`
 
-## Why This Stays In `examples/`
+## Why This Stays In `examples/workflows/`
 
 The reusable parts stay in the core library:
 
@@ -367,4 +367,5 @@ The reusable parts stay in the core library:
 - country-aware daily observation downloading
 - export helpers
 
-The orchestration stays in `examples/` because it is a downstream packaging workflow, not part of the public provider API.
+The orchestration stays in `examples/workflows/` because it is a downstream packaging workflow, not part of the public provider API.
+

@@ -1,4 +1,4 @@
-# GeoSphere Austria Provider Notes
+﻿# GeoSphere Austria Provider Notes
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -22,9 +22,9 @@ No Austria FAO logic is implemented in the provider itself. The FAO-preparation 
 
 The general shared download examples use the same unified public interface for Austria:
 
-- `python examples/download_daily.py --country AT`
-- `python examples/download_hourly.py --country AT`
-- `python examples/download_tenmin.py --country AT`
+- `python examples/basic/download_daily.py --country AT`
+- `python examples/basic/download_hourly.py --country AT`
+- `python examples/basic/download_tenmin.py --country AT`
 
 ## Official Source
 
@@ -239,3 +239,4 @@ The current provider ignores `substation` in the normalized public output.
 - no Austria-specific provider-side FAO workflow logic
 - no derived meteorological variables are added
 - `gh_id` remains null because GeoSphere does not expose a direct equivalent in these implemented paths
+

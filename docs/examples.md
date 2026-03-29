@@ -6,17 +6,23 @@
 
 This page helps you find the example scripts quickly.
 
+## Layout
+
+- `examples/basic/`: short user-facing library examples
+- `examples/workflows/`: higher-level user-facing workflows built on the shared library API
+- `scripts/dev/`: maintainer and debugging helpers that are useful for development, but not part of the normal example tour
+
 ## Where To Start
 
-- Station metadata: [`examples/read_metadata.py`](#examplesread_metadatapy) and [Normalized Output Schemas](output_schema.md)
-- Daily downloads: [`examples/download_daily.py`](#examplesdownloaddailypy)
-- Subdaily downloads: [`examples/download_hourly.py`](#examplesdownload_hourlypy) and [`examples/download_tenmin.py`](#examplesdownload_tenminpy)
-- FAO-oriented daily input bundle: [`examples/download_fao.py`](#examplesdownload_faopy) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
+- Station metadata: [`examples/basic/read_metadata.py`](../examples/basic/read_metadata.py) and [Normalized Output Schemas](output_schema.md)
+- Daily downloads: [`examples/basic/download_daily.py`](../examples/basic/download_daily.py)
+- Subdaily downloads: [`examples/basic/download_hourly.py`](../examples/basic/download_hourly.py) and [`examples/basic/download_tenmin.py`](../examples/basic/download_tenmin.py)
+- FAO-oriented daily input bundle: [`examples/workflows/download_fao.py`](../examples/workflows/download_fao.py) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
 - Provider coverage and country-specific limits: [Provider Model And Coverage](providers.md)
 
-## Library Examples
+## Basic Examples
 
-### `examples/read_metadata.py`
+### `examples/basic/read_metadata.py`
 
 Shows how to:
 
@@ -27,10 +33,10 @@ Shows how to:
 Run:
 
 ```powershell
-python examples/read_metadata.py
+python examples/basic/read_metadata.py
 ```
 
-### `examples/download_daily.py`
+### `examples/basic/download_daily.py`
 
 Shows how to:
 
@@ -42,17 +48,17 @@ Shows how to:
 Run:
 
 ```powershell
-python examples/download_daily.py
-python examples/download_daily.py --country AT
-python examples/download_daily.py --country BE
-python examples/download_daily.py --country CH
-python examples/download_daily.py --country CZ
-python examples/download_daily.py --country DE
-python examples/download_daily.py --country DK
-python examples/download_daily.py --country HU
-python examples/download_daily.py --country NL
-python examples/download_daily.py --country PL
-python examples/download_daily.py --country SE
+python examples/basic/download_daily.py
+python examples/basic/download_daily.py --country AT
+python examples/basic/download_daily.py --country BE
+python examples/basic/download_daily.py --country CH
+python examples/basic/download_daily.py --country CZ
+python examples/basic/download_daily.py --country DE
+python examples/basic/download_daily.py --country DK
+python examples/basic/download_daily.py --country HU
+python examples/basic/download_daily.py --country NL
+python examples/basic/download_daily.py --country PL
+python examples/basic/download_daily.py --country SE
 ```
 
 BE notes:
@@ -109,7 +115,7 @@ SE notes:
 - raw SMHI `Kvalitet` codes are preserved in `flag` and normalized `quality` stays null
 - corrected-archive excludes the latest three months by source design
 
-### `examples/download_hourly.py`
+### `examples/basic/download_hourly.py`
 
 Shows how to:
 
@@ -126,15 +132,15 @@ Subdaily interpretation note:
 Run:
 
 ```powershell
-python examples/download_hourly.py
-python examples/download_hourly.py --country AT
-python examples/download_hourly.py --country BE
-python examples/download_hourly.py --country CH
-python examples/download_hourly.py --country DE
-python examples/download_hourly.py --country DK
-python examples/download_hourly.py --country HU
-python examples/download_hourly.py --country NL
-python examples/download_hourly.py --country SE
+python examples/basic/download_hourly.py
+python examples/basic/download_hourly.py --country AT
+python examples/basic/download_hourly.py --country BE
+python examples/basic/download_hourly.py --country CH
+python examples/basic/download_hourly.py --country DE
+python examples/basic/download_hourly.py --country DK
+python examples/basic/download_hourly.py --country HU
+python examples/basic/download_hourly.py --country NL
+python examples/basic/download_hourly.py --country SE
 ```
 
 AT hourly notes:
@@ -143,7 +149,7 @@ AT hourly notes:
 - station discovery still uses the official GeoSphere station metadata path used by the Austria provider
 - the example preserves the published GeoSphere hourly `time` value as the normalized UTC `timestamp`
 - raw GeoSphere hourly `<parameter>_flag` values are preserved in `flag` and normalized `quality` stays null
-- Austria `10min` support is implemented separately through the shared `examples/download_tenmin.py` path
+- Austria `10min` support is implemented separately through the shared `examples/basic/download_tenmin.py` path
 
 BE hourly notes:
 
@@ -192,7 +198,7 @@ SE hourly notes:
 - raw SMHI `Kvalitet` codes are preserved in `flag` and normalized `quality` stays null
 - corrected-archive excludes the latest three months by source design
 
-### `examples/download_tenmin.py`
+### `examples/basic/download_tenmin.py`
 
 Shows how to:
 
@@ -209,14 +215,14 @@ Subdaily interpretation note:
 Run:
 
 ```powershell
-python examples/download_tenmin.py
-python examples/download_tenmin.py --country AT
-python examples/download_tenmin.py --country BE
-python examples/download_tenmin.py --country CH
-python examples/download_tenmin.py --country DE
-python examples/download_tenmin.py --country DK
-python examples/download_tenmin.py --country HU
-python examples/download_tenmin.py --country NL
+python examples/basic/download_tenmin.py
+python examples/basic/download_tenmin.py --country AT
+python examples/basic/download_tenmin.py --country BE
+python examples/basic/download_tenmin.py --country CH
+python examples/basic/download_tenmin.py --country DE
+python examples/basic/download_tenmin.py --country DK
+python examples/basic/download_tenmin.py --country HU
+python examples/basic/download_tenmin.py --country NL
 ```
 
 AT 10-minute notes:
@@ -268,7 +274,9 @@ NL 10-minute notes:
 - this KNMI path is official and source-backed, but it is a near-real-time dataset and is not documented as validated in the same way as the KNMI daily and hourly validated datasets
 - mapped fields stay source-backed only; this first slice does not derive missing variables or recompute hourly or daily values from 10-minute data
 - raw `flag` and normalized `quality` both remain null in this slice
-### `examples/station_availability.py`
+## Workflow Examples
+
+### `examples/workflows/station_availability.py`
 
 Shows how to:
 
@@ -279,12 +287,12 @@ Shows how to:
 Run:
 
 ```powershell
-python examples/station_availability.py
+python examples/workflows/station_availability.py
 ```
 
-## Maintainer Utility
+## Maintainer Utilities
 
-### `utils/inspect_file.py`
+### `scripts/dev/inspect_file.py`
 
 Shows how to:
 
@@ -295,14 +303,14 @@ Shows how to:
 Run:
 
 ```powershell
-python utils/inspect_file.py outputs/some_file.parquet
-python utils/inspect_file.py outputs/fao_daily.cz.mat
-python utils/inspect_file.py outputs/fao_daily.cz
+python scripts/dev/inspect_file.py outputs/some_file.parquet
+python scripts/dev/inspect_file.py outputs/fao_daily.cz.mat
+python scripts/dev/inspect_file.py outputs/fao_daily.cz
 ```
 
-## Experimental Provider Example
+## Maintainer And Experimental Helpers
 
-### `examples/probe_shmu_sk.py`
+### `scripts/dev/probe_shmu_sk.py`
 
 Shows how to:
 
@@ -313,7 +321,7 @@ Shows how to:
 
 ## Workflow Example
 
-### `examples/download_fao.py`
+### `examples/workflows/download_fao.py`
 
 This is a workflow-oriented example rather than a generic library quickstart.
 
@@ -348,6 +356,11 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+
+
+
+
 
 
 
