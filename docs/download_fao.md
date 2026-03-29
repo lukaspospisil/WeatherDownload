@@ -28,6 +28,7 @@ Currently supported in the shared workflow:
 - `AT`
 - `BE`
 - `DK`
+- `HU`
 - `NL`
 - `SE`
 
@@ -39,6 +40,7 @@ python examples/download_fao.py --country DE
 python examples/download_fao.py --country AT
 python examples/download_fao.py --country BE
 python examples/download_fao.py --country DK
+python examples/download_fao.py --country HU
 python examples/download_fao.py --country NL
 python examples/download_fao.py --country SE
 python examples/download_fao.py --country NL --fill-missing allow-derived
@@ -49,6 +51,8 @@ python examples/download_fao.py --country NL --fill-missing allow-derived
 `--fill-missing` defaults to `none`. Use `--fill-missing allow-derived` only when you want the shared example layer to apply its documented fallback rules.
 
 For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
+
+For `HU`, no extra API key is required for the current provider slice.
 
 ## Fixed Export Shape
 
@@ -124,6 +128,26 @@ Unavailable in the current shared path:
 - `vapour_pressure` stays null
 
 The DK branch uses only the existing Denmark daily provider through the unified public interface. Denmark daily values come from the official DMI Climate Data `stationValue` path, and the workflow remains Denmark-only in this pass without broadening to Greenland or Faroe Islands support.
+
+### HU
+
+Observed inputs used:
+
+- `tas_mean` via `t`
+- `tas_max` via `tx`
+- `tas_min` via `tn`
+- `wind_speed` via `fs`
+- `sunshine_duration` via `f`
+
+Unavailable in the current shared path:
+
+- observed `vapour_pressure` stays null in default mode
+
+Optional shared fallback in `--fill-missing allow-derived` mode:
+
+- `vapour_pressure` may be filled from observed daily `tas_mean` plus observed daily `relative_humidity` through the existing shared example-layer fallback rule
+
+The HU branch uses only the existing HungaroMet provider through the unified public interface. No new derivation rule is added, no ET0 computation is added, and no derivation logic is moved into the provider.
 
 ### NL
 
@@ -243,6 +267,13 @@ For `DK`, that assumptions block explicitly states that:
 - `vapour_pressure` is unavailable in the current provider path and remains null
 - the example does not derive radiation or other meteorological variables
 
+For `HU`, that assumptions block explicitly states that:
+
+- the branch packages observed inputs only by default
+- observed `vapour_pressure` is unavailable in the current provider path and remains null in default mode
+- observed Hungary daily `relative_humidity` may support only the existing opt-in shared `--fill-missing allow-derived` fallback rule for `vapour_pressure`
+- the example does not derive radiation or other meteorological variables
+
 For `NL`, that assumptions block explicitly states that:
 
 - the branch packages observed inputs only
@@ -267,6 +298,7 @@ The cache is country-scoped under the base cache directory, for example:
   AT/
   BE/
   DK/
+  HU/
   NL/
   SE/
 ```
@@ -286,6 +318,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `AT` MAT: `outputs/fao_daily.at.mat`
 - `BE` MAT: `outputs/fao_daily.be.mat`
 - `DK` MAT: `outputs/fao_daily.dk.mat`
+- `HU` MAT: `outputs/fao_daily.hu.mat`
 - `NL` MAT: `outputs/fao_daily.nl.mat`
 - `SE` MAT: `outputs/fao_daily.se.mat`
 - `CZ` Parquet bundle: `outputs/fao_daily.cz`
@@ -293,6 +326,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `AT` Parquet bundle: `outputs/fao_daily.at`
 - `BE` Parquet bundle: `outputs/fao_daily.be`
 - `DK` Parquet bundle: `outputs/fao_daily.dk`
+- `HU` Parquet bundle: `outputs/fao_daily.hu`
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
 - `SE` Parquet bundle: `outputs/fao_daily.se`
 

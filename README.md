@@ -1,4 +1,4 @@
-﻿# WeatherDownload
+# WeatherDownload
 
 [![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
@@ -47,7 +47,7 @@ What stays stable across countries:
 | `CZ` | Yes | Yes | Yes | Yes | Stable |
 | `DE` | Yes | Yes | Yes | Yes | Stable |
 | `DK` | Yes | Yes | Yes | Yes | Stable |
-| `HU` | Yes | No | No | No | Stable |
+| `HU` | Yes | No | No | Yes | Stable |
 | `NL` | Yes | Yes | Yes | Yes | Stable |
 | `SE` | Yes | Yes | No | Yes | Stable |
 | `SK` | Yes, `recent / daily` only | No | No | No | Experimental |
@@ -57,7 +57,7 @@ Shared example coverage currently includes:
 - `examples/download_daily.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `HU`, `NL`, `SE`
 - `examples/download_hourly.py`: `AT`, `BE`, `DE`, `DK`, `NL`, `SE`
 - `examples/download_tenmin.py`: `AT`, `BE`, `DE`, `DK`, `NL`
-- `examples/download_fao.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `NL`, `SE` for observed daily input packaging by default, with optional example-layer `--fill-missing allow-derived` support and `.info` sidecars
+- `examples/download_fao.py`: `AT`, `BE`, `CZ`, `DE`, `DK`, `HU`, `NL`, `SE` for observed daily input packaging by default, with optional example-layer `--fill-missing allow-derived` support and `.info` sidecars
 
 ## Install
 
@@ -546,6 +546,7 @@ BE scope limits for this pass:
 - `NL` support is currently limited to KNMI `historical / daily` and `historical / 1hour` validated station observations plus the official KNMI `historical / 10min` near-real-time dataset via the Open Data API; the current `10min` slice is intentionally conservative, is not documented as validated in the same way, and does not map precipitation in this pass
 - `SE` support is currently limited to SMHI Meteorological Observations `historical / daily` and `historical / 1hour` corrected-archive station observations, station discovery via the supported daily and hourly parameter station listings, published UTC hourly timestamps preserved as source-backed `timestamp`, and raw `Kvalitet` codes preserved in `flag` while normalized `quality` stays null
 - `SK` support is experimental, limited to `recent / daily`, and currently has incomplete probe-derived station metadata
+
 
 
 
