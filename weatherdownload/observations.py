@@ -38,7 +38,10 @@ from .geosphere_daily import download_daily_observations_geosphere
 from .geosphere_hourly import download_hourly_observations_geosphere
 from .geosphere_tenmin import download_tenmin_observations_geosphere
 from .geosphere_parser import GEOSPHERE_NORMALIZED_DAILY_COLUMNS, GEOSPHERE_NORMALIZED_SUBDAILY_COLUMNS
-from .hu_daily import HU_NORMALIZED_DAILY_COLUMNS, download_daily_observations_hu
+from .hu_daily import download_daily_observations_hu
+from .hu_hourly import download_hourly_observations_hu
+from .hu_tenmin import download_tenmin_observations_hu
+from .hu_parser import HU_NORMALIZED_DAILY_COLUMNS, HU_NORMALIZED_SUBDAILY_COLUMNS
 from .knmi_daily import download_daily_observations_knmi
 from .knmi_hourly import download_hourly_observations_knmi
 from .knmi_tenmin import download_tenmin_observations_knmi
@@ -177,7 +180,11 @@ def _download_observations_hu(
 ) -> pd.DataFrame:
     if query.dataset_scope == 'historical' and query.resolution == 'daily':
         return download_daily_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_DAILY_COLUMNS]
-    raise NotImplementedError('HungaroMet Hungary support currently implements only historical/daily station observations.')
+    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+        return download_hourly_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
+    if query.dataset_scope == 'historical' and query.resolution == '10min':
+        return download_tenmin_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
+    raise NotImplementedError('HungaroMet Hungary support currently implements historical/daily, historical/1hour, and historical/10min station observations.')
 def _download_observations_shmu(
     query: ObservationQuery,
     timeout: int = 60,
@@ -273,6 +280,7 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
 
 
 

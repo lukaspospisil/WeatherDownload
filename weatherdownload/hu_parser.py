@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import csv
 import io
@@ -11,6 +11,10 @@ from .metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COL
 
 HU_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
+    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+]
+HU_NORMALIZED_SUBDAILY_COLUMNS = [
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
 
@@ -54,34 +58,37 @@ def parse_hu_station_metadata_csv(csv_text: str) -> pd.DataFrame:
     return frame
 
 
-def normalize_hu_observation_metadata(stations: pd.DataFrame, spec: object, parameter_metadata: dict[str, dict[str, str]]) -> pd.DataFrame:
+def normalize_hu_observation_metadata(
+    stations: pd.DataFrame,
+    specs_and_metadata: list[tuple[object, dict[str, dict[str, str]]]],
+) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for station in stations.itertuples(index=False):
-        for raw_code in getattr(spec, 'supported_elements', ()):
-            metadata = parameter_metadata.get(raw_code, {})
-            rows.append(
-                {
-                    'obs_type': metadata.get('obs_type', 'HISTORICAL_DAILY'),
-                    'station_id': station.station_id,
-                    'begin_date': station.begin_date,
-                    'end_date': station.end_date,
-                    'element': raw_code,
-                    'schedule': metadata.get('schedule', 'P1D HungaroMet HABP_1D'),
-                    'name': metadata.get('name', raw_code),
-                    'description': metadata.get('description', pd.NA),
-                    'height': pd.NA,
-                }
-            )
+        for spec, parameter_metadata in specs_and_metadata:
+            for raw_code in getattr(spec, 'supported_elements', ()):  # pragma: no branch - tiny tuples
+                metadata = parameter_metadata.get(raw_code, {})
+                rows.append(
+                    {
+                        'obs_type': metadata.get('obs_type', 'HISTORICAL_DAILY'),
+                        'station_id': station.station_id,
+                        'begin_date': station.begin_date,
+                        'end_date': station.end_date,
+                        'element': raw_code,
+                        'schedule': metadata.get('schedule', 'P1D HungaroMet HABP_1D'),
+                        'name': metadata.get('name', raw_code),
+                        'description': metadata.get('description', pd.NA),
+                        'height': pd.NA,
+                    }
+                )
     return pd.DataFrame.from_records(rows, columns=STATION_OBSERVATION_METADATA_COLUMNS)
 
 
 def parse_hu_daily_csv(csv_text: str) -> pd.DataFrame:
-    lines = [line for line in csv_text.lstrip('\ufeff').splitlines() if not line.startswith('#')]
-    if not lines:
-        return pd.DataFrame()
-    table = pd.read_csv(io.StringIO('\n'.join(lines)), sep=';', dtype=str)
-    table.columns = [_normalize_hu_daily_column_name(column) for column in table.columns]
-    return table
+    return _parse_hu_delimited_csv(csv_text)
+
+
+def parse_hu_subdaily_csv(csv_text: str) -> pd.DataFrame:
+    return _parse_hu_delimited_csv(csv_text)
 
 
 def read_text_from_source(source: str, timeout: int, requests_module) -> str:
@@ -135,6 +142,23 @@ def normalize_hu_observation_date(value: object) -> object:
     return parsed.date()
 
 
+def normalize_hu_observation_timestamp(value: object) -> pd.Timestamp | None:
+    cleaned = _clean_string(value)
+    if not cleaned:
+        return None
+    parsed = pd.to_datetime(cleaned, format='%Y%m%d%H%M', errors='coerce', utc=True)
+    if pd.isna(parsed):
+        return None
+    return parsed
+
+
+def normalize_hu_query_timestamp(value: object) -> pd.Timestamp:
+    timestamp = pd.Timestamp(value)
+    if timestamp.tzinfo is None:
+        return timestamp.tz_localize('UTC')
+    return timestamp.tz_convert('UTC')
+
+
 def quality_column_for_element(raw_code: str) -> str:
     return f'Q_{raw_code}'
 
@@ -150,7 +174,16 @@ def flag_with_missing(series: pd.Series) -> pd.Series:
     return cleaned.where(cleaned.ne(''), pd.NA)
 
 
-def _normalize_hu_daily_column_name(value: object) -> str:
+def _parse_hu_delimited_csv(csv_text: str) -> pd.DataFrame:
+    lines = [line for line in csv_text.lstrip('\ufeff').splitlines() if not line.startswith('#')]
+    if not lines:
+        return pd.DataFrame()
+    table = pd.read_csv(io.StringIO('\n'.join(lines)), sep=';', dtype=str)
+    table.columns = [_normalize_hu_column_name(column) for column in table.columns]
+    return table
+
+
+def _normalize_hu_column_name(value: object) -> str:
     return _clean_string(value)
 
 
@@ -169,4 +202,3 @@ def _parse_float(value: object) -> float | None:
 
 def _station_sort_key(station_id: str) -> tuple[int, str]:
     return (int(station_id), station_id) if station_id.isdigit() else (10**9, station_id)
-

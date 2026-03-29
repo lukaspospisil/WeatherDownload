@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -21,6 +21,10 @@ HU_BASE_URL = 'https://odp.met.hu/climate/observations_hungary'
 HU_METADATA_URL = f'{HU_BASE_URL}/meta/station_meta_auto.csv'
 HU_DAILY_HISTORICAL_URL = f'{HU_BASE_URL}/daily/historical/'
 HU_DAILY_RECENT_URL = f'{HU_BASE_URL}/daily/recent/'
+HU_HOURLY_HISTORICAL_URL = f'{HU_BASE_URL}/hourly/historical/'
+HU_HOURLY_RECENT_URL = f'{HU_BASE_URL}/hourly/recent/'
+HU_TENMIN_HISTORICAL_URL = f'{HU_BASE_URL}/10_minutes/historical/'
+HU_TENMIN_RECENT_URL = f'{HU_BASE_URL}/10_minutes/recent/'
 
 HU_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('t',),
@@ -77,6 +81,88 @@ HU_DAILY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     },
 }
 
+HU_HOURLY_CANONICAL_ELEMENTS = {
+    'precipitation': ('r',),
+    'tas_mean': ('ta',),
+    'pressure': ('p',),
+    'relative_humidity': ('u',),
+    'wind_speed': ('f',),
+}
+
+HU_HOURLY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
+    'r': {
+        'name': 'Hourly precipitation sum',
+        'description': 'Official HungaroMet hourly precipitation sum from the HABP_1H station observation files.',
+        'obs_type': 'HISTORICAL_HOURLY',
+        'schedule': 'PT1H HungaroMet HABP_1H',
+    },
+    'ta': {
+        'name': 'Hourly mean air temperature',
+        'description': 'Official HungaroMet hourly mean air temperature from the HABP_1H station observation files.',
+        'obs_type': 'HISTORICAL_HOURLY',
+        'schedule': 'PT1H HungaroMet HABP_1H',
+    },
+    'p': {
+        'name': 'Hourly station pressure',
+        'description': 'Official HungaroMet hourly station pressure from the HABP_1H station observation files.',
+        'obs_type': 'HISTORICAL_HOURLY',
+        'schedule': 'PT1H HungaroMet HABP_1H',
+    },
+    'u': {
+        'name': 'Hourly relative humidity',
+        'description': 'Official HungaroMet hourly relative humidity from the HABP_1H station observation files.',
+        'obs_type': 'HISTORICAL_HOURLY',
+        'schedule': 'PT1H HungaroMet HABP_1H',
+    },
+    'f': {
+        'name': 'Hourly mean wind speed',
+        'description': 'Official HungaroMet hourly mean wind speed from the HABP_1H station observation files.',
+        'obs_type': 'HISTORICAL_HOURLY',
+        'schedule': 'PT1H HungaroMet HABP_1H',
+    },
+}
+
+HU_TENMIN_CANONICAL_ELEMENTS = {
+    'precipitation': ('r',),
+    'tas_mean': ('ta',),
+    'pressure': ('p',),
+    'relative_humidity': ('u',),
+    'wind_speed': ('fs',),
+}
+
+HU_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
+    'r': {
+        'name': '10-minute precipitation sum',
+        'description': 'Official HungaroMet 10-minute precipitation sum from the HABP_10M station observation files.',
+        'obs_type': 'HISTORICAL_10MIN',
+        'schedule': 'PT10M HungaroMet HABP_10M',
+    },
+    'ta': {
+        'name': '10-minute mean air temperature',
+        'description': 'Official HungaroMet 10-minute mean air temperature from the HABP_10M station observation files.',
+        'obs_type': 'HISTORICAL_10MIN',
+        'schedule': 'PT10M HungaroMet HABP_10M',
+    },
+    'p': {
+        'name': '10-minute station pressure',
+        'description': 'Official HungaroMet 10-minute station pressure from the HABP_10M station observation files.',
+        'obs_type': 'HISTORICAL_10MIN',
+        'schedule': 'PT10M HungaroMet HABP_10M',
+    },
+    'u': {
+        'name': '10-minute relative humidity',
+        'description': 'Official HungaroMet 10-minute relative humidity from the HABP_10M station observation files.',
+        'obs_type': 'HISTORICAL_10MIN',
+        'schedule': 'PT10M HungaroMet HABP_10M',
+    },
+    'fs': {
+        'name': '10-minute mean wind speed',
+        'description': 'Official HungaroMet 10-minute mean wind speed from the HABP_10M station observation files.',
+        'obs_type': 'HISTORICAL_10MIN',
+        'schedule': 'PT10M HungaroMet HABP_10M',
+    },
+}
+
 _HU_DATASET_SPECS = [
     HungaryDatasetSpec(
         dataset_scope='historical',
@@ -88,6 +174,30 @@ _HU_DATASET_SPECS = [
         supported_elements=tuple(HU_DAILY_PARAMETER_METADATA),
         canonical_elements=HU_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
+        implemented=True,
+    ),
+    HungaryDatasetSpec(
+        dataset_scope='historical',
+        resolution='1hour',
+        label='HungaroMet historical hourly station observations',
+        metadata_url=HU_METADATA_URL,
+        historical_data_url=HU_HOURLY_HISTORICAL_URL,
+        recent_data_url=HU_HOURLY_RECENT_URL,
+        supported_elements=tuple(HU_HOURLY_PARAMETER_METADATA),
+        canonical_elements=HU_HOURLY_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
+        implemented=True,
+    ),
+    HungaryDatasetSpec(
+        dataset_scope='historical',
+        resolution='10min',
+        label='HungaroMet historical 10-minute station observations',
+        metadata_url=HU_METADATA_URL,
+        historical_data_url=HU_TENMIN_HISTORICAL_URL,
+        recent_data_url=HU_TENMIN_RECENT_URL,
+        supported_elements=tuple(HU_TENMIN_PARAMETER_METADATA),
+        canonical_elements=HU_TENMIN_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
         implemented=True,
     ),
 ]
@@ -108,4 +218,3 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> HungaryDatasetSpec:
         if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
             return spec
     raise ValueError(f'Unsupported HungaroMet Hungary dataset combination: {dataset_scope}/{resolution}')
-

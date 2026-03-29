@@ -76,7 +76,7 @@ HU notes:
 - station metadata use the official `climate/observations_hungary/meta/station_meta_auto.csv` file
 - daily observations use the official `climate/observations_hungary/daily/historical/` archives and the official `daily/recent/` current-year archives when needed by the requested date range
 - raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
-- `HU` currently supports `historical / daily` only through the shared daily example
+- `HU` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the shared examples
 NL notes:
 
 - set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
@@ -114,6 +114,7 @@ python examples/download_hourly.py --country AT
 python examples/download_hourly.py --country BE
 python examples/download_hourly.py --country DE
 python examples/download_hourly.py --country DK
+python examples/download_hourly.py --country HU
 python examples/download_hourly.py --country NL
 python examples/download_hourly.py --country SE
 ```
@@ -141,6 +142,14 @@ DK hourly notes:
 - the source hourly path is UTC and exposes `from` and `to` interval bounds; the example preserves that provider-defined hourly meaning behind the provider layer
 - raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
+
+HU hourly notes:
+
+- `HU` uses the shared hourly example path through the official HungaroMet `climate/observations_hungary/hourly/` tree
+- station discovery still uses the official `meta/station_meta_auto.csv` metadata file used by the Hungary provider
+- the example preserves the published HungaroMet hourly `Time` value as the normalized UTC `timestamp`
+- raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
+- mapped fields stay source-backed only; WeatherDownload does not recompute hourly values from any other Hungary source path
 
 NL hourly notes:
 
@@ -180,6 +189,7 @@ python examples/download_tenmin.py --country AT
 python examples/download_tenmin.py --country BE
 python examples/download_tenmin.py --country DE
 python examples/download_tenmin.py --country DK
+python examples/download_tenmin.py --country HU
 python examples/download_tenmin.py --country NL
 ```
 
@@ -207,6 +217,14 @@ DK 10-minute notes:
 - source QC/status fields are not exposed on the implemented `10min` path, so `flag` remains null and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
 
+
+HU 10-minute notes:
+
+- `HU` uses the shared 10-minute example path through the official HungaroMet `climate/observations_hungary/10_minutes/` tree
+- station discovery still uses the official `meta/station_meta_auto.csv` metadata file used by the Hungary provider
+- the example preserves the published HungaroMet 10-minute `Time` value as the normalized UTC `timestamp`
+- raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
+- the separate HungaroMet `10_minutes_wind` product is not merged into the shared `10min` example in this pass
 
 NL 10-minute notes:
 
@@ -296,6 +314,10 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
+
+
+
 
 
 

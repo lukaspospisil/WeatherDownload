@@ -1,0 +1,8 @@
+##Meta
+#StationNumber;StartDate;EndDate;Latitude;Longitude;Elevation;StationName;EOR
+#13704;20050727;20260329;47.6783;16.6022;232.8;Sopron Kuruc-domb;EOR
+##Meta END
+
+StationNumber;Time;r;Q_r;ta;Q_ta;p;Q_p;u;Q_u;f;Q_f;EOR
+13704;202601010000;0.0; ;1.2; ;1003.5; ;85; ;3.1; ;EOR
+13704;202601010100;0.4;C;0.9; ;1003.2; ;87; ;2.8; ;EOR

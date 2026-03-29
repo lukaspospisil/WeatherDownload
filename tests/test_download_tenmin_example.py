@@ -27,26 +27,18 @@ class DownloadTenminExampleTests(unittest.TestCase):
         args = parser.parse_args(['--country', 'DK'])
         self.assertEqual(args.country, 'DK')
 
+    def test_build_parser_accepts_country_hu(self) -> None:
+        parser = download_tenmin.build_parser()
+        args = parser.parse_args(['--country', 'HU'])
+        self.assertEqual(args.country, 'HU')
+
     def test_build_parser_accepts_country_nl(self) -> None:
         parser = download_tenmin.build_parser()
         args = parser.parse_args(['--country', 'NL'])
         self.assertEqual(args.country, 'NL')
 
     def test_main_uses_shared_at_query_shape(self) -> None:
-        sample = pd.DataFrame([
-            {
-                'station_id': '1',
-                'gh_id': None,
-                'element': 'tas_mean',
-                'element_raw': 'tl',
-                'timestamp': '2024-01-01T00:10:00Z',
-                'value': 0.1,
-                'flag': '12',
-                'quality': None,
-                'dataset_scope': 'historical',
-                'resolution': '10min',
-            }
-        ])
+        sample = pd.DataFrame([{'station_id': '1', 'gh_id': None, 'element': 'tas_mean', 'element_raw': 'tl', 'timestamp': '2024-01-01T00:10:00Z', 'value': 0.1, 'flag': '12', 'quality': None, 'dataset_scope': 'historical', 'resolution': '10min'}])
         buffer = io.StringIO()
         with patch.object(download_tenmin, 'download_observations', return_value=sample) as download_mock:
             with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'AT']):
@@ -61,20 +53,7 @@ class DownloadTenminExampleTests(unittest.TestCase):
         self.assertIn('1', buffer.getvalue())
 
     def test_main_uses_shared_dk_query_shape(self) -> None:
-        sample = pd.DataFrame([
-            {
-                'station_id': '06180',
-                'gh_id': None,
-                'element': 'tas_mean',
-                'element_raw': 'temp_dry',
-                'timestamp': '2024-01-01T00:10:00Z',
-                'value': 2.1,
-                'flag': None,
-                'quality': None,
-                'dataset_scope': 'historical',
-                'resolution': '10min',
-            }
-        ])
+        sample = pd.DataFrame([{'station_id': '06180', 'gh_id': None, 'element': 'tas_mean', 'element_raw': 'temp_dry', 'timestamp': '2024-01-01T00:10:00Z', 'value': 2.1, 'flag': None, 'quality': None, 'dataset_scope': 'historical', 'resolution': '10min'}])
         buffer = io.StringIO()
         with patch.object(download_tenmin, 'download_observations', return_value=sample) as download_mock:
             with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'DK']):
@@ -88,21 +67,23 @@ class DownloadTenminExampleTests(unittest.TestCase):
         self.assertEqual(query.elements, ['temp_dry', 'pressure'])
         self.assertIn('06180', buffer.getvalue())
 
+    def test_main_uses_shared_hu_query_shape(self) -> None:
+        sample = pd.DataFrame([{'station_id': '13704', 'gh_id': None, 'element': 'tas_mean', 'element_raw': 'ta', 'timestamp': '2026-01-01T00:00:00Z', 'value': 1.4, 'flag': None, 'quality': None, 'dataset_scope': 'historical', 'resolution': '10min'}])
+        buffer = io.StringIO()
+        with patch.object(download_tenmin, 'download_observations', return_value=sample) as download_mock:
+            with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'HU']):
+                with redirect_stdout(buffer):
+                    download_tenmin.main()
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'HU')
+        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.resolution, '10min')
+        self.assertEqual(query.station_ids, ['13704'])
+        self.assertEqual(query.elements, ['ta', 'p'])
+        self.assertIn('13704', buffer.getvalue())
+
     def test_main_uses_shared_nl_query_shape(self) -> None:
-        sample = pd.DataFrame([
-            {
-                'station_id': '0-20000-0-06260',
-                'gh_id': None,
-                'element': 'tas_mean',
-                'element_raw': 'ta',
-                'timestamp': '2024-01-01T09:10:00Z',
-                'value': 3.1,
-                'flag': None,
-                'quality': None,
-                'dataset_scope': 'historical',
-                'resolution': '10min',
-            }
-        ])
+        sample = pd.DataFrame([{'station_id': '0-20000-0-06260', 'gh_id': None, 'element': 'tas_mean', 'element_raw': 'ta', 'timestamp': '2024-01-01T09:10:00Z', 'value': 3.1, 'flag': None, 'quality': None, 'dataset_scope': 'historical', 'resolution': '10min'}])
         buffer = io.StringIO()
         with patch.object(download_tenmin, 'download_observations', return_value=sample) as download_mock:
             with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'NL']):

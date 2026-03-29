@@ -39,6 +39,13 @@ COUNTRY_DEFAULTS = {
         'end': '2024-01-01T00:20:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
+    'HU': {
+        'dataset_scope': 'historical',
+        'station_ids': ['13704'],
+        'start': '2026-01-01T00:00:00Z',
+        'end': '2026-01-01T00:10:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
     'NL': {
         'dataset_scope': 'historical',
         'station_ids': ['0-20000-0-06260'],

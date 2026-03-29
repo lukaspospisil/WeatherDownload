@@ -1,4 +1,4 @@
-﻿import io
+import io
 import unittest
 import zipfile
 from pathlib import Path
@@ -18,12 +18,25 @@ from weatherdownload import (
     read_station_observation_metadata,
 )
 from weatherdownload.hu_daily import HU_DAILY_HISTORICAL_URL, HU_DAILY_RECENT_URL
-from weatherdownload.hu_parser import HU_NORMALIZED_DAILY_COLUMNS, parse_hu_daily_csv
+from weatherdownload.hu_hourly import HU_HOURLY_HISTORICAL_URL, HU_HOURLY_RECENT_URL
+from weatherdownload.hu_parser import (
+    HU_NORMALIZED_DAILY_COLUMNS,
+    HU_NORMALIZED_SUBDAILY_COLUMNS,
+    parse_hu_daily_csv,
+    parse_hu_subdaily_csv,
+)
+from weatherdownload.hu_tenmin import HU_TENMIN_HISTORICAL_URL, HU_TENMIN_RECENT_URL
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_hu_station_meta_auto.csv')
-SAMPLE_HISTORICAL_INDEX = Path('tests/data/sample_hu_daily_historical_index.html').read_text(encoding='utf-8')
-SAMPLE_HISTORICAL_CSV = Path('tests/data/sample_hu_daily_hist_13704.csv').read_text(encoding='utf-8')
-SAMPLE_RECENT_CSV = Path('tests/data/sample_hu_daily_recent_13704.csv').read_text(encoding='utf-8')
+SAMPLE_DAILY_HISTORICAL_INDEX = Path('tests/data/sample_hu_daily_historical_index.html').read_text(encoding='utf-8')
+SAMPLE_DAILY_HISTORICAL_CSV = Path('tests/data/sample_hu_daily_hist_13704.csv').read_text(encoding='utf-8')
+SAMPLE_DAILY_RECENT_CSV = Path('tests/data/sample_hu_daily_recent_13704.csv').read_text(encoding='utf-8')
+SAMPLE_HOURLY_HISTORICAL_INDEX = Path('tests/data/sample_hu_hourly_historical_index.html').read_text(encoding='utf-8')
+SAMPLE_HOURLY_HISTORICAL_CSV = Path('tests/data/sample_hu_hourly_hist_13704.csv').read_text(encoding='utf-8')
+SAMPLE_HOURLY_RECENT_CSV = Path('tests/data/sample_hu_hourly_recent_13704.csv').read_text(encoding='utf-8')
+SAMPLE_TENMIN_HISTORICAL_INDEX = Path('tests/data/sample_hu_tenmin_historical_index.html').read_text(encoding='utf-8')
+SAMPLE_TENMIN_HISTORICAL_CSV = Path('tests/data/sample_hu_tenmin_hist_13704.csv').read_text(encoding='utf-8')
+SAMPLE_TENMIN_RECENT_CSV = Path('tests/data/sample_hu_tenmin_recent_13704.csv').read_text(encoding='utf-8')
 EXPECTED_HU_DAILY_MAPPING = {
     'tas_mean': 't',
     'tas_max': 'tx',
@@ -32,6 +45,20 @@ EXPECTED_HU_DAILY_MAPPING = {
     'wind_speed': 'fs',
     'relative_humidity': 'u',
     'sunshine_duration': 'f',
+}
+EXPECTED_HU_HOURLY_MAPPING = {
+    'precipitation': 'r',
+    'tas_mean': 'ta',
+    'pressure': 'p',
+    'relative_humidity': 'u',
+    'wind_speed': 'f',
+}
+EXPECTED_HU_TENMIN_MAPPING = {
+    'precipitation': 'r',
+    'tas_mean': 'ta',
+    'pressure': 'p',
+    'relative_humidity': 'u',
+    'wind_speed': 'fs',
 }
 
 
@@ -58,7 +85,7 @@ class HungaryProviderTests(unittest.TestCase):
     def test_supported_countries_include_hu(self) -> None:
         self.assertIn('HU', list_supported_countries())
         self.assertEqual(list_dataset_scopes(country='HU'), ['historical'])
-        self.assertEqual(list_resolutions(country='HU', dataset_scope='historical'), ['daily'])
+        self.assertEqual(list_resolutions(country='HU', dataset_scope='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_hu_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
@@ -70,8 +97,8 @@ class HungaryProviderTests(unittest.TestCase):
     def test_read_station_observation_metadata_country_hu_from_local_fixture(self) -> None:
         metadata = read_station_observation_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
         self.assertEqual(list(metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
-        self.assertEqual(set(metadata['obs_type']), {'HISTORICAL_DAILY'})
-        self.assertEqual(sorted(metadata['element'].unique().tolist()), ['f', 'fs', 'rau', 't', 'tn', 'tx', 'u'])
+        self.assertEqual(set(metadata['obs_type']), {'HISTORICAL_DAILY', 'HISTORICAL_HOURLY', 'HISTORICAL_10MIN'})
+        self.assertEqual(sorted(metadata['element'].unique().tolist()), ['f', 'fs', 'p', 'r', 'rau', 't', 'ta', 'tn', 'tx', 'u'])
         self.assertTrue(metadata['height'].isna().all())
 
     def test_discovery_country_hu_returns_canonical_and_raw_elements(self) -> None:
@@ -80,8 +107,20 @@ class HungaryProviderTests(unittest.TestCase):
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='HU', dataset_scope='historical', resolution='daily', provider_raw=True),
-            ['t', 'tx', 'tn', 'rau', 'fs', 'u', 'f'],
+            list_supported_elements(country='HU', dataset_scope='historical', resolution='1hour'),
+            ['precipitation', 'tas_mean', 'pressure', 'relative_humidity', 'wind_speed'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='HU', dataset_scope='historical', resolution='10min'),
+            ['precipitation', 'tas_mean', 'pressure', 'relative_humidity', 'wind_speed'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='HU', dataset_scope='historical', resolution='1hour', provider_raw=True),
+            ['r', 'ta', 'p', 'u', 'f'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='HU', dataset_scope='historical', resolution='10min', provider_raw=True),
+            ['r', 'ta', 'p', 'u', 'fs'],
         )
 
     def test_hu_daily_query_accepts_canonical_and_raw_codes(self) -> None:
@@ -90,26 +129,46 @@ class HungaryProviderTests(unittest.TestCase):
         self.assertEqual(canonical_query.elements, ['t', 'rau'])
         self.assertEqual(raw_query.elements, ['t', 'rau'])
 
-    def test_hu_unsupported_hourly_query_stays_explicit(self) -> None:
+    def test_hu_hourly_query_accepts_canonical_and_raw_codes(self) -> None:
+        canonical_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['ta', 'p'])
+        self.assertEqual(canonical_query.elements, ['ta', 'p'])
+        self.assertEqual(raw_query.elements, ['ta', 'p'])
+
+    def test_hu_tenmin_query_accepts_canonical_and_raw_codes(self) -> None:
+        canonical_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['ta', 'p'])
+        self.assertEqual(canonical_query.elements, ['ta', 'p'])
+        self.assertEqual(raw_query.elements, ['ta', 'p'])
+
+    def test_hu_subdaily_query_rejects_date_only_inputs(self) -> None:
         with self.assertRaises(QueryValidationError):
-            ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2026-01-01T00:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean'])
+            ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start_date='2026-01-01', end_date='2026-01-01', elements=['tas_mean'])
 
     def test_parse_hu_daily_csv_keeps_source_columns(self) -> None:
-        parsed = parse_hu_daily_csv(SAMPLE_HISTORICAL_CSV)
+        parsed = parse_hu_daily_csv(SAMPLE_DAILY_HISTORICAL_CSV)
         self.assertIn('StationNumber', parsed.columns)
         self.assertIn('Time', parsed.columns)
         self.assertIn('rau', parsed.columns)
         self.assertIn('Q_rau', parsed.columns)
         self.assertEqual(len(parsed), 2)
 
+    def test_parse_hu_subdaily_csv_keeps_source_columns(self) -> None:
+        parsed = parse_hu_subdaily_csv(SAMPLE_HOURLY_HISTORICAL_CSV)
+        self.assertIn('StationNumber', parsed.columns)
+        self.assertIn('Time', parsed.columns)
+        self.assertIn('ta', parsed.columns)
+        self.assertIn('Q_ta', parsed.columns)
+        self.assertEqual(len(parsed), 2)
+
     def test_download_daily_observations_country_hu_combines_historical_and_recent(self) -> None:
         station_metadata = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
-        historical_zip = _build_zip_bytes('HABP_1D_20050727_20251231_13704.csv', SAMPLE_HISTORICAL_CSV)
-        recent_zip = _build_zip_bytes('HABP_1D_20260101_20260328_13704.csv', SAMPLE_RECENT_CSV)
+        historical_zip = _build_zip_bytes('HABP_1D_20050727_20251231_13704.csv', SAMPLE_DAILY_HISTORICAL_CSV)
+        recent_zip = _build_zip_bytes('HABP_1D_20260101_20260328_13704.csv', SAMPLE_DAILY_RECENT_CSV)
 
         def fake_get(url, timeout=60):
             if url == HU_DAILY_HISTORICAL_URL:
-                return _MockResponse(text=SAMPLE_HISTORICAL_INDEX)
+                return _MockResponse(text=SAMPLE_DAILY_HISTORICAL_INDEX)
             if url == f'{HU_DAILY_HISTORICAL_URL}HABP_1D_13704_20050727_20251231_hist.zip':
                 return _MockResponse(content=historical_zip)
             if url == f'{HU_DAILY_RECENT_URL}HABP_1D_13704_akt.zip':
@@ -128,13 +187,65 @@ class HungaryProviderTests(unittest.TestCase):
         flag_lookup = observations.set_index(['element', 'observation_date'])['flag']
         self.assertEqual(flag_lookup[('precipitation', pd.Timestamp('2026-01-02').date())], 'A')
 
+    def test_download_hourly_observations_country_hu_combines_historical_and_recent(self) -> None:
+        station_metadata = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
+        historical_zip = _build_zip_bytes('HABP_1H_20020101_20251231_13704.csv', SAMPLE_HOURLY_HISTORICAL_CSV)
+        recent_zip = _build_zip_bytes('HABP_1H_20260101_20260329_13704.csv', SAMPLE_HOURLY_RECENT_CSV)
+
+        def fake_get(url, timeout=60):
+            if url == HU_HOURLY_HISTORICAL_URL:
+                return _MockResponse(text=SAMPLE_HOURLY_HISTORICAL_INDEX)
+            if url == f'{HU_HOURLY_HISTORICAL_URL}HABP_1H_13704_20020101_20251231_hist.zip':
+                return _MockResponse(content=historical_zip)
+            if url == f'{HU_HOURLY_RECENT_URL}HABP_1H_13704_akt.zip':
+                return _MockResponse(content=recent_zip)
+            return _MockResponse(status_code=404)
+
+        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
+        with patch('weatherdownload.hu_hourly.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='HU', station_metadata=station_metadata)
+        self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'pressure', 'tas_mean'])
+        self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical'])
+        self.assertEqual(observations['resolution'].unique().tolist(), ['1hour'])
+        self.assertEqual(str(observations['quality'].dtype), 'Int64')
+        self.assertEqual(str(observations.iloc[0]['timestamp']), '2025-12-31 23:00:00+00:00')
+        flag_lookup = observations.set_index(['element', 'timestamp'])['flag']
+        self.assertEqual(flag_lookup[('precipitation', pd.Timestamp('2026-01-01T01:00:00Z'))], 'C')
+
+    def test_download_tenmin_observations_country_hu_combines_historical_and_recent(self) -> None:
+        station_metadata = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
+        historical_zip = _build_zip_bytes('HABP_10M_20020101_20251231_13704.csv', SAMPLE_TENMIN_HISTORICAL_CSV)
+        recent_zip = _build_zip_bytes('HABP_10M_20260101_20260329_13704.csv', SAMPLE_TENMIN_RECENT_CSV)
+
+        def fake_get(url, timeout=60):
+            if url == HU_TENMIN_HISTORICAL_URL:
+                return _MockResponse(text=SAMPLE_TENMIN_HISTORICAL_INDEX)
+            if url == f'{HU_TENMIN_HISTORICAL_URL}HABP_10M_13704_20020101_20251231_hist.zip':
+                return _MockResponse(content=historical_zip)
+            if url == f'{HU_TENMIN_RECENT_URL}HABP_10M_13704_akt.zip':
+                return _MockResponse(content=recent_zip)
+            return _MockResponse(status_code=404)
+
+        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
+        with patch('weatherdownload.hu_tenmin.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='HU', station_metadata=station_metadata)
+        self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'pressure', 'tas_mean'])
+        self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical'])
+        self.assertEqual(observations['resolution'].unique().tolist(), ['10min'])
+        self.assertEqual(str(observations['quality'].dtype), 'Int64')
+        self.assertEqual(str(observations.iloc[0]['timestamp']), '2025-12-31 23:50:00+00:00')
+        flag_lookup = observations.set_index(['element', 'timestamp'])['flag']
+        self.assertEqual(flag_lookup[('precipitation', pd.Timestamp('2026-01-01T00:10:00Z'))], 'A')
+
     def test_hu_daily_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
-        historical_zip = _build_zip_bytes('HABP_1D_20050727_20251231_13704.csv', SAMPLE_HISTORICAL_CSV)
+        historical_zip = _build_zip_bytes('HABP_1D_20050727_20251231_13704.csv', SAMPLE_DAILY_HISTORICAL_CSV)
 
         def fake_get(url, timeout=60):
             if url == HU_DAILY_HISTORICAL_URL:
-                return _MockResponse(text=SAMPLE_HISTORICAL_INDEX)
+                return _MockResponse(text=SAMPLE_DAILY_HISTORICAL_INDEX)
             if url == f'{HU_DAILY_HISTORICAL_URL}HABP_1D_13704_20050727_20251231_hist.zip':
                 return _MockResponse(content=historical_zip)
             return _MockResponse(status_code=404)
@@ -151,9 +262,52 @@ class HungaryProviderTests(unittest.TestCase):
         self.assertAlmostEqual(float(tas_mean_row.iloc[0]['value']), 28.3)
         self.assertAlmostEqual(float(sunshine_row.iloc[0]['value']), 5.4)
 
+    def test_hu_hourly_contract_mapping_and_key_values_are_stable(self) -> None:
+        station_metadata = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
+        historical_zip = _build_zip_bytes('HABP_1H_20020101_20251231_13704.csv', SAMPLE_HOURLY_HISTORICAL_CSV)
+        recent_zip = _build_zip_bytes('HABP_1H_20260101_20260329_13704.csv', SAMPLE_HOURLY_RECENT_CSV)
+
+        def fake_get(url, timeout=60):
+            if url == HU_HOURLY_HISTORICAL_URL:
+                return _MockResponse(text=SAMPLE_HOURLY_HISTORICAL_INDEX)
+            if url == f'{HU_HOURLY_HISTORICAL_URL}HABP_1H_13704_20020101_20251231_hist.zip':
+                return _MockResponse(content=historical_zip)
+            if url == f'{HU_HOURLY_RECENT_URL}HABP_1H_13704_akt.zip':
+                return _MockResponse(content=recent_zip)
+            return _MockResponse(status_code=404)
+
+        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=list(EXPECTED_HU_HOURLY_MAPPING.keys()))
+        with patch('weatherdownload.hu_hourly.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='HU', station_metadata=station_metadata)
+        mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
+        self.assertEqual(mapping, EXPECTED_HU_HOURLY_MAPPING)
+        lookup = observations.set_index(['element', 'timestamp'])['value']
+        self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2025-12-31T23:00:00Z'))]), 1.8)
+        self.assertAlmostEqual(float(lookup[('pressure', pd.Timestamp('2026-01-01T00:00:00Z'))]), 1003.5)
+
+    def test_hu_tenmin_contract_mapping_and_key_values_are_stable(self) -> None:
+        station_metadata = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
+        historical_zip = _build_zip_bytes('HABP_10M_20020101_20251231_13704.csv', SAMPLE_TENMIN_HISTORICAL_CSV)
+        recent_zip = _build_zip_bytes('HABP_10M_20260101_20260329_13704.csv', SAMPLE_TENMIN_RECENT_CSV)
+
+        def fake_get(url, timeout=60):
+            if url == HU_TENMIN_HISTORICAL_URL:
+                return _MockResponse(text=SAMPLE_TENMIN_HISTORICAL_INDEX)
+            if url == f'{HU_TENMIN_HISTORICAL_URL}HABP_10M_13704_20020101_20251231_hist.zip':
+                return _MockResponse(content=historical_zip)
+            if url == f'{HU_TENMIN_RECENT_URL}HABP_10M_13704_akt.zip':
+                return _MockResponse(content=recent_zip)
+            return _MockResponse(status_code=404)
+
+        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_HU_TENMIN_MAPPING.keys()))
+        with patch('weatherdownload.hu_tenmin.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='HU', station_metadata=station_metadata)
+        mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
+        self.assertEqual(mapping, EXPECTED_HU_TENMIN_MAPPING)
+        lookup = observations.set_index(['element', 'timestamp'])['value']
+        self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2025-12-31T23:50:00Z'))]), 1.6)
+        self.assertAlmostEqual(float(lookup[('pressure', pd.Timestamp('2026-01-01T00:10:00Z'))]), 1003.6)
+
 
 if __name__ == '__main__':
     unittest.main()
-
-
-

@@ -313,6 +313,123 @@ def _download_tenmin_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='DK', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
+SAMPLE_HU_HOURLY_HISTORICAL_INDEX_HTML = Path('tests/data/sample_hu_hourly_historical_index.html').read_text(encoding='utf-8')
+SAMPLE_HU_HOURLY_HISTORICAL_CSV = Path('tests/data/sample_hu_hourly_hist_13704.csv').read_text(encoding='utf-8')
+SAMPLE_HU_HOURLY_RECENT_CSV = Path('tests/data/sample_hu_hourly_recent_13704.csv').read_text(encoding='utf-8')
+SAMPLE_HU_TENMIN_HISTORICAL_INDEX_HTML = Path('tests/data/sample_hu_tenmin_historical_index.html').read_text(encoding='utf-8')
+SAMPLE_HU_TENMIN_HISTORICAL_CSV = Path('tests/data/sample_hu_tenmin_hist_13704.csv').read_text(encoding='utf-8')
+SAMPLE_HU_TENMIN_RECENT_CSV = Path('tests/data/sample_hu_tenmin_recent_13704.csv').read_text(encoding='utf-8')
+
+def _download_hourly_fixture(country: str) -> pd.DataFrame:
+    if country == 'AT':
+        station_metadata = _read_station_metadata_fixture('AT')
+        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.geosphere_hourly.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_HOURLY_CSV_TEXT)):
+            return download_observations(query, country='AT', station_metadata=station_metadata)
+    if country == 'BE':
+        station_metadata = _read_station_metadata_fixture('BE')
+        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.be_hourly.requests.get', return_value=_MockTextResponse(SAMPLE_BE_HOURLY_TEXT)):
+            return download_observations(query, country='BE', station_metadata=station_metadata)
+    if country == 'DK':
+        station_metadata = _read_station_metadata_fixture('DK')
+        query = ObservationQuery(country='DK', dataset_scope='historical', resolution='1hour', station_ids=['06180'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        sample_payload = json.loads(SAMPLE_DK_HOURLY_TEXT)
+
+        def fake_get(url, params=None, timeout=60):
+            filtered = {
+                'type': 'FeatureCollection',
+                'features': [
+                    feature for feature in sample_payload['features']
+                    if feature['properties'].get('stationId') == params['stationId']
+                    and feature['properties'].get('parameterId') == params['parameterId']
+                ],
+            }
+            return _MockTextResponse(text=json.dumps(filtered))
+
+        with patch('weatherdownload.dk_hourly.requests.get', side_effect=fake_get):
+            return download_observations(query, country='DK', station_metadata=station_metadata)
+    if country == 'HU':
+        station_metadata = _read_station_metadata_fixture('HU')
+        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T00:00:00Z', elements=['tas_mean', 'pressure'])
+        historical_zip = _build_sample_hu_daily_zip('HABP_1H_20020101_20251231_13704.csv', SAMPLE_HU_HOURLY_HISTORICAL_CSV)
+        recent_zip = _build_sample_hu_daily_zip('HABP_1H_20260101_20260329_13704.csv', SAMPLE_HU_HOURLY_RECENT_CSV)
+
+        def fake_get(url, timeout=60):
+            if url.endswith('/hourly/historical/'):
+                return _MockTextResponse(text=SAMPLE_HU_HOURLY_HISTORICAL_INDEX_HTML)
+            if url.endswith('HABP_1H_13704_20020101_20251231_hist.zip'):
+                return _MockTextResponse(content=historical_zip)
+            if url.endswith('HABP_1H_13704_akt.zip'):
+                return _MockTextResponse(content=recent_zip)
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.hu_hourly.requests.get', side_effect=fake_get):
+            return download_observations(query, country='HU', station_metadata=station_metadata)
+    if country == 'SE':
+        station_metadata = _read_station_metadata_fixture('SE')
+        query = ObservationQuery(country='SE', dataset_scope='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T12:00:00Z', elements=['tas_mean', 'pressure'])
+
+        def fake_get(url, timeout=60):
+            if '/parameter/1/' in url:
+                return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'hourly_parameter_1.csv').read_text(encoding='utf-8'))
+            if '/parameter/9/' in url:
+                return _MockTextResponse((SAMPLE_SE_FIXTURE_DIR / 'hourly_parameter_9.csv').read_text(encoding='utf-8'))
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.se_hourly.requests.get', side_effect=fake_get):
+            return download_observations(query, country='SE', station_metadata=station_metadata)
+    raise AssertionError(f'unsupported test country: {country}')
+
+
+def _download_tenmin_fixture(country: str) -> pd.DataFrame:
+    if country == 'AT':
+        station_metadata = _read_station_metadata_fixture('AT')
+        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.geosphere_tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_TENMIN_CSV_TEXT)):
+            return download_observations(query, country='AT', station_metadata=station_metadata)
+    if country == 'BE':
+        station_metadata = _read_station_metadata_fixture('BE')
+        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.be_tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_BE_TENMIN_TEXT)):
+            return download_observations(query, country='BE', station_metadata=station_metadata)
+    if country == 'DK':
+        station_metadata = _read_station_metadata_fixture('DK')
+        query = ObservationQuery(country='DK', dataset_scope='historical', resolution='10min', station_ids=['06180'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        sample_payload = json.loads(SAMPLE_DK_TENMIN_TEXT)
+
+        def fake_get(url, params=None, timeout=60):
+            filtered = {
+                'type': 'FeatureCollection',
+                'features': [
+                    feature for feature in sample_payload['features']
+                    if feature['properties'].get('stationId') == params['stationId']
+                    and feature['properties'].get('parameterId') == params['parameterId']
+                ],
+            }
+            return _MockTextResponse(text=json.dumps(filtered))
+
+        with patch('weatherdownload.dk_tenmin.requests.get', side_effect=fake_get):
+            return download_observations(query, country='DK', station_metadata=station_metadata)
+    if country == 'HU':
+        station_metadata = _read_station_metadata_fixture('HU')
+        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:00:00Z', elements=['tas_mean', 'pressure'])
+        historical_zip = _build_sample_hu_daily_zip('HABP_10M_20020101_20251231_13704.csv', SAMPLE_HU_TENMIN_HISTORICAL_CSV)
+        recent_zip = _build_sample_hu_daily_zip('HABP_10M_20260101_20260329_13704.csv', SAMPLE_HU_TENMIN_RECENT_CSV)
+
+        def fake_get(url, timeout=60):
+            if url.endswith('/10_minutes/historical/'):
+                return _MockTextResponse(text=SAMPLE_HU_TENMIN_HISTORICAL_INDEX_HTML)
+            if url.endswith('HABP_10M_13704_20020101_20251231_hist.zip'):
+                return _MockTextResponse(content=historical_zip)
+            if url.endswith('HABP_10M_13704_akt.zip'):
+                return _MockTextResponse(content=recent_zip)
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.hu_tenmin.requests.get', side_effect=fake_get):
+            return download_observations(query, country='HU', station_metadata=station_metadata)
+    raise AssertionError(f'unsupported test country: {country}')
+
 def test_read_station_metadata_contract_is_stable_across_countries() -> None:
     expected_station_ids = {
         'AT': ['1', '2'],
@@ -418,6 +535,20 @@ def test_hourly_download_contract_is_stable_for_supported_denmark_path() -> None
     assert observations['quality'].isna().all()
     assert str(observations['quality'].dtype) == 'Int64'
 
+def test_hourly_download_contract_is_stable_for_supported_hungary_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    observations = _download_hourly_fixture('HU')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].isna().all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
+
 def test_hourly_download_contract_is_stable_for_supported_sweden_path() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
     observations = _download_hourly_fixture('SE')
@@ -478,6 +609,20 @@ def test_tenmin_download_contract_is_stable_for_supported_denmark_path() -> None
     assert observations['flag'].isna().all()
     assert observations['quality'].isna().all()
     assert str(observations['quality'].dtype) == 'Int64'
+def test_tenmin_download_contract_is_stable_for_supported_hungary_path() -> None:
+    expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    observations = _download_tenmin_fixture('HU')
+    assert list(observations.columns) == expected_columns
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['resolution'].eq('10min').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].isna().all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
+
 def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() -> None:
     expected_data_info_keys = {'created_at', 'dataset_type', 'source', 'country', 'elements', 'provider_element_mapping', 'min_complete_days', 'num_stations'}
     expected_station_columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'num_complete_days', 'first_complete_date', 'last_complete_date']
@@ -521,6 +666,11 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
+
+
+
+
 
 
 

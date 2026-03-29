@@ -11,6 +11,7 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'precipitation',
     'wind_speed',
     'relative_humidity',
+    'pressure',
     'sunshine_duration',
 )
 
@@ -32,7 +33,7 @@ PROVIDER = WeatherProvider(
     download_observations=_download_observations,
     supported_country_codes=('HU',),
     supported_dataset_scopes=('historical',),
-    supported_resolutions=('daily',),
+    supported_resolutions=('daily', '1hour', '10min'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )
