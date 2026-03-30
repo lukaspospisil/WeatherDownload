@@ -83,6 +83,10 @@ The official `dobowe / klimat` archive uses a different source-backed pattern, a
 - years `2001` and later: monthly all-station ZIP archives such as `{year}_{month:02d}_k.zip`
 - years before `2001`: yearly all-station ZIP archives inside five-year bucket directories, such as `{bucket_start}_{bucket_end}/{year}_k.zip`
 
+## FAO-Prep Workflow Note
+
+`examples/workflows/download_fao.py` now uses only the synop-backed `historical / daily` slice for Poland. It prepares a daily meteorological input bundle for later FAO-oriented workflows, does not compute FAO-56 ET0, keeps `wind_speed` and `vapour_pressure` missing in the current PL branch, and leaves station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
+
 ## Current Limits
 
 - `historical / daily` remains synop-only and unchanged
@@ -97,3 +101,4 @@ The official `dobowe / klimat` archive uses a different source-backed pattern, a
 ## Next Safe Extension
 
 The next low-risk extension would be to inspect whether any additional official IMGW daily families can be represented honestly as separate PL-specific dataset scopes without blurring the current synop and klimat distinctions.
+

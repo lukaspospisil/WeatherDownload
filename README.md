@@ -1,4 +1,4 @@
-﻿# WeatherDownload
+# WeatherDownload
 
 [![CI](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml/badge.svg)](https://github.com/lukaspospisil/WeatherDownload/actions/workflows/ci.yml)
 
@@ -63,7 +63,7 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 | `DK` | Yes* | Yes* | Yes* | Yes | Stable |
 | `HU` | Yes* | Yes* | Yes* | Yes | Stable |
 | `NL` | Yes* | Yes* | Yes* | Yes | Stable |
-| `PL` | Yes* | No | No | No | Stable |
+| `PL` | Yes* | No | No | Yes | Stable |
 | `SE` | Yes* | Yes* | No | Yes | Stable |
 | `SK` | Yes* | No | No | No | Experimental |
 
@@ -116,5 +116,6 @@ Hungary also exposes a separate wind-only `historical_wind / 10min` capability a
 - canonical meteorological element names stay shared across countries
 - normalized output schemas stay stable and DataFrame-first
 - missing variables stay missing by default instead of being silently derived
+
 
 

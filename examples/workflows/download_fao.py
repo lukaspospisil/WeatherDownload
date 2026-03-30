@@ -77,6 +77,12 @@ HU_REQUIRED_OBSERVED_ELEMENTS = (
     'wind_speed',
     'sunshine_duration',
 )
+PL_REQUIRED_OBSERVED_ELEMENTS = (
+    'tas_mean',
+    'tas_max',
+    'tas_min',
+    'sunshine_duration',
+)
 NL_REQUIRED_OBSERVED_ELEMENTS = (
     'tas_mean',
     'tas_max',
@@ -248,6 +254,49 @@ HU_PROVIDER_ELEMENT_MAPPING = {
         ),
     },
     'sunshine_duration': {'raw_codes': ['f'], 'selection_rule': None, 'status': 'observed'},
+}
+PL_ASSUMPTIONS = {
+    'observed_inputs_only': (
+        'The Poland branch packages only source-backed daily observations from the IMGW-PIB synop provider slice for later FAO-oriented processing. '
+        'It does not compute FAO-56 ET0.'
+    ),
+    'wind_speed_availability': (
+        'The current Poland synop daily provider path does not expose observed wind_speed for this shared workflow. '
+        'The shared workflow leaves wind_speed empty instead of substituting another IMGW product or recomputing it from other resolutions.'
+    ),
+    'vapour_pressure_availability': (
+        'The current Poland synop daily provider path does not expose observed vapour_pressure for this shared workflow. '
+        'The shared workflow leaves vapour_pressure empty, and the existing allow-derived fallback cannot be used because this provider slice does not expose observed daily relative_humidity here.'
+    ),
+    'sunshine_duration_to_radiation': (
+        'Observed IMGW daily sunshine_duration is exported as input only. '
+        'This workflow does not derive solar radiation, net radiation, or extraterrestrial radiation.'
+    ),
+    'station_metadata_limits': (
+        'The implemented official IMGW station list provides the canonical station identifiers and names used here, but not clean source-backed coordinates or elevation for this provider slice. '
+        'Those metadata fields therefore remain missing in the normalized station table and exported FAO-prep bundle.'
+    ),
+}
+PL_PROVIDER_ELEMENT_MAPPING = {
+    'tas_mean': {'raw_codes': ['STD'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['TMAX'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['TMIN'], 'selection_rule': None, 'status': 'observed'},
+    'wind_speed': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': 'Not directly available from the current Poland synop daily provider path. The shared workflow leaves this field empty instead of deriving it.',
+    },
+    'vapour_pressure': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': (
+            'Not directly available from the current Poland synop daily provider path. '
+            'The shared workflow leaves this field empty, and the existing shared fallback cannot be used because relative_humidity is unavailable in this slice.'
+        ),
+    },
+    'sunshine_duration': {'raw_codes': ['USL'], 'selection_rule': None, 'status': 'observed'},
 }
 NL_ASSUMPTIONS = {
     'observed_inputs_only': (
@@ -606,6 +655,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         query_elements = DK_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'HU':
         query_elements = HU_REQUIRED_OBSERVED_ELEMENTS
+    elif normalized_country == 'PL':
+        query_elements = PL_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'NL':
         query_elements = NL_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'SE':
@@ -641,6 +692,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         return FaoCountryConfig('DK', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
     if normalized_country == 'HU':
         return FaoCountryConfig('HU', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, HU_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(HU_PROVIDER_ELEMENT_MAPPING), dict(HU_ASSUMPTIONS), 'HungaroMet Hungary observed daily input bundle prepared for later FAO workflow packaging', 'HungaroMet open data daily station observations from odp.met.hu')
+    if normalized_country == 'PL':
+        return FaoCountryConfig('PL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, PL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(PL_PROVIDER_ELEMENT_MAPPING), dict(PL_ASSUMPTIONS), 'IMGW-PIB Poland observed daily input bundle prepared for later FAO workflow packaging', 'IMGW-PIB public daily synop station observations from the official archive')
     if normalized_country == 'NL':
         return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
     if normalized_country == 'SE':

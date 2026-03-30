@@ -1,4 +1,4 @@
-﻿# Examples And Workflows
+# Examples And Workflows
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -329,7 +329,7 @@ It prepares a clean daily FAO-prep bundle for later MATLAB, R, or Python process
 
 What it does:
 
-- supports `CZ`, `DE`, `AT`, `BE`, `DK`, `HU`, `NL`, and `SE`
+- supports `CZ`, `DE`, `AT`, `BE`, `CH`, `DK`, `HU`, `PL`, `NL`, and `SE`
 - downloads and caches normalized country-aware observed daily inputs
 - screens candidate stations
 - applies country-specific observed-input selection rules
@@ -338,13 +338,14 @@ What it does:
 
 Important boundary:
 
-- `AT`, `BE`, `CZ`, `DE`, `DK`, `HU`, `NL`, and `SE` all use the same shared country-parameterized workflow shape
+- `AT`, `BE`, `CH`, `CZ`, `DE`, `DK`, `HU`, `PL`, `NL`, and `SE` all use the same shared country-parameterized workflow shape
 - the workflow downloads, normalizes, filters, and packages observed daily inputs only by default
 - it does not compute FAO-56 ET0, and derivation is only available through the explicit example-layer `--fill-missing allow-derived` mode
 - if a field is unavailable in the current provider path, it remains null or missing in the default observed-only mode
 - `BE` daily values come from the official provider-side `aws_1day` aggregation and are not recomputed from 10-minute data in the workflow
 - `DK` is included through the shared workflow using only observed Denmark daily inputs from the existing provider; Denmark daily values come from the DMI Climate Data `stationValue` path and the workflow remains Denmark-only in this pass
 - `HU` is included through the shared workflow using only observed Hungary daily inputs from the existing provider; observed `vapour_pressure` is not exposed by the current Hungary provider slice and may be filled only through the existing opt-in shared `--fill-missing allow-derived` fallback rule when observed `tas_mean` and `relative_humidity` are available
+- `PL` is included through the shared workflow using only observed IMGW synop daily inputs from the existing provider; `wind_speed` and `vapour_pressure` remain null in the current slice, and station coordinates/elevation stay missing because the implemented official station list does not provide clean source-backed values for them
 - `NL` is included through the shared workflow using only observed KNMI daily inputs, and `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` is required
 - `SE` is included through the shared workflow using only observed SMHI daily inputs from the corrected-archive daily path; wind_speed, vapour_pressure, and sunshine_duration remain null when they are unavailable in the current provider path
 - every shared FAO export writes a matching human-readable `.info` sidecar that records the selected fill policy and field-level observed/derived/missing counts
@@ -356,6 +357,7 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
 
 
 

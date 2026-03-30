@@ -1,4 +1,4 @@
-﻿# FAO-Oriented Daily Input Packaging Workflow
+# FAO-Oriented Daily Input Packaging Workflow
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -30,6 +30,7 @@ Currently supported in the shared workflow:
 - `CH`
 - `DK`
 - `HU`
+- `PL`
 - `NL`
 - `SE`
 
@@ -43,6 +44,7 @@ python examples/workflows/download_fao.py --country BE
 python examples/workflows/download_fao.py --country CH
 python examples/workflows/download_fao.py --country DK
 python examples/workflows/download_fao.py --country HU
+python examples/workflows/download_fao.py --country PL
 python examples/workflows/download_fao.py --country NL
 python examples/workflows/download_fao.py --country SE
 python examples/workflows/download_fao.py --country NL --fill-missing allow-derived
@@ -54,7 +56,7 @@ python examples/workflows/download_fao.py --country NL --fill-missing allow-deri
 
 For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
 
-For `CH` and `HU`, no extra API key is required for the current provider slices.
+For `CH`, `HU`, and `PL`, no extra API key is required for the current provider slices.
 
 ## Fixed Export Shape
 
@@ -169,6 +171,26 @@ Optional shared fallback in `--fill-missing allow-derived` mode:
 - `vapour_pressure` may be filled from observed daily `tas_mean` plus observed daily `relative_humidity` through the existing shared example-layer fallback rule
 
 The HU branch uses only the existing HungaroMet provider through the unified public interface. No new derivation rule is added, no ET0 computation is added, and no derivation logic is moved into the provider.
+
+### PL
+
+Observed inputs used:
+
+- `tas_mean` via `STD`
+- `tas_max` via `TMAX`
+- `tas_min` via `TMIN`
+- `sunshine_duration` via `USL`
+
+Unavailable in the current shared path:
+
+- `wind_speed` stays null
+- `vapour_pressure` stays null
+
+Optional shared fallback in `--fill-missing allow-derived` mode:
+
+- no additional PL field is filled in the current synop-backed slice, because observed daily `relative_humidity` is not exposed in that provider path
+
+The PL branch uses only the existing IMGW-PIB synop-backed daily provider slice through the unified public interface. It prepares a clean observed daily input bundle for later FAO-oriented processing, does not compute FAO-56 ET0, does not derive radiation terms, and keeps station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
 
 ### NL
 
@@ -347,6 +369,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `BE` MAT: `outputs/fao_daily.be.mat`
 - `DK` MAT: `outputs/fao_daily.dk.mat`
 - `HU` MAT: `outputs/fao_daily.hu.mat`
+- `PL` MAT: `outputs/fao_daily.pl.mat`
 - `NL` MAT: `outputs/fao_daily.nl.mat`
 - `SE` MAT: `outputs/fao_daily.se.mat`
 - `CZ` Parquet bundle: `outputs/fao_daily.cz`
@@ -355,6 +378,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `BE` Parquet bundle: `outputs/fao_daily.be`
 - `DK` Parquet bundle: `outputs/fao_daily.dk`
 - `HU` Parquet bundle: `outputs/fao_daily.hu`
+- `PL` Parquet bundle: `outputs/fao_daily.pl`
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
 - `SE` Parquet bundle: `outputs/fao_daily.se`
 
@@ -368,4 +392,7 @@ The reusable parts stay in the core library:
 - export helpers
 
 The orchestration stays in `examples/workflows/` because it is a downstream packaging workflow, not part of the public provider API.
+
+
+
 

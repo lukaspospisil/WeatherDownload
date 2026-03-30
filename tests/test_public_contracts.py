@@ -1,4 +1,4 @@
-﻿import importlib.util
+import importlib.util
 import io
 import json
 import sys
@@ -583,10 +583,10 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
     expected_station_columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'num_complete_days', 'first_complete_date', 'last_complete_date']
     expected_series_columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'date', *download_fao.FINAL_SERIES_COLUMNS]
 
-    for country in ['CZ', 'DE', 'AT', 'BE', 'DK', 'NL', 'SE']:
+    for country in ['CZ', 'DE', 'AT', 'BE', 'CH', 'DK', 'HU', 'PL', 'NL', 'SE']:
         config = download_fao.get_fao_country_config(country)
         station_rows = [{'station_id': 'TEST1', 'full_name': 'Test Station', 'latitude': 50.0, 'longitude': 14.0, 'elevation_m': 250.0, 'num_complete_days': 2, 'first_complete_date': '2024-01-01', 'last_complete_date': '2024-01-02'}]
-        series = [{'station_id': 'TEST1', 'full_name': 'Test Station', 'latitude': 50.0, 'longitude': 14.0, 'elevation_m': 250.0, 'date': ['2024-01-01', '2024-01-02'], 'tas_mean': [1.0, 2.0], 'tas_max': [3.0, 4.0], 'tas_min': [-1.0, 0.0], 'wind_speed': [pd.NA, pd.NA] if country == 'SE' else [2.5, 3.0], 'vapour_pressure': [pd.NA, pd.NA] if country in {'AT', 'BE', 'DK', 'NL', 'SE'} else [7.0, 8.0], 'sunshine_duration': [pd.NA, pd.NA] if country == 'SE' else [0.5, 0.8]}]
+        series = [{'station_id': 'TEST1', 'full_name': 'Test Station', 'latitude': 50.0, 'longitude': 14.0, 'elevation_m': 250.0, 'date': ['2024-01-01', '2024-01-02'], 'tas_mean': [1.0, 2.0], 'tas_max': [3.0, 4.0], 'tas_min': [-1.0, 0.0], 'wind_speed': [pd.NA, pd.NA] if country in {'PL', 'SE'} else [2.5, 3.0], 'vapour_pressure': [pd.NA, pd.NA] if country in {'AT', 'BE', 'DK', 'HU', 'NL', 'PL', 'SE'} else [7.0, 8.0], 'sunshine_duration': [pd.NA, pd.NA] if country == 'SE' else [0.5, 0.8]}]
 
         data_info = download_fao.build_data_info(config, station_rows, min_complete_days=3650)
         station_table = download_fao.build_station_table(station_rows)
@@ -601,9 +601,12 @@ def test_download_fao_bundle_shape_is_stable_across_supported_fao_countries() ->
         assert list(series_table['date']) == ['2024-01-01', '2024-01-02']
         assert list(series_table['station_id']) == ['TEST1', 'TEST1']
 
-        if country in {'AT', 'BE', 'DK', 'NL', 'SE'}:
+        if country in {'AT', 'BE', 'DK', 'HU', 'NL', 'PL', 'SE'}:
             assert series_table['vapour_pressure'].isna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
+            if country in {'PL', 'SE'}:
+                assert series_table['wind_speed'].isna().all()
+                assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
         else:
             assert series_table['vapour_pressure'].notna().all()
             assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'observed'
@@ -623,6 +626,8 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
+
 
 
 
