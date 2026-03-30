@@ -525,6 +525,19 @@ Important current limitations:
 - the official `Opis.txt` warns that some psychrometric terms before 1994 are of questionable quality; this caveat is relevant to the implemented hourly humidity-related fields
 - this slice adds official subdaily observations only; it does not aggregate them into daily FAO inputs and does not compute FAO-56 ET0
 
+### PL `historical / 10min`
+
+Supported canonical elements:
+
+- none; this path is intentionally unsupported
+
+Important current limitations:
+
+- the official IMGW public archive families used by this provider expose clean `dobowe` and `terminowe` synop paths for daily and hourly data, but not a matching historical meteorological `10min` archive
+- the official IMGW `api/data/meteo` feed was inspected and rejected as a `10min` source because it is a latest-values table with variable-specific timestamps such as `temperatura_powietrza_data`, `wiatr_srednia_predkosc_data`, `wilgotnosc_wzgledna_data`, `opad_10min_data`, and `wiatr_poryw_10min_data`
+- those timestamps can differ within the same station row, so exposing that feed as a normalized `PL / 10min` slice would require inventing a fake common timestamp or silently mixing values observed at different moments
+- `PL / 10min` therefore remains unsupported until IMGW publishes a clean official source-backed 10-minute meteorological dataset that fits the shared subdaily model
+
 ### PL `historical_klimat / daily`
 
 Supported canonical elements:
