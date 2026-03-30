@@ -10,7 +10,13 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_min',
     'precipitation',
     'sunshine_duration',
+    'wind_speed',
+    'wind_speed_max',
+    'relative_humidity',
+    'vapour_pressure',
+    'pressure',
 )
+
 
 
 def _download_observations(*args, **kwargs):
@@ -21,7 +27,7 @@ def _download_observations(*args, **kwargs):
 
 PROVIDER = WeatherProvider(
     country_code='PL',
-    name='IMGW-PIB Poland daily archives',
+    name='IMGW-PIB Poland synop and klimat archives',
     read_station_metadata=read_station_metadata_pl,
     read_station_observation_metadata=read_station_observation_metadata_pl,
     list_dataset_specs=list_dataset_specs,
@@ -30,7 +36,7 @@ PROVIDER = WeatherProvider(
     download_observations=_download_observations,
     supported_country_codes=('PL',),
     supported_dataset_scopes=('historical', 'historical_klimat'),
-    supported_resolutions=('daily',),
+    supported_resolutions=('1hour', 'daily'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )

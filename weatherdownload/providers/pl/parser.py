@@ -12,6 +12,10 @@ PL_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
 ]
+PL_NORMALIZED_SUBDAILY_COLUMNS = [
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
+    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+]
 
 PL_DAILY_SYNOP_COLUMNS = [
     'NSP', 'POST', 'ROK', 'MC', 'DZ', 'TMAX', 'WTMAX', 'TMIN', 'WTMIN', 'STD', 'WSTD',
@@ -26,6 +30,19 @@ PL_DAILY_SYNOP_COLUMNS = [
 PL_DAILY_KLIMAT_COLUMNS = [
     'NSP', 'POST', 'ROK', 'MC', 'DZ', 'TMAX', 'WTMAX', 'TMIN', 'WTMIN', 'STD', 'WSTD',
     'TMNG', 'WTMNG', 'SMDB', 'WSMDB', 'ROOP', 'PKSN', 'WPKSN',
+]
+
+PL_HOURLY_SYNOP_COLUMNS = [
+    'NSP', 'POST', 'ROK', 'MC', 'DZ', 'GG', 'HPOD', 'WHPOD', 'HPON', 'WHPON', 'HPOW', 'WHPOW',
+    'HTXT', 'POM1', 'POM2', 'WID', 'WWID', 'WIDO', 'WWIDO', 'WIDA', 'WWIDA', 'NOG', 'WNOG',
+    'KRWR', 'WKRWR', 'FWR', 'WFWR', 'PORW', 'WPORW', 'TEMP', 'WTEMP', 'TTZW', 'WTTZW', 'WENT',
+    'TWLW', 'CPW', 'WCPW', 'WLGW', 'WWLGW', 'TPTR', 'WTPTR', 'PPPS', 'WPPPS', 'PPPM', 'WPPPM',
+    'TECH', 'APP', 'WAPP', 'WO6G', 'WWO6G', 'ROPT', 'WROPT', 'POGB', 'POGU', 'CLCM', 'WCLCM',
+    'CHCL', 'WCHCL', 'CHLT', 'CHCM', 'WCHCM', 'CHMT', 'CHCH', 'WCHCH', 'CHHT', 'SGRN', 'WSGRN',
+    'DEFI', 'WDEFI', 'USLN', 'WUSLN', 'ROSW', 'WROSW', 'PORK', 'WPORK', 'GODP', 'MINP', 'TG05',
+    'WTG05', 'TG10', 'WTG10', 'TG20', 'WTG20', 'TG50', 'WTG50', 'TG100', 'WTG100', 'TMIN',
+    'WTMIN', 'TMAX', 'WTMAX', 'TGMI', 'WTGMI', 'RWSN', 'WRWSN', 'PKSN', 'WPKSN', 'HSS', 'WHSS',
+    'GRSN', 'WGRSN', 'GATS', 'UKPO', 'HPRO', 'WHPRO', 'CIPR', 'WCIPR',
 ]
 
 _PL_MISSING_SENTINELS = {''}
@@ -62,6 +79,7 @@ def parse_pl_station_metadata_csv(csv_text: str) -> pd.DataFrame:
     return frame
 
 
+
 def normalize_pl_observation_metadata(
     stations: pd.DataFrame,
     specs_and_metadata: list[tuple[object, dict[str, dict[str, str]]]],
@@ -69,16 +87,18 @@ def normalize_pl_observation_metadata(
     rows: list[dict[str, object]] = []
     for station in stations.itertuples(index=False):
         for spec, parameter_metadata in specs_and_metadata:
+            default_obs_type = _obs_type_for_resolution(getattr(spec, 'resolution', 'daily'))
+            default_schedule = _schedule_for_resolution(getattr(spec, 'resolution', 'daily'))
             for raw_code in getattr(spec, 'supported_elements', ()):
                 metadata = parameter_metadata.get(raw_code, {})
                 rows.append(
                     {
-                        'obs_type': metadata.get('obs_type', 'HISTORICAL_DAILY'),
+                        'obs_type': metadata.get('obs_type', default_obs_type),
                         'station_id': station.station_id,
                         'begin_date': station.begin_date,
                         'end_date': station.end_date,
                         'element': raw_code,
-                        'schedule': metadata.get('schedule', 'P1D IMGW daily'),
+                        'schedule': metadata.get('schedule', default_schedule),
                         'name': metadata.get('name', raw_code),
                         'description': metadata.get('description', pd.NA),
                         'height': pd.NA,
@@ -90,15 +110,23 @@ def normalize_pl_observation_metadata(
     return frame.drop_duplicates().reset_index(drop=True)
 
 
+
 def parse_pl_daily_synop_csv(csv_text: str) -> pd.DataFrame:
-    return _parse_pl_daily_csv(csv_text, PL_DAILY_SYNOP_COLUMNS)
+    return _parse_pl_delimited_csv(csv_text, PL_DAILY_SYNOP_COLUMNS)
+
 
 
 def parse_pl_daily_klimat_csv(csv_text: str) -> pd.DataFrame:
-    return _parse_pl_daily_csv(csv_text, PL_DAILY_KLIMAT_COLUMNS)
+    return _parse_pl_delimited_csv(csv_text, PL_DAILY_KLIMAT_COLUMNS)
 
 
-def _parse_pl_daily_csv(csv_text: str, columns: list[str]) -> pd.DataFrame:
+
+def parse_pl_hourly_synop_csv(csv_text: str) -> pd.DataFrame:
+    return _parse_pl_delimited_csv(csv_text, PL_HOURLY_SYNOP_COLUMNS)
+
+
+
+def _parse_pl_delimited_csv(csv_text: str, columns: list[str]) -> pd.DataFrame:
     table = pd.read_csv(
         io.StringIO(csv_text.lstrip('\ufeff')),
         header=None,
@@ -111,6 +139,7 @@ def _parse_pl_daily_csv(csv_text: str, columns: list[str]) -> pd.DataFrame:
     return table
 
 
+
 def read_text_from_source(source: str, timeout: int, requests_module) -> str:
     local_path = Path(source)
     if local_path.exists():
@@ -120,6 +149,7 @@ def read_text_from_source(source: str, timeout: int, requests_module) -> str:
     return decode_pl_bytes(response.content)
 
 
+
 def decode_pl_bytes(payload: bytes) -> str:
     for encoding in ('utf-8-sig', 'cp1250', 'latin-1'):
         try:
@@ -127,6 +157,7 @@ def decode_pl_bytes(payload: bytes) -> str:
         except UnicodeDecodeError:
             continue
     return payload.decode('utf-8', errors='replace')
+
 
 
 def normalize_pl_station_id(value: object) -> str:
@@ -139,8 +170,10 @@ def normalize_pl_station_id(value: object) -> str:
     return digits.zfill(5)
 
 
+
 def normalize_pl_gh_id(value: object) -> str:
     return _clean_string(value)
+
 
 
 def normalize_pl_observation_date(row: pd.Series) -> object:
@@ -155,6 +188,29 @@ def normalize_pl_observation_date(row: pd.Series) -> object:
     return parsed.date()
 
 
+
+def normalize_pl_observation_timestamp(row: pd.Series) -> pd.Timestamp | None:
+    year = _clean_string(row.get('ROK'))
+    month = _clean_string(row.get('MC')).zfill(2)
+    day = _clean_string(row.get('DZ')).zfill(2)
+    hour = _clean_string(row.get('GG')).zfill(2)
+    if not year or not month or not day or not hour:
+        return None
+    parsed = pd.to_datetime(f'{year}-{month}-{day}T{hour}:00:00Z', errors='coerce', utc=True)
+    if pd.isna(parsed):
+        return None
+    return parsed
+
+
+
+def normalize_pl_query_timestamp(value: object) -> pd.Timestamp:
+    timestamp = pd.Timestamp(value)
+    if timestamp.tzinfo is None:
+        return timestamp.tz_localize('UTC')
+    return timestamp.tz_convert('UTC')
+
+
+
 def to_numeric_with_missing(series: pd.Series, flag_series: pd.Series | None = None, zero_when_flag_nine: bool = False) -> pd.Series:
     cleaned = series.astype('string').str.strip()
     if zero_when_flag_nine and flag_series is not None:
@@ -164,9 +220,11 @@ def to_numeric_with_missing(series: pd.Series, flag_series: pd.Series | None = N
     return pd.to_numeric(cleaned.str.replace(',', '.', regex=False), errors='coerce')
 
 
+
 def flag_with_missing(series: pd.Series) -> pd.Series:
     cleaned = series.astype('string').str.strip()
     return cleaned.where(cleaned.ne(''), pd.NA)
+
 
 
 def station_lookup_by_gh_id(stations: pd.DataFrame) -> dict[str, str]:
@@ -181,7 +239,22 @@ def station_lookup_by_gh_id(stations: pd.DataFrame) -> dict[str, str]:
     }
 
 
+
 def _clean_string(value: object) -> str:
     if value is None or pd.isna(value):
         return ''
     return str(value).strip().strip('"')
+
+
+
+def _obs_type_for_resolution(resolution: str) -> str:
+    if resolution == '1hour':
+        return 'HISTORICAL_HOURLY'
+    return 'HISTORICAL_DAILY'
+
+
+
+def _schedule_for_resolution(resolution: str) -> str:
+    if resolution == '1hour':
+        return 'PT1H IMGW terminowe synop'
+    return 'P1D IMGW daily'

@@ -1,4 +1,4 @@
-# FAO-Oriented Daily Input Packaging Workflow
+﻿# FAO-Oriented Daily Input Packaging Workflow
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -190,7 +190,7 @@ Optional shared fallback in `--fill-missing allow-derived` mode:
 
 - no additional PL field is filled in the current synop-backed slice, because observed daily `relative_humidity` is not exposed in that provider path
 
-The PL branch uses only the existing IMGW-PIB synop-backed daily provider slice through the unified public interface. It prepares a clean observed daily input bundle for later FAO-oriented processing, does not compute FAO-56 ET0, does not derive radiation terms, and keeps station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
+The PL branch uses only the existing IMGW-PIB synop-backed daily provider slice through the unified public interface. It prepares a clean observed daily input bundle for later FAO-oriented processing, does not compute FAO-56 ET0, does not derive radiation terms, keeps `wind_speed` empty because the official synop daily fields `FF10` and `FF15` are duration-of-threshold wind indicators rather than wind-speed observations, keeps `vapour_pressure` empty because the implemented daily IMGW families do not publish daily relative humidity or vapour pressure for the shared fallback path, and keeps station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
 
 ### NL
 
@@ -392,6 +392,7 @@ The reusable parts stay in the core library:
 - export helpers
 
 The orchestration stays in `examples/workflows/` because it is a downstream packaging workflow, not part of the public provider API.
+
 
 
 

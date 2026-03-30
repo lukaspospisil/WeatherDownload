@@ -60,6 +60,13 @@ COUNTRY_DEFAULTS = {
         'end': '2024-01-01T02:00:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
+    'PL': {
+        'dataset_scope': 'historical',
+        'station_ids': ['00375'],
+        'start': '2025-01-01T00:00:00Z',
+        'end': '2025-01-01T01:00:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
     'SE': {
         'dataset_scope': 'historical',
         'station_ids': ['98230'],
@@ -74,6 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Download a small hourly slice through the unified public API.')
     parser.add_argument('--country', default='CZ', choices=sorted(COUNTRY_DEFAULTS), help='Country code for the example query.')
     return parser
+
 
 
 def main() -> None:

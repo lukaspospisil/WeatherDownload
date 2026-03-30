@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -204,17 +204,21 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(tenmin_query.elements, ['ta', 'p'])
         self.assertEqual(wind_query.elements, ['fs', 'fx'])
 
-    def test_discovery_country_pl_includes_daily_only(self) -> None:
+    def test_discovery_country_pl_includes_daily_and_hourly(self) -> None:
         self.assertEqual(list_dataset_scopes(country='PL'), ['historical', 'historical_klimat'])
-        self.assertEqual(list_resolutions(country='PL', dataset_scope='historical'), ['daily'])
+        self.assertEqual(list_resolutions(country='PL', dataset_scope='historical'), ['1hour', 'daily'])
         self.assertEqual(list_resolutions(country='PL', dataset_scope='historical_klimat'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='PL', dataset_scope='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='PL', dataset_scope='historical', resolution='daily', provider_raw=True),
-            ['STD', 'TMAX', 'TMIN', 'SMDB', 'USL'],
+            list_supported_elements(country='PL', dataset_scope='historical', resolution='1hour'),
+            ['tas_mean', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'vapour_pressure', 'pressure'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='PL', dataset_scope='historical', resolution='1hour', provider_raw=True),
+            ['TEMP', 'FWR', 'PORW', 'WLGW', 'CPW', 'PPPS'],
         )
         self.assertEqual(
             list_supported_elements(country='PL', dataset_scope='historical_klimat', resolution='daily'),
@@ -225,10 +229,12 @@ class ProviderTests(unittest.TestCase):
             ['STD', 'TMAX', 'TMIN', 'SMDB'],
         )
 
-    def test_pl_daily_query_is_provider_valid(self) -> None:
+    def test_pl_daily_and_hourly_queries_are_provider_valid(self) -> None:
         daily_query = ObservationQuery(country='PL', dataset_scope='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2025-01-02', elements=['tas_mean', 'precipitation'])
+        hourly_query = ObservationQuery(country='PL', dataset_scope='historical', resolution='1hour', station_ids=['00375'], start='2025-01-01T00:00:00Z', end='2025-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
         klimat_query = ObservationQuery(country='PL', dataset_scope='historical_klimat', resolution='daily', station_ids=['00375'], start_date='2026-01-01', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
         self.assertEqual(daily_query.elements, ['STD', 'SMDB'])
+        self.assertEqual(hourly_query.elements, ['TEMP', 'PPPS'])
         self.assertEqual(klimat_query.elements, ['STD', 'SMDB'])
     def test_discovery_country_se_includes_daily_and_hourly(self) -> None:
         self.assertEqual(list_dataset_scopes(country='SE'), ['historical'])

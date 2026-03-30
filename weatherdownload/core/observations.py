@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 
@@ -49,12 +49,13 @@ from ..providers.hu.tenmin_wind import download_tenmin_wind_observations_hu
 from ..providers.hu.parser import HU_NORMALIZED_DAILY_COLUMNS, HU_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.nl.daily import download_daily_observations_knmi
 from ..providers.pl.daily import download_daily_observations_pl
+from ..providers.pl.hourly import download_hourly_observations_pl
 from ..providers.nl.hourly import download_hourly_observations_knmi
 from ..providers.nl.tenmin import download_tenmin_observations_knmi
 from ..providers.nl.parser import KNMI_NORMALIZED_DAILY_COLUMNS, KNMI_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.dk.parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.se.parser import SE_NORMALIZED_DAILY_COLUMNS, SE_NORMALIZED_SUBDAILY_COLUMNS
-from ..providers.pl.parser import PL_NORMALIZED_DAILY_COLUMNS
+from ..providers.pl.parser import PL_NORMALIZED_DAILY_COLUMNS, PL_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.cz.registry import get_dataset_spec as get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
@@ -154,6 +155,7 @@ def _download_observations_geosphere(
     raise NotImplementedError('GeoSphere Austria support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
 
+
 def _download_observations_knmi(
     query: ObservationQuery,
     timeout: int = 60,
@@ -166,6 +168,7 @@ def _download_observations_knmi(
     if query.dataset_scope == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('KNMI Netherlands support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
+
 
 
 def _download_observations_dk(
@@ -193,6 +196,7 @@ def _download_observations_se(
     raise NotImplementedError('SMHI Sweden support currently implements only historical/daily and historical/1hour station observations.')
 
 
+
 def _download_observations_hu(
     query: ObservationQuery,
     timeout: int = 60,
@@ -215,7 +219,9 @@ def _download_observations_pl(
 ) -> pd.DataFrame:
     if query.dataset_scope in {'historical', 'historical_klimat'} and query.resolution == 'daily':
         return download_daily_observations_pl(query, timeout=timeout, station_metadata=station_metadata).loc[:, PL_NORMALIZED_DAILY_COLUMNS]
-    raise NotImplementedError('IMGW Poland support currently implements only historical/daily and historical_klimat/daily station observations.')
+    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+        return download_hourly_observations_pl(query, timeout=timeout, station_metadata=station_metadata).loc[:, PL_NORMALIZED_SUBDAILY_COLUMNS]
+    raise NotImplementedError('IMGW Poland support currently implements historical/daily, historical/1hour, and historical_klimat/daily station observations.')
 def _download_observations_shmu(
     query: ObservationQuery,
     timeout: int = 60,
@@ -255,6 +261,7 @@ def _download_tenmin_observations(query: ObservationQuery, timeout: int, station
     return normalized.loc[:, NORMALIZED_TENMIN_COLUMNS]
 
 
+
 def _download_daily_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:
     if not query.elements:
         raise UnsupportedQueryError('The daily historical_csv downloader requires at least one element.')
@@ -284,6 +291,7 @@ def _download_daily_observations(query: ObservationQuery, timeout: int, station_
     return normalized.loc[:, NORMALIZED_DAILY_COLUMNS]
 
 
+
 def _download_hourly_observations(query: ObservationQuery, timeout: int, station_metadata: pd.DataFrame | None) -> pd.DataFrame:
     if not query.elements:
         raise UnsupportedQueryError('The hourly historical_csv downloader requires at least one element.')
@@ -311,15 +319,3 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
-
-
-
-
-
-
-
-
-
-
-
-

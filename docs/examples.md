@@ -98,7 +98,7 @@ PL notes:
 - station metadata use the official `dane_meteorologiczne/wykaz_stacji.csv` station list, with the 5-character IMGW station code as canonical `station_id`
 - daily observations use deterministic yearly station archives for completed years and current-year monthly all-station archives when the requested range reaches the current year
 - raw IMGW daily status codes such as `WSTD`, `WSMDB`, and `WUSL` are preserved in `flag`, while normalized `quality` stays null
-- `PL` currently supports `historical / daily` in the shared example defaults, while the separate `historical_klimat / daily` scope is available through the same public API when requested explicitly
+- `PL` currently supports `historical / daily` and `historical / 1hour` in the shared example defaults, while the separate `historical_klimat / daily` scope is available through the same public API when requested explicitly
 
 NL notes:
 
@@ -140,6 +140,7 @@ python examples/basic/download_hourly.py --country DE
 python examples/basic/download_hourly.py --country DK
 python examples/basic/download_hourly.py --country HU
 python examples/basic/download_hourly.py --country NL
+python examples/basic/download_hourly.py --country PL
 python examples/basic/download_hourly.py --country SE
 ```
 
@@ -181,6 +182,14 @@ HU hourly notes:
 - the example preserves the published HungaroMet hourly `Time` value as the normalized UTC `timestamp`
 - raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
 - mapped fields stay source-backed only; WeatherDownload does not recompute hourly values from any other Hungary source path
+
+PL hourly notes:
+
+- `PL` uses the shared hourly example path through the official IMGW-PIB `dane_meteorologiczne/terminowe/synop` archive
+- station discovery still uses the official `dane_meteorologiczne/wykaz_stacji.csv` station list used by the Poland provider
+- the implemented hourly `timestamp` is built from the published `ROK`, `MC`, `DZ`, and `GG` fields and treated as UTC in this first slice
+- raw IMGW hourly status codes such as `WTEMP`, `WFWR`, `WPORW`, `WWLGW`, `WCPW`, and `WPPPS` are preserved in `flag`, while normalized `quality` stays null
+- this slice adds official subdaily observations only; it does not aggregate them into daily FAO inputs and does not compute FAO-56 ET0
 
 NL hourly notes:
 
@@ -357,6 +366,7 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
 
 
 

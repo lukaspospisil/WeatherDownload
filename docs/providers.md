@@ -1,4 +1,4 @@
-﻿# Provider Model And Coverage
+# Provider Model And Coverage
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -134,7 +134,7 @@ Subdaily variability is expected across providers:
 | `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
 | `HU` | Stable | `historical`, `historical_wind` | `historical`: `daily`, `1hour`, `10min`; `historical_wind`: `10min` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration`; `historical / 1hour`: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed`; `historical / 10min`: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed`; `historical_wind / 10min`: `wind_speed`, `wind_speed_max` | Official HungaroMet station metadata CSVs with source-backed station identifier, name, coordinates, elevation, and validity range |
 | `NL` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official KNMI metadata file retrieved through the Open Data API; API key required |
-| `PL` | Stable | `historical`, `historical_klimat` | `daily` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`; `historical_klimat / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Official IMGW station list with source-backed 5-character station code and station name; coordinates, elevation, and validity range are not exposed by the implemented source file |
+| `PL` | Stable | `historical`, `historical_klimat` | `historical`: `daily`, `1hour`; `historical_klimat`: `daily` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`; `historical / 1hour`: `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`; `historical_klimat / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Official IMGW station list with source-backed 5-character station code and station name; coordinates, elevation, and validity range are not exposed by the implemented source file |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 
@@ -502,6 +502,27 @@ Important current limitations:
 - raw IMGW daily status codes such as `WSTD`, `WSMDB`, and `WUSL` stay in `flag`; normalized `quality` remains null
 - no provider-side derivations or cross-resolution aggregations are added
 
+### PL `historical / 1hour`
+
+Supported canonical elements:
+
+- `tas_mean`
+- `wind_speed`
+- `wind_speed_max`
+- `relative_humidity`
+- `vapour_pressure`
+- `pressure`
+
+Important current limitations:
+
+- this path uses only the official IMGW-PIB `dane_meteorologiczne/terminowe/synop` archive and the official `wykaz_stacji.csv` station list
+- station metadata from the implemented official station list still expose the canonical 5-character station code and station name, but not coordinates, elevation, or validity range
+- hourly observations use station-year ZIP archives for years `2001` and later and five-year station ZIP archives before `2001`
+- the implemented hourly `timestamp` is built from the published `ROK`, `MC`, `DZ`, and `GG` fields and treated as UTC in this first slice
+- raw IMGW hourly status codes such as `WTEMP`, `WFWR`, `WPORW`, `WWLGW`, `WCPW`, and `WPPPS` stay in `flag`; normalized `quality` remains null
+- the official `Opis.txt` warns that some psychrometric terms before 1994 are of questionable quality; this caveat is relevant to the implemented hourly humidity-related fields
+- this slice adds official subdaily observations only; it does not aggregate them into daily FAO inputs and does not compute FAO-56 ET0
+
 ### PL `historical_klimat / daily`
 
 Supported canonical elements:
@@ -664,6 +685,16 @@ For IMGW Poland daily files:
 - provider-defined daily meanings stay behind the provider layer
 - raw IMGW status fields such as `WSTD`, `WSMDB`, and `WUSL` stay in `flag`; normalized `quality` remains null
 
+For IMGW Poland hourly files:
+
+- station discovery and metadata use the official `dane_meteorologiczne/wykaz_stacji.csv` station list
+- hourly observations use the official `dane_meteorologiczne/terminowe/synop/` archive tree
+- years `2001` and later use station-year ZIP archives, while years before `2001` use five-year station ZIP archives
+- `timestamp` is normalized from the published `ROK`, `MC`, `DZ`, and `GG` columns and treated as UTC in this first slice
+- provider-defined hourly meanings stay behind the provider layer
+- raw IMGW status fields such as `WTEMP`, `WFWR`, `WPORW`, `WWLGW`, `WCPW`, and `WPPPS` stay in `flag`; normalized `quality` remains null
+- the official `Opis.txt` warns that some psychrometric terms before 1994 are of questionable quality; this caveat is relevant to the implemented hourly humidity-related fields
+
 For SMHI Sweden daily files:
 
 - station discovery merges the official station lists from the supported daily and hourly parameter endpoints
@@ -752,10 +783,14 @@ weatherdownload observations 10min --country HU --station-id 13704 --element tas
 weatherdownload observations daily --country NL --station-id 0-20000-0-06260 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations hourly --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T01:00:00Z --end 2024-01-01T02:00:00Z
 weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T09:10:00Z --end 2024-01-01T09:20:00Z
+weatherdownload observations daily --country PL --station-id 00375 --element tas_mean --element precipitation --start-date 2025-01-01 --end-date 2025-01-03
+weatherdownload observations hourly --country PL --station-id 00375 --element tas_mean --element pressure --start 2025-01-01T00:00:00Z --end 2025-01-01T01:00:00Z
 weatherdownload observations daily --country SE --station-id 98230 --element tas_mean --element tas_max --element precipitation --start-date 1996-10-01 --end-date 1996-10-03
 weatherdownload observations hourly --country SE --station-id 98230 --element tas_mean --element pressure --start 2012-11-29T11:00:00Z --end 2012-11-29T13:00:00Z
 weatherdownload observations daily --country SK --station-id 11800 --element tas_max --start-date 2025-01-01 --end-date 2025-01-02
 ```
+
+
 
 
 

@@ -45,6 +45,7 @@ SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_PL_STATIONS_PATH = Path('tests/data/sample_pl_wykaz_stacji.csv')
 SAMPLE_PL_STATION_2025_CSV = Path('tests/data/sample_pl_synop_station_2025.csv').read_text(encoding='utf-8')
 SAMPLE_PL_MONTH_2026_01_CSV = Path('tests/data/sample_pl_synop_month_2026_01.csv').read_text(encoding='utf-8')
+SAMPLE_PL_HOURLY_STATION_2025_CSV = Path('tests/data/sample_pl_synop_hourly_station_2025.csv').read_text(encoding='utf-8')
 SAMPLE_HU_STATIONS_PATH = Path('tests/data/sample_hu_station_meta_auto.csv')
 SAMPLE_HU_HISTORICAL_INDEX_HTML = Path('tests/data/sample_hu_daily_historical_index.html').read_text(encoding='utf-8')
 SAMPLE_HU_HISTORICAL_CSV = Path('tests/data/sample_hu_daily_hist_13704.csv').read_text(encoding='utf-8')
@@ -350,6 +351,18 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.providers.hu.hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='HU', station_metadata=station_metadata)
+    if country == 'PL':
+        station_metadata = _read_station_metadata_fixture('PL')
+        query = ObservationQuery(country='PL', dataset_scope='historical', resolution='1hour', station_ids=['00375'], start='2025-01-01T00:00:00Z', end='2025-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
+        hourly_zip = _build_sample_pl_zip('2025_375_s.csv', SAMPLE_PL_HOURLY_STATION_2025_CSV)
+
+        def fake_get(url, timeout=60):
+            if url.endswith('/2025/2025_375_s.zip'):
+                return _MockTextResponse(content=hourly_zip)
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.providers.pl.hourly.requests.get', side_effect=fake_get):
+            return download_observations(query, country='PL', station_metadata=station_metadata)
 
     if country == 'SE':
         station_metadata = _read_station_metadata_fixture('SE')
@@ -511,6 +524,9 @@ def _assert_subdaily_contract(observations: pd.DataFrame, resolution: str, gh_ex
     assert observations['resolution'].eq(resolution).all()
     if gh_expected == 'null':
         assert observations['gh_id'].isna().all()
+    elif gh_expected == 'imgw':
+        assert observations['gh_id'].notna().all()
+        assert observations['gh_id'].str.isnumeric().all()
     else:
         assert observations['gh_id'].notna().all()
         assert observations['gh_id'].str.startswith('0-20000-0-').all()
@@ -553,6 +569,10 @@ def test_hourly_download_contract_is_stable_for_supported_denmark_path() -> None
 
 def test_hourly_download_contract_is_stable_for_supported_hungary_path() -> None:
     _assert_subdaily_contract(_download_hourly_fixture('HU'), '1hour', 'null', 'null')
+
+
+def test_hourly_download_contract_is_stable_for_supported_poland_path() -> None:
+    _assert_subdaily_contract(_download_hourly_fixture('PL'), '1hour', 'imgw', 'null')
 
 
 def test_hourly_download_contract_is_stable_for_supported_sweden_path() -> None:
@@ -626,6 +646,9 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
+
+
 
 
 
