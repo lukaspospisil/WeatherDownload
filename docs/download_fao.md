@@ -369,8 +369,10 @@ The cache is country-scoped under the base cache directory, for example:
   DE/
   AT/
   BE/
+  CH/
   DK/
   HU/
+  PL/
   NL/
   SE/
 ```
@@ -389,6 +391,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `DE` MAT: `outputs/fao_daily.de.mat`
 - `AT` MAT: `outputs/fao_daily.at.mat`
 - `BE` MAT: `outputs/fao_daily.be.mat`
+- `CH` MAT: `outputs/fao_daily.ch.mat`
 - `DK` MAT: `outputs/fao_daily.dk.mat`
 - `HU` MAT: `outputs/fao_daily.hu.mat`
 - `PL` MAT: `outputs/fao_daily.pl.mat`
@@ -398,6 +401,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `DE` Parquet bundle: `outputs/fao_daily.de`
 - `AT` Parquet bundle: `outputs/fao_daily.at`
 - `BE` Parquet bundle: `outputs/fao_daily.be`
+- `CH` Parquet bundle: `outputs/fao_daily.ch`
 - `DK` Parquet bundle: `outputs/fao_daily.dk`
 - `HU` Parquet bundle: `outputs/fao_daily.hu`
 - `PL` Parquet bundle: `outputs/fao_daily.pl`

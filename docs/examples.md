@@ -283,6 +283,7 @@ NL 10-minute notes:
 - this KNMI path is official and source-backed, but it is a near-real-time dataset and is not documented as validated in the same way as the KNMI daily and hourly validated datasets
 - mapped fields stay source-backed only; this first slice does not derive missing variables or recompute hourly or daily values from 10-minute data
 - raw `flag` and normalized `quality` both remain null in this slice
+
 ## Workflow Examples
 
 ### `examples/workflows/station_availability.py`
@@ -328,7 +329,13 @@ Shows how to:
 - inspect the current feed summary offline via `probe_summary.csv`
 - normalize one selected station/date slice into the library's canonical daily observation schema
 
-## Workflow Example
+Run:
+
+```powershell
+python scripts/dev/probe_shmu_sk.py
+```
+
+## Workflow Examples
 
 ### `examples/workflows/download_fao.py`
 
@@ -358,6 +365,8 @@ Important boundary:
 - `NL` is included through the shared workflow using only observed KNMI daily inputs, and `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` is required
 - `SE` is included through the shared workflow using only observed SMHI daily inputs from the corrected-archive daily path; wind_speed, vapour_pressure, and sunshine_duration remain null when they are unavailable in the current provider path
 - every shared FAO export writes a matching human-readable `.info` sidecar that records the selected fill policy and field-level observed/derived/missing counts
+
+Detailed workflow behavior, fill policies, and sidecar provenance are documented in [FAO-Oriented Daily Input Packaging Workflow](download_fao.md).
 
 ## Recommended Reading Order
 
