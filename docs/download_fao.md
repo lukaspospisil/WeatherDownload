@@ -45,6 +45,7 @@ python examples/workflows/download_fao.py --country CH
 python examples/workflows/download_fao.py --country DK
 python examples/workflows/download_fao.py --country HU
 python examples/workflows/download_fao.py --country PL
+python examples/workflows/download_fao.py --country PL --fill-missing allow-hourly-aggregate
 python examples/workflows/download_fao.py --country NL
 python examples/workflows/download_fao.py --country SE
 python examples/workflows/download_fao.py --country NL --fill-missing allow-derived
@@ -52,7 +53,7 @@ python examples/workflows/download_fao.py --country NL --fill-missing allow-deri
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
 
-`--fill-missing` defaults to `none`. Use `--fill-missing allow-derived` only when you want the shared example layer to apply its documented fallback rules.
+`--fill-missing` defaults to `none`. Use `--fill-missing allow-derived` or `--fill-missing allow-hourly-aggregate` only when you want the shared example layer to apply its documented opt-in fallback rules.
 
 For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
 
@@ -190,7 +191,16 @@ Optional shared fallback in `--fill-missing allow-derived` mode:
 
 - no additional PL field is filled in the current synop-backed slice, because observed daily `relative_humidity` is not exposed in that provider path
 
-The PL branch uses only the existing IMGW-PIB synop-backed daily provider slice through the unified public interface. It prepares a clean observed daily input bundle for later FAO-oriented processing, does not compute FAO-56 ET0, does not derive radiation terms, keeps `wind_speed` empty because the official synop daily fields `FF10` and `FF15` are duration-of-threshold wind indicators rather than wind-speed observations, keeps `vapour_pressure` empty because the implemented daily IMGW families do not publish daily relative humidity or vapour pressure for the shared fallback path, and keeps station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
+Optional hourly supplementation in `--fill-missing allow-hourly-aggregate` mode:
+
+- `wind_speed` may be filled from official IMGW `historical / 1hour` `wind_speed`
+- `vapour_pressure` may be filled from official IMGW `historical / 1hour` `vapour_pressure`
+- both are aggregated as arithmetic means over the UTC calendar day
+- both require at least 18 hourly observations for that day
+- if that threshold is not met, the daily field stays missing
+- supplemented values are labeled explicitly as `aggregated_hourly_opt_in` in workflow provenance outputs
+
+The PL branch uses only the existing IMGW-PIB synop-backed daily provider slice by default and may optionally supplement it from the official IMGW synop-backed hourly slice through the unified public interface. It prepares a daily meteorological input bundle for later FAO-oriented processing, does not compute FAO-56 ET0, does not derive radiation terms, keeps `wind_speed` empty in default mode because the official synop daily fields `FF10` and `FF15` are duration-of-threshold wind indicators rather than wind-speed observations, keeps `vapour_pressure` empty in default mode because the implemented daily IMGW families do not publish daily relative humidity or vapour pressure for the shared fallback path, and keeps station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
 
 ### NL
 
@@ -242,6 +252,15 @@ Optional behavior:
 - `vapour_pressure` may be derived from observed daily `tas_mean` plus observed daily `relative_humidity` using the Magnus saturation-vapour-pressure formula in hPa
 - if the helper observations needed for that rule are unavailable, the field stays missing and the sidecar file records that outcome
 
+- `--fill-missing allow-hourly-aggregate`
+- still no ET0 computation
+- hourly supplementation is opt-in and stays in the shared example layer only, never in providers
+- the current explicit hourly aggregation path is limited to `PL`
+- only `wind_speed` and `vapour_pressure` may be filled this way
+- both are arithmetic means of official hourly observations over the UTC calendar day
+- both require at least 18 hourly observations for that day
+- supplemented values are marked explicitly as `aggregated_hourly_opt_in` in workflow provenance outputs
+
 ## Sidecar Info Files
 
 Every export writes a matching plain-text UTF-8 `.info` sidecar.
@@ -257,7 +276,7 @@ Examples:
 - `outputs/fao_daily.cz.mat` -> `outputs/fao_daily.cz.info`
 - `outputs/fao_daily.cz` -> `outputs/fao_daily.info`
 
-The sidecar is the export-level provenance record for the workflow. It records the selected fill policy, whether derived values were allowed, field-by-field observed/derived/missing counts, the rule used for each field, and an explicit note that the workflow does not compute ET0.
+The sidecar is the export-level provenance record for the workflow. It records the selected fill policy, whether opt-in hourly aggregation and/or derived values were allowed, field-by-field observed/aggregated/derived/missing counts, the rule used for each field, and an explicit note that the workflow does not compute ET0.
 
 ## What The Example Does
 
@@ -266,9 +285,11 @@ The sidecar is the export-level provenance record for the workflow. It records t
 3. screen stations by required observed daily inputs
 4. estimate overlap from observation metadata
 5. cache normalized daily observations through the shared provider interface
-6. keep only complete observed-input days for the configured required fields, leaving unavailable fields null rather than deriving them
-7. package the result into a stable MAT or Parquet bundle shape
-8. write a matching `.info` sidecar that records observed-versus-derived provenance for the export
+6. when explicitly requested by the selected fill policy, cache the documented optional hourly supplement inputs through the shared provider interface
+7. keep only complete observed-input days for the configured required fields, leaving unavailable fields null rather than deriving them by default
+8. apply only the documented opt-in fill rules that match the selected fill policy
+9. package the result into a stable MAT or Parquet bundle shape
+10. write a matching `.info` sidecar that records observed-versus-hourly-aggregated-versus-derived provenance for the export
 
 ## What The Example Explicitly Does Not Do
 
@@ -281,6 +302,7 @@ The sidecar is the export-level provenance record for the workflow. It records t
 - no sunshine-to-radiation estimation
 - no hidden meteorological estimation
 - no derivation beyond the explicitly enabled and documented `--fill-missing allow-derived` fallback rule
+- no hidden hourly-to-daily aggregation; `PL` hourly supplementation is available only through the explicit `--fill-missing allow-hourly-aggregate` mode
 
 ## Metadata In `data_info`
 

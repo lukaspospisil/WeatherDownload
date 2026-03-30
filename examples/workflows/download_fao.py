@@ -28,11 +28,20 @@ FINAL_SERIES_COLUMNS = [
     'sunshine_duration',
 ]
 FAO_CANONICAL_ELEMENTS = tuple(FINAL_SERIES_COLUMNS)
-FILL_MISSING_CHOICES = ('none', 'allow-derived')
+FILL_MISSING_CHOICES = ('none', 'allow-derived', 'allow-hourly-aggregate')
 DERIVED_VAPOUR_PRESSURE_RULE_NAME = 'vapour_pressure_from_tas_mean_and_relative_humidity'
 DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION = (
     'Derived vapour_pressure from observed daily tas_mean and relative_humidity '
     'using the Magnus saturation-vapour-pressure formula in hPa.'
+)
+PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS = 18
+PL_HOURLY_WIND_SPEED_RULE_DESCRIPTION = (
+    'Filled daily wind_speed from official IMGW historical/1hour wind_speed by arithmetic mean over the UTC calendar day '
+    f'when at least {PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS} hourly observations were available.'
+)
+PL_HOURLY_VAPOUR_PRESSURE_RULE_DESCRIPTION = (
+    'Filled daily vapour_pressure from official IMGW historical/1hour vapour_pressure by arithmetic mean over the UTC calendar day '
+    f'when at least {PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS} hourly observations were available.'
 )
 CZ_TIMEFUNC_BY_CANONICAL = {
     'tas_mean': 'AVG',
@@ -298,6 +307,20 @@ PL_PROVIDER_ELEMENT_MAPPING = {
     },
     'sunshine_duration': {'raw_codes': ['USL'], 'selection_rule': None, 'status': 'observed'},
 }
+PL_HOURLY_PROVIDER_ELEMENT_MAPPING = {
+    'wind_speed': {
+        'raw_codes': ['FWR'],
+        'selection_rule': f'UTC daily arithmetic mean from hourly observations when at least {PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS} hourly values are available',
+        'status': 'aggregated_hourly_opt_in',
+        'notes': 'Opt-in only. Filled from official IMGW historical/1hour wind_speed observations; never used by default.',
+    },
+    'vapour_pressure': {
+        'raw_codes': ['CPW'],
+        'selection_rule': f'UTC daily arithmetic mean from hourly observations when at least {PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS} hourly values are available',
+        'status': 'aggregated_hourly_opt_in',
+        'notes': 'Opt-in only. Filled from official IMGW historical/1hour vapour_pressure observations; never used by default.',
+    },
+}
 NL_ASSUMPTIONS = {
     'observed_inputs_only': (
         'The Netherlands branch packages only source-backed daily observations from the KNMI provider. '
@@ -390,6 +413,9 @@ class FaoCountryConfig:
     assumptions: dict[str, str]
     dataset_type: str
     source: str
+    hourly_dataset_scope: str | None = None
+    hourly_resolution: str | None = None
+    hourly_query_elements: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -398,6 +424,7 @@ class FieldFillSummary:
     status: str
     rule: str
     observed_count: int
+    aggregated_count: int
     derived_count: int
     missing_count: int
 
@@ -520,6 +547,19 @@ def main(argv: list[str] | None = None) -> int:
             stats=stats,
         )
         stats.cache_ready_stations = available_station_count
+        hourly_missing_station_ids: list[str] = []
+        hourly_failed_station_ids: list[str] = []
+        if fill_policy_uses_hourly_aggregate(args.fill_missing) and config.hourly_query_elements:
+            hourly_available_station_count, hourly_missing_station_ids, hourly_failed_station_ids = cache_candidate_hourly_inputs(
+                candidates[~candidates['station_id'].isin(set(missing_station_ids) | set(failed_station_ids))].reset_index(drop=True),
+                cache_dir=country_cache_dir,
+                config=config,
+                mode=args.mode,
+                timeout=args.timeout,
+                reporter=reporter,
+                stats=stats,
+            )
+            reporter.info(f'Hourly supplement cache ready for {hourly_available_station_count} station(s).')
 
         if args.mode == 'download':
             reporter.essential(f'Cached FAO inputs for {available_station_count} station(s) under {country_cache_dir}.')
@@ -528,11 +568,15 @@ def main(argv: list[str] | None = None) -> int:
                 reporter.essential(f'Stations with missing required daily inputs: {", ".join(missing_station_ids)}')
             if failed_station_ids:
                 reporter.essential(f'Stations with failed downloads: {", ".join(failed_station_ids)}')
+            if hourly_missing_station_ids:
+                reporter.essential(f'Stations with missing optional hourly supplement inputs: {", ".join(hourly_missing_station_ids)}')
+            if hourly_failed_station_ids:
+                reporter.essential(f'Stations with failed optional hourly supplement downloads: {", ".join(hourly_failed_station_ids)}')
             return 0
 
-        if args.mode == 'build' and (missing_station_ids or failed_station_ids):
+        if args.mode == 'build' and (missing_station_ids or failed_station_ids or hourly_missing_station_ids or hourly_failed_station_ids):
             print_final_summary(reporter, stats)
-            problem_ids = missing_station_ids + failed_station_ids
+            problem_ids = missing_station_ids + failed_station_ids + hourly_missing_station_ids + hourly_failed_station_ids
             raise CacheMissingError('Build mode requires a complete local cache. Missing or failed stations: ' + ', '.join(problem_ids))
 
         unavailable_station_ids = set(missing_station_ids) | set(failed_station_ids)
@@ -548,8 +592,14 @@ def main(argv: list[str] | None = None) -> int:
         for index, station in enumerate(build_candidates.itertuples(index=False), start=1):
             reporter.info(f'[{index}/{total_build_candidates}] Processing {station.station_id} ({station.full_name}) from cache')
             daily_table = read_cached_daily_observations(station.station_id, cache_dir=country_cache_dir)
+            hourly_table = (
+                read_cached_hourly_observations(station.station_id, cache_dir=country_cache_dir)
+                if fill_policy_uses_hourly_aggregate(args.fill_missing) and config.hourly_query_elements and station.station_id not in set(hourly_missing_station_ids) | set(hourly_failed_station_ids)
+                else pd.DataFrame()
+            )
             complete, provenance, applied_rules = prepare_complete_station_series_with_provenance(
                 daily_table,
+                hourly_table=hourly_table,
                 config=config,
                 fill_missing=args.fill_missing,
             )
@@ -576,7 +626,7 @@ def main(argv: list[str] | None = None) -> int:
                 'last_complete_date': complete['date'].max().isoformat(),
             })
 
-        data_info = build_data_info(config, station_rows, min_complete_days=args.min_complete_days)
+        data_info = build_data_info(config, station_rows, min_complete_days=args.min_complete_days, fill_missing=args.fill_missing)
         field_summaries = summarize_field_fill_status(
             provenance_tables,
             fill_missing=args.fill_missing,
@@ -627,10 +677,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--export-format', choices=['mat', 'parquet', 'both'], default='mat', help='Output format to produce in full or build mode.')
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional canonical station_id filter. Can be provided multiple times.')
     parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete observed-input days required per station.')
-    parser.add_argument('--fill-missing', choices=FILL_MISSING_CHOICES, default='none', help='Keep missing FAO-oriented inputs empty, or explicitly allow the example layer to apply minimal documented fallback rules.')
+    parser.add_argument('--fill-missing', choices=FILL_MISSING_CHOICES, default='none', help='Keep missing FAO-oriented inputs empty, or explicitly allow the example layer to apply the documented opt-in fallback rules.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
     parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
+
+
+def fill_policy_uses_derived(fill_missing: str) -> bool:
+    return fill_missing == 'allow-derived'
+
+
+def fill_policy_uses_hourly_aggregate(fill_missing: str) -> bool:
+    return fill_missing == 'allow-hourly-aggregate'
 
 
 def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -> FaoCountryConfig:
@@ -693,7 +751,35 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
     if normalized_country == 'HU':
         return FaoCountryConfig('HU', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, HU_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(HU_PROVIDER_ELEMENT_MAPPING), dict(HU_ASSUMPTIONS), 'HungaroMet Hungary observed daily input bundle prepared for later FAO workflow packaging', 'HungaroMet open data daily station observations from odp.met.hu')
     if normalized_country == 'PL':
-        return FaoCountryConfig('PL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, PL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(PL_PROVIDER_ELEMENT_MAPPING), dict(PL_ASSUMPTIONS), 'IMGW-PIB Poland observed daily input bundle prepared for later FAO workflow packaging', 'IMGW-PIB public daily synop station observations from the official archive')
+        provider_mapping = dict(PL_PROVIDER_ELEMENT_MAPPING)
+        assumptions = dict(PL_ASSUMPTIONS)
+        dataset_type = 'IMGW-PIB Poland observed daily input bundle prepared for later FAO workflow packaging'
+        source = 'IMGW-PIB public daily synop station observations from the official archive'
+        hourly_query_elements: tuple[str, ...] = ()
+        if fill_missing == 'allow-hourly-aggregate':
+            provider_mapping = {
+                **provider_mapping,
+                'wind_speed': dict(PL_HOURLY_PROVIDER_ELEMENT_MAPPING['wind_speed']),
+                'vapour_pressure': dict(PL_HOURLY_PROVIDER_ELEMENT_MAPPING['vapour_pressure']),
+            }
+            assumptions.update(
+                {
+                    'hourly_supplement_policy': (
+                        'The explicit allow-hourly-aggregate policy may supplement missing daily wind_speed and vapour_pressure from official IMGW historical/1hour synop observations. '
+                        'This remains a daily FAO-input-preparation workflow and does not compute FAO-56 ET0.'
+                    ),
+                    'hourly_aggregation_boundary': (
+                        'Poland hourly supplementation groups normalized IMGW historical/1hour timestamps by UTC calendar day in this first workflow slice.'
+                    ),
+                    'hourly_aggregation_threshold': (
+                        f'Daily hourly supplements are filled only when at least {PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS} hourly observations are available for that day; otherwise the field stays missing.'
+                    ),
+                }
+            )
+            dataset_type = 'IMGW-PIB Poland daily input bundle with opt-in hourly supplementation prepared for later FAO workflow packaging'
+            source = 'IMGW-PIB public daily synop station observations plus opt-in official historical/1hour synop supplementation from the official archive'
+            hourly_query_elements = ('wind_speed', 'vapour_pressure')
+        return FaoCountryConfig('PL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, PL_REQUIRED_OBSERVED_ELEMENTS, query_elements, provider_mapping, assumptions, dataset_type, source, 'historical' if hourly_query_elements else None, '1hour' if hourly_query_elements else None, hourly_query_elements)
     if normalized_country == 'NL':
         return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
     if normalized_country == 'SE':
@@ -708,7 +794,7 @@ def build_observed_provider_element_mapping(canonical_to_raw: dict[str, tuple[st
     return mapping
 
 
-def build_data_info(config: FaoCountryConfig, station_rows: list[dict[str, Any]], *, min_complete_days: int) -> dict[str, Any]:
+def build_data_info(config: FaoCountryConfig, station_rows: list[dict[str, Any]], *, min_complete_days: int, fill_missing: str = 'none') -> dict[str, Any]:
     data_info = {
         'created_at': pd.Timestamp.now('UTC').isoformat(),
         'dataset_type': config.dataset_type,
@@ -718,9 +804,18 @@ def build_data_info(config: FaoCountryConfig, station_rows: list[dict[str, Any]]
         'provider_element_mapping': build_provider_element_mapping(config),
         'min_complete_days': int(min_complete_days),
         'num_stations': int(len(station_rows)),
+        'fill_policy': {'selected': fill_missing},
     }
     if config.assumptions:
         data_info['assumptions'] = dict(config.assumptions)
+    if fill_missing == 'allow-hourly-aggregate' and config.country == 'PL':
+        data_info['fill_policy'].update(
+            {
+                'hourly_aggregation_day_boundary': 'UTC calendar day based on normalized historical/1hour timestamps',
+                'hourly_aggregation_min_observations': int(PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS),
+                'hourly_aggregation_fields': ['wind_speed', 'vapour_pressure'],
+            }
+        )
     return data_info
 
 
@@ -739,16 +834,22 @@ def summarize_field_fill_status(
     summaries: list[FieldFillSummary] = []
     for field_name in FINAL_SERIES_COLUMNS:
         observed_count = 0
+        aggregated_count = 0
         derived_count = 0
         missing_count = 0
         for provenance in provenance_tables:
             if field_name not in provenance.columns:
                 continue
             counts = provenance[field_name].astype('string').value_counts(dropna=False)
-            observed_count += int(counts.get('observed', 0))
-            derived_count += int(counts.get('derived', 0))
+            observed_count += int(counts.get('observed_daily', 0))
+            aggregated_count += int(counts.get('aggregated_hourly_opt_in', 0))
+            derived_count += int(counts.get('derived_opt_in', 0))
             missing_count += int(counts.get('missing', 0))
-        if derived_count > 0 and observed_count > 0:
+        if aggregated_count > 0 and (observed_count > 0 or derived_count > 0):
+            status = 'partially hourly-aggregated'
+        elif aggregated_count > 0:
+            status = 'hourly-aggregated opt-in'
+        elif derived_count > 0 and observed_count > 0:
             status = 'partially derived'
         elif derived_count > 0:
             status = 'fully derived'
@@ -760,8 +861,10 @@ def summarize_field_fill_status(
             rule = '; '.join(sorted(applied_rules_by_field[field_name]))
         elif fill_missing == 'allow-derived' and field_name == 'vapour_pressure':
             rule = 'No fill rule applied.'
+        elif fill_missing == 'allow-hourly-aggregate' and field_name in {'wind_speed', 'vapour_pressure'}:
+            rule = 'No hourly aggregation rule applied.'
         elif observed_count > 0:
-            rule = 'Observed source values only.'
+            rule = 'Observed daily source values only.'
         else:
             rule = 'No fill rule applied.'
         summaries.append(
@@ -770,11 +873,22 @@ def summarize_field_fill_status(
                 status=status,
                 rule=rule,
                 observed_count=observed_count,
+                aggregated_count=aggregated_count,
                 derived_count=derived_count,
                 missing_count=missing_count,
             )
         )
     return summaries
+
+
+def _describe_fill_mode(fill_missing: str) -> str:
+    if fill_missing == 'none':
+        return 'observed-only'
+    if fill_missing == 'allow-derived':
+        return 'allowed derived values'
+    if fill_missing == 'allow-hourly-aggregate':
+        return 'allowed hourly aggregation values'
+    return fill_missing
 
 
 def render_info_sidecar_text(
@@ -794,15 +908,15 @@ def render_info_sidecar_text(
         f'Output path: {output_path.resolve()}',
         f'Country: {country}',
         f'Selected fill policy: {fill_missing}',
-        f'Run mode: {"observed-only" if fill_missing == "none" else "allowed derived values"}',
+        f'Run mode: {_describe_fill_mode(fill_missing)}',
         f'Bundle sections exported: {", ".join(bundle_sections)}',
         f'Requested FAO-oriented fields: {", ".join(requested_fields)}',
         'ET0 computation: not performed',
     ]
-    if any(summary.derived_count > 0 for summary in field_summaries):
-        lines.append('Warning: This export contains derived values from the example-layer fill policy.')
+    if any(summary.aggregated_count > 0 or summary.derived_count > 0 for summary in field_summaries):
+        lines.append('Warning: This export contains opt-in hourly-aggregated and/or derived values from the example-layer fill policy.')
     else:
-        lines.append('Warning: No derived values were used in this export.')
+        lines.append('Warning: No hourly-aggregated or derived values were used in this export.')
     lines.extend(['', 'Field summary:'])
     for summary in field_summaries:
         lines.extend(
@@ -811,6 +925,7 @@ def render_info_sidecar_text(
                 f'  status: {summary.status}',
                 f'  rule: {summary.rule}',
                 f'  observed values: {summary.observed_count}',
+                f'  hourly-aggregated values: {summary.aggregated_count}',
                 f'  derived values: {summary.derived_count}',
                 f'  missing values: {summary.missing_count}',
             ]
@@ -939,6 +1054,24 @@ def cache_candidate_daily_inputs(candidates: pd.DataFrame, *, cache_dir: Path, c
     return available_station_count, missing_station_ids, failed_station_ids
 
 
+def cache_candidate_hourly_inputs(candidates: pd.DataFrame, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, reporter: ProgressReporter, stats: CacheStats) -> tuple[int, list[str], list[str]]:
+    available_station_count = 0
+    missing_station_ids: list[str] = []
+    failed_station_ids: list[str] = []
+    total_candidates = len(candidates)
+    reporter.info(f'Checking hourly supplement cache for {total_candidates} station(s).')
+    for index, station in enumerate(candidates.itertuples(index=False), start=1):
+        result = ensure_hourly_observations_cached(station.station_id, cache_dir=cache_dir, config=config, mode=mode, timeout=timeout, stats=stats)
+        if result.available:
+            available_station_count += 1
+        if result.missing:
+            missing_station_ids.append(station.station_id)
+        if result.failed:
+            failed_station_ids.append(station.station_id)
+        reporter.info(f'[{index}/{total_candidates}] hourly supplement {station.station_id} ({station.full_name}): {result.summary()}')
+    return available_station_count, missing_station_ids, failed_station_ids
+
+
 def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, stats: CacheStats) -> StationCacheResult:
     result = StationCacheResult(station_id)
     cache_path = cached_daily_observations_path(cache_dir, station_id)
@@ -974,6 +1107,42 @@ def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config
     stats.add_file_status('downloaded')
     return result
 
+
+def ensure_hourly_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, stats: CacheStats) -> StationCacheResult:
+    result = StationCacheResult(station_id)
+    cache_path = cached_hourly_observations_path(cache_dir, station_id)
+    if cache_path.exists():
+        result.add_status('reused')
+        stats.add_file_status('reused')
+        return result
+    if mode == 'build':
+        result.add_status('missing')
+        stats.add_file_status('missing')
+        return result
+    try:
+        query = ObservationQuery(
+            country=config.country,
+            dataset_scope=config.hourly_dataset_scope,
+            resolution=config.hourly_resolution,
+            station_ids=[station_id],
+            all_history=True,
+            elements=list(config.hourly_query_elements),
+        )
+        observations = download_observations(query, timeout=timeout, country=config.country)
+    except Exception:
+        result.add_status('failed')
+        stats.add_file_status('failed')
+        return result
+    if observations.empty:
+        result.add_status('missing')
+        stats.add_file_status('missing')
+        return result
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    observations.to_csv(cache_path, index=False)
+    result.add_status('downloaded')
+    stats.add_file_status('downloaded')
+    return result
+
 def read_cached_daily_observations(station_id: str, *, cache_dir: Path) -> pd.DataFrame:
     cache_path = cached_daily_observations_path(cache_dir, station_id)
     if not cache_path.exists():
@@ -983,13 +1152,27 @@ def read_cached_daily_observations(station_id: str, *, cache_dir: Path) -> pd.Da
     return table
 
 
+def read_cached_hourly_observations(station_id: str, *, cache_dir: Path) -> pd.DataFrame:
+    cache_path = cached_hourly_observations_path(cache_dir, station_id)
+    if not cache_path.exists():
+        raise CacheMissingError(f'Missing cached hourly observations for station {station_id}: {cache_path}')
+    table = pd.read_csv(cache_path, dtype={'flag': 'string'})
+    table['timestamp'] = pd.to_datetime(table['timestamp'], utc=True, errors='coerce')
+    return table
+
+
 def cached_daily_observations_path(cache_dir: Path, station_id: str) -> Path:
     return cache_dir / 'daily' / station_id / f'daily-{station_id}.csv'
+
+
+def cached_hourly_observations_path(cache_dir: Path, station_id: str) -> Path:
+    return cache_dir / 'hourly' / station_id / f'hourly-{station_id}.csv'
 
 
 def prepare_complete_station_series(daily_table: pd.DataFrame, *, config: FaoCountryConfig, fill_missing: str = 'none') -> pd.DataFrame:
     complete, _, _ = prepare_complete_station_series_with_provenance(
         daily_table,
+        hourly_table=None,
         config=config,
         fill_missing=fill_missing,
     )
@@ -999,12 +1182,13 @@ def prepare_complete_station_series(daily_table: pd.DataFrame, *, config: FaoCou
 def prepare_complete_station_series_with_provenance(
     daily_table: pd.DataFrame,
     *,
+    hourly_table: pd.DataFrame | None = None,
     config: FaoCountryConfig,
     fill_missing: str = 'none',
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, str | None]]:
     selected_tables: dict[str, pd.DataFrame] = {}
     selected_names = set(config.required_complete_elements) | set(FINAL_SERIES_COLUMNS)
-    if fill_missing == 'allow-derived':
+    if fill_policy_uses_derived(fill_missing):
         selected_names.add('relative_humidity')
     for canonical_name in selected_names:
         selected = select_daily_variable_rows(daily_table, canonical_name=canonical_name, config=config)
@@ -1032,12 +1216,30 @@ def prepare_complete_station_series_with_provenance(
     provenance = pd.DataFrame({'date': complete['date']})
     for canonical_name in FINAL_SERIES_COLUMNS:
         provenance[canonical_name] = pd.Series(
-            np.where(complete[canonical_name].notna(), 'observed', 'missing'),
+            np.where(complete[canonical_name].notna(), 'observed_daily', 'missing'),
             dtype='string',
         )
 
     applied_rules = {field: None for field in FINAL_SERIES_COLUMNS}
-    if fill_missing == 'allow-derived':
+    if fill_policy_uses_hourly_aggregate(fill_missing) and config.country == 'PL':
+        hourly_fills = build_hourly_daily_fill_tables(hourly_table, fields=('wind_speed', 'vapour_pressure'))
+        for field_name, rule_text in (
+            ('wind_speed', PL_HOURLY_WIND_SPEED_RULE_DESCRIPTION),
+            ('vapour_pressure', PL_HOURLY_VAPOUR_PRESSURE_RULE_DESCRIPTION),
+        ):
+            fill_table = hourly_fills.get(field_name)
+            if fill_table is None or fill_table.empty:
+                continue
+            complete = complete.merge(fill_table, on='date', how='left')
+            fill_column = f'{field_name}__hourly_fill'
+            fill_mask = complete[field_name].isna() & complete[fill_column].notna()
+            if fill_mask.any():
+                complete.loc[fill_mask, field_name] = complete.loc[fill_mask, fill_column]
+                provenance.loc[fill_mask, field_name] = 'aggregated_hourly_opt_in'
+                applied_rules[field_name] = rule_text
+            complete = complete.drop(columns=[fill_column])
+
+    if fill_policy_uses_derived(fill_missing):
         vapour_pressure_mask = (
             complete['vapour_pressure'].isna()
             & complete['tas_mean'].notna()
@@ -1050,10 +1252,44 @@ def prepare_complete_station_series_with_provenance(
                 target_index = relative_humidity[valid_mask].index
                 tas_mean = pd.to_numeric(complete.loc[target_index, 'tas_mean'], errors='coerce')
                 complete.loc[target_index, 'vapour_pressure'] = 6.108 * np.exp((17.27 * tas_mean) / (tas_mean + 237.3)) * (relative_humidity.loc[target_index] / 100.0)
-                provenance.loc[target_index, 'vapour_pressure'] = 'derived'
+                provenance.loc[target_index, 'vapour_pressure'] = 'derived_opt_in'
                 applied_rules['vapour_pressure'] = DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION
 
     return complete.loc[:, ['date', *FINAL_SERIES_COLUMNS]], provenance.loc[:, ['date', *FINAL_SERIES_COLUMNS]], applied_rules
+
+
+def build_hourly_daily_fill_tables(hourly_table: pd.DataFrame | None, *, fields: tuple[str, ...]) -> dict[str, pd.DataFrame]:
+    if hourly_table is None or hourly_table.empty:
+        return {}
+    tables: dict[str, pd.DataFrame] = {}
+    for field_name in fields:
+        aggregated = aggregate_hourly_field_to_daily(hourly_table, field_name)
+        if aggregated is not None and not aggregated.empty:
+            tables[field_name] = aggregated
+    return tables
+
+
+def aggregate_hourly_field_to_daily(hourly_table: pd.DataFrame, canonical_name: str) -> pd.DataFrame | None:
+    filtered = hourly_table[hourly_table['element'].astype(str) == canonical_name].copy()
+    if filtered.empty:
+        return None
+    filtered['timestamp'] = pd.to_datetime(filtered['timestamp'], utc=True, errors='coerce')
+    filtered = filtered[filtered['timestamp'].notna()]
+    if filtered.empty:
+        return None
+    filtered['date'] = filtered['timestamp'].dt.date
+    filtered['numeric_value'] = pd.to_numeric(filtered['value'], errors='coerce')
+    filtered = filtered.dropna(subset=['numeric_value'])
+    if filtered.empty:
+        return None
+    aggregated = (
+        filtered.groupby('date', as_index=False)
+        .agg(hourly_count=('numeric_value', 'count'), hourly_mean=('numeric_value', 'mean'))
+    )
+    aggregated = aggregated[aggregated['hourly_count'] >= PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS].copy()
+    if aggregated.empty:
+        return None
+    return aggregated.rename(columns={'hourly_mean': f'{canonical_name}__hourly_fill'})[['date', f'{canonical_name}__hourly_fill']]
 
 
 def select_daily_variable_rows(daily_table: pd.DataFrame, *, canonical_name: str, config: FaoCountryConfig) -> pd.DataFrame:

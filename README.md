@@ -71,6 +71,8 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 
 Hungary also exposes a separate wind-only `historical_wind / 10min` capability alongside the generic `historical / 10min` path; see the [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md) for details.
 
+In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_speed` and `vapour_pressure` from official hourly IMGW synop observations via `--fill-missing allow-hourly-aggregate`; see [FAO-Oriented Daily Input Packaging Workflow](docs/download_fao.md) for the explicit provenance rules.
+
 ## Supported Countries
 
 - `AT` via GeoSphere Austria

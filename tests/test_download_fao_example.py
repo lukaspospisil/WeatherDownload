@@ -43,6 +43,8 @@ class DownloadFaoExampleTests(unittest.TestCase):
         parser = download_fao.build_parser()
         args = parser.parse_args(['--fill-missing', 'allow-derived'])
         self.assertEqual(args.fill_missing, 'allow-derived')
+        args = parser.parse_args(['--fill-missing', 'allow-hourly-aggregate'])
+        self.assertEqual(args.fill_missing, 'allow-hourly-aggregate')
     def test_default_mat_output_path_is_country_aware(self) -> None:
         self.assertEqual(
             download_fao.resolve_mat_output_path(None, country='CZ'),
@@ -166,6 +168,15 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(config.raw_to_canonical['USL'], 'sunshine_duration')
         self.assertEqual(config.provider_element_mapping['wind_speed']['status'], 'unavailable')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
+
+    def test_get_fao_country_config_returns_pl_hourly_aggregate_mapping_when_enabled(self) -> None:
+        config = download_fao.get_fao_country_config('PL', fill_missing='allow-hourly-aggregate')
+        self.assertEqual(config.country, 'PL')
+        self.assertEqual(config.hourly_dataset_scope, 'historical')
+        self.assertEqual(config.hourly_resolution, '1hour')
+        self.assertEqual(config.hourly_query_elements, ('wind_speed', 'vapour_pressure'))
+        self.assertEqual(config.provider_element_mapping['wind_speed']['status'], 'aggregated_hourly_opt_in')
+        self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'aggregated_hourly_opt_in')
 
     def test_main_reports_unsupported_country_clearly(self) -> None:
         stdout_buffer = io.StringIO()
@@ -535,7 +546,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
 
         self.assertEqual(list(complete['date'].astype(str)), ['2024-01-01'])
         self.assertGreater(float(complete.loc[0, 'vapour_pressure']), 0.0)
-        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived')
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived_opt_in')
         self.assertEqual(
             applied_rules['vapour_pressure'],
             download_fao.DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION,
@@ -608,7 +619,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
 
         self.assertEqual(list(complete['date'].astype(str)), ['2024-01-01'])
         self.assertGreater(float(complete.loc[0, 'vapour_pressure']), 0.0)
-        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived')
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived_opt_in')
         self.assertEqual(
             applied_rules['vapour_pressure'],
             download_fao.DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION,
@@ -651,6 +662,93 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'missing')
         self.assertIsNone(applied_rules['vapour_pressure'])
 
+    def test_prepare_complete_station_series_pl_allow_hourly_aggregate_fills_missing_fields_when_coverage_is_sufficient(self) -> None:
+        config = download_fao.get_fao_country_config('PL', fill_missing='allow-hourly-aggregate')
+        daily_table = pd.DataFrame([
+            {'station_id': '00375', 'element': 'tas_mean', 'element_raw': 'STD', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '3.5'},
+            {'station_id': '00375', 'element': 'tas_max', 'element_raw': 'TMAX', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '6.0'},
+            {'station_id': '00375', 'element': 'tas_min', 'element_raw': 'TMIN', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '1.2'},
+            {'station_id': '00375', 'element': 'sunshine_duration', 'element_raw': 'USL', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '1.3'},
+        ])
+        hourly_rows = []
+        for hour in range(18):
+            timestamp = f'2025-01-01T{hour:02d}:00:00Z'
+            hourly_rows.append({'station_id': '00375', 'element': 'wind_speed', 'timestamp': timestamp, 'value': 4.0})
+            hourly_rows.append({'station_id': '00375', 'element': 'vapour_pressure', 'timestamp': timestamp, 'value': 7.5})
+        hourly_table = pd.DataFrame(hourly_rows)
+
+        complete, provenance, applied_rules = download_fao.prepare_complete_station_series_with_provenance(
+            daily_table,
+            hourly_table=hourly_table,
+            config=config,
+            fill_missing='allow-hourly-aggregate',
+        )
+
+        self.assertEqual(list(complete['date'].astype(str)), ['2025-01-01'])
+        self.assertEqual(float(complete.loc[0, 'wind_speed']), 4.0)
+        self.assertEqual(float(complete.loc[0, 'vapour_pressure']), 7.5)
+        self.assertEqual(provenance.loc[0, 'wind_speed'], 'aggregated_hourly_opt_in')
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'aggregated_hourly_opt_in')
+        self.assertEqual(applied_rules['wind_speed'], download_fao.PL_HOURLY_WIND_SPEED_RULE_DESCRIPTION)
+        self.assertEqual(applied_rules['vapour_pressure'], download_fao.PL_HOURLY_VAPOUR_PRESSURE_RULE_DESCRIPTION)
+
+    def test_prepare_complete_station_series_pl_allow_hourly_aggregate_keeps_missing_fields_when_coverage_is_insufficient(self) -> None:
+        config = download_fao.get_fao_country_config('PL', fill_missing='allow-hourly-aggregate')
+        daily_table = pd.DataFrame([
+            {'station_id': '00375', 'element': 'tas_mean', 'element_raw': 'STD', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '3.5'},
+            {'station_id': '00375', 'element': 'tas_max', 'element_raw': 'TMAX', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '6.0'},
+            {'station_id': '00375', 'element': 'tas_min', 'element_raw': 'TMIN', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '1.2'},
+            {'station_id': '00375', 'element': 'sunshine_duration', 'element_raw': 'USL', 'observation_date': '2025-01-01', 'time_function': pd.NA, 'value': '1.3'},
+        ])
+        hourly_rows = []
+        for hour in range(17):
+            timestamp = f'2025-01-01T{hour:02d}:00:00Z'
+            hourly_rows.append({'station_id': '00375', 'element': 'wind_speed', 'timestamp': timestamp, 'value': 4.0})
+            hourly_rows.append({'station_id': '00375', 'element': 'vapour_pressure', 'timestamp': timestamp, 'value': 7.5})
+        hourly_table = pd.DataFrame(hourly_rows)
+
+        complete, provenance, applied_rules = download_fao.prepare_complete_station_series_with_provenance(
+            daily_table,
+            hourly_table=hourly_table,
+            config=config,
+            fill_missing='allow-hourly-aggregate',
+        )
+
+        self.assertEqual(list(complete['date'].astype(str)), ['2025-01-01'])
+        self.assertTrue(complete['wind_speed'].isna().all())
+        self.assertTrue(complete['vapour_pressure'].isna().all())
+        self.assertEqual(provenance.loc[0, 'wind_speed'], 'missing')
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'missing')
+        self.assertIsNone(applied_rules['wind_speed'])
+        self.assertIsNone(applied_rules['vapour_pressure'])
+
+    def test_summarize_field_fill_status_marks_pl_hourly_aggregation_explicitly(self) -> None:
+        provenance = pd.DataFrame({
+            'date': [pd.Timestamp('2025-01-01').date()],
+            'tas_mean': ['observed_daily'],
+            'tas_max': ['observed_daily'],
+            'tas_min': ['observed_daily'],
+            'wind_speed': ['aggregated_hourly_opt_in'],
+            'vapour_pressure': ['aggregated_hourly_opt_in'],
+            'sunshine_duration': ['observed_daily'],
+        })
+        summaries = download_fao.summarize_field_fill_status(
+            [provenance],
+            fill_missing='allow-hourly-aggregate',
+            applied_rules_by_field={
+                'tas_mean': set(),
+                'tas_max': set(),
+                'tas_min': set(),
+                'wind_speed': {download_fao.PL_HOURLY_WIND_SPEED_RULE_DESCRIPTION},
+                'vapour_pressure': {download_fao.PL_HOURLY_VAPOUR_PRESSURE_RULE_DESCRIPTION},
+                'sunshine_duration': set(),
+            },
+        )
+        summary_by_field = {item.field: item for item in summaries}
+        self.assertEqual(summary_by_field['wind_speed'].aggregated_count, 1)
+        self.assertEqual(summary_by_field['wind_speed'].status, 'hourly-aggregated opt-in')
+        self.assertEqual(summary_by_field['vapour_pressure'].aggregated_count, 1)
+
     def test_prepare_complete_station_series_handles_ch_with_observed_vapour_pressure(self) -> None:
         config = download_fao.get_fao_country_config('CH')
         daily_table = pd.DataFrame([
@@ -687,7 +785,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
         )
 
         self.assertEqual(float(complete.loc[0, 'vapour_pressure']), 8.0)
-        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'observed')
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'observed_daily')
         self.assertIsNone(applied_rules['vapour_pressure'])
 
     def test_prepare_complete_station_series_can_derive_vapour_pressure_for_ch_when_observed_value_is_missing(self) -> None:
@@ -708,7 +806,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
         )
 
         self.assertGreater(float(complete.loc[0, 'vapour_pressure']), 0.0)
-        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived')
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived_opt_in')
         self.assertEqual(applied_rules['vapour_pressure'], download_fao.DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION)
 
     def test_build_data_info_includes_nl_limitations(self) -> None:
@@ -763,6 +861,17 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(info['provider_element_mapping']['vapour_pressure']['status'], 'unavailable')
         self.assertIn('observed_inputs_only', info['assumptions'])
         self.assertIn('station_metadata_limits', info['assumptions'])
+
+    def test_build_data_info_includes_pl_hourly_aggregate_metadata(self) -> None:
+        config = download_fao.get_fao_country_config('PL', fill_missing='allow-hourly-aggregate')
+        info = download_fao.build_data_info(config, station_rows=[{'station_id': '00375'}], min_complete_days=3650, fill_missing='allow-hourly-aggregate')
+
+        self.assertEqual(info['country'], 'PL')
+        self.assertEqual(info['fill_policy']['selected'], 'allow-hourly-aggregate')
+        self.assertEqual(info['fill_policy']['hourly_aggregation_min_observations'], download_fao.PL_HOURLY_AGGREGATION_MIN_OBSERVATIONS)
+        self.assertEqual(info['provider_element_mapping']['wind_speed']['status'], 'aggregated_hourly_opt_in')
+        self.assertEqual(info['provider_element_mapping']['vapour_pressure']['status'], 'aggregated_hourly_opt_in')
+        self.assertIn('hourly_supplement_policy', info['assumptions'])
 
     def test_build_data_info_includes_ch_assumptions(self) -> None:
         config = download_fao.get_fao_country_config('CH')

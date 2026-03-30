@@ -31,13 +31,13 @@ That is the cleanest fit for the existing WeatherDownload architecture because i
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/wykaz_stacji.csv`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_format.txt`
-- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_nag³ówek.csv`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_nagï¿½ï¿½wek.csv`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/s_t_format.txt`
-- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/s_t_nag³ówek.csv`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/s_t_nagï¿½ï¿½wek.csv`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_format.txt`
-- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_nag³ówek.csv`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_nagï¿½ï¿½wek.csv`
 
 ## Canonical Mapping
 
@@ -127,16 +127,23 @@ The official `dobowe / klimat` archive uses a different source-backed pattern, a
 
 ## FAO-Prep Workflow Note
 
-`examples/workflows/download_fao.py` still uses only the synop-backed `historical / daily` slice for Poland. It prepares a daily meteorological input bundle for later FAO-oriented workflows, does not compute FAO-56 ET0, keeps `wind_speed` and `vapour_pressure` missing in the current PL daily branch because the official synop daily fields `FF10` and `FF15` are duration-of-threshold wind indicators rather than wind-speed observations and the implemented daily IMGW families do not publish daily relative humidity or vapour pressure, and leaves station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
+`examples/workflows/download_fao.py` uses the synop-backed `historical / daily` slice by default for Poland. It prepares a daily meteorological input bundle for later FAO-oriented workflows, does not compute FAO-56 ET0, keeps `wind_speed` and `vapour_pressure` missing in the default PL daily branch because the official synop daily fields `FF10` and `FF15` are duration-of-threshold wind indicators rather than wind-speed observations and the implemented daily IMGW families do not publish daily relative humidity or vapour pressure, and leaves station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
 
-The new `historical / 1hour` slice adds official subdaily observations only. It does not aggregate them into daily FAO inputs, and it does not compute FAO-56 ET0.
+With the explicit workflow fill policy `--fill-missing allow-hourly-aggregate`, the FAO example may supplement:
+
+- daily `wind_speed` from official `historical / 1hour` IMGW `wind_speed`
+- daily `vapour_pressure` from official `historical / 1hour` IMGW `vapour_pressure`
+
+The current workflow uses arithmetic means over the UTC calendar day and requires at least 18 hourly observations before filling either daily field. Supplemented values are marked explicitly as `aggregated_hourly_opt_in` in workflow provenance outputs. This stays in the example layer only; it does not change provider semantics and does not hide that these fields are aggregated from hourly observations.
+
+The `historical / 1hour` slice adds official subdaily observations only. It does not compute FAO-56 ET0, and any workflow-layer daily supplementation remains explicit and documented rather than hidden inside the provider.
 
 ## Current Limits
 
 - `historical / daily` remains synop-only and unchanged
 - `historical / 1hour` is conservative and currently exposes only `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, and `pressure`
 - `historical_klimat / daily` exposes only the clearly mappable practical core subset: `tas_mean`, `tas_max`, `tas_min`, and `precipitation`
-- `terminowe / synop` is not yet exposed as daily aggregation; any later daily FAO-prep aggregation from PL subdaily data would need to be explicit, documented, and transparent
+- `terminowe / synop` is not exposed as hidden provider-side daily aggregation; the current FAO example may use it only through the explicit opt-in `allow-hourly-aggregate` workflow policy with documented provenance
 - `10min`, `miesieczne`, and `opad` remain intentionally unsupported in this pass
 - no synthetic station ids are created
 - no derived variables are added to fill coverage gaps
