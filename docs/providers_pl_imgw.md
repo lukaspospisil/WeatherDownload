@@ -50,6 +50,13 @@ Supported canonical daily elements for `historical_klimat / daily` (`dobowe / kl
 - `tas_max` -> `TMAX`
 - `tas_min` -> `TMIN`
 - `precipitation` -> `SMDB`
+- `snow_depth` -> `PKSN`
+
+Rejected candidates after inspecting the official `k_d_format.txt` field list:
+
+- `TMNG` was not mapped because IMGW defines it as minimum daily air temperature near the ground, which is not clearly the same as the repo's existing `ground_temperature_min` meaning
+- `ROOP` was not mapped because it is precipitation form/type (`S/W/ `), not an existing canonical daily element
+- `sunshine_duration` remains unsupported because the official daily klimat product still does not publish `USL` or another clearly equivalent sunshine field
 
 Unsupported or ambiguous source fields remain unsupported rather than being guessed or derived.
 
@@ -59,7 +66,7 @@ Unsupported or ambiguous source fields remain unsupported rather than being gues
 - `gh_id` carries the longer official IMGW station code published alongside that 5-character identifier
 - daily queries stay date-based through `start_date` and `end_date`
 - normalized daily outputs keep the shared WeatherDownload schema
-- raw IMGW daily status fields such as `WTMAX`, `WTMIN`, `WSTD`, `WSMDB`, and `WUSL` stay in `flag` when present in the source family
+- raw IMGW daily status fields such as `WTMAX`, `WTMIN`, `WSTD`, `WSMDB`, `WPKSN`, and `WUSL` stay in `flag` when present in the source family
 - normalized `quality` stays null in this pass
 - the provider uses deterministic archive URLs and does not depend on scraping directory listings to build download targets
 
@@ -79,7 +86,7 @@ The official `dobowe / klimat` archive uses a different source-backed pattern, a
 ## Current Limits
 
 - `historical / daily` remains synop-only and unchanged
-- `historical_klimat / daily` exposes only the clearly mappable `dobowe / klimat` subset
+- `historical_klimat / daily` exposes only the clearly mappable `dobowe / klimat` subset: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, and `snow_depth`
 - `terminowe`, `miesieczne`, and `opad` remain intentionally unsupported in this pass
 - hourly and 10-minute Poland support are not implemented
 - station coordinates, elevation, and validity dates are not available from the implemented official station list and therefore stay missing in normalized station metadata
