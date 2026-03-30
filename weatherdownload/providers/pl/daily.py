@@ -115,7 +115,7 @@ def normalize_daily_observations_pl(
             continue
         flag_column_name = _flag_column_for_element(raw_code)
         flag_series = table[flag_column_name] if flag_column_name in table.columns else pd.Series(pd.NA, index=table.index, dtype='string')
-        zero_when_flag_nine = raw_code in {'SMDB', 'USL', 'PKSN'}
+        zero_when_flag_nine = raw_code in {'SMDB', 'USL'}
         element_columns = canonicalize_element_series(pd.Series([raw_code] * len(table.index), index=table.index), query)
         normalized = pd.DataFrame(
             {
@@ -248,4 +248,5 @@ def _flag_column_for_element(raw_code: str) -> str:
         'SMDB': 'WSMDB',
         'USL': 'WUSL',
     }.get(raw_code, '')
+
 

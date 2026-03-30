@@ -35,7 +35,6 @@ PL_DAILY_KLIMAT_CANONICAL_ELEMENTS = {
     'tas_max': ('TMAX',),
     'tas_min': ('TMIN',),
     'precipitation': ('SMDB',),
-    'snow_depth': ('PKSN',),
 }
 
 
@@ -55,7 +54,6 @@ PL_OBSERVATION_PARAMETER_METADATA = {
     'TMIN': _parameter_metadata('TMIN', 'Daily minimum air temperature', 'Official IMGW daily minimum air temperature in the implemented Poland daily products.'),
     'SMDB': _parameter_metadata('SMDB', 'Daily precipitation total', 'Official IMGW daily precipitation total in the implemented Poland daily products.'),
     'USL': _parameter_metadata('USL', 'Daily sunshine duration', 'Official IMGW synop daily sunshine duration.'),
-    'PKSN': _parameter_metadata('PKSN', 'Snow depth', 'Official IMGW daily snow cover depth.'),
 }
 
 PL_DAILY_SYNOP_PARAMETER_METADATA = {
@@ -65,7 +63,7 @@ PL_DAILY_SYNOP_PARAMETER_METADATA = {
 
 PL_DAILY_KLIMAT_PARAMETER_METADATA = {
     raw_code: PL_OBSERVATION_PARAMETER_METADATA[raw_code]
-    for raw_code in ('STD', 'TMAX', 'TMIN', 'SMDB', 'PKSN')
+    for raw_code in ('STD', 'TMAX', 'TMIN', 'SMDB')
 }
 
 _PL_DATASET_SPECS = [

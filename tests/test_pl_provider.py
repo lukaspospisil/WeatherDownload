@@ -1,4 +1,4 @@
-﻿import io
+import io
 import unittest
 import zipfile
 from pathlib import Path
@@ -44,7 +44,6 @@ EXPECTED_PL_KLIMAT_MAPPING = {
     'tas_max': 'TMAX',
     'tas_min': 'TMIN',
     'precipitation': 'SMDB',
-    'snow_depth': 'PKSN',
 }
 
 
@@ -101,20 +100,20 @@ class PolandProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             list_supported_elements(country='PL', dataset_scope='historical_klimat', resolution='daily'),
-            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
         )
         self.assertEqual(
             list_supported_elements(country='PL', dataset_scope='historical_klimat', resolution='daily', provider_raw=True),
-            ['STD', 'TMAX', 'TMIN', 'SMDB', 'PKSN'],
+            ['STD', 'TMAX', 'TMIN', 'SMDB'],
         )
 
     def test_pl_daily_queries_accept_scope_specific_canonical_and_raw_codes(self) -> None:
         canonical_query = ObservationQuery(country='PL', dataset_scope='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2025-01-02', elements=['tas_mean', 'precipitation'])
         raw_query = ObservationQuery(country='PL', dataset_scope='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2025-01-02', elements=['STD', 'SMDB'])
-        klimat_query = ObservationQuery(country='PL', dataset_scope='historical_klimat', resolution='daily', station_ids=['00375'], start_date='2026-01-01', end_date='2026-01-02', elements=['tas_mean', 'precipitation', 'snow_depth'])
+        klimat_query = ObservationQuery(country='PL', dataset_scope='historical_klimat', resolution='daily', station_ids=['00375'], start_date='2026-01-01', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
         self.assertEqual(canonical_query.elements, ['STD', 'SMDB'])
         self.assertEqual(raw_query.elements, ['STD', 'SMDB'])
-        self.assertEqual(klimat_query.elements, ['STD', 'SMDB', 'PKSN'])
+        self.assertEqual(klimat_query.elements, ['STD', 'SMDB'])
 
     def test_pl_query_rejects_unsupported_resolution_and_scope_specific_element(self) -> None:
         with self.assertRaises(QueryValidationError):
@@ -200,11 +199,11 @@ class PolandProviderTests(unittest.TestCase):
                 return _MockResponse(content=klimat_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='PL', dataset_scope='historical_klimat', resolution='daily', station_ids=['00375'], start_date='2026-01-01', end_date='2026-01-02', elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
+        query = ObservationQuery(country='PL', dataset_scope='historical_klimat', resolution='daily', station_ids=['00375'], start_date='2026-01-01', end_date='2026-01-02', elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation'])
         with patch('weatherdownload.providers.pl.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='PL', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), PL_NORMALIZED_DAILY_COLUMNS)
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'snow_depth', 'tas_max', 'tas_mean', 'tas_min'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_max', 'tas_mean', 'tas_min'])
         self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical_klimat'])
         value_lookup = observations.set_index(['element', 'observation_date'])['value']
         flag_lookup = observations.set_index(['element', 'observation_date'])['flag']
@@ -248,13 +247,7 @@ class PolandProviderTests(unittest.TestCase):
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_PL_KLIMAT_MAPPING)
         self.assertNotIn('sunshine_duration', observations['element'].unique().tolist())
-        self.assertIn('snow_depth', observations['element'].unique().tolist())
 
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
