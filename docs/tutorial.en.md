@@ -34,7 +34,7 @@ The library can:
 - download meteorological observations,
 - export tabular outputs to common formats,
 - unify cross-country usage through **canonical elements**,
-- provide workflow examples, such as preparing a specific dataset.
+- provide workflow examples, such as daily meteorological input packaging for later FAO-oriented processing.
 
 ---
 
@@ -683,7 +683,7 @@ Returns **long-format** data:
 - the actual measurement goes into `value`.
 
 ### 20.2 `examples/workflows/download_fao.py`
-Returns a **wide-format workflow dataset**, prepared for later FAO work.
+Returns a **wide-format workflow dataset** for daily meteorological input packaging for later FAO-oriented processing.
 
 This means:
 - one row per complete date,
@@ -701,7 +701,7 @@ This means:
 ## 21. What `download_fao.py` output looks like
 
 The FAO workflow does **not** return the general long-format downloader output.  
-Instead, it creates a dedicated wide-format dataset bundle.
+Instead, it creates a dedicated wide-format daily meteorological input bundle for later FAO-oriented processing.
 
 ### 21.1 `parquet` export mode
 A typical bundle directory contains:
@@ -751,9 +751,9 @@ After the final filter:
 
 ---
 
-## 22. MATLAB-oriented / FAO preparation workflow
+## 22. MATLAB-oriented / FAO input-preparation workflow
 
-The FAO example is a workflow layer on top of the library.
+The FAO example is a workflow layer on top of the library for daily meteorological input packaging.
 
 ### 22.1 What it does
 - loads station metadata,
@@ -764,7 +764,7 @@ The FAO example is a workflow layer on top of the library.
 - exports the final dataset.
 
 ### 22.2 What it does not do
-- it does not compute FAO,
+- it does not compute FAO-56 ET0,
 - it does not compute `Ra`,
 - it does not compute other derived variables.
 
@@ -908,7 +908,7 @@ If you want a **wide-format** dataset for later modelling, use your own pivot or
 
 ---
 
-## 29. Typical use case: I want a dataset ready for later FAO calculation
+## 29. Typical use case: I want a dataset ready for later FAO-oriented processing
 
 ### CZ
 
@@ -1006,7 +1006,7 @@ The most important practical distinction is:
 - specialized,
 - wide-format,
 - country-aware,
-- suitable as a clean input dataset for later physical/model-based processing.
+- suitable as a clean daily meteorological input dataset for later FAO-oriented or other downstream physical/model-based processing.
 
 
 

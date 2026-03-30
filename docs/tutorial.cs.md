@@ -34,7 +34,7 @@ Knihovna umí zejména:
 - stahovat meteorologická pozorování,
 - exportovat tabulky do běžných formátů,
 - sjednotit práci s různými zeměmi přes **canonical elements**,
-- poskytovat workflow examples nad daty, například přípravu datasetu pro pozdější FAO výpočty.
+- poskytovat workflow examples nad daty, například přípravu denních meteorologických vstupů pro pozdější FAO-orientované zpracování.
 
 ---
 
@@ -685,7 +685,7 @@ Vrací **long-format** data:
 - hodnota je ve sloupci `value`.
 
 ### 20.2 `examples/workflows/download_fao.py`
-Vrací **wide-format workflow dataset**, připravený pro pozdější FAO výpočty.
+Vrací **wide-format workflow dataset** pro přípravu denních meteorologických vstupů pro pozdější FAO-orientované zpracování.
 
 To znamená:
 - jeden datumový řádek,
@@ -702,7 +702,7 @@ To znamená:
 
 ## 21. Jak vypadá výstup z `download_fao.py`
 
-FAO workflow nevrací obecný long-format downloader output, ale specializovaný wide-format dataset bundle.
+FAO workflow nevrací obecný long-format downloader output, ale specializovaný wide-format bundle denních meteorologických vstupů pro pozdější FAO-orientované zpracování.
 
 ### 21.1 Export režim `parquet`
 Vznikne bundle adresář typicky obsahující:
@@ -751,9 +751,9 @@ Po finálním filtru:
 
 ---
 
-## 22. MATLAB-oriented / FAO preparation workflow
+## 22. MATLAB-oriented / workflow pro přípravu FAO vstupů
 
-FAO example je workflow layer nad knihovnou.
+FAO example je workflow layer nad knihovnou pro balení denních meteorologických vstupů.
 
 ### 22.1 Co dělá
 - načte metadata stanic,
@@ -764,7 +764,7 @@ FAO example je workflow layer nad knihovnou.
 - exportuje finální dataset.
 
 ### 22.2 Co nedělá
-- nepočítá FAO,
+- nepočítá FAO-56 ET0,
 - nepočítá `Ra`,
 - nepočítá další derived variables.
 
@@ -909,7 +909,7 @@ Pokud chceš **wide-format** dataset pro další modelování, použij vlastní 
 
 ---
 
-## 29. Typický use-case: chci dataset připravený pro pozdější FAO výpočet
+## 29. Typický use-case: chci dataset připravený pro pozdější FAO-orientované zpracování
 
 ### CZ
 
@@ -1007,7 +1007,7 @@ Nejdůležitější praktická věc je rozlišovat:
 - specializovaný,
 - wide-format,
 - country-aware,
-- vhodný jako čistý vstup pro další fyzikální nebo modelovací kroky.
+- vhodný jako čistý dataset denních meteorologických vstupů pro pozdější FAO-orientované nebo jiné navazující fyzikální či modelovací kroky.
 
 
 
