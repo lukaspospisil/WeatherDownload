@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import zipfile
@@ -10,6 +10,7 @@ import requests
 
 from ...elements import canonicalize_element_series
 from ...errors import EmptyResultError, StationNotFoundError, UnsupportedQueryError
+from ...queries import ObservationQuery
 from .metadata import read_station_metadata_pl
 from .parser import (
     PL_NORMALIZED_DAILY_COLUMNS,
@@ -17,12 +18,12 @@ from .parser import (
     flag_with_missing,
     normalize_pl_gh_id,
     normalize_pl_observation_date,
+    parse_pl_daily_klimat_csv,
     parse_pl_daily_synop_csv,
     station_lookup_by_gh_id,
     to_numeric_with_missing,
 )
-from .registry import PL_DAILY_SYNOP_BASE_URL, get_dataset_spec
-from ...queries import ObservationQuery
+from .registry import PL_DAILY_KLIMAT_BASE_URL, PL_DAILY_SYNOP_BASE_URL, get_dataset_spec
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,10 @@ class PlDailyDownloadTarget:
     station_id: str
     archive_url: str
     source_kind: str
+    dataset_scope: str
+
+
+_SUPPORTED_PL_DAILY_SCOPES = {'historical', 'historical_klimat'}
 
 
 def download_daily_observations_pl(
@@ -37,8 +42,8 @@ def download_daily_observations_pl(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != 'daily':
-        raise UnsupportedQueryError('The IMGW Poland daily downloader only supports historical/daily.')
+    if query.dataset_scope not in _SUPPORTED_PL_DAILY_SCOPES or query.resolution != 'daily':
+        raise UnsupportedQueryError('The IMGW Poland daily downloader supports only historical/daily and historical_klimat/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The IMGW Poland daily downloader requires at least one element.')
 
@@ -83,43 +88,11 @@ def build_pl_daily_download_targets(query: ObservationQuery) -> list[PlDailyDown
         raise UnsupportedQueryError('The requested IMGW Poland dataset path is not implemented.')
 
     request_start, request_end = _resolve_request_range(query)
-    targets: list[PlDailyDownloadTarget] = []
-    seen: set[tuple[str, str]] = set()
-    current_year = pd.Timestamp.today().year
-
-    for station_id in query.station_ids:
-        for year in range(request_start.year, request_end.year + 1):
-            if year < 2001:
-                bucket_start = year - ((year - 1996) % 5)
-                bucket_end = bucket_start + 4
-                archive_name = f'{bucket_start}_{bucket_end}_{int(station_id)}_s.zip'
-                archive_url = f'{PL_DAILY_SYNOP_BASE_URL}/{bucket_start}_{bucket_end}/{archive_name}'
-                key = (station_id, archive_url)
-                if key not in seen:
-                    seen.add(key)
-                    targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='station_archive'))
-                continue
-
-            if year < current_year:
-                archive_name = f'{year}_{int(station_id)}_s.zip'
-                archive_url = f'{PL_DAILY_SYNOP_BASE_URL}/{year}/{archive_name}'
-                key = (station_id, archive_url)
-                if key not in seen:
-                    seen.add(key)
-                    targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='station_archive'))
-                continue
-
-            month_start = 1 if year != request_start.year else request_start.month
-            month_end = 12 if year != request_end.year else request_end.month
-            for month in range(month_start, month_end + 1):
-                archive_name = f'{year}_{month:02d}_s.zip'
-                archive_url = f'{PL_DAILY_SYNOP_BASE_URL}/{year}/{archive_name}'
-                key = (station_id, archive_url)
-                if key in seen:
-                    continue
-                seen.add(key)
-                targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='monthly_all_stations'))
-    return targets
+    if query.dataset_scope == 'historical':
+        return _build_pl_daily_synop_download_targets(query.station_ids, request_start, request_end)
+    if query.dataset_scope == 'historical_klimat':
+        return _build_pl_daily_klimat_download_targets(query.station_ids, request_start, request_end)
+    raise UnsupportedQueryError('The requested IMGW Poland dataset path is not implemented.')
 
 
 def normalize_daily_observations_pl(
@@ -181,6 +154,77 @@ def _resolve_request_range(query: ObservationQuery) -> tuple[date, date]:
     return query.start_date, query.end_date
 
 
+def _build_pl_daily_synop_download_targets(station_ids: list[str], request_start: date, request_end: date) -> list[PlDailyDownloadTarget]:
+    targets: list[PlDailyDownloadTarget] = []
+    seen: set[tuple[str, str]] = set()
+    current_year = pd.Timestamp.today().year
+
+    for station_id in station_ids:
+        for year in range(request_start.year, request_end.year + 1):
+            if year < 2001:
+                bucket_start = year - ((year - 1996) % 5)
+                bucket_end = bucket_start + 4
+                archive_name = f'{bucket_start}_{bucket_end}_{int(station_id)}_s.zip'
+                archive_url = f'{PL_DAILY_SYNOP_BASE_URL}/{bucket_start}_{bucket_end}/{archive_name}'
+                key = (station_id, archive_url)
+                if key not in seen:
+                    seen.add(key)
+                    targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='station_archive', dataset_scope='historical'))
+                continue
+
+            if year < current_year:
+                archive_name = f'{year}_{int(station_id)}_s.zip'
+                archive_url = f'{PL_DAILY_SYNOP_BASE_URL}/{year}/{archive_name}'
+                key = (station_id, archive_url)
+                if key not in seen:
+                    seen.add(key)
+                    targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='station_archive', dataset_scope='historical'))
+                continue
+
+            month_start = 1 if year != request_start.year else request_start.month
+            month_end = 12 if year != request_end.year else request_end.month
+            for month in range(month_start, month_end + 1):
+                archive_name = f'{year}_{month:02d}_s.zip'
+                archive_url = f'{PL_DAILY_SYNOP_BASE_URL}/{year}/{archive_name}'
+                key = (station_id, archive_url)
+                if key in seen:
+                    continue
+                seen.add(key)
+                targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='monthly_all_stations', dataset_scope='historical'))
+    return targets
+
+
+def _build_pl_daily_klimat_download_targets(station_ids: list[str], request_start: date, request_end: date) -> list[PlDailyDownloadTarget]:
+    targets: list[PlDailyDownloadTarget] = []
+    seen: set[tuple[str, str]] = set()
+
+    for station_id in station_ids:
+        for year in range(request_start.year, request_end.year + 1):
+            if year < 2001:
+                bucket_start = year - ((year - 1996) % 5)
+                bucket_end = bucket_start + 4
+                archive_name = f'{year}_k.zip'
+                archive_url = f'{PL_DAILY_KLIMAT_BASE_URL}/{bucket_start}_{bucket_end}/{archive_name}'
+                key = (station_id, archive_url)
+                if key in seen:
+                    continue
+                seen.add(key)
+                targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='yearly_all_stations', dataset_scope='historical_klimat'))
+                continue
+
+            month_start = 1 if year != request_start.year else request_start.month
+            month_end = 12 if year != request_end.year else request_end.month
+            for month in range(month_start, month_end + 1):
+                archive_name = f'{year}_{month:02d}_k.zip'
+                archive_url = f'{PL_DAILY_KLIMAT_BASE_URL}/{year}/{archive_name}'
+                key = (station_id, archive_url)
+                if key in seen:
+                    continue
+                seen.add(key)
+                targets.append(PlDailyDownloadTarget(station_id=station_id, archive_url=archive_url, source_kind='monthly_all_stations', dataset_scope='historical_klimat'))
+    return targets
+
+
 def _download_daily_archive(target: PlDailyDownloadTarget, timeout: int) -> pd.DataFrame:
     response = requests.get(target.archive_url, timeout=timeout)
     if response.status_code == 404:
@@ -191,8 +235,9 @@ def _download_daily_archive(target: PlDailyDownloadTarget, timeout: int) -> pd.D
         if not product_names:
             raise ValueError(f'No IMGW Poland daily CSV found in archive for station_id {target.station_id}.')
         csv_text = decode_pl_bytes(archive.read(product_names[0]))
-    table = parse_pl_daily_synop_csv(csv_text)
-    return table
+    if target.dataset_scope == 'historical_klimat':
+        return parse_pl_daily_klimat_csv(csv_text)
+    return parse_pl_daily_synop_csv(csv_text)
 
 
 def _flag_column_for_element(raw_code: str) -> str:
@@ -203,5 +248,3 @@ def _flag_column_for_element(raw_code: str) -> str:
         'SMDB': 'WSMDB',
         'USL': 'WUSL',
     }.get(raw_code, '')
-
-

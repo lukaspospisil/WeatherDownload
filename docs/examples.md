@@ -94,11 +94,11 @@ HU notes:
 - `HU` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the shared examples
 PL notes:
 
-- `PL` uses the shared daily example path through the official IMGW-PIB public `dobowe/synop` archive only
+- `PL` uses the shared daily example path through the official IMGW-PIB public `historical / daily` synop slice by default; the separate `historical_klimat / daily` scope is documented in the provider notes
 - station metadata use the official `dane_meteorologiczne/wykaz_stacji.csv` station list, with the 5-character IMGW station code as canonical `station_id`
 - daily observations use deterministic yearly station archives for completed years and current-year monthly all-station archives when the requested range reaches the current year
 - raw IMGW daily status codes such as `WSTD`, `WSMDB`, and `WUSL` are preserved in `flag`, while normalized `quality` stays null
-- `PL` currently supports only `historical / daily` through the shared daily example
+- `PL` currently supports `historical / daily` in the shared example defaults, while the separate `historical_klimat / daily` scope is available through the same public API when requested explicitly
 
 NL notes:
 
@@ -356,6 +356,7 @@ Important boundary:
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page
+
 
 
 

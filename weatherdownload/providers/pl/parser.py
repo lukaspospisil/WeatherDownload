@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import csv
 import io
@@ -16,11 +16,16 @@ PL_NORMALIZED_DAILY_COLUMNS = [
 PL_DAILY_SYNOP_COLUMNS = [
     'NSP', 'POST', 'ROK', 'MC', 'DZ', 'TMAX', 'WTMAX', 'TMIN', 'WTMIN', 'STD', 'WSTD',
     'TMNG', 'WTMNG', 'SMDB', 'WSMDB', 'ROOP', 'PKSN', 'WPKSN', 'RWSN', 'WRWSN', 'USL',
-    'WUSL', 'PUW', 'WPW', 'WSGW', 'WWSGW', 'PGNE', 'WPGNE', 'FWS', 'WFWS', 'DZB', 'WDZB',
-    'DGZ', 'WDGZ', 'DUG', 'WDUG', 'DZW', 'WDZW', 'POD', 'WOD', 'POG', 'WOG', 'PON', 'WON',
-    'POW', 'WOW', 'WSH', 'WWSH', 'KRH', 'WKRH', 'SHR', 'WSHR', 'WTR', 'WWTR', 'SIPP', 'WSIPP',
-    'SIPW', 'WSIPW', 'SIPS', 'WSIPS', 'CPPM', 'WCPPM', 'CPPS', 'WCPPS', 'CPPG', 'WCPPG', 'AKTN',
-    'WAKTN',
+    'WUSL', 'DESZ', 'WDESZ', 'SNEG', 'WSNEG', 'DISN', 'WDISN', 'GRAD', 'WGRAD', 'MGLA',
+    'WMGLA', 'ZMGL', 'WZMGL', 'SADZ', 'WSADZ', 'GOLO', 'WGOLO', 'ZMNI', 'WZMNI', 'ZMWS',
+    'WZMWS', 'ZMET', 'WZMET', 'FF10', 'WFF10', 'FF15', 'WFF15', 'BRZA', 'WBRZA', 'ROSA',
+    'WROSA', 'SZRO', 'WSZRO', 'DZPS', 'WDZPS', 'DZBL', 'WDZBL', 'SGR', 'IZD', 'WIZD',
+    'IZG', 'WIZG', 'AKTN', 'WAKTN',
+]
+
+PL_DAILY_KLIMAT_COLUMNS = [
+    'NSP', 'POST', 'ROK', 'MC', 'DZ', 'TMAX', 'WTMAX', 'TMIN', 'WTMIN', 'STD', 'WSTD',
+    'TMNG', 'WTMNG', 'SMDB', 'WSMDB', 'ROOP', 'PKSN', 'WPKSN',
 ]
 
 _PL_MISSING_SENTINELS = {''}
@@ -73,20 +78,31 @@ def normalize_pl_observation_metadata(
                         'begin_date': station.begin_date,
                         'end_date': station.end_date,
                         'element': raw_code,
-                        'schedule': metadata.get('schedule', 'P1D IMGW synop daily'),
+                        'schedule': metadata.get('schedule', 'P1D IMGW daily'),
                         'name': metadata.get('name', raw_code),
                         'description': metadata.get('description', pd.NA),
                         'height': pd.NA,
                     }
                 )
-    return pd.DataFrame.from_records(rows, columns=STATION_OBSERVATION_METADATA_COLUMNS)
+    frame = pd.DataFrame.from_records(rows, columns=STATION_OBSERVATION_METADATA_COLUMNS)
+    if frame.empty:
+        return frame
+    return frame.drop_duplicates().reset_index(drop=True)
 
 
 def parse_pl_daily_synop_csv(csv_text: str) -> pd.DataFrame:
+    return _parse_pl_daily_csv(csv_text, PL_DAILY_SYNOP_COLUMNS)
+
+
+def parse_pl_daily_klimat_csv(csv_text: str) -> pd.DataFrame:
+    return _parse_pl_daily_csv(csv_text, PL_DAILY_KLIMAT_COLUMNS)
+
+
+def _parse_pl_daily_csv(csv_text: str, columns: list[str]) -> pd.DataFrame:
     table = pd.read_csv(
         io.StringIO(csv_text.lstrip('\ufeff')),
         header=None,
-        names=PL_DAILY_SYNOP_COLUMNS,
+        names=columns,
         dtype=str,
         keep_default_na=False,
     )
@@ -169,5 +185,3 @@ def _clean_string(value: object) -> str:
     if value is None or pd.isna(value):
         return ''
     return str(value).strip().strip('"')
-
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -20,6 +20,7 @@ PL_BASE_URL = 'https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/da
 PL_DESCRIPTION_URL = f'{PL_BASE_URL}/Opis.txt'
 PL_STATION_METADATA_URL = f'{PL_BASE_URL}/wykaz_stacji.csv'
 PL_DAILY_SYNOP_BASE_URL = f'{PL_BASE_URL}/dobowe/synop'
+PL_DAILY_KLIMAT_BASE_URL = f'{PL_BASE_URL}/dobowe/klimat'
 
 PL_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('STD',),
@@ -29,23 +30,40 @@ PL_DAILY_CANONICAL_ELEMENTS = {
     'sunshine_duration': ('USL',),
 }
 
+PL_DAILY_KLIMAT_CANONICAL_ELEMENTS = {
+    'tas_mean': ('STD',),
+    'tas_max': ('TMAX',),
+    'tas_min': ('TMIN',),
+    'precipitation': ('SMDB',),
+}
+
 
 def _parameter_metadata(raw_code: str, name: str, description: str) -> dict[str, str]:
     return {
         'name': name,
         'description': description,
         'obs_type': 'HISTORICAL_DAILY',
-        'schedule': 'P1D IMGW synop daily',
+        'schedule': 'P1D IMGW daily',
         'raw_code': raw_code,
     }
 
 
-PL_DAILY_PARAMETER_METADATA = {
-    'STD': _parameter_metadata('STD', 'Daily mean air temperature', 'Official IMGW synop daily mean air temperature.'),
-    'TMAX': _parameter_metadata('TMAX', 'Daily maximum air temperature', 'Official IMGW synop daily maximum air temperature.'),
-    'TMIN': _parameter_metadata('TMIN', 'Daily minimum air temperature', 'Official IMGW synop daily minimum air temperature.'),
-    'SMDB': _parameter_metadata('SMDB', 'Daily precipitation total', 'Official IMGW synop daily precipitation total.'),
+PL_OBSERVATION_PARAMETER_METADATA = {
+    'STD': _parameter_metadata('STD', 'Daily mean air temperature', 'Official IMGW daily mean air temperature in the implemented Poland daily products.'),
+    'TMAX': _parameter_metadata('TMAX', 'Daily maximum air temperature', 'Official IMGW daily maximum air temperature in the implemented Poland daily products.'),
+    'TMIN': _parameter_metadata('TMIN', 'Daily minimum air temperature', 'Official IMGW daily minimum air temperature in the implemented Poland daily products.'),
+    'SMDB': _parameter_metadata('SMDB', 'Daily precipitation total', 'Official IMGW daily precipitation total in the implemented Poland daily products.'),
     'USL': _parameter_metadata('USL', 'Daily sunshine duration', 'Official IMGW synop daily sunshine duration.'),
+}
+
+PL_DAILY_SYNOP_PARAMETER_METADATA = {
+    raw_code: PL_OBSERVATION_PARAMETER_METADATA[raw_code]
+    for raw_code in ('STD', 'TMAX', 'TMIN', 'SMDB', 'USL')
+}
+
+PL_DAILY_KLIMAT_PARAMETER_METADATA = {
+    raw_code: PL_OBSERVATION_PARAMETER_METADATA[raw_code]
+    for raw_code in ('STD', 'TMAX', 'TMIN', 'SMDB')
 }
 
 _PL_DATASET_SPECS = [
@@ -55,8 +73,19 @@ _PL_DATASET_SPECS = [
         label='IMGW-PIB historical daily synop station observations',
         station_metadata_url=PL_STATION_METADATA_URL,
         data_base_url=PL_DAILY_SYNOP_BASE_URL,
-        supported_elements=tuple(PL_DAILY_PARAMETER_METADATA),
+        supported_elements=tuple(PL_DAILY_SYNOP_PARAMETER_METADATA),
         canonical_elements=PL_DAILY_CANONICAL_ELEMENTS,
+        time_semantics='date',
+        implemented=True,
+    ),
+    PolandDatasetSpec(
+        dataset_scope='historical_klimat',
+        resolution='daily',
+        label='IMGW-PIB historical daily klimat station observations',
+        station_metadata_url=PL_STATION_METADATA_URL,
+        data_base_url=PL_DAILY_KLIMAT_BASE_URL,
+        supported_elements=tuple(PL_DAILY_KLIMAT_PARAMETER_METADATA),
+        canonical_elements=PL_DAILY_KLIMAT_CANONICAL_ELEMENTS,
         time_semantics='date',
         implemented=True,
     ),
@@ -78,4 +107,3 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> PolandDatasetSpec:
         if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
             return spec
     raise ValueError(f'Unsupported IMGW Poland dataset combination: {dataset_scope}/{resolution}')
-

@@ -213,9 +213,9 @@ def _download_observations_pl(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.dataset_scope in {'historical', 'historical_klimat'} and query.resolution == 'daily':
         return download_daily_observations_pl(query, timeout=timeout, station_metadata=station_metadata).loc[:, PL_NORMALIZED_DAILY_COLUMNS]
-    raise NotImplementedError('IMGW Poland support currently implements only historical/daily station observations.')
+    raise NotImplementedError('IMGW Poland support currently implements only historical/daily and historical_klimat/daily station observations.')
 def _download_observations_shmu(
     query: ObservationQuery,
     timeout: int = 60,
@@ -311,6 +311,8 @@ def _download_hourly_observations(query: ObservationQuery, timeout: int, station
     if normalized.empty:
         raise EmptyResultError('No observations found for the given query.')
     return normalized.loc[:, NORMALIZED_HOURLY_COLUMNS]
+
+
 
 
 

@@ -205,8 +205,9 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(wind_query.elements, ['fs', 'fx'])
 
     def test_discovery_country_pl_includes_daily_only(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='PL'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='PL'), ['historical', 'historical_klimat'])
         self.assertEqual(list_resolutions(country='PL', dataset_scope='historical'), ['daily'])
+        self.assertEqual(list_resolutions(country='PL', dataset_scope='historical_klimat'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='PL', dataset_scope='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration'],
@@ -215,10 +216,20 @@ class ProviderTests(unittest.TestCase):
             list_supported_elements(country='PL', dataset_scope='historical', resolution='daily', provider_raw=True),
             ['STD', 'TMAX', 'TMIN', 'SMDB', 'USL'],
         )
+        self.assertEqual(
+            list_supported_elements(country='PL', dataset_scope='historical_klimat', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='PL', dataset_scope='historical_klimat', resolution='daily', provider_raw=True),
+            ['STD', 'TMAX', 'TMIN', 'SMDB'],
+        )
 
     def test_pl_daily_query_is_provider_valid(self) -> None:
         daily_query = ObservationQuery(country='PL', dataset_scope='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2025-01-02', elements=['tas_mean', 'precipitation'])
+        klimat_query = ObservationQuery(country='PL', dataset_scope='historical_klimat', resolution='daily', station_ids=['00375'], start_date='2026-01-01', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
         self.assertEqual(daily_query.elements, ['STD', 'SMDB'])
+        self.assertEqual(klimat_query.elements, ['STD', 'SMDB'])
     def test_discovery_country_se_includes_daily_and_hourly(self) -> None:
         self.assertEqual(list_dataset_scopes(country='SE'), ['historical'])
         self.assertEqual(list_resolutions(country='SE', dataset_scope='historical'), ['1hour', 'daily'])
@@ -252,6 +263,9 @@ class ProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
 
 
 

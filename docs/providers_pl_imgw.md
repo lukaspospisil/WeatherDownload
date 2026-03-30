@@ -1,4 +1,4 @@
-ï»¿# IMGW-PIB Poland Provider Notes
+# IMGW-PIB Poland Provider Notes
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -10,12 +10,18 @@ This provider adds Poland as a standard WeatherDownload country adapter without 
 
 - country code: `PL`
 - provider: IMGW-PIB public meteorological archive
-- station family: `dobowe / synop` only
-- dataset scopes: `historical`
-- resolutions: `daily`
+- implemented daily families:
+  - `historical / daily` backed by `dobowe / synop`
+  - `historical_klimat / daily` backed by `dobowe / klimat`
 - station metadata: yes
 - station observation metadata: yes
 - daily downloads: yes
+
+## Architectural Decision
+
+`dobowe / klimat` is not merged into the existing synop-backed `historical / daily` slice.
+
+It is exposed as a separate PL-specific dataset scope because it is a different IMGW station family with different archive grouping, different publication cadence, and a smaller daily field set. Treating it as the same public slice as `dobowe / synop` would blur discovery and make `PL / historical / daily` misleading for stations and elements that are only available in one family.
 
 ## Official Source Paths Used
 
@@ -23,19 +29,27 @@ This provider adds Poland as a standard WeatherDownload country adapter without 
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/wykaz_stacji.csv`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_format.txt`
-- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_nagÅ‚Ã³wek.csv`
-
-The current implementation uses only the official IMGW-PIB daily synop archive layout and does not mix in `klimat`, `opad`, `terminowe`, `miesieczne`, or API-only live endpoints.
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_nag³ówek.csv`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_format.txt`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_nag³ówek.csv`
 
 ## Canonical Mapping
 
-Supported canonical daily elements in this pass:
+Supported canonical daily elements for `historical / daily` (`dobowe / synop`):
 
 - `tas_mean` -> `STD`
 - `tas_max` -> `TMAX`
 - `tas_min` -> `TMIN`
 - `precipitation` -> `SMDB`
 - `sunshine_duration` -> `USL`
+
+Supported canonical daily elements for `historical_klimat / daily` (`dobowe / klimat`):
+
+- `tas_mean` -> `STD`
+- `tas_max` -> `TMAX`
+- `tas_min` -> `TMIN`
+- `precipitation` -> `SMDB`
 
 Unsupported or ambiguous source fields remain unsupported rather than being guessed or derived.
 
@@ -45,24 +59,27 @@ Unsupported or ambiguous source fields remain unsupported rather than being gues
 - `gh_id` carries the longer official IMGW station code published alongside that 5-character identifier
 - daily queries stay date-based through `start_date` and `end_date`
 - normalized daily outputs keep the shared WeatherDownload schema
-- raw IMGW daily status fields such as `WTMAX`, `WTMIN`, `WSTD`, `WSMDB`, and `WUSL` stay in `flag`
+- raw IMGW daily status fields such as `WTMAX`, `WTMIN`, `WSTD`, `WSMDB`, and `WUSL` stay in `flag` when present in the source family
 - normalized `quality` stays null in this pass
-- the provider uses deterministic archive URLs for completed years and current-year months; it does not depend on scraping directory listings to build download targets
+- the provider uses deterministic archive URLs and does not depend on scraping directory listings to build download targets
 
 ## Archive Shape
 
-The official `dobowe / synop` archive uses three source-backed file patterns, and the provider handles them internally behind the shared `historical / daily` public path:
+The official `dobowe / synop` archive uses three source-backed file patterns, and WeatherDownload keeps that logic behind the public `historical / daily` path:
 
 - current year: monthly all-station ZIP archives such as `{year}_{month:02d}_s.zip`
 - years `2001` through the previous year: one station-year ZIP archive per station such as `{year}_{station_code}_s.zip`
 - years before `2001`: five-year station ZIP archives such as `{bucket_start}_{bucket_end}_{station_code}_s.zip`
 
-WeatherDownload keeps that archive logic internal so the public API still uses the normal country / dataset scope / resolution / date-range query model.
+The official `dobowe / klimat` archive uses a different source-backed pattern, and WeatherDownload exposes that distinction through the separate `historical_klimat / daily` path:
+
+- years `2001` and later: monthly all-station ZIP archives such as `{year}_{month:02d}_k.zip`
+- years before `2001`: yearly all-station ZIP archives inside five-year bucket directories, such as `{bucket_start}_{bucket_end}/{year}_k.zip`
 
 ## Current Limits
 
-- only the official `dobowe / synop` family is implemented in this pass
-- `dobowe / klimat` remains intentionally unsupported here because it would broaden source-family semantics without being required for the first stable slice
+- `historical / daily` remains synop-only and unchanged
+- `historical_klimat / daily` exposes only the clearly mappable `dobowe / klimat` subset
 - `terminowe`, `miesieczne`, and `opad` remain intentionally unsupported in this pass
 - hourly and 10-minute Poland support are not implemented
 - station coordinates, elevation, and validity dates are not available from the implemented official station list and therefore stay missing in normalized station metadata
@@ -72,4 +89,4 @@ WeatherDownload keeps that archive logic internal so the public API still uses t
 
 ## Next Safe Extension
 
-The next low-risk extension would be to inspect `dobowe / klimat` as a separate official daily family and add it only if it can be represented honestly without blurring the current synop-backed `historical / daily` slice.
+The next low-risk extension would be to inspect whether any additional official IMGW daily families can be represented honestly as separate PL-specific dataset scopes without blurring the current synop and klimat distinctions.
