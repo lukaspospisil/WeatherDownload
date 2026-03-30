@@ -1,4 +1,4 @@
-# IMGW-PIB Poland Provider Notes
+﻿# IMGW-PIB Poland Provider Notes
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
@@ -31,13 +31,14 @@ That is the cleanest fit for the existing WeatherDownload architecture because i
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/wykaz_stacji.csv`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_format.txt`
-- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_nag��wek.csv`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/s_d_nagďż˝ďż˝wek.csv`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/s_t_format.txt`
-- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/s_t_nag��wek.csv`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/terminowe/synop/s_t_nagďż˝ďż˝wek.csv`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/`
 - `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_format.txt`
-- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_nag��wek.csv`
+- `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/klimat/k_d_nagďż˝ďż˝wek.csv`
+- `https://danepubliczne.imgw.pl/api/data/meteo`
 
 ## Canonical Mapping
 
@@ -97,7 +98,9 @@ Unsupported or ambiguous source fields remain unsupported rather than being gues
 - normalized daily and hourly outputs keep the shared WeatherDownload schemas
 - raw IMGW status fields stay in `flag` when present in the implemented source family
 - normalized `quality` stays null in this pass
-- station coordinates, elevation, and validity dates remain missing because the implemented official station list does not publish them
+- latitude and longitude are enriched only when the official IMGW `api/data/meteo` feed exposes an exact `kod_stacji == gh_id` match for the station
+- unmatched stations keep null `latitude` and `longitude`
+- `elevation_m` and validity dates remain missing because the implemented official IMGW metadata sources do not publish clean joinable values for them
 - the provider uses deterministic archive URLs and does not depend on scraping directory listings to build download targets
 
 ## Timestamp And Quality Caveats
@@ -127,7 +130,7 @@ The official `dobowe / klimat` archive uses a different source-backed pattern, a
 
 ## FAO-Prep Workflow Note
 
-`examples/workflows/download_fao.py` uses the synop-backed `historical / daily` slice by default for Poland. It prepares a daily meteorological input bundle for later FAO-oriented workflows, does not compute FAO-56 ET0, keeps `wind_speed` and `vapour_pressure` missing in the default PL daily branch because the official synop daily fields `FF10` and `FF15` are duration-of-threshold wind indicators rather than wind-speed observations and the implemented daily IMGW families do not publish daily relative humidity or vapour pressure, and leaves station coordinates and elevation missing because the implemented official IMGW station list does not provide clean source-backed values for those fields.
+`examples/workflows/download_fao.py` uses the synop-backed `historical / daily` slice by default for Poland. It prepares a daily meteorological input bundle for later FAO-oriented workflows, does not compute FAO-56 ET0, keeps `wind_speed` and `vapour_pressure` missing in the default PL daily branch because the official synop daily fields `FF10` and `FF15` are duration-of-threshold wind indicators rather than wind-speed observations and the implemented daily IMGW families do not publish daily relative humidity or vapour pressure, and may include station latitude/longitude only when the official IMGW `api/data/meteo` feed exposes an exact station-code match. `elevation_m` still remains missing because no clean official joinable source was found for the implemented slices.
 
 With the explicit workflow fill policy `--fill-missing allow-hourly-aggregate`, the FAO example may supplement:
 
@@ -152,3 +155,4 @@ The `historical / 1hour` slice adds official subdaily observations only. It does
 ## Next Safe Extension
 
 The next low-risk extension would be to inspect whether Poland has an official sub-hourly path that maps honestly to the shared model, or to add an explicit workflow-layer daily aggregation from the implemented `historical / 1hour` synop slice when that aggregation is documented separately and kept distinct from source-observed daily values.
+

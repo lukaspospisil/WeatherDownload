@@ -1,4 +1,4 @@
-import importlib.util
+﻿import importlib.util
 import io
 import json
 import sys
@@ -43,6 +43,7 @@ SAMPLE_DK_HOURLY_TEXT = Path('tests/data/sample_dk_dmi_hourly.json').read_text(e
 SAMPLE_DK_TENMIN_TEXT = Path('tests/data/sample_dk_dmi_tenmin.json').read_text(encoding='utf-8')
 SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
 SAMPLE_PL_STATIONS_PATH = Path('tests/data/sample_pl_wykaz_stacji.csv')
+SAMPLE_PL_METEO_COORDINATES_JSON = Path('tests/data/sample_pl_meteo_api.json').read_text(encoding='utf-8')
 SAMPLE_PL_STATION_2025_CSV = Path('tests/data/sample_pl_synop_station_2025.csv').read_text(encoding='utf-8')
 SAMPLE_PL_MONTH_2026_01_CSV = Path('tests/data/sample_pl_synop_month_2026_01.csv').read_text(encoding='utf-8')
 SAMPLE_PL_HOURLY_STATION_2025_CSV = Path('tests/data/sample_pl_synop_hourly_station_2025.csv').read_text(encoding='utf-8')
@@ -126,7 +127,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'NL':
         return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_STATIONS_PATH))
     if country == 'PL':
-        return read_station_metadata(country='PL', source_url=str(SAMPLE_PL_STATIONS_PATH))
+        with patch('weatherdownload.providers.pl.metadata.requests.get', return_value=_MockTextResponse(SAMPLE_PL_METEO_COORDINATES_JSON)):
+            return read_station_metadata(country='PL', source_url=str(SAMPLE_PL_STATIONS_PATH), timeout=5)
 
     if country == 'SE':
         return read_station_metadata(country='SE', source_url=str(SAMPLE_SE_FIXTURE_DIR))
@@ -646,6 +648,7 @@ def test_download_fao_bundle_shape_marks_sweden_missing_fields_as_unavailable() 
     assert data_info['provider_element_mapping']['wind_speed']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['vapour_pressure']['status'] == 'unavailable'
     assert data_info['provider_element_mapping']['sunshine_duration']['status'] == 'unavailable'
+
 
 
 

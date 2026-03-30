@@ -1,0 +1,20 @@
+﻿[
+  {
+    "kod_stacji": "352200375",
+    "nazwa_stacji": "WARSZAWA-OKECIE",
+    "lon": "20.961111",
+    "lat": "52.162778"
+  },
+  {
+    "kod_stacji": "349190600",
+    "nazwa_stacji": "BIELSKO-BIALA",
+    "lon": "19.002222",
+    "lat": "49.806667"
+  },
+  {
+    "kod_stacji": "354180155",
+    "nazwa_stacji": "GDANSK-SWIBNO",
+    "lon": "18.934444",
+    "lat": "54.333611"
+  }
+]

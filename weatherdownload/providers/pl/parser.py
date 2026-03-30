@@ -1,7 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
 import io
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -78,6 +79,37 @@ def parse_pl_station_metadata_csv(csv_text: str) -> pd.DataFrame:
     frame = frame.sort_values(['station_id', 'gh_id'], kind='stable').reset_index(drop=True)
     return frame
 
+
+
+
+def parse_pl_meteo_station_coordinates_json(payload: str) -> pd.DataFrame:
+    try:
+        rows = json.loads(payload.lstrip('\ufeff'))
+    except json.JSONDecodeError as exc:
+        raise ValueError('Invalid IMGW meteo station metadata payload.') from exc
+
+    records: list[dict[str, object]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        gh_id = _clean_string(row.get('kod_stacji'))
+        if not gh_id:
+            continue
+        longitude = pd.to_numeric(_clean_string(row.get('lon')).replace(',', '.'), errors='coerce')
+        latitude = pd.to_numeric(_clean_string(row.get('lat')).replace(',', '.'), errors='coerce')
+        records.append(
+            {
+                'gh_id': gh_id,
+                'longitude': None if pd.isna(longitude) else float(longitude),
+                'latitude': None if pd.isna(latitude) else float(latitude),
+            }
+        )
+
+    frame = pd.DataFrame.from_records(records, columns=['gh_id', 'longitude', 'latitude'])
+    if frame.empty:
+        return frame
+    frame['gh_id'] = frame['gh_id'].astype('string').str.strip()
+    return frame.drop_duplicates(subset=['gh_id'], keep='first').reset_index(drop=True)
 
 
 def normalize_pl_observation_metadata(
@@ -258,3 +290,8 @@ def _schedule_for_resolution(resolution: str) -> str:
     if resolution == '1hour':
         return 'PT1H IMGW terminowe synop'
     return 'P1D IMGW daily'
+
+
+
+
+

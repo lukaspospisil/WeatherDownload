@@ -1,4 +1,4 @@
-import io
+﻿import io
 import unittest
 import zipfile
 from pathlib import Path
@@ -23,6 +23,7 @@ from weatherdownload.providers.pl.daily import (
     build_pl_daily_download_targets,
 )
 from weatherdownload.providers.pl.hourly import PL_HOURLY_SYNOP_BASE_URL, build_pl_hourly_download_targets
+from weatherdownload.providers.pl.metadata import read_station_metadata_pl
 from weatherdownload.providers.pl.parser import (
     PL_NORMALIZED_DAILY_COLUMNS,
     PL_NORMALIZED_SUBDAILY_COLUMNS,
@@ -32,6 +33,7 @@ from weatherdownload.providers.pl.parser import (
 )
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_pl_wykaz_stacji.csv')
+SAMPLE_METEO_COORDINATES_PATH = Path('tests/data/sample_pl_meteo_api.json')
 SAMPLE_STATION_2025_PATH = Path('tests/data/sample_pl_synop_station_2025.csv')
 SAMPLE_MONTH_2026_01_PATH = Path('tests/data/sample_pl_synop_month_2026_01.csv')
 SAMPLE_KLIMAT_MONTH_2026_01_PATH = Path('tests/data/sample_pl_klimat_month_2026_01.csv')
@@ -93,6 +95,20 @@ class PolandProviderTests(unittest.TestCase):
         self.assertEqual(stations.iloc[0]['gh_id'], '352200375')
         self.assertEqual(stations.iloc[0]['full_name'], 'WARSZAWA')
         self.assertTrue(stations['longitude'].isna().all())
+
+    def test_read_station_metadata_country_pl_enriches_official_coordinates_on_exact_gh_id_match(self) -> None:
+        stations = read_station_metadata_pl(
+            source_url=str(SAMPLE_STATIONS_PATH),
+            coordinates_source_url=str(SAMPLE_METEO_COORDINATES_PATH),
+        )
+        lookup = stations.set_index('station_id')
+        self.assertAlmostEqual(float(lookup.loc['00375', 'longitude']), 20.961111)
+        self.assertAlmostEqual(float(lookup.loc['00375', 'latitude']), 52.162778)
+        self.assertAlmostEqual(float(lookup.loc['00600', 'longitude']), 19.002222)
+        self.assertAlmostEqual(float(lookup.loc['00600', 'latitude']), 49.806667)
+        self.assertTrue(pd.isna(lookup.loc['00400', 'longitude']))
+        self.assertTrue(pd.isna(lookup.loc['00400', 'latitude']))
+        self.assertTrue(stations['elevation_m'].isna().all())
 
     def test_read_station_observation_metadata_country_pl_from_local_fixture(self) -> None:
         metadata = read_station_observation_metadata(country='PL', source_url=str(SAMPLE_STATIONS_PATH))
@@ -329,3 +345,5 @@ class PolandProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
