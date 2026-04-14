@@ -16,6 +16,8 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
+from weatherdownload import fao as shared_fao
+from weatherdownload import fao_config as shared_fao_config
 from weatherdownload.elements import raw_to_canonical_map_for_spec
 from weatherdownload.providers import get_provider, normalize_country_code
 
@@ -518,7 +520,7 @@ def main(argv: list[str] | None = None) -> int:
         reporter = ProgressReporter(silent=args.silent)
         stats = CacheStats()
 
-        config = get_fao_country_config(args.country, fill_missing=args.fill_missing)
+        config = shared_fao_config.get_fao_country_config(args.country, fill_missing=args.fill_missing)
         country_cache_dir = resolve_country_cache_dir(args.cache_dir, config.country)
         mat_output_path = resolve_mat_output_path(args.output, country=config.country)
         parquet_output_dir = resolve_parquet_output_dir(args.output_dir, country=config.country)
@@ -677,7 +679,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--export-format', choices=['mat', 'parquet', 'both'], default='mat', help='Output format to produce in full or build mode.')
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional canonical station_id filter. Can be provided multiple times.')
     parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete observed-input days required per station.')
-    parser.add_argument('--fill-missing', choices=FILL_MISSING_CHOICES, default='none', help='Keep missing FAO-oriented inputs empty, or explicitly allow the example layer to apply the documented opt-in fallback rules.')
+    parser.add_argument('--fill-missing', choices=shared_fao_config.FILL_MISSING_CHOICES, default='none', help='Keep missing FAO-oriented inputs empty, or explicitly allow the example layer to apply the documented opt-in fallback rules.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
     parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
@@ -1443,6 +1445,28 @@ def _to_mat_value(value: Any) -> Any:
     if value is None or pd.isna(value):
         return np.nan
     return value
+
+
+# Reuse the shared library-facing FAO helpers while keeping the example module's
+# long-standing import surface stable for tests and scripts.
+FieldFillSummary = shared_fao.FieldFillSummary
+fill_policy_uses_derived = shared_fao.fill_policy_uses_derived
+fill_policy_uses_hourly_aggregate = shared_fao.fill_policy_uses_hourly_aggregate
+build_provider_element_mapping = shared_fao.build_provider_element_mapping
+build_data_info = shared_fao.build_data_info
+summarize_field_fill_status = shared_fao.summarize_field_fill_status
+prepare_complete_station_series = shared_fao.prepare_complete_station_series
+prepare_complete_station_series_with_provenance = shared_fao.prepare_complete_station_series_with_provenance
+build_hourly_daily_fill_tables = shared_fao.build_hourly_daily_fill_tables
+aggregate_hourly_field_to_daily = shared_fao.aggregate_hourly_field_to_daily
+select_daily_variable_rows = shared_fao.select_daily_variable_rows
+build_series_record = shared_fao.build_series_record
+build_station_table = shared_fao.build_station_table
+build_series_table = shared_fao.build_series_table
+FaoCountryConfig = shared_fao_config.FaoCountryConfig
+FILL_MISSING_CHOICES = shared_fao_config.FILL_MISSING_CHOICES
+get_fao_country_config = shared_fao_config.get_fao_country_config
+build_observed_provider_element_mapping = shared_fao_config.build_observed_provider_element_mapping
 
 
 if __name__ == '__main__':

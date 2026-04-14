@@ -21,6 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 excel = ["openpyxl>=3.1.0"]
+gui = ["streamlit>=1.43.0"]
 mat = ["scipy>=1.11.0"]
 parquet = ["pyarrow>=15.0.0"]
 full = [

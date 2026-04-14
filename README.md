@@ -20,6 +20,18 @@ Optional export dependencies:
 pip install .[full]
 ```
 
+Optional GUI dependency:
+
+```powershell
+pip install .[gui]
+```
+
+For the GUI together with all optional exporters:
+
+```powershell
+pip install .[gui,full]
+```
+
 `NL` also requires `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` for KNMI Open Data API access.
 
 ## Quick Start
@@ -50,6 +62,26 @@ weatherdownload observations daily --country DE --station-id 00044 --element tas
 weatherdownload observations hourly --country HU --station-id 13704 --element tas_mean --element pressure --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z
 weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T09:10:00Z --end 2024-01-01T09:20:00Z
 ```
+
+Local Streamlit GUI:
+
+```powershell
+streamlit run apps/streamlit_app.py
+```
+
+The GUI is a thin MVP on top of the existing public API. It currently provides:
+
+- station metadata browsing and filtering
+- observation query building and preview
+- export of downloaded results to `csv`, `parquet`, `xlsx`, or `mat`
+- a limited FAO-input preparation preview that does not compute ET0
+- reproducible Python snippets and CLI equivalents when the selected query maps to the existing CLI
+
+Troubleshooting:
+
+- install the GUI dependency set with `pip install .[gui]`; for GUI exports to Excel, Parquet, and MAT use `pip install .[gui,full]`
+- launch the app from the repository root with `streamlit run apps/streamlit_app.py`
+- CLI command generation is shown only for query shapes that are representable by the current CLI; non-default dataset paths will show an explanation instead of a partial command
 
 ## Coverage Snapshot
 
