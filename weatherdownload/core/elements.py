@@ -8,6 +8,12 @@ import pandas as pd
 
 CanonicalElementMap = Mapping[str, tuple[str, ...]]
 ELEMENT_MAPPING_COLUMNS = ['element', 'element_raw', 'raw_elements']
+CANONICAL_ELEMENT_METADATA: dict[str, dict[str, str]] = {
+    'open_water_evaporation': {
+        'description': 'Daily measured evaporation from an open water surface.',
+        'unit': 'mm',
+    },
+}
 
 
 def canonical_element_map_for_spec(spec: Any) -> dict[str, tuple[str, ...]]:

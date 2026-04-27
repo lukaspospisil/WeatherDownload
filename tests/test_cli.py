@@ -617,12 +617,13 @@ class StationAvailabilityCliTests(unittest.TestCase):
     def test_station_elements_cli_screen_output(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-            with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean']):
+            with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean', 'open_water_evaporation']):
                 with redirect_stdout(buffer):
-                    exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min'])
+                    exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('tas_mean', output)
+        self.assertIn('open_water_evaporation', output)
 
     def test_station_elements_cli_csv_export(self) -> None:
         original_cwd = Path.cwd()

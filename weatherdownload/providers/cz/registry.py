@@ -28,11 +28,13 @@ _DAILY_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {
     'T': 'temperature',
     'TMA': 'temperature',
     'TMI': 'temperature',
+    'VY': 'evaporation',
     'WDIR': 'wind',
     'WSPD': 'wind',
 }
 
 _DAILY_HISTORICAL_CSV_CANONICAL_ELEMENTS: dict[str, tuple[str, ...]] = {
+    'open_water_evaporation': ('VY',),
     'vapour_pressure': ('E',),
     'wind_speed': ('F', 'WSPD'),
     'snow_depth': ('HS',),

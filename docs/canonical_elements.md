@@ -15,12 +15,20 @@ Common examples:
 - `tas_mean`
 - `tas_max`
 - `tas_min`
+- `open_water_evaporation`
 - `wind_speed`
 - `vapour_pressure`
 - `sunshine_duration`
 - `precipitation`
 - `pressure`
 - `relative_humidity`
+
+Specific meaning note:
+
+- `open_water_evaporation` means daily measured evaporation from an open water surface in `mm`
+- it is intentionally not the generic name `evaporation`
+- it is not `vapour_pressure`
+- it is not reference evapotranspiration or ET0
 
 Backward compatibility is preserved:
 
@@ -97,6 +105,7 @@ The same pattern applies at station level:
 | `precipitation` | `SRA` | `RSK` |
 | `pressure` | `P` | `PM` |
 | `relative_humidity` | `RH` | `UPM` |
+| `open_water_evaporation` | `VY` | |
 
 ## Implemented Path Mappings
 
@@ -107,6 +116,7 @@ The same pattern applies at station level:
 | `tas_mean` | `T` |
 | `tas_max` | `TMA` |
 | `tas_min` | `TMI` |
+| `open_water_evaporation` | `VY` |
 | `wind_speed` | `F`, `WSPD` |
 | `vapour_pressure` | `E` |
 | `sunshine_duration` | `SSV` |
@@ -115,6 +125,8 @@ The same pattern applies at station level:
 | `relative_humidity` | `RH` |
 | `wind_from_direction` | `WDIR` |
 | `snow_depth` | `HS` |
+
+`open_water_evaporation` on this CZ path is measured open-water-surface evaporation from CHMI raw code `VY`. It is not ET0 or another modeled evapotranspiration field.
 
 ### CZ `historical_csv / 1hour`
 

@@ -56,6 +56,7 @@ class StationAvailabilityTests(unittest.TestCase):
         stations = self._read_stations()
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '10min'), ['tas_mean', 'tas_max', 'tas_min', 'tas_period_max', 'soil_temperature_10cm', 'soil_temperature_100cm', 'sunshine_duration'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', '1hour'), ['vapour_pressure', 'pressure', 'cloud_cover', 'past_weather_1', 'past_weather_2', 'sunshine_duration'])
+        self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', 'daily'), ['open_water_evaporation', 'vapour_pressure', 'wind_speed', 'snow_depth', 'pressure', 'relative_humidity', 'precipitation', 'sunshine_duration', 'tas_mean', 'tas_max', 'tas_min', 'wind_from_direction'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'now', '10min'), [])
 
     def test_list_station_elements_can_return_provider_raw_codes(self) -> None:
@@ -66,6 +67,9 @@ class StationAvailabilityTests(unittest.TestCase):
         stations = self._read_stations()
         mapping = list_station_elements(stations, '0-20000-0-11406', 'historical_csv', 'daily', include_mapping=True)
         self.assertEqual(list(mapping.columns), ['station_id', 'dataset_scope', 'resolution', 'element', 'element_raw', 'raw_elements'])
+        evaporation = mapping[mapping['element'] == 'open_water_evaporation'].iloc[0]
+        self.assertEqual(evaporation['element_raw'], 'VY')
+        self.assertEqual(evaporation['raw_elements'], ['VY'])
         wind_speed = mapping[mapping['element'] == 'wind_speed'].iloc[0]
         self.assertEqual(wind_speed['element_raw'], 'F')
         self.assertEqual(wind_speed['raw_elements'], ['F', 'WSPD'])

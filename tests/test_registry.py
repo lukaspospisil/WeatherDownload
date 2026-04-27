@@ -1,10 +1,16 @@
 ﻿import unittest
 
 from weatherdownload import DatasetNotImplementedError, ObservationQuery, download_observations, get_dataset_spec, list_dataset_scopes, list_resolutions, list_supported_elements
+from weatherdownload.elements import CANONICAL_ELEMENT_METADATA
 from weatherdownload.providers.cz.registry import list_implemented_dataset_specs
 
 
 class RegistryTests(unittest.TestCase):
+    def test_canonical_element_metadata_contains_open_water_evaporation(self) -> None:
+        metadata = CANONICAL_ELEMENT_METADATA['open_water_evaporation']
+        self.assertEqual(metadata['description'], 'Daily measured evaporation from an open water surface.')
+        self.assertEqual(metadata['unit'], 'mm')
+
     def test_get_dataset_spec_for_daily_historical_csv(self) -> None:
         spec = get_dataset_spec('historical_csv', 'daily')
         self.assertEqual(spec.dataset_scope, 'historical_csv')
@@ -13,6 +19,7 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(spec.time_semantics, 'date')
         self.assertTrue(spec.implemented)
         self.assertEqual(spec.canonical_elements['tas_mean'], ('T',))
+        self.assertEqual(spec.canonical_elements['open_water_evaporation'], ('VY',))
 
     def test_get_dataset_spec_for_hourly_historical_csv(self) -> None:
         spec = get_dataset_spec('historical_csv', '1hour')
@@ -58,6 +65,10 @@ class RegistryTests(unittest.TestCase):
     def test_discovery_can_still_return_provider_raw_codes(self) -> None:
         self.assertEqual(['T', 'TMA', 'TMI', 'TPM', 'T10', 'T100', 'SSV10M'], list_supported_elements('10min', 'historical_csv', provider_raw=True))
         self.assertEqual(['E', 'P', 'N', 'W1', 'W2', 'SSV1H'], list_supported_elements('1hour', 'historical_csv', provider_raw=True))
+
+    def test_daily_discovery_includes_open_water_evaporation_for_cz(self) -> None:
+        self.assertIn('open_water_evaporation', list_supported_elements('daily', 'historical_csv'))
+        self.assertIn('VY', list_supported_elements('daily', 'historical_csv', provider_raw=True))
 
     def test_discovery_can_return_mapping_table(self) -> None:
         mapping = list_supported_elements('10min', 'historical_csv', include_mapping=True)

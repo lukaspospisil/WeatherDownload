@@ -15,11 +15,11 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_list_supported_elements_for_daily_historical_csv_returns_canonical_names(self) -> None:
         elements = list_supported_elements(resolution='daily', dataset_scope='historical_csv')
-        self.assertEqual(elements, ['vapour_pressure', 'wind_speed', 'snow_depth', 'pressure', 'relative_humidity', 'precipitation', 'sunshine_duration', 'tas_mean', 'tas_max', 'tas_min', 'wind_from_direction'])
+        self.assertEqual(elements, ['open_water_evaporation', 'vapour_pressure', 'wind_speed', 'snow_depth', 'pressure', 'relative_humidity', 'precipitation', 'sunshine_duration', 'tas_mean', 'tas_max', 'tas_min', 'wind_from_direction'])
 
     def test_list_supported_elements_can_return_provider_raw_codes(self) -> None:
         elements = list_supported_elements(resolution='daily', dataset_scope='historical_csv', provider_raw=True)
-        self.assertEqual(elements, ['E', 'F', 'HS', 'P', 'RH', 'SRA', 'SSV', 'T', 'TMA', 'TMI', 'WDIR', 'WSPD'])
+        self.assertEqual(elements, ['E', 'F', 'HS', 'P', 'RH', 'SRA', 'SSV', 'T', 'TMA', 'TMI', 'VY', 'WDIR', 'WSPD'])
 
     def test_list_supported_elements_can_return_mapping_table(self) -> None:
         mapping = list_supported_elements(resolution='daily', dataset_scope='historical_csv', include_mapping=True)
@@ -27,6 +27,10 @@ class DiscoveryTests(unittest.TestCase):
         wind_speed = mapping[mapping['element'] == 'wind_speed'].iloc[0]
         self.assertEqual(wind_speed['element_raw'], 'F')
         self.assertEqual(wind_speed['raw_elements'], ['F', 'WSPD'])
+
+    def test_cz_daily_query_accepts_open_water_evaporation_canonical_name(self) -> None:
+        query = ObservationQuery(country='CZ', dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['open_water_evaporation'])
+        self.assertEqual(query.elements, ['VY'])
 
 
 class ObservationQueryValidationTests(unittest.TestCase):
