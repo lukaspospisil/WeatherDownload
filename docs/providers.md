@@ -639,6 +639,13 @@ Current measured `open_water_evaporation` support is intentionally narrow:
 - MeteoSwiss A1 remains unsupported because the official public parameter metadata exposes FAO reference evaporation, not measured open-water evaporation
 - HungaroMet remains unsupported because the implemented public HABP station files did not verify a measured open-water or pan-evaporation variable, even though separate literature may mention other series
 - IMGW remains unsupported because the official implemented daily field lists do not expose a measured evaporation-pan or open-water variable
+- Météo-France daily climatology remains unsupported because the verified public daily evaporation-like fields are Penman-Monteith ETP products, not measured open-water or pan evaporation
+- AEMET remains unsupported in this pass because the authenticated OpenData daily climatology endpoint was verified, but this audit did not verify an official daily evaporation field definition with the required measured pan/open-water semantics
+- BoM remains unsupported in this pass because the official semantics fit measured Class A pan evaporation, but this audit did not verify a clean machine-readable station-download contract that avoids fragile scraping or anti-bot blocks
+
+Detailed audit notes for those candidate new providers:
+
+- [France, Spain, And Australia Open-Water Evaporation Audit](providers_fr_es_au_open_water_evaporation_audit.md)
 
 ## Query Semantics
 

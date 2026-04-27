@@ -140,6 +140,16 @@ The same pattern applies at station level:
 
 `open_water_evaporation` on this SK path is measured water-surface evaporation from SHMU raw `voda_vypar` in `mm`. It is not ET0, PET, or another modeled evapotranspiration field.
 
+Current support remains intentionally narrow after auditing additional official providers:
+
+- `FR / Météo-France` remains unsupported because the verified daily evaporation-like fields on the public daily climatology source are Penman-Monteith ETP products, not measured open-water or pan evaporation
+- `ES / AEMET` remains unsupported because this audit did not verify an official daily field definition proving a measured open-water or pan evaporation variable on the authenticated OpenData daily climatology endpoint
+- `AU / BoM` remains unsupported for now because the official semantics fit `open_water_evaporation`, but this pass did not verify a clean automation-friendly public station-download contract suitable for a new provider without fragile scraping
+
+Detailed audit notes:
+
+- [France, Spain, And Australia Open-Water Evaporation Audit](providers_fr_es_au_open_water_evaporation_audit.md)
+
 ### CZ `historical_csv / 1hour`
 
 | Canonical element | Raw code |
