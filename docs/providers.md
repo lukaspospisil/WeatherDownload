@@ -29,6 +29,7 @@ Use ISO 3166-1 alpha-2 country codes:
 - `PL`
 - `SE`
 - `SK` (experimental, limited to `recent / daily`)
+- `US`
 
 Examples:
 
@@ -46,6 +47,7 @@ nl_stations = read_station_metadata(country="NL")
 pl_stations = read_station_metadata(country="PL")
 se_stations = read_station_metadata(country="SE")
 sk_stations = read_station_metadata(country="SK")
+us_stations = read_station_metadata(country="US")
 
 nl_daily_elements = list_supported_elements(
     country="NL",
@@ -66,6 +68,7 @@ weatherdownload stations metadata --country NL
 weatherdownload stations metadata --country PL
 weatherdownload stations metadata --country SE
 weatherdownload stations metadata --country SK
+weatherdownload stations metadata --country US
 ```
 ## Stable Public Model
 
@@ -119,6 +122,7 @@ Subdaily variability is expected across providers:
 | `PL` | official IMGW 5-character station code from `wykaz_stacji.csv`, normalized as string |
 | `SE` | official SMHI station id from the parameter station listings used by this provider |
 | `SK` | SHMU `ind_kli` as string |
+| `US` | raw NOAA GHCN-Daily station id, e.g. `USC...` or `USW...` |
 
 `gh_id` remains an optional secondary field and is nullable when a provider does not expose an equivalent identifier.
 
@@ -137,6 +141,7 @@ Subdaily variability is expected across providers:
 | `PL` | Stable | `historical`, `historical_klimat` | `historical`: `daily`, `1hour`; `historical_klimat`: `daily` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`; `historical / 1hour`: `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`; `historical_klimat / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Official IMGW station list with source-backed 5-character station code and station name, plus latitude/longitude from exact `gh_id` matches in the official `api/data/meteo` feed; `elevation_m` and validity range remain unavailable |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
+| `US` | Stable | `ghcnd` | `daily` | `open_water_evaporation` | Official NOAA GHCN-Daily station metadata and inventory, conservatively filtered to U.S. stations with `EVAP` availability |
 
 ## Current Conservative Coverage Details
 
@@ -629,12 +634,39 @@ Important current limitations:
 - `SK` metadata are probe-derived and do not yet include authoritative station names or coordinates
 - `open_water_evaporation` is supported here only from official SHMU raw `voda_vypar`, documented as water evaporation in `mm`; it is treated as measured water-surface evaporation, not ET0 or PET
 
+### US `ghcnd / daily`
+
+Supported canonical elements:
+
+- `open_water_evaporation`
+
+Important current limitations:
+
+- the implemented path uses the official NOAA NCEI GHCN-Daily public files only
+- only `US / ghcnd / daily` is implemented in this first slice
+- `station_id` is the raw NOAA GHCN-Daily station id
+- station metadata come from `ghcnd-stations.txt`
+- station discovery is conservatively filtered to U.S. stations with `EVAP` availability in `ghcnd-inventory.txt`
+- daily observations come from the official `all/{station_id}.dly` files
+- NOAA raw `EVAP` values are documented in tenths of `mm`; WeatherDownload normalizes output `value` to `mm`
+- NOAA missing raw values `-9999` are treated as missing
+- WeatherDownload keeps NOAA quality information instead of silently discarding flagged values
+- `quality` carries NOAA `QFLAG`
+- `flag` preserves provider `MFLAG` and `SFLAG`
+- this path supports `EVAP` only and intentionally excludes multiday `MDEV`
+- this path does not implement PET, ET0, reference evaporation, or other modeled evaporation products
+
+Detailed notes:
+
+- [NOAA / GHCN-Daily Provider Notes](providers_us_noaa_ghcnd.md)
+
 ## Cross-Provider Open-Water Evaporation Audit
 
 Current measured `open_water_evaporation` support is intentionally narrow:
 
 - supported now: `CZ / historical_csv / daily` via CHMI raw `VY`
 - supported now: `SK / recent / daily` via SHMU raw `voda_vypar`
+- supported now: `US / ghcnd / daily` via NOAA GHCN-Daily raw `EVAP`
 - unsupported on the other implemented providers in this repository because no clearly documented measured open-water, pan, or evaporimeter evaporation variable was verified on their current public source paths
 - MeteoSwiss A1 remains unsupported because the official public parameter metadata exposes FAO reference evaporation, not measured open-water evaporation
 - HungaroMet remains unsupported because the implemented public HABP station files did not verify a measured open-water or pan-evaporation variable, even though separate literature may mention other series

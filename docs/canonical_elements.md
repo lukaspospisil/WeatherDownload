@@ -94,18 +94,18 @@ The same pattern applies at station level:
 
 ## Cross-Country Daily Mapping
 
-| Canonical element | CZ raw | DE raw | SK raw |
-| --- | --- | --- | --- |
-| `tas_mean` | `T` | `TMK` | |
-| `tas_max` | `TMA` | `TXK` | `t_max` |
-| `tas_min` | `TMI` | `TNK` | `t_min` |
-| `wind_speed` | `F` | `FM` | |
-| `vapour_pressure` | `E` | `VPM` | |
-| `sunshine_duration` | `SSV` | `SDK` | `sln_svit` |
-| `precipitation` | `SRA` | `RSK` | `zra_uhrn` |
-| `pressure` | `P` | `PM` | |
-| `relative_humidity` | `RH` | `UPM` | |
-| `open_water_evaporation` | `VY` | | `voda_vypar` |
+| Canonical element | CZ raw | DE raw | SK raw | US raw |
+| --- | --- | --- | --- | --- |
+| `tas_mean` | `T` | `TMK` | | |
+| `tas_max` | `TMA` | `TXK` | `t_max` | |
+| `tas_min` | `TMI` | `TNK` | `t_min` | |
+| `wind_speed` | `F` | `FM` | | |
+| `vapour_pressure` | `E` | `VPM` | | |
+| `sunshine_duration` | `SSV` | `SDK` | `sln_svit` | |
+| `precipitation` | `SRA` | `RSK` | `zra_uhrn` | |
+| `pressure` | `P` | `PM` | | |
+| `relative_humidity` | `RH` | `UPM` | | |
+| `open_water_evaporation` | `VY` | | `voda_vypar` | `EVAP` |
 
 ## Implemented Path Mappings
 
@@ -140,11 +140,20 @@ The same pattern applies at station level:
 
 `open_water_evaporation` on this SK path is measured water-surface evaporation from SHMU raw `voda_vypar` in `mm`. It is not ET0, PET, or another modeled evapotranspiration field.
 
+### US `ghcnd / daily`
+
+| Canonical element | Raw code(s) |
+| --- | --- |
+| `open_water_evaporation` | `EVAP` |
+
+`open_water_evaporation` on this NOAA GHCN-Daily path maps to raw `EVAP`, documented by NOAA as evaporation of water from an evaporation pan. NOAA raw values are in tenths of `mm`, and WeatherDownload normalizes output `value` to `mm`. This is not ET0, PET, reference evaporation, or another modeled evaporation product.
+
 Current support remains intentionally narrow after auditing additional official providers:
 
 - `FR / Météo-France` remains unsupported because the verified daily evaporation-like fields on the public daily climatology source are Penman-Monteith ETP products, not measured open-water or pan evaporation
 - `ES / AEMET` remains unsupported because this audit did not verify an official daily field definition proving a measured open-water or pan evaporation variable on the authenticated OpenData daily climatology endpoint
 - `AU / BoM` remains unsupported for now because the official semantics fit `open_water_evaporation`, but this pass did not verify a clean automation-friendly public station-download contract suitable for a new provider without fragile scraping
+- `US / NOAA GHCN-Daily` is supported only on the conservative `US / ghcnd / daily` slice via raw `EVAP`, which NOAA defines as measured evaporation from an evaporation pan; this first pass does not implement broader global GHCN-Daily abstractions or multiday `MDEV`
 
 Detailed audit notes:
 

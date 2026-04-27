@@ -12,6 +12,7 @@ from .nl import PROVIDER as KNMI_PROVIDER
 from .pl import PROVIDER as PL_PROVIDER
 from .se import PROVIDER as SE_PROVIDER
 from .sk import PROVIDER as SHMU_PROVIDER
+from .us import PROVIDER as US_GHCND_PROVIDER
 
 PROVIDERS: dict[str, WeatherProvider] = {
     'AT': GEOSPHERE_PROVIDER,
@@ -25,6 +26,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'PL': PL_PROVIDER,
     'SE': SE_PROVIDER,
     'SK': SHMU_PROVIDER,
+    'US': US_GHCND_PROVIDER,
 }
 
 
