@@ -136,7 +136,7 @@ Subdaily variability is expected across providers:
 | `NL` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official KNMI metadata file retrieved through the Open Data API; API key required |
 | `PL` | Stable | `historical`, `historical_klimat` | `historical`: `daily`, `1hour`; `historical_klimat`: `daily` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`; `historical / 1hour`: `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`; `historical_klimat / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Official IMGW station list with source-backed 5-character station code and station name, plus latitude/longitude from exact `gh_id` matches in the official `api/data/meteo` feed; `elevation_m` and validity range remain unavailable |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
-| `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
+| `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 
 ## Current Conservative Coverage Details
 
@@ -285,6 +285,7 @@ Important current limitations:
 - daily precipitation keeps the official MeteoSwiss A1 `6 UTC -> 6 UTC next day` daily window semantics behind the provider layer
 - raw flags are not exposed on the implemented A1 slice, so `flag` remains null and normalized `quality` remains null
 - no FAO computation and no derived meteorological variables are added
+- `open_water_evaporation` remains unsupported because the official MeteoSwiss A1 parameter metadata inspected for this provider exposes FAO reference evaporation, not measured open-water or pan evaporation
 
 Detailed notes:
 
@@ -430,6 +431,7 @@ Important current limitations:
 - raw HungaroMet `Q_<field>` values stay in `flag`; normalized `quality` remains null
 - WeatherDownload does not merge the generic `10_minutes` and separate `10_minutes_wind` products into one mixed HU `10min` abstraction
 - no provider-side derivations are added for unsupported variables
+- `open_water_evaporation` remains unsupported because no clearly documented measured open-water, pan, or evaporimeter evaporation variable was verified on the implemented public HABP source files
 
 Detailed notes:
 
@@ -502,6 +504,7 @@ Important current limitations:
 - completed years are downloaded from station-year ZIP archives, while the current year uses the official monthly all-station ZIP archives on the same source tree
 - raw IMGW daily status codes such as `WSTD`, `WSMDB`, and `WUSL` stay in `flag`; normalized `quality` remains null
 - no provider-side derivations or cross-resolution aggregations are added
+- `open_water_evaporation` remains unsupported because the official daily synop and daily klimat field lists used by this provider do not publish a measured open-water, pan, or evaporimeter evaporation variable
 
 ### PL `historical / 1hour`
 
@@ -617,12 +620,25 @@ Supported canonical elements:
 - `tas_min`
 - `sunshine_duration`
 - `precipitation`
+- `open_water_evaporation`
 
 Important current limitations:
 
 - `SK` support is experimental
 - only `SK / recent / daily` is implemented
 - `SK` metadata are probe-derived and do not yet include authoritative station names or coordinates
+- `open_water_evaporation` is supported here only from official SHMU raw `voda_vypar`, documented as water evaporation in `mm`; it is treated as measured water-surface evaporation, not ET0 or PET
+
+## Cross-Provider Open-Water Evaporation Audit
+
+Current measured `open_water_evaporation` support is intentionally narrow:
+
+- supported now: `CZ / historical_csv / daily` via CHMI raw `VY`
+- supported now: `SK / recent / daily` via SHMU raw `voda_vypar`
+- unsupported on the other implemented providers in this repository because no clearly documented measured open-water, pan, or evaporimeter evaporation variable was verified on their current public source paths
+- MeteoSwiss A1 remains unsupported because the official public parameter metadata exposes FAO reference evaporation, not measured open-water evaporation
+- HungaroMet remains unsupported because the implemented public HABP station files did not verify a measured open-water or pan-evaporation variable, even though separate literature may mention other series
+- IMGW remains unsupported because the official implemented daily field lists do not expose a measured evaporation-pan or open-water variable
 
 ## Query Semantics
 

@@ -128,6 +128,18 @@ class ShmuParserTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r'SHMU metadata JSON is missing a "data" list\.'):
             parse_shmu_metadata_json(json.dumps({'id': 'metadata'}))
 
+    def test_parse_shmu_metadata_json_keeps_water_evaporation_field_and_unit(self) -> None:
+        metadata = {
+            'id': 'kli_inter_metadata',
+            'data': [
+                {'m_column_name': 'voda_vypar', 'popis': 'Water evaporation', 'unit': 'mm'},
+            ],
+        }
+        parsed = parse_shmu_metadata_json(json.dumps(metadata))
+        self.assertEqual(parsed.iloc[0]['element_raw'], 'voda_vypar')
+        self.assertEqual(parsed.iloc[0]['description'], 'Water evaporation')
+        self.assertEqual(parsed.iloc[0]['unit'], 'mm')
+
 
 if __name__ == '__main__':
     unittest.main()

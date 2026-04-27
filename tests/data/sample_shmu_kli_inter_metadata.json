@@ -4,6 +4,7 @@
     {"m_column_name": "t_max", "popis": "Maximum air temperature", "unit": "degC"},
     {"m_column_name": "t_min", "popis": "Minimum air temperature", "unit": "degC"},
     {"m_column_name": "sln_svit", "popis": "Sunshine duration", "unit": "h"},
-    {"m_column_name": "zra_uhrn", "popis": "Precipitation total", "unit": "mm"}
+    {"m_column_name": "zra_uhrn", "popis": "Precipitation total", "unit": "mm"},
+    {"m_column_name": "voda_vypar", "popis": "Water evaporation for the period from 7:00 to 7:00 of the following day", "unit": "mm"}
   ]
 }

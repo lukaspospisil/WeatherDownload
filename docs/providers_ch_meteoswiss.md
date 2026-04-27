@@ -67,6 +67,8 @@ Supported canonical 10-minute elements in this pass:
 
 Unsupported or ambiguous source fields remain unsupported rather than being guessed or derived.
 
+`open_water_evaporation` is intentionally unsupported on the implemented MeteoSwiss A1 slice. The official `ogd-smn_meta_parameters.csv` currently exposes FAO reference-evaporation parameters such as `erefaod0`, but those are reference evapotranspiration style products, not measured open-water or pan evaporation.
+
 ## Station Identifier And Output Semantics
 
 - `station_id` is the official MeteoSwiss A1 `station_abbr`, normalized as string

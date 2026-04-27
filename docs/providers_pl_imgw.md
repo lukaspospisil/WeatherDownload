@@ -90,6 +90,8 @@ Rejected candidates after inspecting the official `k_d_format.txt` field list:
 
 Unsupported or ambiguous source fields remain unsupported rather than being guessed or derived.
 
+`open_water_evaporation` is intentionally unsupported on the implemented IMGW public slices. The official daily synop `s_d_format.txt` and daily klimat `k_d_format.txt` field lists used by this provider do not publish a clearly documented measured open-water, pan, or evaporimeter evaporation field, so the library does not infer one from generic wording.
+
 ## Station Identifier And Output Semantics
 
 - `station_id` is the official 5-character IMGW station code from `wykaz_stacji.csv`, normalized as string

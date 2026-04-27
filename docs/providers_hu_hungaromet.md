@@ -75,6 +75,8 @@ Supported canonical `historical_wind / 10min` elements in this pass:
 
 Unsupported or ambiguous source fields remain unsupported rather than being guessed or derived.
 
+`open_water_evaporation` is intentionally unsupported on the implemented HungaroMet public source. The official `odp.met.hu/climate/observations_hungary` files used by this provider expose the current HABP daily, hourly, and 10-minute station products, but no clearly documented measured open-water, pan, or evaporimeter evaporation variable was verified on those implemented paths. Literature references to separate Class A pan series are not treated as sufficient unless that variable is exposed on the current public source used by WeatherDownload.
+
 ## Station Identifier And Output Semantics
 
 - `station_id` is the official HungaroMet `StationNumber`, normalized as string

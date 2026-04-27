@@ -10,6 +10,7 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_min',
     'sunshine_duration',
     'precipitation',
+    'open_water_evaporation',
 )
 
 

@@ -47,8 +47,11 @@ Current canonical-to-raw mappings for `SK / recent / daily`:
 - `tas_min` -> `t_min`
 - `sunshine_duration` -> `sln_svit`
 - `precipitation` -> `zra_uhrn`
+- `open_water_evaporation` -> `voda_vypar`
 
-No other SHMU raw fields are mapped into the public canonical element layer at this time.
+`open_water_evaporation` on this SHMU path is mapped only because the official metadata JSON documents `voda_vypar` as water evaporation in `mm`, and the current monthly JSON payloads expose that raw field directly. It is treated as measured water-surface evaporation for the published 7:00 to 7:00 daily interval, not as ET0, PET, or another modeled evapotranspiration field.
+
+Other SHMU raw fields remain unmapped unless their semantics are explicitly verified.
 
 ## Station Metadata
 
@@ -113,7 +116,7 @@ The current SHMU provider has the following explicit limitations:
 
 - `SK` support is experimental
 - only `recent / daily` is implemented
-- only the four canonical elements listed above are implemented
+- only the five canonical elements listed above are implemented
 - `all_history` is not implemented
 - daily files are discovered from directory listings and monthly JSON file names
 

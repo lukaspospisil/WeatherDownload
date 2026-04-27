@@ -23,6 +23,7 @@ _SHMU_RECENT_DAILY_CANONICAL_ELEMENTS = {
     'tas_min': ('t_min',),
     'sunshine_duration': ('sln_svit',),
     'precipitation': ('zra_uhrn',),
+    'open_water_evaporation': ('voda_vypar',),
 }
 
 
@@ -34,7 +35,7 @@ _SHMU_DATASET_SPECS = [
         label='SHMU recent daily climatological stations',
         metadata_url='https://opendata.shmu.sk/meteorology/climate/recent/metadata/kli_inter_metadata.json',
         data_index_url='https://opendata.shmu.sk/meteorology/climate/recent/data/daily/',
-        supported_elements=('t_max', 't_min', 'sln_svit', 'zra_uhrn'),
+        supported_elements=('t_max', 't_min', 'sln_svit', 'zra_uhrn', 'voda_vypar'),
         canonical_elements=_SHMU_RECENT_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
         implemented=True,

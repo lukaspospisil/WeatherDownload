@@ -94,18 +94,18 @@ The same pattern applies at station level:
 
 ## Cross-Country Daily Mapping
 
-| Canonical element | CZ raw | DE raw |
-| --- | --- | --- |
-| `tas_mean` | `T` | `TMK` |
-| `tas_max` | `TMA` | `TXK` |
-| `tas_min` | `TMI` | `TNK` |
-| `wind_speed` | `F` | `FM` |
-| `vapour_pressure` | `E` | `VPM` |
-| `sunshine_duration` | `SSV` | `SDK` |
-| `precipitation` | `SRA` | `RSK` |
-| `pressure` | `P` | `PM` |
-| `relative_humidity` | `RH` | `UPM` |
-| `open_water_evaporation` | `VY` | |
+| Canonical element | CZ raw | DE raw | SK raw |
+| --- | --- | --- | --- |
+| `tas_mean` | `T` | `TMK` | |
+| `tas_max` | `TMA` | `TXK` | `t_max` |
+| `tas_min` | `TMI` | `TNK` | `t_min` |
+| `wind_speed` | `F` | `FM` | |
+| `vapour_pressure` | `E` | `VPM` | |
+| `sunshine_duration` | `SSV` | `SDK` | `sln_svit` |
+| `precipitation` | `SRA` | `RSK` | `zra_uhrn` |
+| `pressure` | `P` | `PM` | |
+| `relative_humidity` | `RH` | `UPM` | |
+| `open_water_evaporation` | `VY` | | `voda_vypar` |
 
 ## Implemented Path Mappings
 
@@ -127,6 +127,18 @@ The same pattern applies at station level:
 | `snow_depth` | `HS` |
 
 `open_water_evaporation` on this CZ path is measured open-water-surface evaporation from CHMI raw code `VY`. It is not ET0 or another modeled evapotranspiration field.
+
+### SK `recent / daily`
+
+| Canonical element | Raw code(s) |
+| --- | --- |
+| `tas_max` | `t_max` |
+| `tas_min` | `t_min` |
+| `sunshine_duration` | `sln_svit` |
+| `precipitation` | `zra_uhrn` |
+| `open_water_evaporation` | `voda_vypar` |
+
+`open_water_evaporation` on this SK path is measured water-surface evaporation from SHMU raw `voda_vypar` in `mm`. It is not ET0, PET, or another modeled evapotranspiration field.
 
 ### CZ `historical_csv / 1hour`
 

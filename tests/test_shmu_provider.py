@@ -47,6 +47,7 @@ EXPECTED_SK_CANONICAL_MAPPING = {
     'tas_min': 't_min',
     'sunshine_duration': 'sln_svit',
     'precipitation': 'zra_uhrn',
+    'open_water_evaporation': 'voda_vypar',
 }
 
 
@@ -61,17 +62,17 @@ class ShmuProviderTests(unittest.TestCase):
         self.assertEqual(provider.supported_country_codes, ('SK',))
         self.assertEqual(provider.supported_dataset_scopes, ('recent',))
         self.assertEqual(provider.supported_resolutions, ('daily',))
-        self.assertEqual(provider.supported_canonical_elements, ('tas_max', 'tas_min', 'sunshine_duration', 'precipitation'))
+        self.assertEqual(provider.supported_canonical_elements, ('tas_max', 'tas_min', 'sunshine_duration', 'precipitation', 'open_water_evaporation'))
         self.assertTrue(provider.experimental)
 
     def test_discovery_country_sk_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
             list_supported_elements(country='SK', dataset_scope='recent', resolution='daily'),
-            ['tas_max', 'tas_min', 'sunshine_duration', 'precipitation'],
+            ['tas_max', 'tas_min', 'sunshine_duration', 'precipitation', 'open_water_evaporation'],
         )
         self.assertEqual(
             list_supported_elements(country='SK', dataset_scope='recent', resolution='daily', provider_raw=True),
-            ['t_max', 't_min', 'sln_svit', 'zra_uhrn'],
+            ['t_max', 't_min', 'sln_svit', 'zra_uhrn', 'voda_vypar'],
         )
 
     def test_invalid_dataset_scope_for_sk_fails_clearly(self) -> None:
@@ -190,7 +191,9 @@ class ShmuProviderTests(unittest.TestCase):
         )
         self.assertIn('t_max', observation_metadata['element'].tolist())
         self.assertIn('zra_uhrn', observation_metadata['element'].tolist())
+        self.assertIn('voda_vypar', observation_metadata['element'].tolist())
         self.assertTrue(observation_metadata['description'].fillna('').str.contains('Maximum air temperature').any())
+        self.assertTrue(observation_metadata['description'].fillna('').str.contains('Water evaporation').any())
         self.assertTrue(observation_metadata['height'].isna().all())
 
     def test_query_normalizes_canonical_and_raw_shmu_elements(self) -> None:
@@ -201,7 +204,7 @@ class ShmuProviderTests(unittest.TestCase):
             station_ids=['11800'],
             start_date='2025-01-01',
             end_date='2025-01-02',
-            elements=['tas_max', 'precipitation'],
+            elements=['tas_max', 'precipitation', 'open_water_evaporation'],
         )
         raw_query = ObservationQuery(
             country='SK',
@@ -210,10 +213,10 @@ class ShmuProviderTests(unittest.TestCase):
             station_ids=['11800'],
             start_date='2025-01-01',
             end_date='2025-01-02',
-            elements=['t_max', 'zra_uhrn'],
+            elements=['t_max', 'zra_uhrn', 'voda_vypar'],
         )
-        self.assertEqual(canonical_query.elements, ['t_max', 'zra_uhrn'])
-        self.assertEqual(raw_query.elements, ['t_max', 'zra_uhrn'])
+        self.assertEqual(canonical_query.elements, ['t_max', 'zra_uhrn', 'voda_vypar'])
+        self.assertEqual(raw_query.elements, ['t_max', 'zra_uhrn', 'voda_vypar'])
 
     def test_resolve_latest_recent_daily_data_url_from_sample_indexes(self) -> None:
         def fake_read_text(source: str, timeout: int) -> str:
@@ -287,7 +290,7 @@ class ShmuProviderTests(unittest.TestCase):
             station_ids=['11800'],
             start_date='2025-01-01',
             end_date='2025-01-02',
-            elements=['tas_max', 'precipitation'],
+            elements=['tas_max', 'precipitation', 'open_water_evaporation'],
         )
         station_metadata = read_station_metadata(country='SK', source_url=str(SAMPLE_PAYLOAD_PATH))
 
@@ -295,8 +298,8 @@ class ShmuProviderTests(unittest.TestCase):
             observations = download_observations(query, country='SK', station_metadata=station_metadata)
 
         self.assertEqual(list(observations.columns), EXPECTED_SK_DAILY_COLUMNS)
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_max'])
-        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['t_max', 'zra_uhrn'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['open_water_evaporation', 'precipitation', 'tas_max'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['t_max', 'voda_vypar', 'zra_uhrn'])
         self.assertTrue(observations['gh_id'].isna().all())
         self.assertTrue(observations['time_function'].isna().all())
         self.assertTrue(observations['flag'].isna().all())
@@ -304,15 +307,17 @@ class ShmuProviderTests(unittest.TestCase):
         self.assertEqual(observations.iloc[0]['observation_date'].isoformat(), '2025-01-01')
         self.assertAlmostEqual(float(observations[observations['element'] == 'tas_max'].iloc[0]['value']), 5.2)
         self.assertAlmostEqual(float(observations[observations['element'] == 'precipitation'].iloc[1]['value']), 2.5)
+        self.assertAlmostEqual(float(observations[observations['element'] == 'open_water_evaporation'].iloc[0]['value']), 0.1)
 
     def test_sk_recent_daily_regression_fixture_record_count_and_key_values_are_stable(self) -> None:
         observations = self._download_all_supported_sample_observations()
-        self.assertEqual(len(observations), 8)
+        self.assertEqual(len(observations), 10)
         self.assertEqual(observations['station_id'].nunique(), 1)
         lookup = observations.set_index(['element', 'observation_date'])['value']
         self.assertAlmostEqual(float(lookup[('tas_max', pd.Timestamp('2025-01-01').date())]), 5.2)
         self.assertAlmostEqual(float(lookup[('tas_min', pd.Timestamp('2025-01-01').date())]), -2.1)
         self.assertAlmostEqual(float(lookup[('precipitation', pd.Timestamp('2025-01-02').date())]), 2.5)
+        self.assertAlmostEqual(float(lookup[('open_water_evaporation', pd.Timestamp('2025-01-02').date())]), 0.3)
         self.assertTrue(pd.isna(lookup[('sunshine_duration', pd.Timestamp('2025-01-02').date())]))
 
     def test_download_daily_observations_country_sk_accepts_raw_codes(self) -> None:

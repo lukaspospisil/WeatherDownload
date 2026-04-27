@@ -8,9 +8,9 @@
     "records_count": 4
   },
   "data": [
-    {"ind_kli": "11800", "datum": "2025-01-01", "t_max": "5.2", "t_min": "-2.1", "sln_svit": "1.5", "zra_uhrn": "0.0"},
-    {"ind_kli": "11800", "datum": "2025-01-02", "t_max": "6.3", "t_min": "-1.0", "sln_svit": "", "zra_uhrn": "2.5"},
-    {"ind_kli": "11999", "datum": "2025-01-01", "t_max": "3.0", "t_min": "-4.0", "sln_svit": "0.0", "zra_uhrn": "1.2"},
-    {"ind_kli": "11999", "datum": "2025-01-02", "t_max": "4.1", "t_min": "-3.8", "sln_svit": "0.2", "zra_uhrn": "0.0"}
+    {"ind_kli": "11800", "datum": "2025-01-01", "t_max": "5.2", "t_min": "-2.1", "sln_svit": "1.5", "zra_uhrn": "0.0", "voda_vypar": "0.1"},
+    {"ind_kli": "11800", "datum": "2025-01-02", "t_max": "6.3", "t_min": "-1.0", "sln_svit": "", "zra_uhrn": "2.5", "voda_vypar": "0.3"},
+    {"ind_kli": "11999", "datum": "2025-01-01", "t_max": "3.0", "t_min": "-4.0", "sln_svit": "0.0", "zra_uhrn": "1.2", "voda_vypar": "0.0"},
+    {"ind_kli": "11999", "datum": "2025-01-02", "t_max": "4.1", "t_min": "-3.8", "sln_svit": "0.2", "zra_uhrn": "0.0", "voda_vypar": "0.1"}
   ]
 }
