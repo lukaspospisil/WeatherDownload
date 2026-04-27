@@ -62,6 +62,8 @@ SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
 SAMPLE_SHMU_INDEX_HTML = Path('tests/data/sample_shmu_recent_daily_index.html').read_text(encoding='utf-8')
 SAMPLE_SHMU_MONTH_INDEX_HTML = Path('tests/data/sample_shmu_recent_daily_month_index.html').read_text(encoding='utf-8')
+SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
+SAMPLE_GHCND_DLY_TEXT = Path('tests/data/sample_ghcnd_USC00000001.dly').read_text(encoding='utf-8')
 SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland Abgabe
 ----------- --------- --------- ------------- --------- --------- ----------------------------------------- ---------- ------
 00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\xfcrttemberg Frei
@@ -134,6 +136,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
         return read_station_metadata(country='SE', source_url=str(SAMPLE_SE_FIXTURE_DIR))
     if country == 'SK':
         return read_station_metadata(country='SK', source_url=str(SAMPLE_SHMU_PAYLOAD_PATH))
+    if country == 'US':
+        return read_station_metadata(country='US', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     raise AssertionError(f'unsupported test country: {country}')
 
 def _download_daily_fixture(country: str) -> pd.DataFrame:
@@ -290,6 +294,11 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.providers.sk.observations._read_text', side_effect=fake_read_text):
             return download_observations(query, country='SK', station_metadata=station_metadata)
+    if country == 'US':
+        station_metadata = _read_station_metadata_fixture('US')
+        query = ObservationQuery(country='US', dataset_scope='ghcnd', resolution='daily', station_ids=['USC00000001'], start_date='2020-05-01', end_date='2020-05-02', elements=['open_water_evaporation'])
+        with patch('weatherdownload.providers.us.observations._read_text', return_value=SAMPLE_GHCND_DLY_TEXT):
+            return download_observations(query, country='US', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
 def _download_hourly_fixture(country: str) -> pd.DataFrame:
@@ -458,9 +467,10 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'PL': ['00375', '00400', '00600'],
         'SE': ['98230'],
         'SK': ['11800', '11999'],
+        'US': ['USC00000001'],
     }
 
-    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK']:
+    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK', 'US']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         actual_station_ids = stations['station_id'].tolist()
@@ -473,9 +483,9 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
-    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'HU': 'historical', 'NL': 'historical', 'PL': 'historical', 'SE': 'historical', 'SK': 'recent'}
+    expected_dataset_scopes = {'AT': 'historical', 'BE': 'historical', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'HU': 'historical', 'NL': 'historical', 'PL': 'historical', 'SE': 'historical', 'SK': 'recent', 'US': 'ghcnd'}
 
-    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK']:
+    for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK', 'US']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -484,7 +494,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         assert observations['dataset_scope'].eq(expected_dataset_scopes[country]).all()
         assert observations['resolution'].eq('daily').all()
 
-        if country in {'AT', 'BE', 'CH', 'DE', 'DK', 'HU', 'NL', 'SE', 'SK'}:
+        if country in {'AT', 'BE', 'CH', 'DE', 'DK', 'HU', 'NL', 'SE', 'SK', 'US'}:
             assert observations['gh_id'].isna().all()
         elif country == 'PL':
             assert observations['gh_id'].notna().all()
@@ -499,6 +509,9 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
             assert observations['flag'].notna().all()
             assert observations['flag'].str.contains('qcStatus').all()
             assert observations['flag'].str.contains('validity').all()
+        if country == 'US':
+            assert observations['flag'].notna().all()
+            assert observations['flag'].str.contains('source_flag').all()
         if country == 'SE':
             assert observations['flag'].notna().all()
             assert set(observations['flag'].dropna().unique()) <= {'G', 'Y'}
@@ -511,6 +524,8 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         elif country == 'DE':
             assert observations['quality'].notna().all()
             assert set(observations['quality'].dropna().astype(str).unique()) <= {'2'}
+        elif country == 'US':
+            assert set(observations['quality'].dropna().astype(str).unique()) <= {'X'}
         else:
             assert observations['quality'].isna().all()
         assert str(observations['quality'].dtype) in {'Int64', 'object'}

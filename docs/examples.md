@@ -59,6 +59,7 @@ python examples/basic/download_daily.py --country HU
 python examples/basic/download_daily.py --country NL
 python examples/basic/download_daily.py --country PL
 python examples/basic/download_daily.py --country SE
+python examples/basic/download_daily.py --country US
 ```
 
 BE notes:
@@ -114,6 +115,15 @@ SE notes:
 - `observation_date` comes from the published `Representativt dygn` field, and provider-defined interval windows stay behind the provider layer
 - raw SMHI `Kvalitet` codes are preserved in `flag` and normalized `quality` stays null
 - corrected-archive excludes the latest three months by source design
+
+US notes:
+
+- `US` uses the shared daily example path through the official NOAA NCEI GHCN-Daily station files
+- the current `US` slice is intentionally limited to `dataset_scope="ghcnd"` and `resolution="daily"`
+- `open_water_evaporation` maps to official NOAA raw `EVAP`
+- NOAA documents `EVAP` as evaporation of water from an evaporation pan
+- NOAA raw `EVAP` values are in tenths of `mm`; WeatherDownload normalizes output `value` to `mm`
+- multiday `MDEV`, ET0, PET, FAO reference evaporation, and modeled evaporation remain unsupported on this slice
 
 ### `examples/basic/download_hourly.py`
 

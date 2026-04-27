@@ -69,7 +69,11 @@ The normalized station table keeps:
 - `latitude`
 - `longitude`
 - `elevation_m`
-- `country`
+
+The shared normalized station metadata schema does not add a separate `country` column on this path. Country stays implicit through:
+
+- `country="US"` in the provider selection
+- the GHCN-Daily station-id prefix, e.g. `USC...` or `USW...`
 
 This first slice keeps discovery intentionally narrow:
 

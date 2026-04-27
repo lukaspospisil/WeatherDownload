@@ -85,14 +85,14 @@ def normalize_ghcnd_station_metadata(
     element_raw: str = 'EVAP',
 ) -> pd.DataFrame:
     if stations_table.empty or inventory_table.empty:
-        return pd.DataFrame(columns=STATION_METADATA_COLUMNS + ['country'])
+        return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
 
     inventory = inventory_table[
         inventory_table['station_id'].str.startswith(country)
         & inventory_table['element_raw'].eq(element_raw)
     ].copy()
     if inventory.empty:
-        return pd.DataFrame(columns=STATION_METADATA_COLUMNS + ['country'])
+        return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
 
     ranges = (
         inventory.groupby('station_id', as_index=False)
@@ -111,10 +111,9 @@ def normalize_ghcnd_station_metadata(
                 'longitude': row.longitude if pd.notna(row.longitude) else pd.NA,
                 'latitude': row.latitude if pd.notna(row.latitude) else pd.NA,
                 'elevation_m': row.elevation_m if pd.notna(row.elevation_m) else pd.NA,
-                'country': row.country if pd.notna(row.country) else country,
             }
         )
-    return pd.DataFrame.from_records(rows, columns=STATION_METADATA_COLUMNS + ['country'])
+    return pd.DataFrame.from_records(rows, columns=STATION_METADATA_COLUMNS)
 
 
 def normalize_ghcnd_observation_metadata(

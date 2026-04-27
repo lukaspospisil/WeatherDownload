@@ -47,6 +47,7 @@ Notes:
 - `station_id` keeps a stable public identifier while preserving provider-backed station identity
 - `gh_id` is present only for provider paths that expose a reliable secondary identifier
 - metadata coverage can differ by country; unsupported metadata fields remain null rather than inferred
+- the stable public station metadata schema does not add a separate `country` column; provider country stays part of the query context and may also be encoded in the provider's station identifier
 
 ## Observation Metadata Schema
 

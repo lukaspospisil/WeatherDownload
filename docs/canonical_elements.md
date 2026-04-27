@@ -25,10 +25,10 @@ Common examples:
 
 Specific meaning note:
 
-- `open_water_evaporation` means daily measured evaporation from an open water surface in `mm`
+- `open_water_evaporation` means daily measured evaporation from an open water surface, evaporation pan, or evaporimeter in `mm`
 - it is intentionally not the generic name `evaporation`
 - it is not `vapour_pressure`
-- it is not reference evapotranspiration or ET0
+- it is not ET0, PET, FAO reference evaporation, reference evapotranspiration, or modeled evaporation
 
 Backward compatibility is preserved:
 
@@ -126,7 +126,7 @@ The same pattern applies at station level:
 | `wind_from_direction` | `WDIR` |
 | `snow_depth` | `HS` |
 
-`open_water_evaporation` on this CZ path is measured open-water-surface evaporation from CHMI raw code `VY`. It is not ET0 or another modeled evapotranspiration field.
+`open_water_evaporation` on this CZ path is measured open-water-surface evaporation from CHMI raw code `VY` in `mm`. It is not ET0, PET, FAO reference evaporation, or another modeled evapotranspiration field.
 
 ### SK `recent / daily`
 
@@ -138,7 +138,7 @@ The same pattern applies at station level:
 | `precipitation` | `zra_uhrn` |
 | `open_water_evaporation` | `voda_vypar` |
 
-`open_water_evaporation` on this SK path is measured water-surface evaporation from SHMU raw `voda_vypar` in `mm`. It is not ET0, PET, or another modeled evapotranspiration field.
+`open_water_evaporation` on this SK path is measured water-surface evaporation from SHMU raw `voda_vypar` in `mm`. It is not ET0, PET, FAO reference evaporation, or another modeled evapotranspiration field.
 
 ### US `ghcnd / daily`
 
@@ -146,11 +146,11 @@ The same pattern applies at station level:
 | --- | --- |
 | `open_water_evaporation` | `EVAP` |
 
-`open_water_evaporation` on this NOAA GHCN-Daily path maps to raw `EVAP`, documented by NOAA as evaporation of water from an evaporation pan. NOAA raw values are in tenths of `mm`, and WeatherDownload normalizes output `value` to `mm`. This is not ET0, PET, reference evaporation, or another modeled evaporation product.
+`open_water_evaporation` on this NOAA GHCN-Daily path maps to raw `EVAP`, documented by NOAA as evaporation of water from an evaporation pan. NOAA raw values are in tenths of `mm`, and WeatherDownload normalizes output `value` to `mm`. This is not ET0, PET, FAO reference evaporation, or another modeled evaporation product.
 
 Current support remains intentionally narrow after auditing additional official providers:
 
-- `FR / Météo-France` remains unsupported because the verified daily evaporation-like fields on the public daily climatology source are Penman-Monteith ETP products, not measured open-water or pan evaporation
+- `FR / Meteo-France` remains unsupported because the verified daily evaporation-like fields on the public daily climatology source are Penman-Monteith ETP products, not measured open-water or pan evaporation
 - `ES / AEMET` remains unsupported because this audit did not verify an official daily field definition proving a measured open-water or pan evaporation variable on the authenticated OpenData daily climatology endpoint
 - `AU / BoM` remains unsupported for now because the official semantics fit `open_water_evaporation`, but this pass did not verify a clean automation-friendly public station-download contract suitable for a new provider without fragile scraping
 - `US / NOAA GHCN-Daily` is supported only on the conservative `US / ghcnd / daily` slice via raw `EVAP`, which NOAA defines as measured evaporation from an evaporation pan; this first pass does not implement broader global GHCN-Daily abstractions or multiday `MDEV`

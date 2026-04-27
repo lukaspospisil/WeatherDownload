@@ -84,10 +84,9 @@ class GhcndProviderTests(unittest.TestCase):
         stations = read_station_metadata(country='US', source_url=str(SAMPLE_STATIONS_PATH))
         self.assertEqual(
             list(stations.columns),
-            ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m', 'country'],
+            ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
         )
         self.assertEqual(stations['station_id'].tolist(), ['USC00000001'])
-        self.assertEqual(stations.iloc[0]['country'], 'US')
         self.assertEqual(stations.iloc[0]['begin_date'], '2018-01-01T00:00Z')
         self.assertEqual(stations.iloc[0]['end_date'], '2020-12-31T00:00Z')
         self.assertTrue(stations['gh_id'].isna().all())

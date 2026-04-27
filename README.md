@@ -66,6 +66,7 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 | `PL` | Yes* | Yes* | No | Yes | Stable |
 | `SE` | Yes* | Yes* | No | Yes | Stable |
 | `SK` | Yes* | No | No | No | Experimental |
+| `US` | Yes* | No | No | No | Stable |
 
 `Yes*` means the path is implemented, but element coverage or dataset scope is intentionally conservative for that provider slice. See [Provider Model And Coverage](docs/providers.md) and the provider-specific notes for exact limits.
 
@@ -86,6 +87,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - `PL` via IMGW-PIB public synop archives (`daily` and `1hour`) plus a separate daily `klimat` scope
 - `SE` via SMHI Meteorological Observations API
 - `SK` via SHMU OpenDATA (experimental, currently limited to `recent / daily`)
+- `US` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
 
 ## Where To Start
 
@@ -109,6 +111,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - [IMGW-PIB Poland Provider Notes](docs/providers_pl_imgw.md)
 - [SMHI Sweden Provider Notes](docs/providers_se_smhi.md)
 - [Experimental Slovakia Provider Notes](docs/providers_sk_experimental.md)
+- [NOAA / GHCN-Daily Provider Notes](docs/providers_us_noaa_ghcnd.md)
 - [Changelog](docs/changelog.md)
 
 ## Stable Cross-Country Invariants
@@ -118,7 +121,6 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - canonical meteorological element names stay shared across countries
 - normalized output schemas stay stable and DataFrame-first
 - missing variables stay missing by default instead of being silently derived
-
 
 
 
