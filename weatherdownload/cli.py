@@ -392,7 +392,7 @@ def _default_dataset_scope(country: str) -> str:
         return 'historical'
     if normalized == 'SK':
         return 'recent'
-    if normalized in {'CA', 'MX', 'US'}:
+    if normalized in {'CA', 'FI', 'FR', 'IT', 'MX', 'NO', 'NZ', 'US'}:
         return 'ghcnd'
     return 'historical_csv'
 

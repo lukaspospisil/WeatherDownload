@@ -8,9 +8,14 @@ from .cz import PROVIDER as CHMI_PROVIDER
 from .dk import PROVIDER as DK_PROVIDER
 from .de import PROVIDER as DWD_PROVIDER
 from .at import PROVIDER as GEOSPHERE_PROVIDER
+from .fi import PROVIDER as FI_GHCND_PROVIDER
+from .fr import PROVIDER as FR_GHCND_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
+from .it import PROVIDER as IT_GHCND_PROVIDER
 from .mx import PROVIDER as MX_GHCND_PROVIDER
 from .nl import PROVIDER as KNMI_PROVIDER
+from .no import PROVIDER as NO_GHCND_PROVIDER
+from .nz import PROVIDER as NZ_GHCND_PROVIDER
 from .pl import PROVIDER as PL_PROVIDER
 from .se import PROVIDER as SE_PROVIDER
 from .sk import PROVIDER as SHMU_PROVIDER
@@ -24,9 +29,14 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'CZ': CHMI_PROVIDER,
     'DE': DWD_PROVIDER,
     'DK': DK_PROVIDER,
+    'FI': FI_GHCND_PROVIDER,
+    'FR': FR_GHCND_PROVIDER,
     'HU': HU_PROVIDER,
+    'IT': IT_GHCND_PROVIDER,
     'MX': MX_GHCND_PROVIDER,
     'NL': KNMI_PROVIDER,
+    'NO': NO_GHCND_PROVIDER,
+    'NZ': NZ_GHCND_PROVIDER,
     'PL': PL_PROVIDER,
     'SE': SE_PROVIDER,
     'SK': SHMU_PROVIDER,

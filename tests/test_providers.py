@@ -36,7 +36,7 @@ class _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'HU', 'MX', 'NL', 'PL', 'SE', 'SK', 'US'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'FI', 'FR', 'HU', 'IT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
@@ -67,6 +67,18 @@ class ProviderTests(unittest.TestCase):
             list_supported_elements(country='MX', dataset_scope='ghcnd', resolution='daily'),
             ['tas_max', 'tas_min', 'precipitation'],
         )
+
+    def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
+        for country in ['FI', 'FR', 'IT', 'NO', 'NZ']:
+            with self.subTest(country=country):
+                self.assertEqual(list_dataset_scopes(country=country), ['ghcnd'])
+                self.assertEqual(list_providers(country=country), ['ghcnd'])
+                self.assertEqual(list_resolutions(country=country, dataset_scope='ghcnd'), ['daily'])
+                self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
+                self.assertEqual(
+                    list_supported_elements(country=country, dataset_scope='ghcnd', resolution='daily'),
+                    ['tas_max', 'tas_min', 'precipitation'],
+                )
 
     def test_read_station_metadata_country_de(self) -> None:
         with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):

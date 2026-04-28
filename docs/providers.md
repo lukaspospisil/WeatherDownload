@@ -25,9 +25,14 @@ Use ISO 3166-1 alpha-2 country codes:
 - `CZ`
 - `DE`
 - `DK`
+- `FI`
+- `FR`
 - `HU`
+- `IT`
 - `MX`
 - `NL`
+- `NO`
+- `NZ`
 - `PL`
 - `SE`
 - `SK` (experimental, limited to `recent / daily`)
@@ -45,9 +50,14 @@ ch_stations = read_station_metadata(country="CH")
 cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
 dk_stations = read_station_metadata(country="DK")
+fi_stations = read_station_metadata(country="FI")
+fr_stations = read_station_metadata(country="FR")
 hu_stations = read_station_metadata(country="HU")
+it_stations = read_station_metadata(country="IT")
 mx_stations = read_station_metadata(country="MX")
 nl_stations = read_station_metadata(country="NL")
+no_stations = read_station_metadata(country="NO")
+nz_stations = read_station_metadata(country="NZ")
 pl_stations = read_station_metadata(country="PL")
 se_stations = read_station_metadata(country="SE")
 sk_stations = read_station_metadata(country="SK")
@@ -68,9 +78,14 @@ weatherdownload stations metadata --country CH
 weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
 weatherdownload stations metadata --country DK
+weatherdownload stations metadata --country FI
+weatherdownload stations metadata --country FR
 weatherdownload stations metadata --country HU
+weatherdownload stations metadata --country IT
 weatherdownload stations metadata --country MX
 weatherdownload stations metadata --country NL
+weatherdownload stations metadata --country NO
+weatherdownload stations metadata --country NZ
 weatherdownload stations metadata --country PL
 weatherdownload stations metadata --country SE
 weatherdownload stations metadata --country SK
@@ -103,7 +118,12 @@ Examples:
 | --- | --- | --- |
 | `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
 | `CA` | `ghcnd` | NOAA GHCN-Daily source |
+| `FI` | `ghcnd` | NOAA GHCN-Daily source |
+| `FR` | `ghcnd` | NOAA GHCN-Daily source |
+| `IT` | `ghcnd` | NOAA GHCN-Daily source |
 | `MX` | `ghcnd` | NOAA GHCN-Daily source |
+| `NO` | `ghcnd` | NOAA GHCN-Daily source |
+| `NZ` | `ghcnd` | NOAA GHCN-Daily source |
 | `SK` | `recent` | SHMU recent daily JSON source |
 | `CH` | `historical` | MeteoSwiss historical station-data path |
 | `HU` | `historical` | HungaroMet historical observation archives |
@@ -116,8 +136,8 @@ Practical interpretation:
 
 - `historical_csv` is a CHMI-specific scope name, not a universal label for all historical datasets
 - `recent` does not have exactly the same source semantics across providers
-- `ghcnd` currently names the NOAA GHCN-Daily slice implemented under `country="CA"` and `country="US"`; it should be read as the provider source name, not as a claim about future cross-country scope rules
-- the shared NOAA implementation lives in `weatherdownload/providers/ghcnd/`, while country wrappers such as `US`, `CA`, and `MX` stay thin
+- `ghcnd` currently names the NOAA GHCN-Daily slice implemented under `country="CA"`, `country="FI"`, `country="FR"`, `country="IT"`, `country="MX"`, `country="NO"`, `country="NZ"`, and `country="US"`; it should be read as the provider source name, not as a claim about future cross-country scope rules
+- the shared NOAA implementation lives in `weatherdownload/providers/ghcnd/`, while country wrappers such as `US`, `CA`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin
 - normalized output tables still keep the `dataset_scope` column name for backward compatibility
 
 What the library normalizes across providers:
@@ -153,6 +173,9 @@ Subdaily variability is expected across providers:
 | `AT` | GeoSphere Klima station id as string |
 | `BE` | official RMI/KMI AWS station code from the `aws_station` layer |
 | `CA` | raw NOAA GHCN-Daily station id, e.g. `CA001...` |
+| `FI` | raw NOAA GHCN-Daily station id, e.g. `FI000...` |
+| `FR` | raw NOAA GHCN-Daily station id, e.g. `FR000...` |
+| `IT` | raw NOAA GHCN-Daily station id, e.g. `IT000...` |
 | `MX` | raw NOAA GHCN-Daily station id, e.g. `MXM...` |
 | `CH` | official MeteoSwiss A1 `station_abbr` as string |
 | `CZ` | CHMI `WSI` |
@@ -160,6 +183,8 @@ Subdaily variability is expected across providers:
 | `DK` | official DMI `stationId` from the Climate Data `station` collection |
 | `HU` | official HungaroMet `StationNumber` as string |
 | `NL` | official KNMI station identifier from the station metadata CSV used by this provider |
+| `NO` | raw NOAA GHCN-Daily station id, e.g. `NO000...` |
+| `NZ` | raw NOAA GHCN-Daily station id, e.g. `NZ000...` |
 | `PL` | official IMGW 5-character station code from `wykaz_stacji.csv`, normalized as string |
 | `SE` | official SMHI station id from the parameter station listings used by this provider |
 | `SK` | SHMU `ind_kli` as string |
@@ -178,9 +203,14 @@ Subdaily variability is expected across providers:
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `open_water_evaporation`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` | CHMI station metadata with official identifiers, names, coordinates, elevation, and validity fields where exposed by the implemented paths |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
 | `DK` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official DMI Climate Data `station` collection filtered to Denmark stations, with source-backed name, coordinates, station height, and validity range |
+| `FI` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | Official NOAA GHCN-Daily station metadata and inventory, with Finnish station elements driven by per-station `ghcnd-inventory.txt` availability |
+| `FR` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | Official NOAA GHCN-Daily station metadata and inventory, with French station elements driven by per-station `ghcnd-inventory.txt` availability |
 | `HU` | Stable | `historical`, `historical_wind` | `historical`: `daily`, `1hour`, `10min`; `historical_wind`: `10min` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration`; `historical / 1hour`: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed`; `historical / 10min`: `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed`; `historical_wind / 10min`: `wind_speed`, `wind_speed_max` | Official HungaroMet station metadata CSVs with source-backed station identifier, name, coordinates, elevation, and validity range |
+| `IT` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | Official NOAA GHCN-Daily station metadata and inventory, with Italian station elements driven by per-station `ghcnd-inventory.txt` availability |
 | `MX` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | Official NOAA GHCN-Daily station metadata and inventory, with Mexican station elements driven by per-station `ghcnd-inventory.txt` availability |
 | `NL` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official KNMI metadata file retrieved through the Open Data API; API key required |
+| `NO` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | Official NOAA GHCN-Daily station metadata and inventory, with Norwegian station elements driven by per-station `ghcnd-inventory.txt` availability |
+| `NZ` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | Official NOAA GHCN-Daily station metadata and inventory, with New Zealand station elements driven by per-station `ghcnd-inventory.txt` availability |
 | `PL` | Stable | `historical`, `historical_klimat` | `historical`: `daily`, `1hour`; `historical_klimat`: `daily` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`; `historical / 1hour`: `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`; `historical_klimat / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Official IMGW station list with source-backed 5-character station code and station name, plus latitude/longitude from exact `gh_id` matches in the official `api/data/meteo` feed; `elevation_m` and validity range remain unavailable |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
@@ -738,6 +768,38 @@ Important current limitations:
 Detailed notes:
 
 - [NOAA / GHCN-Daily Mexico Provider Notes](providers_mx_noaa_ghcnd.md)
+
+### Direct-Prefix GHCN Country Wrappers
+
+Supported canonical elements:
+
+- `tas_max`
+- `tas_min`
+- `precipitation`
+
+Current direct-prefix GHCN wrapper countries:
+
+- `FI / ghcnd / daily`
+- `FR / ghcnd / daily`
+- `IT / ghcnd / daily`
+- `NO / ghcnd / daily`
+- `NZ / ghcnd / daily`
+
+Important current limitations:
+
+- these countries use the shared NOAA NCEI GHCN-Daily implementation under `weatherdownload/providers/ghcnd/`
+- each country wrapper stays thin and uses the raw GHCN station id as `station_id`
+- station metadata come from `ghcnd-stations.txt`
+- station metadata include only stations with at least one supported element in `ghcnd-inventory.txt`
+- station elements are inventory-driven per station
+- daily observations come from the official `all/{station_id}.dly` files
+- NOAA raw `TMAX` and `TMIN` values are normalized from tenths of degrees C to degrees C
+- NOAA raw `PRCP` values are normalized from tenths of `mm` to `mm`
+- these direct-prefix wrappers intentionally do not expose `open_water_evaporation` in this pass because the audit did not verify meaningful country-level `EVAP` support for these slices
+
+Detailed notes:
+
+- [NOAA / GHCN-Daily Direct-Prefix Country Wrapper Notes](providers_ghcnd_direct_prefix_wrappers.md)
 
 ### US `ghcnd / daily`
 
