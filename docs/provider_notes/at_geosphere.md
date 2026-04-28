@@ -1,185 +1,63 @@
-﻿# GeoSphere Austria Provider Notes
+# GeoSphere Austria
 
 <p align="right">
   <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-## Scope
+This note documents the current conservative GeoSphere Austria station-observation integration. The public WeatherDownload shape is standard; the source-specific behavior stays behind the provider layer.
 
-The Austria provider is currently implemented as a conservative GeoSphere Austria station-observation integration.
-
-Implemented scope:
+## Provider identifiers
 
 - country: `AT`
-- provider: GeoSphere Austria Dataset API
-- dataset scope: `historical`
-- resolutions: `daily`, `1hour`, `10min`
-- source datasets: `klima-v2-1d`, `klima-v2-1h`, `klima-v2-10min`
+- provider: `historical`
+- backward-compatible `dataset_scope`: `historical`
+- resolution(s): `daily`, `1hour`, `10min`
 
-No Austria FAO logic is implemented in the provider itself. The FAO-preparation workflow lives separately in the shared example layer:
+## Source
 
-- [MATLAB-Oriented FAO Workflow](../download_fao.md)
+- official source: GeoSphere Austria Dataset API
+- dataset list: `https://dataset.api.hub.geosphere.at/v1/datasets`
+- daily metadata: `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d/metadata`
+- daily data: `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d`
+- hourly metadata: `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1h/metadata`
+- hourly data: `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1h`
+- 10-minute metadata: `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min/metadata`
+- 10-minute data: `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min`
 
-The general shared download examples use the same unified public interface for Austria:
+## Station identifiers
 
-- `python examples/basic/download_daily.py --country AT`
-- `python examples/basic/download_hourly.py --country AT`
-- `python examples/basic/download_tenmin.py --country AT`
+- `station_id` is the official GeoSphere Klima station ID, normalized as a string
+- `gh_id` remains null on this path
+- station metadata are normalized from official fields such as `name`, `lon`, `lat`, `altitude`, `valid_from`, and `valid_to`
 
-## Official Source
+## Supported data
 
-Dataset and API references used by this provider:
+Current source-backed mapping includes:
 
-- dataset list:
-  - `https://dataset.api.hub.geosphere.at/v1/datasets`
-- historical daily metadata:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d/metadata`
-- historical daily data:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d`
-- historical hourly metadata:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1h/metadata`
-- historical hourly data:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1h`
-- historical 10-minute metadata:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min/metadata`
-- historical 10-minute data:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min`
+- `daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`
+- `1hour`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
+- `10min`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
 
-## Implemented Paths
+Raw GeoSphere parameter names remain accepted for backward compatibility, but users should prefer canonical element names. For the authoritative current matrix, see [Supported Capabilities](../supported_capabilities.md).
 
-Implemented public paths in this pass:
+## Units and conversions
 
-- `country="AT"`, `dataset_scope="historical"`, `resolution="daily"`
-- `country="AT"`, `dataset_scope="historical"`, `resolution="1hour"`
-- `country="AT"`, `dataset_scope="historical"`, `resolution="10min"`
+The provider uses the official GeoSphere values directly and does not apply a special unit conversion layer beyond the shared WeatherDownload normalization.
 
-## Supported Resolutions
+Quality companion fields are requested as `<raw_parameter>_flag` where available.
 
-- `daily`
-- `1hour`
-- `10min`
+## Limitations and caveats
 
-## Station Metadata
+- `daily` is normalized as date-based data from the published daily timestamps
+- `1hour` and `10min` preserve the published UTC timestamps
+- the implemented path does not recompute hourly or daily aggregates from 10-minute data
+- daily `quality` keeps the numeric `<raw_parameter>_flag` value, while hourly and 10-minute paths keep the raw flag text in `flag`
+- no Austria-specific provider-side FAO workflow logic is implemented here; that stays in the example layer
 
-Station discovery is derived from the official GeoSphere metadata endpoint.
+## Examples
 
-Normalized fields:
-
-- `station_id`: GeoSphere Klima station id as string
-- `gh_id`: null
-- `begin_date`: normalized from `valid_from`
-- `end_date`: normalized from `valid_to`
-- `full_name`: station `name`
-- `longitude`: `lon`
-- `latitude`: `lat`
-- `elevation_m`: `altitude`
-
-The provider does not guess any secondary identifier analogous to `gh_id`.
-
-## Canonical Elements
-
-Current canonical-to-raw mappings for `AT / historical / daily`:
-
-- `tas_mean` -> `tl_mittel`
-- `tas_max` -> `tlmax`
-- `tas_min` -> `tlmin`
-- `precipitation` -> `rr`
-- `sunshine_duration` -> `so_h`
-- `wind_speed` -> `vv_mittel`
-- `pressure` -> `p_mittel`
-- `relative_humidity` -> `rf_mittel`
-
-Current canonical-to-raw mappings for `AT / historical / 1hour`:
-
-- `tas_mean` -> `tl`
-- `precipitation` -> `rr`
-- `wind_speed` -> `ff`
-- `relative_humidity` -> `rf`
-- `pressure` -> `p`
-- `sunshine_duration` -> `so`
-
-Current canonical-to-raw mappings for `AT / historical / 10min`:
-
-- `tas_mean` -> `tl`
-- `precipitation` -> `rr`
-- `wind_speed` -> `ff`
-- `relative_humidity` -> `rf`
-- `pressure` -> `p`
-- `sunshine_duration` -> `so`
-
-The public API prefers the canonical names above. Raw GeoSphere parameter names remain accepted for backward compatibility.
-
-## Daily Semantics
-
-The GeoSphere daily endpoint returns timestamps at `00:00+00:00` for each daily record.
-
-WeatherDownload normalizes this daily path as date-based data:
-
-- output field: `observation_date`
-- `time_function`: null
-
-The raw GeoSphere timestamp is used only to derive the calendar date.
-
-## Hourly Semantics
-
-The GeoSphere hourly endpoint publishes a `time` field for each hourly record.
-
-WeatherDownload normalizes this hourly path as timestamp-based data:
-
-- output field: `timestamp`
-- the normalized `timestamp` preserves the published GeoSphere hourly `time` value in UTC
-- provider-defined hourly field semantics stay behind the provider layer
-
-## 10-Minute Semantics
-
-The GeoSphere 10-minute endpoint publishes a `time` field for each 10-minute record and documents dataset frequency `PT10M` in the metadata path.
-
-WeatherDownload normalizes this 10-minute path as timestamp-based data:
-
-- output field: `timestamp`
-- the normalized `timestamp` preserves the published GeoSphere `time` value in UTC
-- provider-defined 10-minute field semantics stay behind the provider layer
-- the implemented path does not recompute hourly or daily aggregates from Austria 10-minute data
-
-## QC / Flags
-
-GeoSphere metadata documents parameter quality via companion `_flag` parameters and the `q21` code list in the metadata response.
-
-Current daily normalization:
-
-- `quality`: numeric value from `<raw_parameter>_flag`
-- `flag`: null
-
-Current hourly normalization:
-
-- `quality`: null
-- `flag`: raw value from `<raw_parameter>_flag`
-
-Current 10-minute normalization:
-
-- `quality`: null
-- `flag`: raw value from `<raw_parameter>_flag`
-
-The downloader requests both the raw parameter and its `_flag` companion for each selected element.
-
-## Shared Interface Example
-
-Use the normal shared interface:
-
-```python
-from weatherdownload import ObservationQuery, download_observations
-
-query = ObservationQuery(
-    country="AT",
-    dataset_scope="historical",
-    resolution="daily",
-    station_ids=["1"],
-    start_date="2024-01-01",
-    end_date="2024-01-03",
-    elements=["tas_mean", "precipitation"],
-)
-
-daily = download_observations(query)
+```powershell
+weatherdownload stations elements --country AT --provider historical --resolution daily --include-mapping
 ```
 
 ```python
@@ -187,7 +65,7 @@ from weatherdownload import ObservationQuery, download_observations
 
 query = ObservationQuery(
     country="AT",
-    dataset_scope="historical",
+    provider="historical",
     resolution="1hour",
     station_ids=["1"],
     start="2024-01-01T00:00:00Z",
@@ -195,49 +73,12 @@ query = ObservationQuery(
     elements=["tas_mean", "pressure"],
 )
 
-hourly = download_observations(query)
+observations = download_observations(query)
 ```
 
-```python
-from weatherdownload import ObservationQuery, download_observations
+## Related documentation
 
-query = ObservationQuery(
-    country="AT",
-    dataset_scope="historical",
-    resolution="10min",
-    station_ids=["1"],
-    start="2024-01-01T00:10:00Z",
-    end="2024-01-01T00:20:00Z",
-    elements=["tas_mean", "pressure"],
-)
-
-tenmin = download_observations(query)
-```
-
-Source request shapes:
-
-- daily example:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d?station_ids=1&parameters=tl_mittel&parameters=tl_mittel_flag&start=2024-01-01&end=2024-01-03&output_format=csv`
-- hourly example:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1h?station_ids=1&parameters=tl&parameters=tl_flag&start=2024-01-01T00:00:00Z&end=2024-01-01T02:00:00Z&output_format=csv`
-- 10-minute example:
-  - `https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min?station_ids=1&parameters=tl&parameters=tl_flag&start=2024-01-01T00:10:00Z&end=2024-01-01T00:20:00Z&output_format=csv`
-
-Example CSV columns from the official API:
-
-- `time`
-- `station`
-- `<parameter>`
-- `<parameter>_flag`
-- `substation`
-
-The current provider ignores `substation` in the normalized public output.
-
-## Known Limitations
-
-- only `AT / historical / daily`, `AT / historical / 1hour`, and `AT / historical / 10min` are implemented
-- no Austria-specific provider-side FAO workflow logic
-- no derived meteorological variables are added
-- `gh_id` remains null because GeoSphere does not expose a direct equivalent in these implemented paths
-
-
+- [Provider Model](../providers.md)
+- [Supported Capabilities](../supported_capabilities.md)
+- [Normalized Output Schemas](../output_schema.md)
+- [MATLAB-Oriented FAO Workflow](../download_fao.md)

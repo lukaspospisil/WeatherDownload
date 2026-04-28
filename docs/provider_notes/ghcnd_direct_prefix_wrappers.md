@@ -1,49 +1,71 @@
-﻿# NOAA / GHCN-Daily Direct-Prefix Country Wrapper Notes
+# NOAA GHCN-Daily Direct-Prefix Wrappers
 
-This note covers the direct-prefix NOAA GHCN-Daily country wrappers implemented through the shared source-local helper under `weatherdownload/providers/ghcnd/`.
+This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `FI`, `FR`, `IT`, `NO`, and `NZ` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
 
-Implemented countries in this slice:
+## Provider identifiers
 
-- `FI` / Finland
-- `FR` / France
-- `IT` / Italy
-- `NO` / Norway
-- `NZ` / New Zealand
+- country: `FI`, `FR`, `IT`, `NO`, `NZ`
+- provider: `ghcnd`
+- backward-compatible `dataset_scope`: `ghcnd`
+- resolution(s): `daily`
 
-Shared wrapper model:
+## Source
 
-- country-specific selection still uses `country + provider + resolution`
-- `provider="ghcnd"` is the preferred public selector
-- `dataset_scope="ghcnd"` remains accepted as a backward-compatible alias
-- output tables still expose `dataset_scope` for compatibility
-- `station_id` is the raw NOAA GHCN-Daily station id
+- official source: NOAA NCEI GHCN-Daily
+- station metadata: `https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt`
+- station/element inventory: `https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt`
+- observations: `https://www.ncei.noaa.gov/pub/data/ghcn/daily/all/{GHCN_STATION_ID}.dly`
+
+## Station identifiers
+
+- `station_id` is the raw NOAA GHCN-Daily station ID
+- country filtering stays explicit in the wrapper configuration
 - station metadata and station elements are inventory-driven from `ghcnd-inventory.txt`
-- the shared implementation lives in `weatherdownload/providers/ghcnd/`, while country wrappers remain thin and explicit
 
-Supported elements on all countries in this note:
+These wrappers are grouped together because the GHCN country prefix matches the WeatherDownload country code directly:
+
+- `FI -> FI`
+- `FR -> FR`
+- `IT -> IT`
+- `NO -> NO`
+- `NZ -> NZ`
+
+## Supported data
+
+All wrappers in this note expose the same conservative `daily` core:
 
 - `TMAX` -> `tas_max`
 - `TMIN` -> `tas_min`
 - `PRCP` -> `precipitation`
 
-Intentionally unsupported on these wrappers in this pass:
+For the authoritative current matrix, see [Supported Capabilities](../supported_capabilities.md).
 
-- `EVAP` -> `open_water_evaporation`
+## Units and conversions
 
-Reason:
+- `TMAX` and `TMIN`: tenths of degrees C -> degrees C
+- `PRCP`: tenths of mm -> mm
+- NOAA missing code `-9999` is treated as missing
 
-- the implementation is intentionally conservative
-- the direct-prefix audit did not verify meaningful `EVAP` coverage for these countries
-- WeatherDownload therefore keeps these wrappers aligned on the common `TMAX/TMIN/PRCP` core
+## Limitations and caveats
 
-Direct-prefix note:
+- these wrappers are intentionally thin and share parser, metadata, inventory, and observation logic
+- station-level availability is inventory-driven and can differ by station
+- `open_water_evaporation` is intentionally unsupported on these wrappers
+- the shared wrapper audit did not justify exposing raw `EVAP` for this group
 
-- these countries are included here because the GHCN country prefix directly matches the WeatherDownload country code:
-  - `FI -> FI`
-  - `FR -> FR`
-  - `IT -> IT`
-  - `NO -> NO`
-  - `NZ -> NZ`
+## Examples
 
-That makes them suitable for thin wrappers without adding a separate prefix-mapping layer in this pass.
+```powershell
+weatherdownload stations elements --country FI --provider ghcnd --resolution daily --include-mapping
+```
 
+```powershell
+weatherdownload observations daily --country NZ --provider ghcnd --station-id NZ000093844 --start-date 2024-01-01 --end-date 2024-01-03 --element precipitation
+```
+
+## Related documentation
+
+- [Provider Model](../providers.md)
+- [Supported Capabilities](../supported_capabilities.md)
+- [Canonical Elements](../canonical_elements.md)
+- [Normalized Output Schemas](../output_schema.md)
