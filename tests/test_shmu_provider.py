@@ -76,7 +76,10 @@ class ShmuProviderTests(unittest.TestCase):
         )
 
     def test_invalid_dataset_scope_for_sk_fails_clearly(self) -> None:
-        with self.assertRaisesRegex(QueryValidationError, 'Unsupported dataset_scope: historical'):
+        with self.assertRaisesRegex(
+            QueryValidationError,
+            r"Unsupported provider 'historical' for country 'SK'.*dataset_scope remains accepted",
+        ):
             ObservationQuery(
                 country='SK',
                 dataset_scope='historical',
@@ -88,7 +91,10 @@ class ShmuProviderTests(unittest.TestCase):
             )
 
     def test_invalid_resolution_for_sk_fails_clearly(self) -> None:
-        with self.assertRaisesRegex(QueryValidationError, r"Unsupported resolution '1hour' for dataset_scope 'recent'\."):
+        with self.assertRaisesRegex(
+            QueryValidationError,
+            r"Unsupported resolution '1hour' for provider 'recent'.*dataset_scope remains accepted",
+        ):
             ObservationQuery(
                 country='SK',
                 dataset_scope='recent',
@@ -102,7 +108,7 @@ class ShmuProviderTests(unittest.TestCase):
     def test_invalid_element_for_sk_fails_clearly(self) -> None:
         with self.assertRaisesRegex(
             QueryValidationError,
-            r"Unsupported elements for dataset_scope 'recent' and resolution 'daily': \['tas_mean'\]",
+            r"Unsupported elements for provider 'recent' and resolution 'daily': \['tas_mean'\].*dataset_scope remains accepted",
         ):
             ObservationQuery(
                 country='SK',

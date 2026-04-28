@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from weatherdownload import (
     ObservationQuery,
+    get_provider,
     list_dataset_scopes,
     list_providers,
     list_resolutions,
@@ -39,6 +40,27 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'FI', 'FR', 'HU', 'IT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
+
+    def test_every_registered_country_has_discoverable_provider_paths(self) -> None:
+        for country in list_supported_countries():
+            with self.subTest(country=country):
+                providers = list_providers(country=country)
+                self.assertEqual(providers, list_dataset_scopes(country=country))
+                self.assertTrue(providers)
+                weather_provider = get_provider(country=country)
+                implemented_specs = weather_provider.list_implemented_dataset_specs()
+                for provider_name in providers:
+                    resolutions = list_resolutions(country=country, provider=provider_name)
+                    self.assertTrue(resolutions)
+                    for resolution in resolutions:
+                        spec = next(
+                            (item for item in implemented_specs if item.dataset_scope == provider_name and item.resolution == resolution),
+                            None,
+                        )
+                        if spec is None:
+                            continue
+                        elements = list_supported_elements(country=country, provider=provider_name, resolution=resolution)
+                        self.assertTrue(elements)
 
     def test_discovery_country_ca_includes_conservative_ghcnd_core_without_evap(self) -> None:
         self.assertEqual(list_dataset_scopes(country='CA'), ['ghcnd'])

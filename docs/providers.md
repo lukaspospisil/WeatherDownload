@@ -192,6 +192,41 @@ Subdaily variability is expected across providers:
 
 `gh_id` remains an optional secondary field and is nullable when a provider does not expose an equivalent identifier.
 
+## Concise Provider Matrix
+
+This matrix is the shortest current view of the implemented provider paths. For full caveats, station-metadata notes, and source semantics, keep using the detailed sections below.
+
+| Country | Provider | Resolution(s) | Implementation | Key canonical elements | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `AT` | `historical` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed` | GeoSphere Austria |
+| `BE` | `historical` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed` | RMI/KMI |
+| `CA` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation` | Shared `weatherdownload/providers/ghcnd/`; raw GHCN station ids |
+| `CH` | `historical` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `pressure` | MeteoSwiss A1 |
+| `CZ` | `historical_csv` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `open_water_evaporation` | CHMI `VY` is measured open-water evaporation |
+| `DE` | `historical` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `pressure` | DWD |
+| `DK` | `historical` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `pressure` | DMI |
+| `FI` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation` | Shared `weatherdownload/providers/ghcnd/`; no `EVAP` mapping |
+| `FR` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation` | Shared `weatherdownload/providers/ghcnd/`; no `EVAP` mapping |
+| `HU` | `historical` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed` | HungaroMet generic archive path |
+| `HU` | `historical_wind` | `10min` | National provider | `wind_speed`, `wind_speed_max` | Separate HungaroMet wind product |
+| `IT` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation` | Shared `weatherdownload/providers/ghcnd/`; no `EVAP` mapping |
+| `MX` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation` | Shared `weatherdownload/providers/ghcnd/`; no `EVAP` mapping |
+| `NL` | `historical` | `daily`, `1hour`, `10min` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `pressure` | KNMI |
+| `NO` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation` | Shared `weatherdownload/providers/ghcnd/`; no `EVAP` mapping |
+| `NZ` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation` | Shared `weatherdownload/providers/ghcnd/`; no `EVAP` mapping |
+| `PL` | `historical` | `daily`, `1hour` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration` | IMGW synop path |
+| `PL` | `historical_klimat` | `daily` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Separate IMGW klimat path |
+| `SE` | `historical` | `daily`, `1hour` | National provider | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `pressure` | SMHI |
+| `SK` | `recent` | `daily` | National provider | `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `open_water_evaporation` | SHMU `voda_vypar` is measured water-surface evaporation |
+| `US` | `ghcnd` | `daily` | Thin GHCN wrapper | `tas_max`, `tas_min`, `precipitation`, `open_water_evaporation` | Shared `weatherdownload/providers/ghcnd/`; `EVAP` only here among current GHCN wrappers |
+
+CLI defaulting guidance:
+
+- single-provider countries default cleanly to their only provider for the requested resolution
+- `CZ` still defaults to `historical_csv`
+- `SK` still defaults to `recent`
+- countries with multiple providers on the same requested resolution, such as `PL / daily` or `HU / 10min`, should be called with an explicit `--provider`
+
 ## Capability Matrix
 
 | Country | Status | Supported dataset scopes | Implemented resolutions | Supported canonical elements | Station metadata quality |

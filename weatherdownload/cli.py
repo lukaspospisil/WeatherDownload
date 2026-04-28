@@ -10,6 +10,7 @@ from .availability import list_station_elements, list_station_paths, station_ava
 from .exporting import export_table
 from .metadata import read_station_metadata
 from .observations import download_observations
+from .providers import get_provider
 from .queries import ObservationQuery, normalize_provider_scope
 
 
@@ -254,7 +255,7 @@ def handle_station_elements(args: argparse.Namespace) -> int:
 
 def handle_tenmin_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=False)
-    provider_scope = _resolve_provider_for_cli(args, default=_default_dataset_scope(args.country))
+    provider_scope = _resolve_provider_for_cli(args, default=_default_provider_for_resolution(args.country, '10min'))
     query = ObservationQuery(
         country=args.country,
         dataset_scope=provider_scope,
@@ -283,7 +284,7 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
 
 def handle_hourly_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=False)
-    provider_scope = _resolve_provider_for_cli(args, default=_default_dataset_scope(args.country))
+    provider_scope = _resolve_provider_for_cli(args, default=_default_provider_for_resolution(args.country, '1hour'))
     query = ObservationQuery(
         country=args.country,
         dataset_scope=provider_scope,
@@ -312,7 +313,7 @@ def handle_hourly_observations(args: argparse.Namespace) -> int:
 
 def handle_daily_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=True)
-    provider_scope = _resolve_provider_for_cli(args, default=_default_dataset_scope(args.country))
+    provider_scope = _resolve_provider_for_cli(args, default=_default_provider_for_resolution(args.country, 'daily'))
     query = ObservationQuery(
         country=args.country,
         dataset_scope=provider_scope,
@@ -387,14 +388,37 @@ def _resolve_provider_for_cli(
 
 
 def _default_dataset_scope(country: str) -> str:
+    return _default_provider_for_resolution(country, resolution=None)
+
+
+def _default_provider_for_resolution(country: str, resolution: str | None) -> str:
     normalized = country.strip().upper()
-    if normalized in {'DE', 'AT', 'BE', 'DK', 'NL'}:
-        return 'historical'
+    if normalized == 'CZ':
+        return 'historical_csv'
     if normalized == 'SK':
         return 'recent'
-    if normalized in {'CA', 'FI', 'FR', 'IT', 'MX', 'NO', 'NZ', 'US'}:
-        return 'ghcnd'
-    return 'historical_csv'
+
+    provider = get_provider(normalized)
+    specs = provider.list_dataset_specs()
+    if resolution is not None:
+        matching_scopes = sorted({spec.dataset_scope for spec in specs if spec.resolution == resolution})
+        if len(matching_scopes) == 1:
+            return matching_scopes[0]
+        if len(matching_scopes) > 1:
+            choices = ', '.join(matching_scopes)
+            raise ValueError(
+                f"Multiple providers support country='{normalized}' and resolution='{resolution}': {choices}. "
+                'Use --provider (preferred) or --dataset-scope explicitly.'
+            )
+
+    scopes = sorted({spec.dataset_scope for spec in specs})
+    if len(scopes) == 1:
+        return scopes[0]
+    choices = ', '.join(scopes)
+    raise ValueError(
+        f"Multiple providers are available for country='{normalized}': {choices}. "
+        'Use --provider (preferred) or --dataset-scope explicitly.'
+    )
 
 
 def _read_stations_for_cli(args: argparse.Namespace) -> pd.DataFrame:

@@ -619,6 +619,36 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(query.dataset_scope, 'ghcnd')
         self.assertEqual(query.provider, 'ghcnd')
 
+    def test_daily_cli_single_provider_country_ch_defaults_to_historical(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_daily_table()) as download_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'daily', '--country', 'CH', '--station-id', 'AIG', '--element', 'tas_mean', '--start-date', '2025-12-31', '--end-date', '2026-01-02'
+                ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'CH')
+        self.assertEqual(query.dataset_scope, 'historical')
+
+    def test_daily_cli_ambiguous_country_pl_requires_explicit_provider(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([
+                'observations', 'daily', '--country', 'PL', '--station-id', '00375', '--element', 'tas_mean', '--start-date', '2025-01-01', '--end-date', '2025-01-03'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Multiple providers support country='PL' and resolution='daily'", stderr.getvalue())
+
+    def test_tenmin_cli_ambiguous_country_hu_requires_explicit_provider(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([
+                'observations', '10min', '--country', 'HU', '--station-id', '13704', '--element', 'tas_mean', '--start', '2026-01-01T00:00:00Z', '--end', '2026-01-01T00:10:00Z'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Multiple providers support country='HU' and resolution='10min'", stderr.getvalue())
+
     def test_daily_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
         stderr = io.StringIO()
         with redirect_stderr(stderr):

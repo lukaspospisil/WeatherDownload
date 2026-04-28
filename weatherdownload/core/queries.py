@@ -76,14 +76,18 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
 
     supported_scopes = sorted({spec.dataset_scope for spec in provider.list_dataset_specs()})
     if query.dataset_scope not in supported_scopes:
-        raise QueryValidationError(f'Unsupported dataset_scope: {query.dataset_scope}')
+        raise QueryValidationError(
+            f"Unsupported provider '{query.dataset_scope}' for country '{query.country}'. "
+            'dataset_scope remains accepted as a backward-compatible alias.'
+        )
 
     supported_resolutions = sorted({
         spec.resolution for spec in provider.list_dataset_specs() if spec.dataset_scope == query.dataset_scope
     })
     if query.resolution not in supported_resolutions:
         raise QueryValidationError(
-            f"Unsupported resolution '{query.resolution}' for dataset_scope '{query.dataset_scope}'."
+            f"Unsupported resolution '{query.resolution}' for provider '{query.dataset_scope}'. "
+            'dataset_scope remains accepted as a backward-compatible alias.'
         )
 
     dataset_spec = provider.get_dataset_spec(query.dataset_scope, query.resolution)
@@ -95,7 +99,8 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
         unsupported_elements = unsupported_requested_elements(normalized_input_elements, dataset_spec)
         if unsupported_elements:
             raise QueryValidationError(
-                f"Unsupported elements for dataset_scope '{query.dataset_scope}' and resolution '{query.resolution}': {unsupported_elements}"
+                f"Unsupported elements for provider '{query.dataset_scope}' and resolution '{query.resolution}': "
+                f'{unsupported_elements}. dataset_scope remains accepted as a backward-compatible alias.'
             )
         query.elements = normalize_requested_elements(normalized_input_elements, dataset_spec)
 

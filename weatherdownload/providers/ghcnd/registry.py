@@ -43,3 +43,41 @@ def build_dataset_spec(
         time_semantics='date',
         implemented=True,
     )
+
+
+def build_country_dataset_specs(
+    *,
+    supported_elements: tuple[str, ...],
+    canonical_elements: dict[str, tuple[str, ...]],
+    label: str = 'NOAA NCEI GHCN-Daily station observations',
+    source_id: str = 'ncei_ghcnd_daily',
+) -> list[GhcndDatasetSpec]:
+    return [
+        build_dataset_spec(
+            supported_elements=supported_elements,
+            canonical_elements=canonical_elements,
+            label=label,
+            source_id=source_id,
+        )
+    ]
+
+
+def list_country_dataset_specs(specs: list[GhcndDatasetSpec]) -> list[GhcndDatasetSpec]:
+    return list(specs)
+
+
+def list_country_implemented_dataset_specs(specs: list[GhcndDatasetSpec]) -> list[GhcndDatasetSpec]:
+    return [spec for spec in specs if spec.implemented]
+
+
+def get_country_dataset_spec(
+    specs: list[GhcndDatasetSpec],
+    dataset_scope: str,
+    resolution: str,
+) -> GhcndDatasetSpec:
+    normalized_scope = dataset_scope.strip()
+    normalized_resolution = resolution.strip()
+    for spec in specs:
+        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+            return spec
+    raise ValueError(f'Unsupported GHCN-Daily dataset combination: {dataset_scope}/{resolution}')

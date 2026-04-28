@@ -76,6 +76,10 @@ class ObservationQueryValidationTests(unittest.TestCase):
         with self.assertRaises(QueryValidationError):
             ObservationQuery(country='US', provider='historical', dataset_scope='ghcnd', resolution='daily', station_ids=['USC00000001'], start_date='2020-05-01', end_date='2020-05-02', elements=['tas_max'])
 
+    def test_query_errors_prefer_provider_wording(self) -> None:
+        with self.assertRaisesRegex(QueryValidationError, "Unsupported provider 'historical_csv' for country 'US'"):
+            ObservationQuery(country='US', provider='historical_csv', resolution='daily', station_ids=['USC00000001'], start_date='2020-05-01', end_date='2020-05-02', elements=['tas_max'])
+
     def test_query_accepts_raw_provider_codes_for_backward_compatibility(self) -> None:
         query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['tma', 'TMI'])
         self.assertEqual(query.elements, ['TMA', 'TMI'])
