@@ -66,11 +66,20 @@ Knihovna odděluje několik vrstev:
 
 Tím pádem může uživatel mezi zeměmi měnit hlavně:
 - `country="CZ"` / `country="DE"`,
+- `dataset_scope`,
 - stanici,
 - rozlišení,
 - canonical elementy,
 
 ale nemusí pokaždé znovu objevovat nový způsob práce s daty.
+
+Veřejný query model má tři oddělené dimenze:
+
+- `country` vybírá kontext země / providera
+- `dataset_scope` vybírá konkrétní provider-specific dataset, produkt nebo zdroj
+- `resolution` vybírá časové rozlišení
+
+Hodnoty `dataset_scope` nejsou globálně standardizované mezi zeměmi. Například `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat` a `US / ghcnd` označují různé provider-specific zdrojové cesty.
 
 ---
 
@@ -241,6 +250,12 @@ from weatherdownload import list_dataset_scopes
 print(list_dataset_scopes(country="CZ"))
 print(list_dataset_scopes(country="DE"))
 ```
+
+Poznámka k interpretaci:
+
+- `dataset_scope` neznamená ve všech zemích totéž
+- pojmenovává konkrétní provider source, který WeatherDownload používá za vybranou country path
+- příklady: `CZ / historical_csv`, `CH / historical`, `HU / historical_wind`, `PL / historical_klimat`, `US / ghcnd`
 
 ### 7.2 Přehled rozlišení
 

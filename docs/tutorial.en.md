@@ -66,11 +66,20 @@ The library separates several layers:
 
 This means the user can mostly vary:
 - `country="CZ"` / `country="DE"`,
+- `dataset_scope`,
 - station,
 - resolution,
 - canonical elements,
 
 without having to relearn a new data model for each provider.
+
+The public query model has three separate dimensions:
+
+- `country` selects the country/provider context
+- `dataset_scope` selects a concrete provider-specific dataset, product, or source
+- `resolution` selects the temporal resolution
+
+`dataset_scope` values are not globally standardized across countries. For example, `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat`, and `US / ghcnd` all refer to different provider-specific source families.
 
 ---
 
@@ -235,6 +244,12 @@ from weatherdownload import list_dataset_scopes
 print(list_dataset_scopes(country="CZ"))
 print(list_dataset_scopes(country="DE"))
 ```
+
+Interpretation note:
+
+- `dataset_scope` does not mean the same thing in every country
+- it names the concrete provider source that WeatherDownload uses behind the selected country path
+- examples: `CZ / historical_csv`, `CH / historical`, `HU / historical_wind`, `PL / historical_klimat`, `US / ghcnd`
 
 ### 7.2 Resolutions
 

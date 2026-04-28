@@ -51,6 +51,25 @@ weatherdownload observations hourly --country HU --station-id 13704 --element ta
 weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T09:10:00Z --end 2024-01-01T09:20:00Z
 ```
 
+Conceptual model:
+
+- `country` selects the country/provider context
+- `dataset_scope` selects a concrete provider-specific dataset, product, or source
+- `resolution` selects the temporal resolution
+- `dataset_scope` values are not globally standardized across countries
+
+Examples:
+
+| `country` | `dataset_scope` | Meaning |
+| --- | --- | --- |
+| `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
+| `SK` | `recent` | SHMU recent daily JSON source |
+| `HU` | `historical_wind` | HungaroMet special 10-minute wind product |
+| `PL` | `historical_klimat` | IMGW daily klimat source |
+| `US` | `ghcnd` | NOAA GHCN-Daily source |
+
+See [Provider Model And Coverage](docs/providers.md) for the full country-by-country matrix and exact supported scope names.
+
 ## Coverage Snapshot
 
 | Country | `daily` | `1hour` | `10min` | `download_fao` | Status |
@@ -121,6 +140,5 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - canonical meteorological element names stay shared across countries
 - normalized output schemas stay stable and DataFrame-first
 - missing variables stay missing by default instead of being silently derived
-
 
 

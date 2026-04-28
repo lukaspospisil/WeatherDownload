@@ -24,6 +24,7 @@ This page documents the stable public columns, not the provider-specific raw fil
 - provider provenance is preserved in `element_raw`
 - raw provider quality or status information is preserved in `flag` when the source exposes it
 - normalized `quality` is only populated where WeatherDownload has an explicit provider-specific normalization; otherwise it remains null
+- `dataset_scope` records the provider-specific dataset/product/source selected by the query; it is not a universal cross-country category
 - the public schema stays stable even when countries expose different subsets of canonical elements
 - unavailable fields are not synthesized by default; they remain null/missing in fixed-shape downstream packaging workflows
 
@@ -90,6 +91,7 @@ Daily semantics:
 - use `start_date` and `end_date`
 - output uses `observation_date`
 - `time_function` is provider-dependent
+- `dataset_scope` keeps the provider-local public token used in the query, such as `historical_csv`, `historical`, `historical_klimat`, `recent`, or `ghcnd`
 - countries can expose different daily element coverage while keeping the same column contract
 
 For example:
@@ -118,6 +120,7 @@ Subdaily semantics:
 
 - use `start` and `end`
 - output uses `timestamp`
+- `dataset_scope` still keeps the provider-local scope name used in the query
 - timestamps are normalized to UTC
 - countries can expose different subdaily element coverage while keeping the same column contract
 

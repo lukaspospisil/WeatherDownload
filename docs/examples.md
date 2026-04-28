@@ -20,6 +20,13 @@ This page helps you find the example scripts quickly.
 - FAO-oriented daily input bundle: [`examples/workflows/download_fao.py`](../examples/workflows/download_fao.py) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
 - Provider coverage and country-specific limits: [Provider Model And Coverage](providers.md)
 
+Terminology note:
+
+- `country` selects the country/provider context
+- `dataset_scope` selects a provider-specific dataset or source name
+- `resolution` selects the temporal resolution
+- scope names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model And Coverage](providers.md) for the exact meaning in each country path
+
 ## Basic Examples
 
 ### `examples/basic/read_metadata.py`

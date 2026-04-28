@@ -81,6 +81,33 @@ The same public API shape is used across countries:
 - `list_supported_elements(country=..., dataset_scope=..., resolution=...)`
 - `download_observations(...)`
 
+The public query model has three separate dimensions:
+
+- `country` selects the country/provider context
+- `dataset_scope` selects a concrete provider-specific dataset, product, or source
+- `resolution` selects the temporal resolution within that provider path
+
+`dataset_scope` is intentionally provider-specific. It is not a universal cross-country taxonomy such as "historical data" or "recent data". The same token can mean different source families in different countries, and different countries can use completely different tokens for similar time horizons.
+
+Examples:
+
+| `country` | `dataset_scope` | Meaning |
+| --- | --- | --- |
+| `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
+| `SK` | `recent` | SHMU recent daily JSON source |
+| `CH` | `historical` | MeteoSwiss historical station-data path |
+| `HU` | `historical` | HungaroMet historical observation archives |
+| `HU` | `historical_wind` | HungaroMet special 10-minute wind product |
+| `PL` | `historical` | IMGW daily synop source |
+| `PL` | `historical_klimat` | IMGW daily klimat source |
+| `US` | `ghcnd` | NOAA GHCN-Daily source |
+
+Practical interpretation:
+
+- `historical_csv` is a CHMI-specific scope name, not a universal label for all historical datasets
+- `recent` does not have exactly the same source semantics across providers
+- `ghcnd` currently names the NOAA GHCN-Daily slice implemented under `country="US"`; it should be read as the provider source name, not as a claim about future cross-country scope rules
+
 What the library normalizes across providers:
 
 - canonical `station_id`
@@ -142,6 +169,8 @@ Subdaily variability is expected across providers:
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 | `US` | Stable | `ghcnd` | `daily` | `open_water_evaporation` | Official NOAA GHCN-Daily station metadata and inventory, conservatively filtered to U.S. stations with `EVAP` availability |
+
+The matrix above lists the actual public `dataset_scope` values implemented by WeatherDownload for each country path. Similar-looking names across countries should still be interpreted as provider-local scope names.
 
 ## Current Conservative Coverage Details
 
