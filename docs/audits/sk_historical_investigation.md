@@ -1,4 +1,4 @@
-# Slovakia Historical Daily Climate Investigation
+﻿# Slovakia Historical Daily Climate Investigation
 
 Investigation date: 2026-03-23
 
@@ -179,3 +179,4 @@ Before implementing a Slovakia validated historical daily provider path, first i
 - an authoritative station metadata source or explicit metadata limitations
 
 Until that source is found, the SHMU provider should remain limited to the current experimental `SK / recent / daily` slice.
+

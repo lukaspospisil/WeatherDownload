@@ -1,14 +1,14 @@
-# NOAA / GHCN-Daily Mexico Provider Notes
+﻿# NOAA / GHCN-Daily Canada Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 ## Current Scope
 
-This first Mexico slice is intentionally conservative:
+This first Canada slice is intentionally conservative:
 
-- country: `MX`
+- country: `CA`
 - preferred provider: `ghcnd`
 - backward-compatible alias: `dataset_scope="ghcnd"`
 - resolution: `daily`
@@ -17,7 +17,7 @@ This first Mexico slice is intentionally conservative:
   - `tas_min` -> `TMIN`
   - `precipitation` -> `PRCP`
 
-The implementation uses the official NOAA NCEI GHCN-Daily station files through the shared source-local helper under `weatherdownload/providers/ghcnd/`, with the `MX` provider kept as a thin country wrapper.
+The implementation uses the official NOAA NCEI GHCN-Daily station files through the shared source-local helper under `weatherdownload/providers/ghcnd/`, with the `CA` provider kept as a thin country wrapper.
 
 ## Official Source Contract
 
@@ -38,14 +38,14 @@ Supported mapping on this path:
 - `tas_min` -> `TMIN`
 - `precipitation` -> `PRCP`
 
-Not supported on this Mexico slice:
+Not supported on this Canada slice:
 
 - `open_water_evaporation`
 
 Reason:
 
-- the current GHCN-Daily inventory audit found zero Mexican stations advertising raw `EVAP`
-- WeatherDownload therefore does not advertise `open_water_evaporation` for `MX / ghcnd / daily` in this pass
+- the current GHCN-Daily inventory audit found zero Canadian stations advertising raw `EVAP`
+- WeatherDownload therefore does not advertise `open_water_evaporation` for `CA / ghcnd / daily` in this pass
 
 ## Units And Missing Values
 
@@ -77,11 +77,9 @@ The normalized station table keeps:
 
 Discovery behavior on this path:
 
-- only `MX` stations are exposed
-- station metadata include Mexican stations that have at least one currently supported GHCN-Daily element in `ghcnd-inventory.txt`
+- only `CA` stations are exposed
+- station metadata include Canadian stations that have at least one currently supported GHCN-Daily element in `ghcnd-inventory.txt`
 - station elements are inventory-driven and can differ by station
-
-The GHCN prefix `MX` directly matches the WeatherDownload country code `MX` on this slice.
 
 ## Daily Parsing Behavior
 
@@ -106,8 +104,9 @@ Current normalized handling:
 
 ## Limitations
 
-- only `MX / ghcnd / daily` is implemented in this pass
-- the reusable NOAA GHCN-Daily parser, metadata, and observation logic live in `weatherdownload/providers/ghcnd/`, while `weatherdownload/providers/mx/` supplies only the country-specific wrapper configuration
-- only `TMAX`, `TMIN`, and `PRCP` are advertised for Mexico
-- `EVAP` is intentionally excluded for Mexico until official inventory evidence justifies adding it
+- only `CA / ghcnd / daily` is implemented in this pass
+- the reusable NOAA GHCN-Daily parser, metadata, and observation logic live in `weatherdownload/providers/ghcnd/`, while `weatherdownload/providers/ca/` supplies only the country-specific wrapper configuration
+- only `TMAX`, `TMIN`, and `PRCP` are advertised for Canada
+- `EVAP` is intentionally excluded for Canada until official inventory evidence justifies adding it
 - this pass does not implement broader GHCN-Daily variables or a country-agnostic global provider abstraction
+

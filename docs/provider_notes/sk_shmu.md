@@ -1,7 +1,7 @@
-# Experimental Slovakia Provider Notes
+﻿# Experimental Slovakia Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 ## Scope
@@ -155,7 +155,7 @@ Maintainer-oriented next steps, in order:
 
 Reference investigation note:
 
-- [Slovakia Historical Daily Climate Investigation](providers_sk_historical_investigation.md)
+- [Slovakia Historical Daily Climate Investigation](../audits/sk_historical_investigation.md)
 
 
 1. Identify and validate an authoritative SHMU station metadata source.
@@ -163,4 +163,5 @@ Reference investigation note:
 3. Revisit quality and flag normalization once SHMU field semantics are documented.
 4. Revisit subdaily SHMU support only after timestamp semantics are confirmed.
 5. Expand canonical element mappings only after the raw field semantics are explicitly verified.
+
 

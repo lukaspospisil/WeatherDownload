@@ -1,7 +1,7 @@
 ﻿# GeoSphere Austria Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 ## Scope
@@ -18,7 +18,7 @@ Implemented scope:
 
 No Austria FAO logic is implemented in the provider itself. The FAO-preparation workflow lives separately in the shared example layer:
 
-- [MATLAB-Oriented FAO Workflow](download_fao.md)
+- [MATLAB-Oriented FAO Workflow](../download_fao.md)
 
 The general shared download examples use the same unified public interface for Austria:
 
@@ -239,4 +239,5 @@ The current provider ignores `substation` in the normalized public output.
 - no Austria-specific provider-side FAO workflow logic
 - no derived meteorological variables are added
 - `gh_id` remains null because GeoSphere does not expose a direct equivalent in these implemented paths
+
 

@@ -1,7 +1,7 @@
-# HungaroMet Hungary Provider Notes
+﻿# HungaroMet Hungary Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 This provider adds Hungary as a standard WeatherDownload country adapter without changing the shared public API.
@@ -149,3 +149,4 @@ Important notes:
 ## Next Safe Extension
 
 The next low-risk extension would be to inspect the published HungaroMet wind-only documentation PDFs in detail and determine whether any additional wind-direction field from `10_minutes_wind` can be mapped cleanly to an existing canonical element without broadening the public model.
+

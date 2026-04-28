@@ -20,6 +20,7 @@ This page helps you find the example scripts quickly.
 - FAO-oriented daily input bundle: [`examples/workflows/download_fao.py`](../examples/workflows/download_fao.py) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
 - Generated current capability overview: [Supported Capabilities](supported_capabilities.md)
 - Provider model and country-specific caveats: [Provider Model](providers.md)
+- Source-specific provider notes: [Provider Notes](provider_notes/README.md)
 
 Terminology note:
 
@@ -294,7 +295,7 @@ HU 10-minute notes:
 - the example preserves the published HungaroMet 10-minute `Time` value as the normalized UTC `timestamp`
 - raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
 - the separate HungaroMet `10_minutes_wind` product is exposed through the distinct `provider="historical_wind"` capability in the library, but it is intentionally not merged into the shared default `10min` example path
-- for an explicit HU / historical_wind / 10min Python download example and CLI discovery example, see [HungaroMet Hungary Provider Notes](providers_hu_hungaromet.md#wind-only-10-minute-example)
+- for an explicit HU / historical_wind / 10min Python download example and CLI discovery example, see [HungaroMet Hungary Provider Notes](provider_notes/hu_hungaromet.md#wind-only-10-minute-example)
 
 NL 10-minute notes:
 

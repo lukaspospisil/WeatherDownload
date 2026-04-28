@@ -1,7 +1,7 @@
-# MeteoSwiss Switzerland Provider Notes
+﻿# MeteoSwiss Switzerland Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 This provider adds Switzerland as a standard WeatherDownload country adapter without changing the shared public API.
@@ -95,3 +95,4 @@ Unsupported or ambiguous source fields remain unsupported rather than being gues
 ## Next Safe Extension
 
 The next low-risk extension would be to evaluate one additional MeteoSwiss ground-station product family, such as A2 precipitation stations, only if it can be represented honestly as a separate provider slice without weakening the current public model.
+

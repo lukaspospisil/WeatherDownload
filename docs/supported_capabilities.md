@@ -6,6 +6,12 @@
 
 This page is generated from the current provider registry and discovery APIs, then checked in tests so it stays aligned with the code.
 
+Navigation:
+
+- conceptual provider model: [Provider Model](providers.md)
+- provider-specific source notes: [Provider Notes](provider_notes/README.md)
+- canonical element semantics: [Canonical Elements](canonical_elements.md)
+
 Preferred public selection model:
 
 - think in terms of `country + provider + resolution + element`

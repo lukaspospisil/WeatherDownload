@@ -96,12 +96,13 @@ See [Supported Capabilities](docs/supported_capabilities.md) for the generated c
 
 - [Provider Model](docs/providers.md)
 - [Supported Capabilities](docs/supported_capabilities.md)
+- [Provider Notes](docs/provider_notes/README.md)
 - [Examples And Workflows](docs/examples.md)
 - [Normalized Output Schemas](docs/output_schema.md)
 - [Canonical Elements](docs/canonical_elements.md)
 - [Changelog](docs/changelog.md)
 
-Provider-specific notes are linked from [Provider Model](docs/providers.md).
+Provider-specific notes are indexed in [Provider Notes](docs/provider_notes/README.md).
 
 ## Stable Cross-Country Invariants
 

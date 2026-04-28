@@ -11,6 +11,7 @@
 - Main project entry point: [README](../README.md)
 - Shared example overview: [Examples And Workflows](examples.md)
 - Provider model and country limits: [Provider Model](providers.md)
+- Source-specific provider notes: [Provider Notes](provider_notes/README.md)
 - Shared normalized station and observation columns: [Normalized Output Schemas](output_schema.md)
 
 Critical boundary:

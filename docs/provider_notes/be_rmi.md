@@ -1,7 +1,7 @@
-# RMI/KMI Belgium Provider Notes
+﻿# RMI/KMI Belgium Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 This page documents the current conservative Belgium slice implemented through the shared provider architecture.
@@ -175,3 +175,4 @@ There is no Belgium-specific public workflow shape. Belgium is exposed through t
 - daily and hourly values are official provider-side aggregates; WeatherDownload does not recompute them from Belgium 10-minute data
 - `quality` remains null because this pass does not normalize Belgium QC semantics beyond preserving raw `qc_flags`
 - no FAO computation and no derived meteorological variables are added
+

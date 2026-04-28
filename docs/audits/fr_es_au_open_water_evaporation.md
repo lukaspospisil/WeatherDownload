@@ -1,4 +1,4 @@
-# France, Spain, And Australia Open-Water Evaporation Audit
+﻿# France, Spain, And Australia Open-Water Evaporation Audit
 
 Investigation date: 2026-04-28
 
@@ -13,7 +13,7 @@ Semantic rule used throughout:
 
 Result:
 
-- `FR / Météo-France`: not supported
+- `FR / MĂ©tĂ©o-France`: not supported
 - `ES / AEMET`: unclear
 - `AU / BoM`: semantically supported but provider work needed
 
@@ -23,7 +23,7 @@ No new provider was implemented from this audit pass.
 
 | Country | Candidate source | Classification | Decision |
 | --- | --- | --- | --- |
-| `FR` | Météo-France `Données climatologiques de base - quotidiennes` | `not_supported` | Do not implement |
+| `FR` | MĂ©tĂ©o-France `DonnĂ©es climatologiques de base - quotidiennes` | `not_supported` | Do not implement |
 | `ES` | AEMET OpenData daily climatologies | `unclear` | Do not implement |
 | `AU` | BoM Daily Weather Observations / Climate Data Online | `semantically_supported_but_provider_work_needed` | Do not implement in this pass |
 
@@ -69,8 +69,8 @@ Observed evidence:
 - AEMET OpenData is an official REST API
 - access requires an API key
 - the official product catalog exposes both:
-  - `Climatologías diarias`
-  - `Climatologías mensuales/anuales`
+  - `ClimatologĂ­as diarias`
+  - `ClimatologĂ­as mensuales/anuales`
 - the FAQs document the official daily climatology endpoint pattern:
   - `/api/valores/climatologicos/diarios/datos/fechaini/{fechaIniStr}/fechafin/{fechaFinStr}/estacion/{idema}`
 - this audit did not verify an official daily field dictionary proving that the daily climatology response includes a measured open-water, pan, or evaporimeter evaporation variable
@@ -124,3 +124,4 @@ Possible next steps for a future audit:
 - `FR`: no follow-up unless a separate official measured pan/open-water variable is found
 - `ES`: inspect authenticated OpenData schema details only after deciding on an AEMET API-key configuration contract
 - `AU`: investigate whether BoM provides a stable official download service, bulk file endpoint, or documented API that avoids HTML scraping and anti-bot blocks
+

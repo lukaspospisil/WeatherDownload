@@ -1,7 +1,7 @@
-# KNMI Netherlands Provider Notes
+﻿# KNMI Netherlands Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 WeatherDownload includes a conservative KNMI slice for the Netherlands through the existing unified provider interface.

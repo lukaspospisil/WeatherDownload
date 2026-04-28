@@ -1,7 +1,7 @@
 ﻿# IMGW-PIB Poland Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 This provider adds Poland as a standard WeatherDownload country adapter without changing the shared public API.
@@ -177,4 +177,5 @@ The next low-risk extension would be either:
 
 - an official IMGW historical 10-minute meteorological archive or feed with one clean timestamp model per row, if IMGW publishes one later
 - or further explicit workflow-layer daily aggregation from the implemented `historical / 1hour` synop slice when that aggregation is documented separately and kept distinct from source-observed daily values
+
 

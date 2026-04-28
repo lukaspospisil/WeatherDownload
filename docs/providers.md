@@ -9,6 +9,8 @@ WeatherDownload uses a provider layer so the public API can stay stable while pr
 ## Navigation
 
 - Current capability matrix: [Supported Capabilities](supported_capabilities.md)
+- Provider-specific notes: [Provider Notes](provider_notes/README.md)
+- Audit notes: [Audit Notes](audits/README.md)
 - Practical usage patterns: [Examples And Workflows](examples.md)
 - Normalized output columns: [Normalized Output Schemas](output_schema.md)
 - Canonical element semantics: [Canonical Elements](canonical_elements.md)
@@ -143,17 +145,10 @@ For the full current list of provider/resolution/element combinations, use [Supp
 
 ## Provider Notes
 
-- [GeoSphere Austria Provider Notes](providers_at_geosphere.md)
-- [RMI/KMI Belgium Provider Notes](providers_be_rmi.md)
-- [MeteoSwiss Switzerland Provider Notes](providers_ch_meteoswiss.md)
-- [DMI Denmark Provider Notes](providers_dk_dmi.md)
-- [HungaroMet Hungary Provider Notes](providers_hu_hungaromet.md)
-- [KNMI Netherlands Provider Notes](providers_nl_knmi.md)
-- [IMGW-PIB Poland Provider Notes](providers_pl_imgw.md)
-- [SMHI Sweden Provider Notes](providers_se_smhi.md)
-- [Experimental Slovakia Provider Notes](providers_sk_experimental.md)
-- [NOAA / GHCN-Daily Provider Notes](providers_us_noaa_ghcnd.md)
-- [NOAA / GHCN-Daily Canada Provider Notes](providers_ca_noaa_ghcnd.md)
-- [NOAA / GHCN-Daily Mexico Provider Notes](providers_mx_noaa_ghcnd.md)
-- [NOAA / GHCN-Daily Direct-Prefix Country Wrapper Notes](providers_ghcnd_direct_prefix_wrappers.md)
-- [France, Spain, And Australia Open-Water Evaporation Audit](providers_fr_es_au_open_water_evaporation_audit.md)
+Provider-specific notes are now indexed here:
+
+- [Provider Notes](provider_notes/README.md)
+
+Separate investigation and audit notes live here:
+
+- [Audit Notes](audits/README.md)

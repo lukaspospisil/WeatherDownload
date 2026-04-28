@@ -1,7 +1,7 @@
-# SMHI Sweden Provider Notes
+﻿# SMHI Sweden Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 This page documents the current conservative Sweden slice implemented through the shared provider architecture.
@@ -34,8 +34,8 @@ Implemented source model in this pass:
 Why `10min` is not implemented:
 
 - the official SMHI parameter catalog used by this provider clearly exposes daily and hourly historical paths
-- the same catalog also exposes some 15-minute parameters such as precipitation amount `summa 15 min, 4 gånger/tim`
-- some hourly parameters are explicitly documented as hourly outputs based on 10-minute sampling, for example wind speed `medelvärde 10 min, 1 gång/tim`
+- the same catalog also exposes some 15-minute parameters such as precipitation amount `summa 15 min, 4 gĂĄnger/tim`
+- some hourly parameters are explicitly documented as hourly outputs based on 10-minute sampling, for example wind speed `medelvĂ¤rde 10 min, 1 gĂĄng/tim`
 - this is not the same as a true historical `resolution="10min"` source path
 - WeatherDownload therefore does not implement Sweden `10min` by reinterpreting 15-minute or hourly data as 10-minute observations
 

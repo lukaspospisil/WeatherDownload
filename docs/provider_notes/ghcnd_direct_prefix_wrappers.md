@@ -1,4 +1,4 @@
-# NOAA / GHCN-Daily Direct-Prefix Country Wrapper Notes
+﻿# NOAA / GHCN-Daily Direct-Prefix Country Wrapper Notes
 
 This note covers the direct-prefix NOAA GHCN-Daily country wrappers implemented through the shared source-local helper under `weatherdownload/providers/ghcnd/`.
 
@@ -46,3 +46,4 @@ Direct-prefix note:
   - `NZ -> NZ`
 
 That makes them suitable for thin wrappers without adding a separate prefix-mapping layer in this pass.
+

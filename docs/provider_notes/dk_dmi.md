@@ -1,7 +1,7 @@
 ﻿# DMI Denmark Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 This page documents the current conservative Denmark slice implemented through the shared provider architecture.
@@ -195,3 +195,4 @@ There is no Denmark-specific public workflow shape. Denmark is exposed through t
 - the current slice is Denmark only; Greenland and Faroe Islands differences remain out of scope
 - `quality` remains null for all Denmark paths in this pass
 - no FAO computation and no derived meteorological variables are added
+

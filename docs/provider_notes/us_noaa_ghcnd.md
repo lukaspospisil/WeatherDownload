@@ -1,7 +1,7 @@
-# NOAA / GHCN-Daily Provider Notes
+﻿# NOAA / GHCN-Daily Provider Notes
 
 <p align="right">
-  <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
+  <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
 ## Current Scope
@@ -135,3 +135,4 @@ Current normalized handling:
 - station metadata are still limited to U.S. stations with at least one currently supported GHCN-Daily element in the official inventory
 - the first slice still does not expose all GHCN-Daily daily elements
 - this pass does not implement broader GHCN-Daily variables or a country-agnostic global provider abstraction
+

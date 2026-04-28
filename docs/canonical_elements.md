@@ -182,7 +182,7 @@ Current support remains intentionally narrow after auditing additional official 
 
 Detailed audit notes:
 
-- [France, Spain, And Australia Open-Water Evaporation Audit](providers_fr_es_au_open_water_evaporation_audit.md)
+- [France, Spain, And Australia Open-Water Evaporation Audit](audits/fr_es_au_open_water_evaporation.md)
 
 ### CZ `historical_csv / 1hour`
 
