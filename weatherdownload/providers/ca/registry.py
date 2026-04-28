@@ -1,25 +1,18 @@
 from __future__ import annotations
 
-from ..ghcnd.registry import (
-    GHCND_ALL_BASE_URL,
-    GHCND_INVENTORY_URL,
-    GHCND_STATIONS_URL,
-    GhcndDatasetSpec,
-    build_dataset_spec,
-)
+from ..ghcnd.registry import GhcndDatasetSpec, build_dataset_spec
 
 
 _GHCND_DAILY_CANONICAL_ELEMENTS = {
     'tas_max': ('TMAX',),
     'tas_min': ('TMIN',),
     'precipitation': ('PRCP',),
-    'open_water_evaporation': ('EVAP',),
 }
 
 
 _GHCND_DATASET_SPECS = [
     build_dataset_spec(
-        supported_elements=('TMAX', 'TMIN', 'PRCP', 'EVAP'),
+        supported_elements=('TMAX', 'TMIN', 'PRCP'),
         canonical_elements=_GHCND_DAILY_CANONICAL_ELEMENTS,
     ),
 ]

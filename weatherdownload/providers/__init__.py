@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from .base import WeatherProvider
+from .ca import PROVIDER as CA_GHCND_PROVIDER
 from .be import PROVIDER as BE_PROVIDER
 from .ch import PROVIDER as CH_PROVIDER
 from .cz import PROVIDER as CHMI_PROVIDER
@@ -17,6 +18,7 @@ from .us import PROVIDER as US_GHCND_PROVIDER
 PROVIDERS: dict[str, WeatherProvider] = {
     'AT': GEOSPHERE_PROVIDER,
     'BE': BE_PROVIDER,
+    'CA': CA_GHCND_PROVIDER,
     'CH': CH_PROVIDER,
     'CZ': CHMI_PROVIDER,
     'DE': DWD_PROVIDER,

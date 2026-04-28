@@ -113,6 +113,7 @@ Practical interpretation:
 - `historical_csv` is a CHMI-specific scope name, not a universal label for all historical datasets
 - `recent` does not have exactly the same source semantics across providers
 - `ghcnd` currently names the NOAA GHCN-Daily slice implemented under `country="CA"` and `country="US"`; it should be read as the provider source name, not as a claim about future cross-country scope rules
+- the shared NOAA implementation lives in `weatherdownload/providers/ghcnd/`, while country wrappers such as `US` and `CA` stay thin
 - normalized output tables still keep the `dataset_scope` column name for backward compatibility
 
 What the library normalizes across providers:

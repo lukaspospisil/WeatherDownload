@@ -94,18 +94,18 @@ The same pattern applies at station level:
 
 ## Cross-Country Daily Mapping
 
-| Canonical element | CZ raw | DE raw | SK raw | US raw |
-| --- | --- | --- | --- | --- |
-| `tas_mean` | `T` | `TMK` | | |
-| `tas_max` | `TMA` | `TXK` | `t_max` | |
-| `tas_min` | `TMI` | `TNK` | `t_min` | |
-| `wind_speed` | `F` | `FM` | | |
-| `vapour_pressure` | `E` | `VPM` | | |
-| `sunshine_duration` | `SSV` | `SDK` | `sln_svit` | |
-| `precipitation` | `SRA` | `RSK` | `zra_uhrn` | |
-| `pressure` | `P` | `PM` | | |
-| `relative_humidity` | `RH` | `UPM` | | |
-| `open_water_evaporation` | `VY` | | `voda_vypar` | `EVAP` |
+| Canonical element | CZ raw | DE raw | SK raw | CA raw | US raw |
+| --- | --- | --- | --- | --- | --- |
+| `tas_mean` | `T` | `TMK` | | | |
+| `tas_max` | `TMA` | `TXK` | `t_max` | `TMAX` | `TMAX` |
+| `tas_min` | `TMI` | `TNK` | `t_min` | `TMIN` | `TMIN` |
+| `wind_speed` | `F` | `FM` | | | |
+| `vapour_pressure` | `E` | `VPM` | | | |
+| `sunshine_duration` | `SSV` | `SDK` | `sln_svit` | | |
+| `precipitation` | `SRA` | `RSK` | `zra_uhrn` | `PRCP` | `PRCP` |
+| `pressure` | `P` | `PM` | | | |
+| `relative_humidity` | `RH` | `UPM` | | | |
+| `open_water_evaporation` | `VY` | | `voda_vypar` | | `EVAP` |
 
 ## Implemented Path Mappings
 
@@ -139,6 +139,21 @@ The same pattern applies at station level:
 | `open_water_evaporation` | `voda_vypar` |
 
 `open_water_evaporation` on this SK path is measured water-surface evaporation from SHMU raw `voda_vypar` in `mm`. It is not ET0, PET, FAO reference evaporation, or another modeled evapotranspiration field.
+
+### CA `ghcnd / daily`
+
+| Canonical element | Raw code(s) |
+| --- | --- |
+| `tas_max` | `TMAX` |
+| `tas_min` | `TMIN` |
+| `precipitation` | `PRCP` |
+
+On this NOAA GHCN-Daily Canada path:
+
+- `tas_max` maps to `TMAX`, documented by NOAA as daily maximum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
+- `tas_min` maps to `TMIN`, documented by NOAA as daily minimum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
+- `precipitation` maps to `PRCP`, documented by NOAA as precipitation in tenths of `mm`, normalized by WeatherDownload to `mm`
+- `open_water_evaporation` is intentionally unavailable here because the current GHCN inventory audit found no Canadian `EVAP` stations
 
 ### US `ghcnd / daily`
 

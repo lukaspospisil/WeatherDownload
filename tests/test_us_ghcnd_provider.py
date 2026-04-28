@@ -192,7 +192,7 @@ class GhcndProviderTests(unittest.TestCase):
             elements=['tas_max', 'precipitation', 'open_water_evaporation'],
         )
         with patch(
-            'weatherdownload.providers.us.observations._read_text',
+            'weatherdownload.providers.ghcnd.observations._read_text',
             return_value=SAMPLE_DLY_PATH.read_text(encoding='utf-8'),
         ):
             observations = download_observations(query, country='US')

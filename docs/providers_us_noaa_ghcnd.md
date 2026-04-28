@@ -17,7 +17,7 @@ This first NOAA slice is intentionally conservative:
   - `precipitation` -> `PRCP`
   - `open_water_evaporation` -> `EVAP`
 
-The implementation uses the official NOAA NCEI GHCN-Daily station files and does not attempt a global provider refactor in this pass.
+The implementation uses the official NOAA NCEI GHCN-Daily station files through a shared source-local helper under `weatherdownload/providers/ghcnd/`, with the `US` provider kept as a thin country wrapper.
 
 ## Official Source Contract
 
@@ -95,7 +95,7 @@ This first slice keeps discovery intentionally narrow:
 - station elements are inventory-driven and can differ by station
 - `open_water_evaporation` appears only for stations whose official inventory includes raw `EVAP`
 
-That keeps station element discovery truthful without introducing a broader global GHCN refactor in this pass.
+That keeps station element discovery truthful while keeping the reusable GHCN-Daily logic in the shared source-local helper rather than duplicating parser or downloader code in the `US` wrapper.
 
 ## Daily Parsing Behavior
 
@@ -130,6 +130,7 @@ Current normalized handling:
 ## Limitations
 
 - only `US / ghcnd / daily` is implemented in this pass
+- the reusable NOAA GHCN-Daily parser, metadata, and observation logic live in `weatherdownload/providers/ghcnd/`, while `weatherdownload/providers/us/` supplies only the country-specific wrapper configuration
 - station metadata are still limited to U.S. stations with at least one currently supported GHCN-Daily element in the official inventory
 - the first slice still does not expose all GHCN-Daily daily elements
 - this pass does not implement broader GHCN-Daily variables or a country-agnostic global provider abstraction
