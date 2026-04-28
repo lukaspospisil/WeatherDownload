@@ -31,6 +31,8 @@ GHCND_DAILY_SCALE_FACTORS = {
     'TMIN': 10.0,
 }
 
+GHCND_STATION_ELEMENTS_ATTR = 'station_provider_raw_elements_by_path'
+
 
 def parse_ghcnd_stations_text(stations_text: str) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
@@ -89,37 +91,30 @@ def normalize_ghcnd_station_metadata(
     inventory_table: pd.DataFrame,
     *,
     country: str = 'US',
-    required_elements: tuple[str, ...] = ('EVAP',),
+    supported_elements: tuple[str, ...] = ('EVAP',),
 ) -> pd.DataFrame:
     if stations_table.empty or inventory_table.empty:
         return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
 
-    required = tuple(str(element).strip() for element in required_elements if str(element).strip())
-    inventory = inventory_table[
-        inventory_table['station_id'].str.startswith(country)
-        & inventory_table['element_raw'].isin(required)
-    ].copy()
-    if inventory.empty:
+    station_elements = build_station_supported_raw_elements(
+        inventory_table,
+        country=country,
+        supported_elements=supported_elements,
+    )
+    if not station_elements:
         return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
 
-    grouped = inventory.groupby('station_id', sort=True)
-    rows: list[dict[str, object]] = []
-    for station_id, group in grouped:
-        available = {str(value).strip() for value in group['element_raw'].dropna().tolist()}
-        if not all(element in available for element in required):
-            continue
-        begin_year = group.groupby('element_raw', as_index=False)['begin_year'].min()['begin_year'].max()
-        end_year = group.groupby('element_raw', as_index=False)['end_year'].max()['end_year'].min()
-        rows.append(
-            {
-                'station_id': station_id,
-                'begin_year': begin_year,
-                'end_year': end_year,
-            }
-        )
-    if not rows:
-        return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
-    ranges = pd.DataFrame.from_records(rows, columns=['station_id', 'begin_year', 'end_year'])
+    supported = tuple(str(element).strip() for element in supported_elements if str(element).strip())
+    inventory = inventory_table[
+        inventory_table['station_id'].str.startswith(country)
+        & inventory_table['element_raw'].isin(supported)
+        & inventory_table['station_id'].isin(station_elements)
+    ].copy()
+    ranges = (
+        inventory.groupby('station_id', as_index=False)
+        .agg(begin_year=('begin_year', 'min'), end_year=('end_year', 'max'))
+        .sort_values('station_id', ignore_index=True)
+    )
     merged = ranges.merge(stations_table, on='station_id', how='left')
     normalized_rows: list[dict[str, object]] = []
     for row in merged.itertuples(index=False):
@@ -135,7 +130,11 @@ def normalize_ghcnd_station_metadata(
                 'elevation_m': row.elevation_m if pd.notna(row.elevation_m) else pd.NA,
             }
         )
-    return pd.DataFrame.from_records(normalized_rows, columns=STATION_METADATA_COLUMNS)
+    result = pd.DataFrame.from_records(normalized_rows, columns=STATION_METADATA_COLUMNS)
+    result.attrs[GHCND_STATION_ELEMENTS_ATTR] = {
+        ('ghcnd', 'daily'): station_elements,
+    }
+    return result
 
 
 def normalize_ghcnd_observation_metadata(
@@ -144,23 +143,20 @@ def normalize_ghcnd_observation_metadata(
     country: str = 'US',
     supported_elements: tuple[str, ...] = ('EVAP',),
 ) -> pd.DataFrame:
+    station_elements = build_station_supported_raw_elements(
+        inventory_table,
+        country=country,
+        supported_elements=supported_elements,
+    )
+    if not station_elements:
+        return pd.DataFrame(columns=STATION_OBSERVATION_METADATA_COLUMNS)
+
     supported = tuple(str(element).strip() for element in supported_elements if str(element).strip())
     inventory = inventory_table[
         inventory_table['station_id'].str.startswith(country)
         & inventory_table['element_raw'].isin(supported)
+        & inventory_table['station_id'].isin(station_elements)
     ].copy()
-    if inventory.empty:
-        return pd.DataFrame(columns=STATION_OBSERVATION_METADATA_COLUMNS)
-
-    eligible_station_ids: list[str] = []
-    for station_id, group in inventory.groupby('station_id', sort=True):
-        available = {str(value).strip() for value in group['element_raw'].dropna().tolist()}
-        if all(element in available for element in supported):
-            eligible_station_ids.append(station_id)
-    if not eligible_station_ids:
-        return pd.DataFrame(columns=STATION_OBSERVATION_METADATA_COLUMNS)
-
-    inventory = inventory[inventory['station_id'].isin(eligible_station_ids)].copy()
     rows: list[dict[str, object]] = []
     grouped = (
         inventory.groupby(['station_id', 'element_raw'], as_index=False)
@@ -180,8 +176,32 @@ def normalize_ghcnd_observation_metadata(
                 'description': _observation_description(row.element_raw),
                 'height': pd.NA,
             }
-        )
+    )
     return pd.DataFrame.from_records(rows, columns=STATION_OBSERVATION_METADATA_COLUMNS)
+
+
+def build_station_supported_raw_elements(
+    inventory_table: pd.DataFrame,
+    *,
+    country: str = 'US',
+    supported_elements: tuple[str, ...] = ('EVAP',),
+) -> dict[str, list[str]]:
+    supported = tuple(str(element).strip() for element in supported_elements if str(element).strip())
+    if inventory_table.empty or not supported:
+        return {}
+    inventory = inventory_table[
+        inventory_table['station_id'].str.startswith(country)
+        & inventory_table['element_raw'].isin(supported)
+    ].copy()
+    if inventory.empty:
+        return {}
+    station_elements: dict[str, list[str]] = {}
+    for station_id, group in inventory.groupby('station_id', sort=True):
+        available = {str(value).strip() for value in group['element_raw'].dropna().tolist()}
+        ordered = [element for element in supported if element in available]
+        if ordered:
+            station_elements[str(station_id)] = ordered
+    return station_elements
 
 
 def parse_ghcnd_dly_text(

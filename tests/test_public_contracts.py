@@ -467,7 +467,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'PL': ['00375', '00400', '00600'],
         'SE': ['98230'],
         'SK': ['11800', '11999'],
-        'US': ['USC00000001'],
+        'US': ['USC00000001', 'USC00000002', 'USC00000003'],
     }
 
     for country in ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK', 'US']:

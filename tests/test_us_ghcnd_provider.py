@@ -1,4 +1,6 @@
 import unittest
+from contextlib import redirect_stdout
+import io
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,6 +18,7 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
+from weatherdownload.cli import main
 from weatherdownload.providers.us.observations import build_station_dly_url
 from weatherdownload.providers.us.parser import (
     GHCND_NORMALIZED_DAILY_COLUMNS,
@@ -93,8 +96,8 @@ class GhcndProviderTests(unittest.TestCase):
             list(stations.columns),
             ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
         )
-        self.assertEqual(stations['station_id'].tolist(), ['USC00000001'])
-        self.assertEqual(stations.iloc[0]['begin_date'], '2018-01-01T00:00Z')
+        self.assertEqual(stations['station_id'].tolist(), ['USC00000001', 'USC00000002', 'USC00000003'])
+        self.assertEqual(stations.iloc[0]['begin_date'], '2017-01-01T00:00Z')
         self.assertEqual(stations.iloc[0]['end_date'], '2020-12-31T00:00Z')
         self.assertTrue(stations['gh_id'].isna().all())
 
@@ -104,8 +107,20 @@ class GhcndProviderTests(unittest.TestCase):
             list(observation_metadata.columns),
             ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'],
         )
-        self.assertEqual(observation_metadata['station_id'].unique().tolist(), ['USC00000001'])
-        self.assertEqual(observation_metadata['element'].tolist(), ['EVAP', 'PRCP', 'TMAX', 'TMIN'])
+        self.assertEqual(observation_metadata['station_id'].unique().tolist(), ['USC00000001', 'USC00000002', 'USC00000003'])
+        self.assertEqual(
+            observation_metadata[['station_id', 'element']].to_dict('records'),
+            [
+                {'station_id': 'USC00000001', 'element': 'EVAP'},
+                {'station_id': 'USC00000001', 'element': 'PRCP'},
+                {'station_id': 'USC00000001', 'element': 'TMAX'},
+                {'station_id': 'USC00000001', 'element': 'TMIN'},
+                {'station_id': 'USC00000002', 'element': 'PRCP'},
+                {'station_id': 'USC00000002', 'element': 'TMAX'},
+                {'station_id': 'USC00000002', 'element': 'TMIN'},
+                {'station_id': 'USC00000003', 'element': 'EVAP'},
+            ],
+        )
         self.assertTrue(observation_metadata.iloc[0]['description'].startswith('Evaporation of water from evaporation pan'))
 
     def test_parse_station_and_inventory_fixtures(self) -> None:
@@ -198,8 +213,35 @@ class GhcndProviderTests(unittest.TestCase):
             list_station_elements(stations, 'USC00000001', 'ghcnd', 'daily', country='US'),
             ['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'],
         )
-        mapping = list_station_elements(stations, 'USC00000001', 'ghcnd', 'daily', country='US', include_mapping=True)
-        self.assertEqual(mapping['element_raw'].tolist(), ['TMAX', 'TMIN', 'PRCP', 'EVAP'])
+        self.assertEqual(
+            list_station_elements(stations, 'USC00000002', 'ghcnd', 'daily', country='US'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertEqual(
+            list_station_elements(stations, 'USC00000003', 'ghcnd', 'daily', country='US'),
+            ['open_water_evaporation'],
+        )
+        mapping = list_station_elements(stations, 'USC00000002', 'ghcnd', 'daily', country='US', include_mapping=True)
+        self.assertEqual(mapping['element_raw'].tolist(), ['TMAX', 'TMIN', 'PRCP'])
+        evap_mapping = list_station_elements(stations, 'USC00000003', 'ghcnd', 'daily', country='US', include_mapping=True)
+        self.assertEqual(evap_mapping['element_raw'].tolist(), ['EVAP'])
+
+    def test_station_metadata_excludes_station_with_only_unsupported_elements(self) -> None:
+        stations = read_station_metadata(country='US', source_url=str(SAMPLE_STATIONS_PATH))
+        self.assertNotIn('USC00000004', stations['station_id'].tolist())
+
+    def test_cli_station_elements_uses_inventory_specific_availability(self) -> None:
+        stations = read_station_metadata(country='US', source_url=str(SAMPLE_STATIONS_PATH))
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.read_station_metadata', return_value=stations):
+            with redirect_stdout(buffer):
+                exit_code = main(['stations', 'elements', '--country', 'US', '--station-id', 'USC00000002', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
+        self.assertEqual(exit_code, 0)
+        output = buffer.getvalue()
+        self.assertIn('tas_max', output)
+        self.assertIn('tas_min', output)
+        self.assertIn('precipitation', output)
+        self.assertNotIn('open_water_evaporation', output)
 
 
 if __name__ == '__main__':

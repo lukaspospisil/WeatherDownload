@@ -91,9 +91,11 @@ The shared normalized station metadata schema does not add a separate `country` 
 This first slice keeps discovery intentionally narrow:
 
 - only `US` stations are exposed
-- only stations that have the full conservative supported core `TMAX`, `TMIN`, `PRCP`, and `EVAP` in `ghcnd-inventory.txt` are surfaced by this provider slice
+- station metadata include U.S. stations that have at least one currently supported GHCN-Daily element in `ghcnd-inventory.txt`
+- station elements are inventory-driven and can differ by station
+- `open_water_evaporation` appears only for stations whose official inventory includes raw `EVAP`
 
-That keeps station element discovery truthful without introducing broader per-station inventory machinery across the repository.
+That keeps station element discovery truthful without introducing a broader global GHCN refactor in this pass.
 
 ## Daily Parsing Behavior
 
@@ -128,6 +130,6 @@ Current normalized handling:
 ## Limitations
 
 - only `US / ghcnd / daily` is implemented in this pass
-- station discovery is intentionally filtered to U.S. stations with the conservative supported core `TMAX`, `TMIN`, `PRCP`, and `EVAP` in the official inventory
+- station metadata are still limited to U.S. stations with at least one currently supported GHCN-Daily element in the official inventory
 - the first slice still does not expose all GHCN-Daily daily elements
 - this pass does not implement broader GHCN-Daily variables or a country-agnostic global provider abstraction

@@ -24,7 +24,7 @@ def read_station_metadata_ghcnd(source_url: str | None = None, timeout: int = 60
         stations_table,
         inventory_table,
         country='US',
-        required_elements=spec.supported_elements,
+        supported_elements=spec.supported_elements,
     )
 
 
