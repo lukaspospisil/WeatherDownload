@@ -1,11 +1,17 @@
 .venv/
 .tmp/
 tmp/
+.cache/
+cache/
 .verify-venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 outputs/
+figures/
+*.tmp
+*.temp
+*.log
 weatherdownload.egg-info/
 dist/
 build/
