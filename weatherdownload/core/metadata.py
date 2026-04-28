@@ -2,6 +2,7 @@
 
 import csv
 import io
+from pathlib import Path
 from collections.abc import Sequence
 from datetime import date, datetime
 from numbers import Real
@@ -59,14 +60,22 @@ def _resolve_metadata_call(country: str, source_url: str | None) -> tuple[str, s
 
 
 def _read_station_metadata_chmi(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    response = requests.get(source_url or DEFAULT_META1_URL, timeout=timeout)
+    source = source_url or DEFAULT_META1_URL
+    local_path = Path(source)
+    if local_path.exists():
+        return _parse_station_metadata_csv(local_path.read_text(encoding='utf-8'))
+    response = requests.get(source, timeout=timeout)
     response.raise_for_status()
     response.encoding = 'utf-8'
     return _parse_station_metadata_csv(response.text)
 
 
 def _read_station_observation_metadata_chmi(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    response = requests.get(source_url or DEFAULT_META2_URL, timeout=timeout)
+    source = source_url or DEFAULT_META2_URL
+    local_path = Path(source)
+    if local_path.exists():
+        return _parse_station_observation_metadata_csv(local_path.read_text(encoding='utf-8'))
+    response = requests.get(source, timeout=timeout)
     response.raise_for_status()
     response.encoding = 'utf-8'
     return _parse_station_observation_metadata_csv(response.text)

@@ -117,8 +117,7 @@ def _build_sample_pl_zip(filename: str, csv_text: str) -> bytes:
 
 def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'CZ':
-        with patch('weatherdownload.metadata.requests.get', return_value=_MockTextResponse(SAMPLE_META1_TEXT)):
-            return read_station_metadata(country='CZ')
+        return read_station_metadata(country='CZ', source_url='tests/data/sample_meta1.csv')
     if country == 'AT':
         with patch('weatherdownload.providers.at.metadata.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_METADATA_TEXT)):
             return read_station_metadata(country='AT')

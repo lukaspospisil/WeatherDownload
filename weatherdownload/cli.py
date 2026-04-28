@@ -255,7 +255,7 @@ def handle_station_elements(args: argparse.Namespace) -> int:
 
 def handle_tenmin_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=False)
-    provider_scope = _resolve_provider_for_cli(args, default=_default_provider_for_resolution(args.country, '10min'))
+    provider_scope = _resolve_provider_or_default(args, '10min')
     query = ObservationQuery(
         country=args.country,
         dataset_scope=provider_scope,
@@ -284,7 +284,7 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
 
 def handle_hourly_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=False)
-    provider_scope = _resolve_provider_for_cli(args, default=_default_provider_for_resolution(args.country, '1hour'))
+    provider_scope = _resolve_provider_or_default(args, '1hour')
     query = ObservationQuery(
         country=args.country,
         dataset_scope=provider_scope,
@@ -313,7 +313,7 @@ def handle_hourly_observations(args: argparse.Namespace) -> int:
 
 def handle_daily_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=True)
-    provider_scope = _resolve_provider_for_cli(args, default=_default_provider_for_resolution(args.country, 'daily'))
+    provider_scope = _resolve_provider_or_default(args, 'daily')
     query = ObservationQuery(
         country=args.country,
         dataset_scope=provider_scope,
@@ -393,13 +393,9 @@ def _default_dataset_scope(country: str) -> str:
 
 def _default_provider_for_resolution(country: str, resolution: str | None) -> str:
     normalized = country.strip().upper()
-    if normalized == 'CZ':
-        return 'historical_csv'
-    if normalized == 'SK':
-        return 'recent'
 
     provider = get_provider(normalized)
-    specs = provider.list_dataset_specs()
+    specs = provider.list_implemented_dataset_specs()
     if resolution is not None:
         matching_scopes = sorted({spec.dataset_scope for spec in specs if spec.resolution == resolution})
         if len(matching_scopes) == 1:
@@ -419,6 +415,12 @@ def _default_provider_for_resolution(country: str, resolution: str | None) -> st
         f"Multiple providers are available for country='{normalized}': {choices}. "
         'Use --provider (preferred) or --dataset-scope explicitly.'
     )
+
+
+def _resolve_provider_or_default(args: argparse.Namespace, resolution: str) -> str:
+    if getattr(args, 'provider', None) is not None or getattr(args, 'dataset_scope', None) is not None:
+        return _resolve_provider_for_cli(args, default=None)
+    return _default_provider_for_resolution(args.country, resolution)
 
 
 def _read_stations_for_cli(args: argparse.Namespace) -> pd.DataFrame:

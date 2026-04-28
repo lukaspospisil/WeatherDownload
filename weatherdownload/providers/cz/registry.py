@@ -3,6 +3,13 @@
 from dataclasses import dataclass
 from typing import Mapping
 
+from ..ghcnd.registry import GhcndDatasetSpec
+from .ghcnd_registry import (
+    get_dataset_spec as get_ghcnd_dataset_spec,
+    list_dataset_specs as list_ghcnd_dataset_specs,
+    list_implemented_dataset_specs as list_ghcnd_implemented_dataset_specs,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ChmiDatasetSpec:
@@ -161,7 +168,7 @@ _DATASET_REGISTRY: dict[tuple[str, str], ChmiDatasetSpec] = {
 }
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec:
+def get_chmi_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec:
     key = (dataset_scope.strip(), resolution.strip())
     try:
         return _DATASET_REGISTRY[key]
@@ -172,9 +179,20 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec:
 
 
 def list_dataset_specs() -> list[ChmiDatasetSpec]:
-    return list(_DATASET_REGISTRY.values())
+    return [*list(_DATASET_REGISTRY.values()), *list_ghcnd_dataset_specs()]
 
 
 def list_implemented_dataset_specs() -> list[ChmiDatasetSpec]:
-    return [spec for spec in _DATASET_REGISTRY.values() if spec.implemented]
+    return [
+        *(spec for spec in _DATASET_REGISTRY.values() if spec.implemented),
+        *list_ghcnd_implemented_dataset_specs(),
+    ]
+
+
+def get_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = dataset_scope.strip()
+    normalized_resolution = resolution.strip()
+    if normalized_scope == 'ghcnd':
+        return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
+    return get_chmi_dataset_spec(normalized_scope, normalized_resolution)
 

@@ -19,6 +19,7 @@ The capability matrix is the authoritative current overview of `country + provid
 
 - [GeoSphere Austria](at_geosphere.md)
 - [RMI/KMI Belgium](be_rmi.md)
+- [CHMI Czech Republic](cz_chmi.md)
 - [MeteoSwiss Switzerland](ch_meteoswiss.md)
 - [DMI Denmark](dk_dmi.md)
 - [HungaroMet Hungary](hu_hungaromet.md)
@@ -30,8 +31,9 @@ The capability matrix is the authoritative current overview of `country + provid
 ## Shared-source wrappers
 
 - [NOAA GHCN-Daily United States](us_noaa_ghcnd.md)
+- [NOAA GHCN-Daily Czech Republic](cz_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Canada](ca_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Mexico](mx_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Direct-Prefix Wrappers](ghcnd_direct_prefix_wrappers.md)
 
-The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper note covers the current `FI`, `FR`, `IT`, `NO`, and `NZ` wrappers. The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.
+The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper note covers the current direct-prefix `FI`, `FR`, `IT`, `NO`, and `NZ` wrappers. Czech Republic stays separate because it is a mapped-prefix wrapper (`CZ` country, `EZ` GHCN prefix). The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.

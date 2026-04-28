@@ -64,6 +64,7 @@ Examples:
 | `country` | `provider` | Meaning |
 | --- | --- | --- |
 | `CA` | `ghcnd` | NOAA GHCN-Daily source |
+| `CZ` | `ghcnd` | NOAA GHCN-Daily wrapper with raw GHCN station ids |
 | `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
 | `FI` | `ghcnd` | NOAA GHCN-Daily source |
 | `FR` | `ghcnd` | NOAA GHCN-Daily source |
@@ -80,7 +81,7 @@ Compatibility note:
 
 - existing Python and CLI usage with `dataset_scope` or `--dataset-scope` remains valid
 - normalized output tables still keep the `dataset_scope` column for backward compatibility
-- the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
+- the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `CZ`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
 
 See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model](docs/providers.md) for the conceptual explanation.
 

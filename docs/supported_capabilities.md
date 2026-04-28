@@ -39,6 +39,7 @@ Representative station-level CLI examples:
 
 ```powershell
 weatherdownload stations elements --country CZ --station-id 0-20000-0-11406 --provider historical_csv --resolution daily
+weatherdownload stations elements --country CZ --station-id EZM00011406 --provider ghcnd --resolution daily
 weatherdownload stations elements --country US --station-id USC00000001 --provider ghcnd --resolution daily
 ```
 
@@ -56,6 +57,7 @@ weatherdownload stations elements --country US --station-id USC00000001 --provid
 | `CH` | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration` | MeteoSwiss A1 historical daily station observations | FAO reference evaporation exists on MeteoSwiss metadata but is intentionally not mapped to open_water_evaporation. |
 | `CH` | `historical` | `1hour` | `tas_mean`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration` | MeteoSwiss A1 historical hourly station observations | FAO reference evaporation is not mapped to open_water_evaporation. |
 | `CH` | `historical` | `10min` | `tas_mean`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration` | MeteoSwiss A1 historical 10-minute station observations | FAO reference evaporation is not mapped to open_water_evaporation. |
+| `CZ` | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | NOAA GHCN-Daily | Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix EZ; no EVAP/open_water_evaporation. |
 | `CZ` | `historical_csv` | `daily` | `open_water_evaporation`, `vapour_pressure`, `wind_speed`, `snow_depth`, `pressure`, `relative_humidity`, `precipitation`, `sunshine_duration`, `tas_mean`, `tas_max`, `tas_min`, `wind_from_direction` | CHMI historical CSV daily observations | Measured open-water evaporation supported via raw VY. |
 | `CZ` | `historical_csv` | `1hour` | `vapour_pressure`, `pressure`, `cloud_cover`, `past_weather_1`, `past_weather_2`, `sunshine_duration` | CHMI historical CSV hourly observations | Implemented CHMI historical CSV hourly path. |
 | `CZ` | `historical_csv` | `10min` | `tas_mean`, `tas_max`, `tas_min`, `tas_period_max`, `soil_temperature_10cm`, `soil_temperature_100cm`, `sunshine_duration` | CHMI historical CSV 10-minute observations | Implemented CHMI historical CSV 10-minute path. |
@@ -96,7 +98,7 @@ Measured `open_water_evaporation` is currently supported only for:
 
 It is intentionally not supported for:
 
-- `CA`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` on the current `ghcnd / daily` wrappers
+- `CA`, `CZ`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` on the current `ghcnd / daily` wrappers
 - `CH` MeteoSwiss FAO reference evaporation fields, because they are not measured open-water or pan evaporation
 - `HU`, `PL`, and other providers unless a measured open-water, pan, or evaporimeter variable is explicitly implemented
 

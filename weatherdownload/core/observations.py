@@ -56,7 +56,7 @@ from ..providers.nl.parser import KNMI_NORMALIZED_DAILY_COLUMNS, KNMI_NORMALIZED
 from ..providers.dk.parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.se.parser import SE_NORMALIZED_DAILY_COLUMNS, SE_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.pl.parser import PL_NORMALIZED_DAILY_COLUMNS, PL_NORMALIZED_SUBDAILY_COLUMNS
-from ..providers.cz.registry import get_dataset_spec as get_chmi_dataset_spec
+from ..providers.cz.registry import get_chmi_dataset_spec
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .queries import ObservationQuery
 from ..providers.sk.observations import NORMALIZED_SHMU_DAILY_COLUMNS, download_daily_observations_shmu

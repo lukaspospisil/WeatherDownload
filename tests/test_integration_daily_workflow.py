@@ -24,14 +24,11 @@ class _MockResponse:
 class DailyWorkflowIntegrationTests(unittest.TestCase):
     def test_metadata_selection_and_daily_download_workflow(self) -> None:
         def fake_get(url: str, timeout: int = 60):
-            if url.endswith('/metadata/meta1.csv'):
-                return _MockResponse(SAMPLE_META1)
             if url.endswith('/temperature/dly-0-20000-0-11406-TMA.csv'):
                 return _MockResponse(SAMPLE_DAILY_TMA)
             return _MockResponse('', status_code=404)
 
-        with patch('weatherdownload.metadata.requests.get', side_effect=fake_get):
-            stations = read_station_metadata()
+        stations = read_station_metadata(source_url='tests/data/sample_meta1.csv')
         selected = filter_stations(stations, station_ids=['0-20000-0-11406'])
         query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=selected['station_id'].tolist(), start_date='1865-06-01', end_date='1865-06-03', elements=['TMA'])
         with patch('weatherdownload.providers.cz.daily.requests.get', side_effect=fake_get):
@@ -44,14 +41,11 @@ class DailyWorkflowIntegrationTests(unittest.TestCase):
 
     def test_metadata_selection_and_tenmin_download_workflow(self) -> None:
         def fake_get(url: str, timeout: int = 60):
-            if url.endswith('/metadata/meta1.csv'):
-                return _MockResponse(SAMPLE_META1)
             if url.endswith('/temperature/2024/10m-0-20000-0-11406-T-202401.csv'):
                 return _MockResponse(SAMPLE_TENMIN_T)
             return _MockResponse('', status_code=404)
 
-        with patch('weatherdownload.metadata.requests.get', side_effect=fake_get):
-            stations = read_station_metadata()
+        stations = read_station_metadata(source_url='tests/data/sample_meta1.csv')
         selected = filter_stations(stations, station_ids=['0-20000-0-11406'])
         query = ObservationQuery(dataset_scope='historical_csv', resolution='10min', station_ids=selected['station_id'].tolist(), start='2024-01-01T00:00:00Z', end='2024-01-01T00:20:00Z', elements=['T'])
         with patch('weatherdownload.providers.cz.tenmin.requests.get', side_effect=fake_get):

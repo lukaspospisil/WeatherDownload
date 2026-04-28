@@ -22,8 +22,7 @@ class _MockResponse:
 
 class StationAvailabilityTests(unittest.TestCase):
     def _read_stations(self):
-        with patch('weatherdownload.metadata.requests.get', return_value=_MockResponse(SAMPLE_META1)):
-            return read_station_metadata()
+        return read_station_metadata(source_url='tests/data/sample_meta1.csv')
 
     def test_station_availability_lists_implemented_paths(self) -> None:
         stations = self._read_stations()
@@ -87,6 +86,17 @@ class StationAvailabilityTests(unittest.TestCase):
         self.assertEqual(list_station_elements(stations, 'CA000000001', 'ghcnd', 'daily', country='CA'), ['tas_max', 'tas_min', 'precipitation'])
         self.assertEqual(list_station_elements(stations, 'CA000000001', None, 'daily', country='CA', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
         self.assertEqual(list_station_elements(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'), ['precipitation'])
+
+    def test_cz_ghcnd_station_availability_and_elements_are_inventory_driven(self) -> None:
+        stations = read_station_metadata(country='CZ', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        availability = station_availability(stations, station_ids=['EZM00011520'], country='CZ')
+        self.assertEqual(
+            availability[['dataset_scope', 'resolution', 'supported_elements']].to_dict('records'),
+            [{'dataset_scope': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
+        )
+        self.assertTrue(station_supports(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'))
+        self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'), ['precipitation'])
 
 
 if __name__ == '__main__':

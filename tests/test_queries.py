@@ -7,6 +7,7 @@ from weatherdownload import ObservationQuery, QueryValidationError, list_dataset
 class DiscoveryTests(unittest.TestCase):
     def test_list_dataset_scopes_contains_historical_csv(self) -> None:
         self.assertIn('historical_csv', list_dataset_scopes())
+        self.assertIn('ghcnd', list_dataset_scopes(country='CZ'))
 
     def test_list_providers_is_backward_compatible_alias(self) -> None:
         self.assertEqual(list_providers(country='CZ'), list_dataset_scopes(country='CZ'))
@@ -43,6 +44,12 @@ class DiscoveryTests(unittest.TestCase):
     def test_ca_daily_discovery_excludes_open_water_evaporation(self) -> None:
         self.assertEqual(
             list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
+
+    def test_cz_ghcnd_daily_discovery_excludes_open_water_evaporation(self) -> None:
+        self.assertEqual(
+            list_supported_elements(country='CZ', dataset_scope='ghcnd', resolution='daily'),
             ['tas_max', 'tas_min', 'precipitation'],
         )
 
@@ -118,6 +125,13 @@ class ObservationQueryValidationTests(unittest.TestCase):
         raw_query = ObservationQuery(country='CA', dataset_scope='ghcnd', resolution='daily', station_ids=['CA000000001'], start_date='2020-06-01', end_date='2020-06-02', elements=['tmax', 'prcp'])
         canonical_query = ObservationQuery(country='CA', dataset_scope='ghcnd', resolution='daily', station_ids=['CA000000001'], start_date='2020-06-01', end_date='2020-06-02', elements=['tas_max', 'precipitation'])
         self.assertEqual(raw_query.country, 'CA')
+        self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
+        self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
+
+    def test_cz_ghcnd_daily_query_accepts_ghcnd_elements_and_canonical_names(self) -> None:
+        raw_query = ObservationQuery(country='CZ', dataset_scope='ghcnd', resolution='daily', station_ids=['EZM00011406'], start_date='2020-05-01', end_date='2020-05-02', elements=['tmax', 'prcp'])
+        canonical_query = ObservationQuery(country='CZ', dataset_scope='ghcnd', resolution='daily', station_ids=['EZM00011406'], start_date='2020-05-01', end_date='2020-05-02', elements=['tas_max', 'precipitation'])
+        self.assertEqual(raw_query.country, 'CZ')
         self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
         self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
 

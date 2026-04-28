@@ -30,6 +30,8 @@ These wrappers are grouped together because the GHCN country prefix matches the 
 - `NO -> NO`
 - `NZ -> NZ`
 
+Mapped-prefix wrappers such as `CZ -> EZ` are documented separately where that is clearer for station-id and source guidance. `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code.
+
 ## Supported data
 
 All wrappers in this note expose the same conservative `daily` core:

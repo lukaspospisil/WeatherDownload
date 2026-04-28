@@ -102,6 +102,19 @@ class ProviderTests(unittest.TestCase):
                     ['tas_max', 'tas_min', 'precipitation'],
                 )
 
+    def test_discovery_country_cz_includes_chmi_and_ghcnd_daily_without_evap_on_ghcnd(self) -> None:
+        self.assertIn('historical_csv', list_dataset_scopes(country='CZ'))
+        self.assertIn('ghcnd', list_dataset_scopes(country='CZ'))
+        self.assertEqual(list_resolutions(country='CZ', provider='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='CZ', provider='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertIn(
+            'open_water_evaporation',
+            list_supported_elements(country='CZ', provider='historical_csv', resolution='daily'),
+        )
+
     def test_read_station_metadata_country_de(self) -> None:
         with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
             stations = read_station_metadata(country='DE')
