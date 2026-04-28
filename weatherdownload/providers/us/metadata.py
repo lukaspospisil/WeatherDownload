@@ -11,23 +11,34 @@ from .parser import (
     parse_ghcnd_inventory_text,
     parse_ghcnd_stations_text,
 )
-from .registry import GHCND_INVENTORY_URL, GHCND_STATIONS_URL
+from .registry import GHCND_INVENTORY_URL, GHCND_STATIONS_URL, get_dataset_spec
 
 
 def read_station_metadata_ghcnd(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
+    spec = get_dataset_spec('ghcnd', 'daily')
     stations_source = source_url or GHCND_STATIONS_URL
     inventory_source = _related_source(stations_source, 'stations', 'inventory') or GHCND_INVENTORY_URL
     stations_table = parse_ghcnd_stations_text(_read_text(stations_source, timeout=timeout))
     inventory_table = parse_ghcnd_inventory_text(_read_text(inventory_source, timeout=timeout))
-    return normalize_ghcnd_station_metadata(stations_table, inventory_table, country='US', element_raw='EVAP')
+    return normalize_ghcnd_station_metadata(
+        stations_table,
+        inventory_table,
+        country='US',
+        required_elements=spec.supported_elements,
+    )
 
 
 def read_station_observation_metadata_ghcnd(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
+    spec = get_dataset_spec('ghcnd', 'daily')
     inventory_source = source_url or GHCND_INVENTORY_URL
     if source_url is not None and source_url.endswith('stations.txt'):
         inventory_source = _related_source(source_url, 'stations', 'inventory') or GHCND_INVENTORY_URL
     inventory_table = parse_ghcnd_inventory_text(_read_text(inventory_source, timeout=timeout))
-    return normalize_ghcnd_observation_metadata(inventory_table, country='US', element_raw='EVAP')
+    return normalize_ghcnd_observation_metadata(
+        inventory_table,
+        country='US',
+        supported_elements=spec.supported_elements,
+    )
 
 
 def _read_text(source: str, timeout: int) -> str:

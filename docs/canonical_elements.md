@@ -144,16 +144,26 @@ The same pattern applies at station level:
 
 | Canonical element | Raw code(s) |
 | --- | --- |
+| `tas_max` | `TMAX` |
+| `tas_min` | `TMIN` |
+| `precipitation` | `PRCP` |
 | `open_water_evaporation` | `EVAP` |
 
-`open_water_evaporation` on this NOAA GHCN-Daily path maps to raw `EVAP`, documented by NOAA as evaporation of water from an evaporation pan. NOAA raw values are in tenths of `mm`, and WeatherDownload normalizes output `value` to `mm`. This is not ET0, PET, FAO reference evaporation, or another modeled evaporation product.
+On this NOAA GHCN-Daily path:
+
+- `tas_max` maps to `TMAX`, documented by NOAA as daily maximum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
+- `tas_min` maps to `TMIN`, documented by NOAA as daily minimum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
+- `precipitation` maps to `PRCP`, documented by NOAA as precipitation in tenths of `mm`, normalized by WeatherDownload to `mm`
+- `open_water_evaporation` maps to `EVAP`, documented by NOAA as evaporation of water from an evaporation pan in tenths of `mm`, normalized by WeatherDownload to `mm`
+
+`open_water_evaporation` here is measured pan evaporation. It is not ET0, PET, FAO reference evaporation, or another modeled evaporation product.
 
 Current support remains intentionally narrow after auditing additional official providers:
 
 - `FR / Meteo-France` remains unsupported because the verified daily evaporation-like fields on the public daily climatology source are Penman-Monteith ETP products, not measured open-water or pan evaporation
 - `ES / AEMET` remains unsupported because this audit did not verify an official daily field definition proving a measured open-water or pan evaporation variable on the authenticated OpenData daily climatology endpoint
 - `AU / BoM` remains unsupported for now because the official semantics fit `open_water_evaporation`, but this pass did not verify a clean automation-friendly public station-download contract suitable for a new provider without fragile scraping
-- `US / NOAA GHCN-Daily` is supported only on the conservative `US / ghcnd / daily` slice via raw `EVAP`, which NOAA defines as measured evaporation from an evaporation pan; this first pass does not implement broader global GHCN-Daily abstractions or multiday `MDEV`
+- `US / NOAA GHCN-Daily` is supported only on the conservative `US / ghcnd / daily` slice via raw `TMAX`, `TMIN`, `PRCP`, and `EVAP`; this pass still does not implement broader global GHCN-Daily abstractions or multiday `MDEV`
 
 Detailed audit notes:
 

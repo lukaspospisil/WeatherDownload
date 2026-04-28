@@ -217,12 +217,12 @@ class ObservationCliTests(unittest.TestCase):
             {
                 'station_id': 'USC00000001',
                 'gh_id': None,
-                'element': 'open_water_evaporation',
-                'element_raw': 'EVAP',
+                'element': 'tas_max',
+                'element_raw': 'TMAX',
                 'observation_date': '2020-05-01',
                 'time_function': None,
-                'value': 1.2,
-                'flag': '{"source_flag":"7"}',
+                'value': 21.5,
+                'flag': None,
                 'quality': None,
                 'dataset_scope': 'ghcnd',
                 'resolution': 'daily',
@@ -486,17 +486,17 @@ class ObservationCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_us_daily_table()) as download_mock:
             with redirect_stdout(buffer):
                 exit_code = main([
-                    'observations', 'daily', '--country', 'US', '--station-id', 'USC00000001', '--element', 'open_water_evaporation', '--start-date', '2020-05-01', '--end-date', '2020-05-03'
+                    'observations', 'daily', '--country', 'US', '--station-id', 'USC00000001', '--element', 'tas_max', '--start-date', '2020-05-01', '--end-date', '2020-05-03'
                 ])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'US')
         self.assertEqual(query.dataset_scope, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
-        self.assertEqual(query.elements, ['EVAP'])
+        self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'US')
         self.assertIn('USC00000001', buffer.getvalue())
-        self.assertIn('open_water_evaporation', buffer.getvalue())
+        self.assertIn('tas_max', buffer.getvalue())
 
     def test_daily_cli_csv_export_defaults_to_wide_layout(self) -> None:
         original_cwd = Path.cwd()
@@ -662,11 +662,13 @@ class StationAvailabilityCliTests(unittest.TestCase):
     def test_station_elements_cli_explicit_country_us(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-            with patch('weatherdownload.cli.list_station_elements', return_value=['open_water_evaporation']) as elements_mock:
+            with patch('weatherdownload.cli.list_station_elements', return_value=['tas_max', 'precipitation', 'open_water_evaporation']) as elements_mock:
                 with redirect_stdout(buffer):
                     exit_code = main(['stations', 'elements', '--country', 'US', '--station-id', 'USC00000001', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         self.assertEqual(elements_mock.call_args.kwargs['country'], 'US')
+        self.assertIn('tas_max', buffer.getvalue())
+        self.assertIn('precipitation', buffer.getvalue())
         self.assertIn('open_water_evaporation', buffer.getvalue())
 
     def test_station_elements_cli_csv_export(self) -> None:

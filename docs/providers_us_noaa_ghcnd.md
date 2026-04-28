@@ -11,7 +11,11 @@ This first NOAA slice is intentionally conservative:
 - country: `US`
 - dataset scope: `ghcnd`
 - resolution: `daily`
-- canonical element support: `open_water_evaporation` only
+- canonical element support:
+  - `tas_max` -> `TMAX`
+  - `tas_min` -> `TMIN`
+  - `precipitation` -> `PRCP`
+  - `open_water_evaporation` -> `EVAP`
 
 The implementation uses the official NOAA NCEI GHCN-Daily station files and does not attempt a global provider refactor in this pass.
 
@@ -36,11 +40,15 @@ The official NOAA readme documents:
 
 Supported mapping on this path:
 
+- `tas_max` -> `TMAX`
+- `tas_min` -> `TMIN`
+- `precipitation` -> `PRCP`
 - `open_water_evaporation` -> `EVAP`
 
 Semantic boundary:
 
 - `EVAP` is accepted because NOAA documents it as measured evaporation of water from an evaporation pan
+- `TMAX`, `TMIN`, and `PRCP` are accepted because NOAA documents them as standard daily maximum temperature, minimum temperature, and precipitation totals on this source
 - `MDEV` is intentionally excluded in this pass because it is a multiday total with different semantics
 - PET, ET0, reference evaporation, and modeled evaporation are intentionally unsupported here
 
@@ -48,12 +56,17 @@ Semantic boundary:
 
 Raw NOAA unit:
 
+- `TMAX`: tenths of degrees C
+- `TMIN`: tenths of degrees C
+- `PRCP`: tenths of `mm`
 - `EVAP`: tenths of `mm`
 
 WeatherDownload output:
 
+- `tas_max`, `tas_min` in degrees C
 - `value` in `mm`
-- conversion rule: `value_mm = raw_value / 10`
+- conversion rule for `PRCP` and `EVAP`: `value_mm = raw_value / 10`
+- conversion rule for `TMAX` and `TMIN`: `value_c = raw_value / 10`
 
 Missing raw values:
 
@@ -78,9 +91,9 @@ The shared normalized station metadata schema does not add a separate `country` 
 This first slice keeps discovery intentionally narrow:
 
 - only `US` stations are exposed
-- only stations with `EVAP` availability in `ghcnd-inventory.txt` are surfaced by this provider slice
+- only stations that have the full conservative supported core `TMAX`, `TMIN`, `PRCP`, and `EVAP` in `ghcnd-inventory.txt` are surfaced by this provider slice
 
-That keeps station element discovery truthful without introducing broader per-station element machinery across the repository.
+That keeps station element discovery truthful without introducing broader per-station inventory machinery across the repository.
 
 ## Daily Parsing Behavior
 
@@ -97,11 +110,11 @@ Each `.dly` line is expanded into daily rows using the official fixed-width layo
 
 WeatherDownload behavior on this path:
 
-- filters to `EVAP`
+- filters to the requested supported GHCN-Daily elements
 - expands station-month records into daily observations
 - applies requested date filtering
-- canonicalizes `element` to `open_water_evaporation`
-- preserves the raw NOAA element as `element_raw = EVAP`
+- canonicalizes `element` to the supported WeatherDownload names
+- preserves the raw NOAA element in `element_raw`
 
 ## Flags
 
@@ -115,6 +128,6 @@ Current normalized handling:
 ## Limitations
 
 - only `US / ghcnd / daily` is implemented in this pass
-- only `open_water_evaporation` is mapped
-- station discovery is intentionally filtered to U.S. stations with `EVAP` in the official inventory
+- station discovery is intentionally filtered to U.S. stations with the conservative supported core `TMAX`, `TMIN`, `PRCP`, and `EVAP` in the official inventory
+- the first slice still does not expose all GHCN-Daily daily elements
 - this pass does not implement broader GHCN-Daily variables or a country-agnostic global provider abstraction

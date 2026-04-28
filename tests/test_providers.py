@@ -39,6 +39,14 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
+    def test_discovery_country_us_includes_conservative_ghcnd_core(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='US'), ['ghcnd'])
+        self.assertEqual(list_resolutions(country='US', dataset_scope='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='US', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'],
+        )
+
     def test_read_station_metadata_country_de(self) -> None:
         with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
             stations = read_station_metadata(country='DE')

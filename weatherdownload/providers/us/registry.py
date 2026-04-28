@@ -24,6 +24,9 @@ class GhcndDatasetSpec:
 
 
 _GHCND_DAILY_CANONICAL_ELEMENTS = {
+    'tas_max': ('TMAX',),
+    'tas_min': ('TMIN',),
+    'precipitation': ('PRCP',),
     'open_water_evaporation': ('EVAP',),
 }
 
@@ -37,7 +40,7 @@ _GHCND_DATASET_SPECS = [
         stations_url=GHCND_STATIONS_URL,
         inventory_url=GHCND_INVENTORY_URL,
         data_base_url=GHCND_ALL_BASE_URL,
-        supported_elements=('EVAP',),
+        supported_elements=('TMAX', 'TMIN', 'PRCP', 'EVAP'),
         canonical_elements=_GHCND_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
         implemented=True,

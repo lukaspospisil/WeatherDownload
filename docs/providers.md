@@ -168,7 +168,7 @@ Subdaily variability is expected across providers:
 | `PL` | Stable | `historical`, `historical_klimat` | `historical`: `daily`, `1hour`; `historical_klimat`: `daily` | `historical / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`; `historical / 1hour`: `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`; `historical_klimat / daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Official IMGW station list with source-backed 5-character station code and station name, plus latitude/longitude from exact `gh_id` matches in the official `api/data/meteo` feed; `elevation_m` and validity range remain unavailable |
 | `SE` | Stable | `historical` | `daily`, `1hour` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`; 1hour: `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | Official SMHI parameter station listings merged across the supported daily and hourly parameters, with source-backed name, coordinates, elevation, and validity range |
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
-| `US` | Stable | `ghcnd` | `daily` | `open_water_evaporation` | Official NOAA GHCN-Daily station metadata and inventory, conservatively filtered to U.S. stations with `EVAP` availability |
+| `US` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation`, `open_water_evaporation` | Official NOAA GHCN-Daily station metadata and inventory, conservatively filtered to U.S. stations with the supported `TMAX`, `TMIN`, `PRCP`, and `EVAP` core |
 
 The matrix above lists the actual public `dataset_scope` values implemented by WeatherDownload for each country path. Similar-looking names across countries should still be interpreted as provider-local scope names.
 
@@ -667,6 +667,9 @@ Important current limitations:
 
 Supported canonical elements:
 
+- `tas_max`
+- `tas_min`
+- `precipitation`
 - `open_water_evaporation`
 
 Important current limitations:
@@ -675,14 +678,15 @@ Important current limitations:
 - only `US / ghcnd / daily` is implemented in this first slice
 - `station_id` is the raw NOAA GHCN-Daily station id
 - station metadata come from `ghcnd-stations.txt`
-- station discovery is conservatively filtered to U.S. stations with `EVAP` availability in `ghcnd-inventory.txt`
+- station discovery is conservatively filtered to U.S. stations with `TMAX`, `TMIN`, `PRCP`, and `EVAP` availability in `ghcnd-inventory.txt`
 - daily observations come from the official `all/{station_id}.dly` files
-- NOAA raw `EVAP` values are documented in tenths of `mm`; WeatherDownload normalizes output `value` to `mm`
+- NOAA raw `TMAX` and `TMIN` values are documented in tenths of degrees C; WeatherDownload normalizes output `value` to degrees C
+- NOAA raw `PRCP` and `EVAP` values are documented in tenths of `mm`; WeatherDownload normalizes output `value` to `mm`
 - NOAA missing raw values `-9999` are treated as missing
 - WeatherDownload keeps NOAA quality information instead of silently discarding flagged values
 - `quality` carries NOAA `QFLAG`
 - `flag` preserves provider `MFLAG` and `SFLAG`
-- this path supports `EVAP` only and intentionally excludes multiday `MDEV`
+- this path supports only the conservative `TMAX`, `TMIN`, `PRCP`, and `EVAP` core and intentionally excludes multiday `MDEV`
 - this path does not implement PET, ET0, reference evaporation, or other modeled evaporation products
 
 Detailed notes:

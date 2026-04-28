@@ -6,6 +6,9 @@ from .registry import get_dataset_spec, list_dataset_specs, list_implemented_dat
 from ..base import WeatherProvider
 
 SUPPORTED_CANONICAL_ELEMENTS = (
+    'tas_max',
+    'tas_min',
+    'precipitation',
     'open_water_evaporation',
 )
 
