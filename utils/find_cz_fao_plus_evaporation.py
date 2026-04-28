@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Internal utility for auditing CZ FAO-style station coverage plus measured evaporation."""
+
 import argparse
 from pathlib import Path
 from typing import Callable
@@ -60,7 +62,7 @@ DEFAULT_OUTPUT_DIR = Path('outputs/cz_fao_plus_evaporation')
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description='Find Czech CHMI daily stations that have the full FAO-style input set plus measured open-water evaporation, then optionally download normalized observations.'
+        description='Internal utility: find Czech CHMI daily stations with the FAO-style input set plus measured open-water evaporation, then optionally download normalized observations.'
     )
     parser.add_argument('--start-date', help='Start date in YYYY-MM-DD format.')
     parser.add_argument('--end-date', help='End date in YYYY-MM-DD format.')

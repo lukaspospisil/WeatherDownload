@@ -23,8 +23,8 @@ WeatherDownload je Python knihovna pro práci s otevřenými meteorologickými d
 
 Aktuálně podporuje:
 
-- **CZ** přes poskytovatele **CHMI**
-- **DE** přes poskytovatele **DWD**
+- více zemí přes provider-specific source integrace za jedním sdíleným veřejným API
+- příklady v tomto tutoriálu se soustředí hlavně na **CZ** a **DE**, zatímco novější country/provider cesty jsou popsané v provider notes a coverage dokumentaci
 
 Knihovna umí zejména:
 

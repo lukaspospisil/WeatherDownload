@@ -51,7 +51,7 @@ from weatherdownload import list_supported_elements
 
 canonical = list_supported_elements(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
 )
 ```
@@ -61,7 +61,7 @@ Raw-code view:
 ```python
 raw_codes = list_supported_elements(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
     provider_raw=True,
 )
@@ -72,7 +72,7 @@ Mapping view:
 ```python
 mapping = list_supported_elements(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
     include_mapping=True,
 )
@@ -251,7 +251,7 @@ from weatherdownload import ObservationQuery, download_observations
 
 cz_query = ObservationQuery(
     country="CZ",
-    dataset_scope="historical_csv",
+    provider="historical_csv",
     resolution="daily",
     station_ids=["0-20000-0-11406"],
     start_date="2024-01-01",
@@ -261,7 +261,7 @@ cz_query = ObservationQuery(
 
 de_query = ObservationQuery(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
     station_ids=["00044"],
     start_date="2024-01-01",
@@ -277,7 +277,7 @@ from weatherdownload import ObservationQuery
 
 query = ObservationQuery(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
     station_ids=["00044"],
     start_date="2024-01-01",

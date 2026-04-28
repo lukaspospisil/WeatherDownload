@@ -12,6 +12,8 @@ Its scope is intentionally limited to:
 
 - country: `SK`
 - provider: SHMU OpenDATA
+- preferred public selector: `provider="recent"`
+- backward-compatible alias: `dataset_scope="recent"`
 - station observations only
 - dataset scope: `recent`
 - resolution: `daily`
@@ -38,6 +40,7 @@ The current implementation treats these monthly JSON files as the only supported
 Implemented public path in this pass:
 
 - `country="SK"`, `dataset_scope="recent"`, `resolution="daily"`
+- `country="SK"`, `provider="recent"`, `resolution="daily"`
 
 ## Supported Canonical Elements
 
@@ -99,7 +102,7 @@ from weatherdownload import ObservationQuery, download_observations
 
 query = ObservationQuery(
     country="SK",
-    dataset_scope="recent",
+    provider="recent",
     resolution="daily",
     station_ids=["11800"],
     start_date="2025-01-01",

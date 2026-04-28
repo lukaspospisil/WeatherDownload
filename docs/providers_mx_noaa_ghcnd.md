@@ -9,7 +9,8 @@
 This first Mexico slice is intentionally conservative:
 
 - country: `MX`
-- dataset scope: `ghcnd`
+- preferred provider: `ghcnd`
+- backward-compatible alias: `dataset_scope="ghcnd"`
 - resolution: `daily`
 - canonical element support:
   - `tas_max` -> `TMAX`

@@ -80,6 +80,7 @@ Compatibility note:
 
 - existing Python and CLI usage with `dataset_scope` or `--dataset-scope` remains valid
 - normalized output tables still keep the `dataset_scope` column for backward compatibility
+- the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
 
 See [Provider Model And Coverage](docs/providers.md) for the full country-by-country matrix and exact supported scope names.
 

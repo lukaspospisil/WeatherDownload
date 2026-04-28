@@ -8,10 +8,19 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from weatherdownload.cli import main
+from weatherdownload.cli import build_parser, main
 
 
 class ObservationCliTests(unittest.TestCase):
+    def test_cli_help_prefers_provider_and_mentions_dataset_scope_alias(self) -> None:
+        buffer = io.StringIO()
+        with self.assertRaises(SystemExit):
+            with redirect_stdout(buffer):
+                build_parser().parse_args(['observations', 'daily', '--help'])
+        help_text = buffer.getvalue()
+        self.assertIn('--provider', help_text)
+        self.assertIn('--dataset-scope', help_text)
+
     def _sample_tenmin_table(self) -> pd.DataFrame:
         return pd.DataFrame([
             {

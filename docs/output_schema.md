@@ -199,7 +199,7 @@ from weatherdownload import ObservationQuery, download_observations
 
 query = ObservationQuery(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="1hour",
     station_ids=["00044"],
     start="1999-12-31T22:00:00Z",

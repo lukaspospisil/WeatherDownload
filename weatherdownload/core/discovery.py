@@ -7,6 +7,12 @@ from .queries import normalize_provider_scope
 
 
 def list_dataset_scopes(country: str = 'CZ') -> list[str]:
+    """List provider tokens for a country.
+
+    `dataset_scope` remains the historical public name for backward
+    compatibility, but these values are the same tokens accepted by `provider`.
+    """
+
     from ..providers import get_provider
 
     provider = get_provider(country)
@@ -14,10 +20,14 @@ def list_dataset_scopes(country: str = 'CZ') -> list[str]:
 
 
 def list_providers(country: str = 'CZ') -> list[str]:
+    """List preferred public provider selectors for a country."""
+
     return list_dataset_scopes(country=country)
 
 
 def list_resolutions(dataset_scope: str | None = None, country: str = 'CZ', provider: str | None = None) -> list[str]:
+    """List supported resolutions, accepting `provider` or `dataset_scope`."""
+
     from ..providers import get_provider
 
     weather_provider = get_provider(country)
@@ -39,6 +49,8 @@ def list_supported_elements(
     provider_raw: bool = False,
     include_mapping: bool = False,
 ):
+    """List supported canonical or raw elements for a provider path."""
+
     from ..providers import get_provider
 
     weather_provider = get_provider(country)

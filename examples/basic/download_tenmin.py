@@ -5,56 +5,56 @@ from weatherdownload import ObservationQuery, download_observations
 
 COUNTRY_DEFAULTS = {
     'AT': {
-        'dataset_scope': 'historical',
+        'provider': 'historical',
         'station_ids': ['1'],
         'start': '2024-01-01T00:10:00Z',
         'end': '2024-01-01T00:20:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
     'BE': {
-        'dataset_scope': 'historical',
+        'provider': 'historical',
         'station_ids': ['6414'],
         'start': '2024-01-01T00:10:00Z',
         'end': '2024-01-01T00:20:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
     'CH': {
-        'dataset_scope': 'historical',
+        'provider': 'historical',
         'station_ids': ['AIG'],
         'start': '2025-12-31T23:50:00Z',
         'end': '2026-01-01T00:10:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
     'CZ': {
-        'dataset_scope': 'historical_csv',
+        'provider': 'historical_csv',
         'station_ids': ['0-20000-0-11406'],
         'start': '2024-01-01T00:00:00Z',
         'end': '2024-01-01T00:20:00Z',
         'elements': ['T', 'T10'],
     },
     'DE': {
-        'dataset_scope': 'historical',
+        'provider': 'historical',
         'station_ids': ['00044'],
         'start': '2024-01-01T00:00:00Z',
         'end': '2024-01-01T00:20:00Z',
         'elements': ['tas_mean', 'relative_humidity'],
     },
     'DK': {
-        'dataset_scope': 'historical',
+        'provider': 'historical',
         'station_ids': ['06180'],
         'start': '2024-01-01T00:10:00Z',
         'end': '2024-01-01T00:20:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
     'HU': {
-        'dataset_scope': 'historical',
+        'provider': 'historical',
         'station_ids': ['13704'],
         'start': '2026-01-01T00:00:00Z',
         'end': '2026-01-01T00:10:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
     'NL': {
-        'dataset_scope': 'historical',
+        'provider': 'historical',
         'station_ids': ['0-20000-0-06260'],
         'start': '2024-01-01T09:10:00Z',
         'end': '2024-01-01T09:20:00Z',
@@ -76,7 +76,7 @@ def main() -> None:
     # Build a minimal 10-minute query using the same public API shape for each country.
     query = ObservationQuery(
         country=args.country,
-        dataset_scope=defaults['dataset_scope'],
+        provider=defaults['provider'],
         resolution='10min',
         station_ids=defaults['station_ids'],
         start=defaults['start'],

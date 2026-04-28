@@ -18,6 +18,7 @@ Shared wrapper model:
 - output tables still expose `dataset_scope` for compatibility
 - `station_id` is the raw NOAA GHCN-Daily station id
 - station metadata and station elements are inventory-driven from `ghcnd-inventory.txt`
+- the shared implementation lives in `weatherdownload/providers/ghcnd/`, while country wrappers remain thin and explicit
 
 Supported elements on all countries in this note:
 

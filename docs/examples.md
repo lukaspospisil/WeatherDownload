@@ -27,6 +27,7 @@ Terminology note:
 - `dataset_scope` remains accepted as a backward-compatible alias
 - `resolution` selects the temporal resolution
 - scope names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model And Coverage](providers.md) for the exact meaning in each country path
+- `utils/` is reserved for internal utilities and audits, not the main public example tour
 
 ## Basic Examples
 
@@ -335,6 +336,10 @@ python scripts/dev/inspect_file.py outputs/some_file.parquet
 python scripts/dev/inspect_file.py outputs/fao_daily.cz.mat
 python scripts/dev/inspect_file.py outputs/fao_daily.cz
 ```
+
+Internal utility note:
+
+- `utils/find_cz_fao_plus_evaporation.py` is kept as a repository utility for CZ station-audit work, not as a polished public quickstart example
 
 ## Maintainer And Experimental Helpers
 

@@ -13,6 +13,13 @@ class QueryValidationError(ValueError):
 
 @dataclass(slots=True)
 class ObservationQuery:
+    """Public observation query.
+
+    `provider` is the preferred public selector for the country-specific source.
+    `dataset_scope` remains accepted as a backward-compatible alias and is
+    normalized internally to the same canonical value.
+    """
+
     dataset_scope: str = ''
     resolution: str = ''
     station_ids: list[str] = field(default_factory=list)
@@ -33,6 +40,8 @@ def normalize_provider_scope(
     dataset_scope: str | None = None,
     provider: str | None = None,
 ) -> str:
+    """Resolve `provider` and `dataset_scope` into one canonical provider token."""
+
     normalized_dataset_scope = _normalize_optional_scope(dataset_scope, field_name='dataset_scope')
     normalized_provider = _normalize_optional_scope(provider, field_name='provider')
 
@@ -46,6 +55,8 @@ def normalize_provider_scope(
 
 
 def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
+    """Validate and normalize an observation query in place."""
+
     from ..providers import get_provider, normalize_country_code
 
     query.dataset_scope = normalize_provider_scope(

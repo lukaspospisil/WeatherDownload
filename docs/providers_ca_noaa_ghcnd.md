@@ -9,7 +9,8 @@
 This first Canada slice is intentionally conservative:
 
 - country: `CA`
-- dataset scope: `ghcnd`
+- preferred provider: `ghcnd`
+- backward-compatible alias: `dataset_scope="ghcnd"`
 - resolution: `daily`
 - canonical element support:
   - `tas_max` -> `TMAX`

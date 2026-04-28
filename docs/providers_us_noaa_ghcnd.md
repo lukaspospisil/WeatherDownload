@@ -9,7 +9,8 @@
 This first NOAA slice is intentionally conservative:
 
 - country: `US`
-- dataset scope: `ghcnd`
+- preferred provider: `ghcnd`
+- backward-compatible alias: `dataset_scope="ghcnd"`
 - resolution: `daily`
 - canonical element support:
   - `tas_max` -> `TMAX`

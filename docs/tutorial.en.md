@@ -23,8 +23,8 @@ WeatherDownload is a Python library for working with open meteorological dataset
 
 It currently supports:
 
-- **CZ** via **CHMI**
-- **DE** via **DWD**
+- multiple countries through provider-specific source integrations behind one shared public API
+- examples in this tutorial focus mainly on **CZ** and **DE**, with newer country/provider paths documented in the provider notes and coverage pages
 
 The library can:
 
