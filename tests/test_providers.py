@@ -36,7 +36,7 @@ class _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK', 'US'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'HU', 'MX', 'NL', 'PL', 'SE', 'SK', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
@@ -56,6 +56,16 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(
             list_supported_elements(country='US', dataset_scope='ghcnd', resolution='daily'),
             ['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'],
+        )
+
+    def test_discovery_country_mx_includes_conservative_ghcnd_core_without_evap(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='MX'), ['ghcnd'])
+        self.assertEqual(list_providers(country='MX'), ['ghcnd'])
+        self.assertEqual(list_resolutions(country='MX', dataset_scope='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='MX', provider='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='MX', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
         )
 
     def test_read_station_metadata_country_de(self) -> None:

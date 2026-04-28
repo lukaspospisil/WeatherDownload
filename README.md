@@ -63,8 +63,9 @@ Examples:
 
 | `country` | `provider` | Meaning |
 | --- | --- | --- |
-| `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
 | `CA` | `ghcnd` | NOAA GHCN-Daily source |
+| `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
+| `MX` | `ghcnd` | NOAA GHCN-Daily source |
 | `SK` | `recent` | SHMU recent daily JSON source |
 | `HU` | `historical_wind` | HungaroMet special 10-minute wind product |
 | `PL` | `historical_klimat` | IMGW daily klimat source |
@@ -89,6 +90,7 @@ See [Provider Model And Coverage](docs/providers.md) for the full country-by-cou
 | `DE` | Yes | Yes* | Yes* | Yes | Stable |
 | `DK` | Yes* | Yes* | Yes* | Yes | Stable |
 | `HU` | Yes* | Yes* | Yes* | Yes | Stable |
+| `MX` | Yes* | No | No | No | Stable |
 | `NL` | Yes* | Yes* | Yes* | Yes | Stable |
 | `PL` | Yes* | Yes* | No | Yes | Stable |
 | `SE` | Yes* | Yes* | No | Yes | Stable |
@@ -111,6 +113,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - `DE` via DWD
 - `DK` via DMI open-data APIs
 - `HU` via HungaroMet open data on `odp.met.hu`
+- `MX` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
 - `NL` via KNMI Data Platform
 - `PL` via IMGW-PIB public synop archives (`daily` and `1hour`) plus a separate daily `klimat` scope
 - `SE` via SMHI Meteorological Observations API
@@ -133,6 +136,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - [GeoSphere Austria Provider Notes](docs/providers_at_geosphere.md)
 - [RMI/KMI Belgium Provider Notes](docs/providers_be_rmi.md)
 - [NOAA / GHCN-Daily Canada Provider Notes](docs/providers_ca_noaa_ghcnd.md)
+- [NOAA / GHCN-Daily Mexico Provider Notes](docs/providers_mx_noaa_ghcnd.md)
 - [MeteoSwiss Switzerland Provider Notes](docs/providers_ch_meteoswiss.md)
 - [DMI Denmark Provider Notes](docs/providers_dk_dmi.md)
 - [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md)
