@@ -82,7 +82,7 @@ Compatibility note:
 - normalized output tables still keep the `dataset_scope` column for backward compatibility
 - the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
 
-See [Provider Model And Coverage](docs/providers.md) for the full country-by-country matrix and exact supported scope names.
+See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model And Coverage](docs/providers.md) for the longer country-by-country notes.
 
 ## Coverage Snapshot
 
@@ -139,6 +139,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 ## Where To Start
 
 - Provider coverage, supported elements, dataset scopes, and country caveats: [Provider Model And Coverage](docs/providers.md)
+- Generated current capability table from the registry/discovery APIs: [Supported Capabilities](docs/supported_capabilities.md)
 - Shared usage examples and workflow entry points: [Examples And Workflows](docs/examples.md)
 - Normalized station and observation schemas: [Normalized Output Schemas](docs/output_schema.md)
 - FAO-oriented daily packaging example: [FAO-Oriented Daily Input Packaging Workflow](docs/download_fao.md)
@@ -146,6 +147,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 ## Docs Index
 
 - [Provider Model And Coverage](docs/providers.md)
+- [Supported Capabilities](docs/supported_capabilities.md)
 - [Examples And Workflows](docs/examples.md)
 - [Normalized Output Schemas](docs/output_schema.md)
 - [Canonical Elements](docs/canonical_elements.md)

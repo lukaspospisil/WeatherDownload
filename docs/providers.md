@@ -6,9 +6,12 @@
 
 WeatherDownload uses a provider layer so the public API can stay stable while provider-specific logic remains internal.
 
+For the shortest current answer to "what is implemented right now?", start with [Supported Capabilities](supported_capabilities.md). This page stays more narrative and provider-note oriented.
+
 ## Where To Start
 
 - Station metadata and identifiers: [Canonical Station Identifier](#canonical-station-identifier)
+- Generated current capability overview: [Supported Capabilities](supported_capabilities.md)
 - Daily, `1hour`, and `10min` country coverage: [Capability Matrix](#capability-matrix)
 - Shared examples for each workflow: [Examples And Workflows](examples.md)
 - FAO-oriented daily input packaging example: [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)

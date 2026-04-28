@@ -18,6 +18,7 @@ This page helps you find the example scripts quickly.
 - Daily downloads: [`examples/basic/download_daily.py`](../examples/basic/download_daily.py)
 - Subdaily downloads: [`examples/basic/download_hourly.py`](../examples/basic/download_hourly.py) and [`examples/basic/download_tenmin.py`](../examples/basic/download_tenmin.py)
 - FAO-oriented daily input bundle: [`examples/workflows/download_fao.py`](../examples/workflows/download_fao.py) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
+- Generated current capability overview: [Supported Capabilities](supported_capabilities.md)
 - Provider coverage and country-specific limits: [Provider Model And Coverage](providers.md)
 
 Terminology note:
@@ -27,6 +28,7 @@ Terminology note:
 - `dataset_scope` remains accepted as a backward-compatible alias
 - `resolution` selects the temporal resolution
 - scope names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model And Coverage](providers.md) for the exact meaning in each country path
+- for a complete current country/provider/resolution/element overview, check [Supported Capabilities](supported_capabilities.md)
 - `utils/` is reserved for internal utilities and audits, not the main public example tour
 
 ## Basic Examples
