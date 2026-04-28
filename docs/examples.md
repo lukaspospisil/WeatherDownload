@@ -23,7 +23,8 @@ This page helps you find the example scripts quickly.
 Terminology note:
 
 - `country` selects the country/provider context
-- `dataset_scope` selects a provider-specific dataset or source name
+- `provider` is the preferred public name for the provider-specific dataset or source name
+- `dataset_scope` remains accepted as a backward-compatible alias
 - `resolution` selects the temporal resolution
 - scope names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model And Coverage](providers.md) for the exact meaning in each country path
 
@@ -126,7 +127,7 @@ SE notes:
 US notes:
 
 - `US` uses the shared daily example path through the official NOAA NCEI GHCN-Daily station files
-- the current `US` slice is intentionally limited to `dataset_scope="ghcnd"` and `resolution="daily"`
+- the current `US` slice is intentionally limited to `provider="ghcnd"` and `resolution="daily"`
 - `open_water_evaporation` maps to official NOAA raw `EVAP`
 - NOAA documents `EVAP` as evaporation of water from an evaporation pan
 - NOAA raw `EVAP` values are in tenths of `mm`; WeatherDownload normalizes output `value` to `mm`
@@ -289,7 +290,7 @@ HU 10-minute notes:
 - station discovery still uses the official `meta/station_meta_auto.csv` metadata file used by the Hungary provider
 - the example preserves the published HungaroMet 10-minute `Time` value as the normalized UTC `timestamp`
 - raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
-- the separate HungaroMet `10_minutes_wind` product is exposed through the distinct `dataset_scope="historical_wind"` capability in the library, but it is intentionally not merged into the shared default `10min` example path
+- the separate HungaroMet `10_minutes_wind` product is exposed through the distinct `provider="historical_wind"` capability in the library, but it is intentionally not merged into the shared default `10min` example path
 - for an explicit HU / historical_wind / 10min Python download example and CLI discovery example, see [HungaroMet Hungary Provider Notes](providers_hu_hungaromet.md#wind-only-10-minute-example)
 
 NL 10-minute notes:

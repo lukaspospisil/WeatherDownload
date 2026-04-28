@@ -6,6 +6,7 @@ from weatherdownload import list_station_elements, list_station_paths, read_stat
 
 
 SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
+SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 
 
 class _MockResponse:
@@ -73,6 +74,19 @@ class StationAvailabilityTests(unittest.TestCase):
         wind_speed = mapping[mapping['element'] == 'wind_speed'].iloc[0]
         self.assertEqual(wind_speed['element_raw'], 'F')
         self.assertEqual(wind_speed['raw_elements'], ['F', 'WSPD'])
+
+    def test_ca_station_availability_and_elements_are_inventory_driven(self) -> None:
+        stations = read_station_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        availability = station_availability(stations, station_ids=['CA000000002'], country='CA')
+        self.assertEqual(
+            availability[['dataset_scope', 'resolution', 'supported_elements']].to_dict('records'),
+            [{'dataset_scope': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
+        )
+        self.assertTrue(station_supports(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'))
+        self.assertTrue(station_supports(stations, 'CA000000002', None, 'daily', country='CA', provider='ghcnd'))
+        self.assertEqual(list_station_elements(stations, 'CA000000001', 'ghcnd', 'daily', country='CA'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'CA000000001', None, 'daily', country='CA', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'), ['precipitation'])
 
 
 if __name__ == '__main__':

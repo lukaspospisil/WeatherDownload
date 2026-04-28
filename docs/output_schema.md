@@ -24,7 +24,9 @@ This page documents the stable public columns, not the provider-specific raw fil
 - provider provenance is preserved in `element_raw`
 - raw provider quality or status information is preserved in `flag` when the source exposes it
 - normalized `quality` is only populated where WeatherDownload has an explicit provider-specific normalization; otherwise it remains null
+- `provider` is the preferred public input name for choosing the concrete source within a country
 - `dataset_scope` records the provider-specific dataset/product/source selected by the query; it is not a universal cross-country category
+- output tables keep the `dataset_scope` column name for backward compatibility
 - the public schema stays stable even when countries expose different subsets of canonical elements
 - unavailable fields are not synthesized by default; they remain null/missing in fixed-shape downstream packaging workflows
 

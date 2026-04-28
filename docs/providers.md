@@ -20,6 +20,7 @@ Use ISO 3166-1 alpha-2 country codes:
 
 - `AT`
 - `BE`
+- `CA`
 - `CH`
 - `CZ`
 - `DE`
@@ -38,6 +39,7 @@ from weatherdownload import read_station_metadata, list_supported_elements
 
 at_stations = read_station_metadata(country="AT")
 be_stations = read_station_metadata(country="BE")
+ca_stations = read_station_metadata(country="CA")
 ch_stations = read_station_metadata(country="CH")
 cz_stations = read_station_metadata(country="CZ")
 de_stations = read_station_metadata(country="DE")
@@ -51,7 +53,7 @@ us_stations = read_station_metadata(country="US")
 
 nl_daily_elements = list_supported_elements(
     country="NL",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
 )
 ```
@@ -59,6 +61,7 @@ nl_daily_elements = list_supported_elements(
 ```powershell
 weatherdownload stations metadata --country AT
 weatherdownload stations metadata --country BE
+weatherdownload stations metadata --country CA
 weatherdownload stations metadata --country CH
 weatherdownload stations metadata --country CZ
 weatherdownload stations metadata --country DE
@@ -77,23 +80,26 @@ The same public API shape is used across countries:
 - `read_station_metadata(country=...)`
 - `read_station_observation_metadata(country=...)`
 - `list_dataset_scopes(country=...)`
-- `list_resolutions(country=..., dataset_scope=...)`
-- `list_supported_elements(country=..., dataset_scope=..., resolution=...)`
+- `list_providers(country=...)`
+- `list_resolutions(country=..., provider=...)`
+- `list_supported_elements(country=..., provider=..., resolution=...)`
 - `download_observations(...)`
 
 The public query model has three separate dimensions:
 
 - `country` selects the country/provider context
-- `dataset_scope` selects a concrete provider-specific dataset, product, or source
+- `provider` is the preferred public selector for a concrete provider-specific dataset, product, or source
+- `dataset_scope` remains accepted as a backward-compatible alias for `provider`
 - `resolution` selects the temporal resolution within that provider path
 
-`dataset_scope` is intentionally provider-specific. It is not a universal cross-country taxonomy such as "historical data" or "recent data". The same token can mean different source families in different countries, and different countries can use completely different tokens for similar time horizons.
+`provider` is intentionally provider-specific. It is not a universal cross-country taxonomy such as "historical data" or "recent data". The same token can mean different source families in different countries, and different countries can use completely different tokens for similar time horizons.
 
 Examples:
 
-| `country` | `dataset_scope` | Meaning |
+| `country` | `provider` | Meaning |
 | --- | --- | --- |
 | `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
+| `CA` | `ghcnd` | NOAA GHCN-Daily source |
 | `SK` | `recent` | SHMU recent daily JSON source |
 | `CH` | `historical` | MeteoSwiss historical station-data path |
 | `HU` | `historical` | HungaroMet historical observation archives |
@@ -106,7 +112,8 @@ Practical interpretation:
 
 - `historical_csv` is a CHMI-specific scope name, not a universal label for all historical datasets
 - `recent` does not have exactly the same source semantics across providers
-- `ghcnd` currently names the NOAA GHCN-Daily slice implemented under `country="US"`; it should be read as the provider source name, not as a claim about future cross-country scope rules
+- `ghcnd` currently names the NOAA GHCN-Daily slice implemented under `country="CA"` and `country="US"`; it should be read as the provider source name, not as a claim about future cross-country scope rules
+- normalized output tables still keep the `dataset_scope` column name for backward compatibility
 
 What the library normalizes across providers:
 
@@ -140,6 +147,7 @@ Subdaily variability is expected across providers:
 | --- | --- |
 | `AT` | GeoSphere Klima station id as string |
 | `BE` | official RMI/KMI AWS station code from the `aws_station` layer |
+| `CA` | raw NOAA GHCN-Daily station id, e.g. `CA001...` |
 | `CH` | official MeteoSwiss A1 `station_abbr` as string |
 | `CZ` | CHMI `WSI` |
 | `DE` | zero-padded DWD `Stations_id` |
@@ -159,6 +167,7 @@ Subdaily variability is expected across providers:
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official GeoSphere metadata endpoint with station name, coordinates, elevation, and validity range |
 | `BE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration` | Official RMI/KMI `aws_station` metadata layer with station code, name, geometry-backed coordinates, altitude, and validity timestamps |
+| `CA` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation` | Official NOAA GHCN-Daily station metadata and inventory, with Canadian station elements driven by per-station `ghcnd-inventory.txt` availability |
 | `CH` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration`; 1hour: `tas_mean`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration`; 10min: `tas_mean`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure`, `sunshine_duration` | Official MeteoSwiss A1 station metadata with source-backed station identifier, WIGOS id, name, coordinates, elevation, and validity range |
 | `CZ` | Stable | `now`, `recent`, `historical`, `historical_csv` | `daily`, `1hour`, `10min` under `historical_csv` | Daily: `tas_mean`, `tas_max`, `tas_min`, `open_water_evaporation`, `wind_speed`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity` | CHMI station metadata with official identifiers, names, coordinates, elevation, and validity fields where exposed by the implemented paths |
 | `DE` | Stable | `historical` | `daily`, `1hour`, `10min` | Daily: `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `wind_speed_max`, `vapour_pressure`, `sunshine_duration`, `precipitation`, `pressure`, `relative_humidity`, `cloud_cover`, `snow_depth`, `ground_temperature_min`, `precipitation_indicator` | Official DWD station metadata with names, coordinates, elevation, state, and validity range |
@@ -170,7 +179,7 @@ Subdaily variability is expected across providers:
 | `SK` | Experimental | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` | Minimal probe-derived discovery from the current SHMU recent daily payload |
 | `US` | Stable | `ghcnd` | `daily` | `tas_max`, `tas_min`, `precipitation`, `open_water_evaporation` | Official NOAA GHCN-Daily station metadata and inventory, with station elements driven by per-station `ghcnd-inventory.txt` availability |
 
-The matrix above lists the actual public `dataset_scope` values implemented by WeatherDownload for each country path. Similar-looking names across countries should still be interpreted as provider-local scope names.
+The matrix above lists the actual public provider values implemented by WeatherDownload for each country path. Similar-looking names across countries should still be interpreted as provider-local scope names. In normalized outputs, the same selection still appears under the `dataset_scope` column for backward compatibility.
 
 ## Current Conservative Coverage Details
 
@@ -663,6 +672,36 @@ Important current limitations:
 - `SK` metadata are probe-derived and do not yet include authoritative station names or coordinates
 - `open_water_evaporation` is supported here only from official SHMU raw `voda_vypar`, documented as water evaporation in `mm`; it is treated as measured water-surface evaporation, not ET0 or PET
 
+### CA `ghcnd / daily`
+
+Supported canonical elements:
+
+- `tas_max`
+- `tas_min`
+- `precipitation`
+
+Important current limitations:
+
+- the implemented path uses the official NOAA NCEI GHCN-Daily public files only
+- only `CA / ghcnd / daily` is implemented in this first slice
+- `station_id` is the raw NOAA GHCN-Daily station id
+- station metadata come from `ghcnd-stations.txt`
+- station metadata include Canadian stations with at least one supported GHCN-Daily element in `ghcnd-inventory.txt`
+- station elements are inventory-driven per station
+- daily observations come from the official `all/{station_id}.dly` files
+- NOAA raw `TMAX` and `TMIN` values are documented in tenths of degrees C; WeatherDownload normalizes output `value` to degrees C
+- NOAA raw `PRCP` values are documented in tenths of `mm`; WeatherDownload normalizes output `value` to `mm`
+- NOAA missing raw values `-9999` are treated as missing
+- WeatherDownload keeps NOAA quality information instead of silently discarding flagged values
+- `quality` carries NOAA `QFLAG`
+- `flag` preserves provider `MFLAG` and `SFLAG`
+- this path intentionally excludes `EVAP` because the current GHCN inventory audit found no Canadian `EVAP` stations
+- this path does not implement PET, ET0, reference evaporation, or other modeled evaporation products
+
+Detailed notes:
+
+- [NOAA / GHCN-Daily Canada Provider Notes](providers_ca_noaa_ghcnd.md)
+
 ### US `ghcnd / daily`
 
 Supported canonical elements:
@@ -861,13 +900,15 @@ For KNMI 10-minute files:
 The CLI mirrors the provider model:
 
 - `--country` defaults to `CZ`
+- `--provider` is the preferred selector for the concrete provider/source within the country
+- `--dataset-scope` remains a backward-compatible alias for `--provider`
 - the same command shape works across countries where the provider path is implemented
 - unsupported combinations fail with a clear error
 
 Examples:
 
 ```powershell
-weatherdownload observations daily --country AT --station-id 1 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
+weatherdownload observations daily --country AT --provider historical --station-id 1 --element tas_mean --element precipitation --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country BE --station-id 6414 --element tas_mean --element precipitation --element sunshine_duration --start-date 2024-01-01 --end-date 2024-01-03
 weatherdownload observations daily --country CH --station-id AIG --element tas_mean --element precipitation --element sunshine_duration --start-date 2025-12-31 --end-date 2026-01-02
 weatherdownload observations hourly --country AT --station-id 1 --element tas_mean --element pressure --start 2024-01-01T00:00:00Z --end 2024-01-01T02:00:00Z

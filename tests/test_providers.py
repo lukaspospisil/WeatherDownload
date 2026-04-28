@@ -5,6 +5,7 @@ from unittest.mock import patch
 from weatherdownload import (
     ObservationQuery,
     list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_supported_countries,
     list_supported_elements,
@@ -35,9 +36,19 @@ class _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK', 'US'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'HU', 'NL', 'PL', 'SE', 'SK', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
+
+    def test_discovery_country_ca_includes_conservative_ghcnd_core_without_evap(self) -> None:
+        self.assertEqual(list_dataset_scopes(country='CA'), ['ghcnd'])
+        self.assertEqual(list_providers(country='CA'), ['ghcnd'])
+        self.assertEqual(list_resolutions(country='CA', dataset_scope='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='CA', provider='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
 
     def test_discovery_country_us_includes_conservative_ghcnd_core(self) -> None:
         self.assertEqual(list_dataset_scopes(country='US'), ['ghcnd'])

@@ -13,8 +13,8 @@ class QueryValidationError(ValueError):
 
 @dataclass(slots=True)
 class ObservationQuery:
-    dataset_scope: str
-    resolution: str
+    dataset_scope: str = ''
+    resolution: str = ''
     station_ids: list[str] = field(default_factory=list)
     start: datetime | str | None = None
     end: datetime | str | None = None
@@ -23,22 +23,44 @@ class ObservationQuery:
     all_history: bool = False
     elements: list[str] | None = None
     country: str = 'CZ'
+    provider: str | None = None
 
     def __post_init__(self) -> None:
         validate_observation_query(self)
 
 
+def normalize_provider_scope(
+    dataset_scope: str | None = None,
+    provider: str | None = None,
+) -> str:
+    normalized_dataset_scope = _normalize_optional_scope(dataset_scope, field_name='dataset_scope')
+    normalized_provider = _normalize_optional_scope(provider, field_name='provider')
+
+    if normalized_dataset_scope is None and normalized_provider is None:
+        raise QueryValidationError('Either provider or dataset_scope is required.')
+    if normalized_dataset_scope is not None and normalized_provider is not None and normalized_dataset_scope != normalized_provider:
+        raise QueryValidationError(
+            f"Conflicting provider selectors: provider='{normalized_provider}' does not match dataset_scope='{normalized_dataset_scope}'."
+        )
+    return normalized_provider or normalized_dataset_scope or ''
+
+
 def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
     from ..providers import get_provider, normalize_country_code
 
+    query.dataset_scope = normalize_provider_scope(
+        getattr(query, 'dataset_scope', None),
+        getattr(query, 'provider', None),
+    )
+    query.provider = query.dataset_scope
+
     if not query.dataset_scope:
-        raise QueryValidationError('dataset_scope is required.')
+        raise QueryValidationError('provider is required.')
     if not query.resolution:
         raise QueryValidationError('resolution is required.')
 
     query.country = normalize_country_code(query.country)
     provider = get_provider(query.country)
-    query.dataset_scope = _normalize_scalar(query.dataset_scope, field_name='dataset_scope')
     query.resolution = _normalize_scalar(query.resolution, field_name='resolution')
 
     supported_scopes = sorted({spec.dataset_scope for spec in provider.list_dataset_specs()})
@@ -127,6 +149,14 @@ def _normalize_scalar(value: object, field_name: str) -> str:
     if not normalized:
         raise QueryValidationError(f'{field_name} must not be empty.')
     return normalized
+
+
+def _normalize_optional_scope(value: object, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str) and not value.strip():
+        return None
+    return _normalize_scalar(value, field_name=field_name)
 
 
 def _normalize_string_sequence(value: Sequence[str] | None, field_name: str, uppercase: bool, required: bool) -> list[str]:

@@ -31,7 +31,7 @@ from weatherdownload import ObservationQuery, download_observations
 
 query = ObservationQuery(
     country="CZ",
-    dataset_scope="historical_csv",
+    provider="historical_csv",
     resolution="daily",
     station_ids=["0-20000-0-11406"],
     start_date="2024-01-01",
@@ -46,7 +46,7 @@ CLI:
 
 ```powershell
 weatherdownload stations metadata --country HU --format screen
-weatherdownload observations daily --country DE --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
+weatherdownload observations daily --country DE --provider historical --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations hourly --country HU --station-id 13704 --element tas_mean --element pressure --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z
 weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T09:10:00Z --end 2024-01-01T09:20:00Z
 ```
@@ -54,19 +54,26 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 Conceptual model:
 
 - `country` selects the country/provider context
-- `dataset_scope` selects a concrete provider-specific dataset, product, or source
+- `provider` is the preferred public name for the concrete provider-specific dataset, product, or source
+- `dataset_scope` is kept as a backward-compatible alias for `provider`
 - `resolution` selects the temporal resolution
-- `dataset_scope` values are not globally standardized across countries
+- provider values are not globally standardized across countries
 
 Examples:
 
-| `country` | `dataset_scope` | Meaning |
+| `country` | `provider` | Meaning |
 | --- | --- | --- |
 | `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
+| `CA` | `ghcnd` | NOAA GHCN-Daily source |
 | `SK` | `recent` | SHMU recent daily JSON source |
 | `HU` | `historical_wind` | HungaroMet special 10-minute wind product |
 | `PL` | `historical_klimat` | IMGW daily klimat source |
 | `US` | `ghcnd` | NOAA GHCN-Daily source |
+
+Compatibility note:
+
+- existing Python and CLI usage with `dataset_scope` or `--dataset-scope` remains valid
+- normalized output tables still keep the `dataset_scope` column for backward compatibility
 
 See [Provider Model And Coverage](docs/providers.md) for the full country-by-country matrix and exact supported scope names.
 
@@ -76,6 +83,7 @@ See [Provider Model And Coverage](docs/providers.md) for the full country-by-cou
 | --- | --- | --- | --- | --- | --- |
 | `AT` | Yes* | Yes* | Yes* | Yes | Stable |
 | `BE` | Yes* | Yes* | Yes* | Yes | Stable |
+| `CA` | Yes* | No | No | No | Stable |
 | `CH` | Yes* | Yes* | Yes* | Yes | Stable |
 | `CZ` | Yes | Yes | Yes | Yes | Stable |
 | `DE` | Yes | Yes* | Yes* | Yes | Stable |
@@ -97,6 +105,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 
 - `AT` via GeoSphere Austria
 - `BE` via RMI/KMI open-data AWS platform
+- `CA` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
 - `CH` via MeteoSwiss A1 automatic weather stations
 - `CZ` via CHMI
 - `DE` via DWD
@@ -123,6 +132,7 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - [Canonical Elements](docs/canonical_elements.md)
 - [GeoSphere Austria Provider Notes](docs/providers_at_geosphere.md)
 - [RMI/KMI Belgium Provider Notes](docs/providers_be_rmi.md)
+- [NOAA / GHCN-Daily Canada Provider Notes](docs/providers_ca_noaa_ghcnd.md)
 - [MeteoSwiss Switzerland Provider Notes](docs/providers_ch_meteoswiss.md)
 - [DMI Denmark Provider Notes](docs/providers_dk_dmi.md)
 - [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md)
@@ -140,5 +150,3 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 - canonical meteorological element names stay shared across countries
 - normalized output schemas stay stable and DataFrame-first
 - missing variables stay missing by default instead of being silently derived
-
-

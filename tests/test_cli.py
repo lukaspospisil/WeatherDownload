@@ -229,6 +229,23 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_ca_daily_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': 'CA000000001',
+                'gh_id': None,
+                'element': 'tas_max',
+                'element_raw': 'TMAX',
+                'observation_date': '2020-06-01',
+                'time_function': None,
+                'value': 23.5,
+                'flag': None,
+                'quality': None,
+                'dataset_scope': 'ghcnd',
+                'resolution': 'daily',
+            }
+        ])
+
     def test_tenmin_cli_screen_output_defaults_to_wide_layout(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_tenmin_table()):
@@ -498,6 +515,42 @@ class ObservationCliTests(unittest.TestCase):
         self.assertIn('USC00000001', buffer.getvalue())
         self.assertIn('tas_max', buffer.getvalue())
 
+    def test_daily_cli_explicit_country_ca_uses_ghcnd_query_shape(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_ca_daily_table()) as download_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'daily', '--country', 'CA', '--station-id', 'CA000000001', '--element', 'tas_max', '--start-date', '2020-06-01', '--end-date', '2020-06-02'
+                ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'CA')
+        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(query.elements, ['TMAX'])
+        self.assertEqual(download_mock.call_args.kwargs['country'], 'CA')
+        self.assertIn('CA000000001', buffer.getvalue())
+        self.assertIn('tas_max', buffer.getvalue())
+
+    def test_daily_cli_accepts_provider_alias(self) -> None:
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_us_daily_table()) as download_mock:
+            exit_code = main([
+                'observations', 'daily', '--country', 'US', '--provider', 'ghcnd', '--station-id', 'USC00000001', '--element', 'tas_max', '--start-date', '2020-05-01', '--end-date', '2020-05-03'
+            ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
+
+    def test_daily_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([
+                'observations', 'daily', '--country', 'US', '--provider', 'ghcnd', '--dataset-scope', 'historical', '--station-id', 'USC00000001', '--element', 'tas_max', '--start-date', '2020-05-01', '--end-date', '2020-05-03'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('Conflicting provider selectors', stderr.getvalue())
+
     def test_daily_cli_csv_export_defaults_to_wide_layout(self) -> None:
         original_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -648,6 +701,20 @@ class StationAvailabilityCliTests(unittest.TestCase):
         self.assertIn('0-20000-0-11406', output)
         self.assertIn('True', output)
 
+    def test_station_supports_cli_accepts_provider_alias(self) -> None:
+        with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
+            with patch('weatherdownload.cli.station_supports', return_value=True) as supports_mock:
+                exit_code = main(['stations', 'supports', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--resolution', 'daily'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(supports_mock.call_args.args[2], 'historical')
+
+    def test_station_supports_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main(['stations', 'supports', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('Conflicting provider selectors', stderr.getvalue())
+
     def test_station_elements_cli_screen_output(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
@@ -670,6 +737,32 @@ class StationAvailabilityCliTests(unittest.TestCase):
         self.assertIn('tas_max', buffer.getvalue())
         self.assertIn('precipitation', buffer.getvalue())
         self.assertIn('open_water_evaporation', buffer.getvalue())
+
+    def test_station_elements_cli_explicit_country_ca(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
+            with patch('weatherdownload.cli.list_station_elements', return_value=['tas_max', 'precipitation']) as elements_mock:
+                with redirect_stdout(buffer):
+                    exit_code = main(['stations', 'elements', '--country', 'CA', '--station-id', 'CA000000001', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(elements_mock.call_args.kwargs['country'], 'CA')
+        self.assertIn('tas_max', buffer.getvalue())
+        self.assertIn('precipitation', buffer.getvalue())
+        self.assertNotIn('open_water_evaporation', buffer.getvalue())
+
+    def test_station_elements_cli_accepts_provider_alias(self) -> None:
+        with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
+            with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean']) as elements_mock:
+                exit_code = main(['stations', 'elements', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--resolution', 'daily'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(elements_mock.call_args.args[2], 'historical')
+
+    def test_station_elements_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main(['stations', 'elements', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('Conflicting provider selectors', stderr.getvalue())
 
     def test_station_elements_cli_csv_export(self) -> None:
         original_cwd = Path.cwd()

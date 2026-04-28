@@ -10,7 +10,7 @@ from .availability import list_station_elements, list_station_paths, station_ava
 from .exporting import export_table
 from .metadata import read_station_metadata
 from .observations import download_observations
-from .queries import ObservationQuery
+from .queries import ObservationQuery, normalize_provider_scope
 
 
 OUTPUT_FORMATS = ["screen", "csv", "excel", "parquet", "mat"]
@@ -56,7 +56,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_country_argument(supports_parser)
     supports_parser.add_argument("--station-id", required=True, dest="station_id", help="Canonical station_id.")
-    supports_parser.add_argument("--dataset-scope", required=True, dest="dataset_scope", help="Dataset scope to check.")
+    _add_provider_arguments(
+        supports_parser,
+        required=True,
+        help_text="Concrete provider/source to check. --dataset-scope is kept as a backward-compatible alias.",
+    )
     supports_parser.add_argument("--resolution", required=True, help="Resolution to check.")
     supports_parser.add_argument("--active-on", default=None, dest="active_on", help="Optional date filter in YYYY-MM-DD format.")
     supports_parser.add_argument("--source-url", default=None, help="Optional provider-specific metadata URL override.")
@@ -68,7 +72,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_country_argument(elements_parser)
     elements_parser.add_argument("--station-id", required=True, dest="station_id", help="Canonical station_id.")
-    elements_parser.add_argument("--dataset-scope", required=True, dest="dataset_scope", help="Dataset scope to inspect.")
+    _add_provider_arguments(
+        elements_parser,
+        required=True,
+        help_text="Concrete provider/source to inspect. --dataset-scope is kept as a backward-compatible alias.",
+    )
     elements_parser.add_argument("--resolution", required=True, help="Resolution to inspect.")
     elements_parser.add_argument("--active-on", default=None, dest="active_on", help="Optional date filter in YYYY-MM-DD format.")
     elements_parser.add_argument("--include-mapping", action="store_true", help="Include canonical-to-raw element mapping in the output.")
@@ -87,6 +95,11 @@ def build_parser() -> argparse.ArgumentParser:
     tenmin_parser.add_argument("--start", dest="start", help="Start datetime in ISO format.")
     tenmin_parser.add_argument("--end", dest="end", help="End datetime in ISO format.")
     tenmin_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
+    _add_provider_arguments(
+        tenmin_parser,
+        required=False,
+        help_text="Preferred provider/source selector within the country. Defaults to the country-specific 10min provider when omitted; --dataset-scope remains a backward-compatible alias.",
+    )
     tenmin_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     tenmin_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
     tenmin_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
@@ -99,6 +112,11 @@ def build_parser() -> argparse.ArgumentParser:
     hourly_parser.add_argument("--start", dest="start", help="Start datetime in ISO format.")
     hourly_parser.add_argument("--end", dest="end", help="End datetime in ISO format.")
     hourly_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
+    _add_provider_arguments(
+        hourly_parser,
+        required=False,
+        help_text="Preferred provider/source selector within the country. Defaults to the country-specific hourly provider when omitted; --dataset-scope remains a backward-compatible alias.",
+    )
     hourly_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     hourly_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
     hourly_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
@@ -111,6 +129,11 @@ def build_parser() -> argparse.ArgumentParser:
     daily_parser.add_argument("--start-date", dest="start_date", help="Start date in YYYY-MM-DD format.")
     daily_parser.add_argument("--end-date", dest="end_date", help="End date in YYYY-MM-DD format.")
     daily_parser.add_argument("--all-history", action="store_true", dest="all_history", help="Download the full available history explicitly.")
+    _add_provider_arguments(
+        daily_parser,
+        required=False,
+        help_text="Preferred provider/source selector within the country. Defaults to the country-specific daily provider when omitted; --dataset-scope remains a backward-compatible alias.",
+    )
     daily_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     daily_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
     daily_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
@@ -163,10 +186,11 @@ def handle_station_availability(args: argparse.Namespace) -> int:
 
 def handle_station_supports(args: argparse.Namespace) -> int:
     stations = _read_stations_for_cli(args)
+    provider_scope = _resolve_provider_for_cli(args, default=None, required=True)
     supported = station_supports(
         stations,
         args.station_id,
-        args.dataset_scope,
+        provider_scope,
         args.resolution,
         active_on=args.active_on,
         country=args.country,
@@ -174,7 +198,7 @@ def handle_station_supports(args: argparse.Namespace) -> int:
     result = pd.DataFrame([
         {
             "station_id": args.station_id,
-            "dataset_scope": args.dataset_scope,
+            "dataset_scope": provider_scope,
             "resolution": args.resolution,
             "active_on": args.active_on,
             "supported": supported,
@@ -186,11 +210,12 @@ def handle_station_supports(args: argparse.Namespace) -> int:
 
 def handle_station_elements(args: argparse.Namespace) -> int:
     stations = _read_stations_for_cli(args)
+    provider_scope = _resolve_provider_for_cli(args, default=None, required=True)
     if args.include_mapping:
         table = list_station_elements(
             stations,
             args.station_id,
-            args.dataset_scope,
+            provider_scope,
             args.resolution,
             active_on=args.active_on,
             country=args.country,
@@ -200,7 +225,7 @@ def handle_station_elements(args: argparse.Namespace) -> int:
         elements = list_station_elements(
             stations,
             args.station_id,
-            args.dataset_scope,
+            provider_scope,
             args.resolution,
             active_on=args.active_on,
             country=args.country,
@@ -209,7 +234,7 @@ def handle_station_elements(args: argparse.Namespace) -> int:
             [
                 {
                     "station_id": args.station_id,
-                    "dataset_scope": args.dataset_scope,
+                    "dataset_scope": provider_scope,
                     "resolution": args.resolution,
                     "element": element,
                 }
@@ -229,15 +254,17 @@ def handle_station_elements(args: argparse.Namespace) -> int:
 
 def handle_tenmin_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=False)
+    provider_scope = _resolve_provider_for_cli(args, default=_default_dataset_scope(args.country))
     query = ObservationQuery(
         country=args.country,
-        dataset_scope=_default_dataset_scope(args.country),
+        dataset_scope=provider_scope,
         resolution="10min",
         station_ids=args.station_ids,
         start=args.start,
         end=args.end,
         all_history=args.all_history,
         elements=args.elements,
+        provider=args.provider,
     )
     observations = _prepare_observation_output(
         download_observations(query, country=args.country),
@@ -256,15 +283,17 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
 
 def handle_hourly_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=False)
+    provider_scope = _resolve_provider_for_cli(args, default=_default_dataset_scope(args.country))
     query = ObservationQuery(
         country=args.country,
-        dataset_scope=_default_dataset_scope(args.country),
+        dataset_scope=provider_scope,
         resolution="1hour",
         station_ids=args.station_ids,
         start=args.start,
         end=args.end,
         all_history=args.all_history,
         elements=args.elements,
+        provider=args.provider,
     )
     observations = _prepare_observation_output(
         download_observations(query, country=args.country),
@@ -283,15 +312,17 @@ def handle_hourly_observations(args: argparse.Namespace) -> int:
 
 def handle_daily_observations(args: argparse.Namespace) -> int:
     _validate_observation_mode(args, daily=True)
+    provider_scope = _resolve_provider_for_cli(args, default=_default_dataset_scope(args.country))
     query = ObservationQuery(
         country=args.country,
-        dataset_scope=_default_dataset_scope(args.country),
+        dataset_scope=provider_scope,
         resolution="daily",
         station_ids=args.station_ids,
         start_date=args.start_date,
         end_date=args.end_date,
         all_history=args.all_history,
         elements=args.elements,
+        provider=args.provider,
     )
     observations = _prepare_observation_output(
         download_observations(query, country=args.country),
@@ -332,13 +363,36 @@ def _add_country_argument(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_provider_arguments(parser: argparse.ArgumentParser, *, required: bool, help_text: str) -> None:
+    parser.add_argument("--provider", dest="provider", required=False, help=help_text)
+    parser.add_argument("--dataset-scope", dest="dataset_scope", required=False, help="Deprecated alias for --provider kept for backward compatibility.")
+
+
+def _resolve_provider_for_cli(
+    args: argparse.Namespace,
+    *,
+    default: str | None,
+    required: bool = False,
+) -> str:
+    dataset_scope = getattr(args, "dataset_scope", None)
+    provider = getattr(args, "provider", None)
+    if default is None and required and dataset_scope is None and provider is None:
+        raise ValueError('Use --provider (preferred) or --dataset-scope.')
+    if default is not None and dataset_scope is None and provider is None:
+        return default
+    try:
+        return normalize_provider_scope(dataset_scope=dataset_scope, provider=provider)
+    except Exception as exc:
+        raise ValueError(str(exc)) from exc
+
+
 def _default_dataset_scope(country: str) -> str:
     normalized = country.strip().upper()
     if normalized in {'DE', 'AT', 'BE', 'DK', 'NL'}:
         return 'historical'
     if normalized == 'SK':
         return 'recent'
-    if normalized == 'US':
+    if normalized in {'CA', 'US'}:
         return 'ghcnd'
     return 'historical_csv'
 

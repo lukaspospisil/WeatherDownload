@@ -66,7 +66,7 @@ The library separates several layers:
 
 This means the user can mostly vary:
 - `country="CZ"` / `country="DE"`,
-- `dataset_scope`,
+- `provider`,
 - station,
 - resolution,
 - canonical elements,
@@ -76,10 +76,11 @@ without having to relearn a new data model for each provider.
 The public query model has three separate dimensions:
 
 - `country` selects the country/provider context
-- `dataset_scope` selects a concrete provider-specific dataset, product, or source
+- `provider` is the preferred public name for the concrete provider-specific dataset, product, or source
+- `dataset_scope` remains accepted as a backward-compatible alias for `provider`
 - `resolution` selects the temporal resolution
 
-`dataset_scope` values are not globally standardized across countries. For example, `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat`, and `US / ghcnd` all refer to different provider-specific source families.
+Provider values are not globally standardized across countries. For example, `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat`, and `US / ghcnd` all refer to different provider-specific source families.
 
 ---
 
@@ -239,15 +240,16 @@ selected = filter_stations(stations, gh_ids=["L3CHEB01"])
 ### 7.1 Dataset scopes
 
 ```python
-from weatherdownload import list_dataset_scopes
+from weatherdownload import list_dataset_scopes, list_providers
 
 print(list_dataset_scopes(country="CZ"))
 print(list_dataset_scopes(country="DE"))
+print(list_providers(country="US"))
 ```
 
 Interpretation note:
 
-- `dataset_scope` does not mean the same thing in every country
+- `provider` does not mean the same thing in every country
 - it names the concrete provider source that WeatherDownload uses behind the selected country path
 - examples: `CZ / historical_csv`, `CH / historical`, `HU / historical_wind`, `PL / historical_klimat`, `US / ghcnd`
 
@@ -267,14 +269,14 @@ By default this returns **canonical names**:
 ```python
 from weatherdownload import list_supported_elements
 
-print(list_supported_elements(country="CZ", dataset_scope="historical_csv", resolution="daily"))
-print(list_supported_elements(country="DE", dataset_scope="historical", resolution="daily"))
+print(list_supported_elements(country="CZ", provider="historical_csv", resolution="daily"))
+print(list_supported_elements(country="DE", provider="historical", resolution="daily"))
 ```
 
 ### 7.4 Raw provider codes instead of canonical names
 
 ```python
-print(list_supported_elements(country="CZ", dataset_scope="historical_csv", resolution="daily", provider_raw=True))
+print(list_supported_elements(country="CZ", provider="historical_csv", resolution="daily", provider_raw=True))
 ```
 
 ### 7.5 Canonical-to-raw mapping
@@ -282,7 +284,7 @@ print(list_supported_elements(country="CZ", dataset_scope="historical_csv", reso
 ```python
 mapping = list_supported_elements(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
     include_mapping=True,
 )
@@ -318,7 +320,7 @@ print(
     station_supports(
         stations,
         station_id="0-20000-0-11433",
-        dataset_scope="historical_csv",
+        provider="historical_csv",
         resolution="daily",
         country="CZ",
     )
@@ -333,7 +335,7 @@ from weatherdownload import list_station_elements
 elements = list_station_elements(
     stations,
     station_id="0-20000-0-11433",
-    dataset_scope="historical_csv",
+    provider="historical_csv",
     resolution="daily",
     country="CZ",
 )
@@ -346,7 +348,7 @@ print(elements)
 elements = list_station_elements(
     stations,
     station_id="00044",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
     country="DE",
     include_mapping=True,
@@ -625,7 +627,7 @@ from weatherdownload import ObservationQuery, download_observations
 
 query = ObservationQuery(
     country="CZ",
-    dataset_scope="historical_csv",
+    provider="historical_csv",
     resolution="daily",
     station_ids=["0-20000-0-11433"],
     start_date="2024-01-01",
@@ -644,7 +646,7 @@ from weatherdownload import ObservationQuery, download_observations
 
 query = ObservationQuery(
     country="DE",
-    dataset_scope="historical",
+    provider="historical",
     resolution="daily",
     station_ids=["00044"],
     start_date="2024-01-01",
@@ -661,7 +663,7 @@ print(df.head())
 ```python
 query = ObservationQuery(
     country="CZ",
-    dataset_scope="historical_csv",
+    provider="historical_csv",
     resolution="daily",
     station_ids=["0-20000-0-11433"],
     elements=["tas_mean", "tas_max", "tas_min", "wind_speed"],
@@ -953,7 +955,7 @@ The result is a **wide-format dataset bundle**. The main data will be in `series
 ## 30. Typical use case: I want to know what is available for a station and country
 
 ```bash
-weatherdownload stations elements --country DE --station-id 00044 --dataset-scope historical --resolution daily --include-mapping
+weatherdownload stations elements --country DE --provider historical --station-id 00044 --resolution daily --include-mapping
 ```
 
 ### What to expect
@@ -961,6 +963,9 @@ You get an overview of:
 - canonical elements,
 - raw provider codes,
 - their mapping.
+
+Compatibility note:
+- `--dataset-scope historical` remains valid and produces the same result
 
 ---
 
