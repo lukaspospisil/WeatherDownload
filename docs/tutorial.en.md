@@ -36,6 +36,8 @@ The library can:
 - unify cross-country usage through **canonical elements**,
 - provide workflow examples, such as daily meteorological input packaging for later FAO-oriented processing.
 
+For the current supported country/provider/resolution/element combinations, see [Supported Capabilities](supported_capabilities.md).
+
 ---
 
 ## 2. Core design idea
@@ -81,6 +83,8 @@ The public query model has three separate dimensions:
 - `resolution` selects the temporal resolution
 
 Provider values are not globally standardized across countries. For example, `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat`, and `US / ghcnd` all refer to different provider-specific source families.
+
+The conceptual explanation of this model lives in [Provider Model](providers.md).
 
 ---
 
@@ -252,6 +256,7 @@ Interpretation note:
 - `provider` does not mean the same thing in every country
 - it names the concrete provider source that WeatherDownload uses behind the selected country path
 - examples: `CZ / historical_csv`, `CH / historical`, `HU / historical_wind`, `PL / historical_klimat`, `US / ghcnd`
+- for the current complete list of supported combinations, see [Supported Capabilities](supported_capabilities.md)
 
 ### 7.2 Resolutions
 

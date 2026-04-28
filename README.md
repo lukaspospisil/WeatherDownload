@@ -82,63 +82,11 @@ Compatibility note:
 - normalized output tables still keep the `dataset_scope` column for backward compatibility
 - the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
 
-See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model And Coverage](docs/providers.md) for the longer country-by-country notes.
-
-## Coverage Snapshot
-
-| Country | `daily` | `1hour` | `10min` | `download_fao` | Status |
-| --- | --- | --- | --- | --- | --- |
-| `AT` | Yes* | Yes* | Yes* | Yes | Stable |
-| `BE` | Yes* | Yes* | Yes* | Yes | Stable |
-| `CA` | Yes* | No | No | No | Stable |
-| `CH` | Yes* | Yes* | Yes* | Yes | Stable |
-| `CZ` | Yes | Yes | Yes | Yes | Stable |
-| `DE` | Yes | Yes* | Yes* | Yes | Stable |
-| `DK` | Yes* | Yes* | Yes* | Yes | Stable |
-| `FI` | Yes* | No | No | No | Stable |
-| `FR` | Yes* | No | No | No | Stable |
-| `HU` | Yes* | Yes* | Yes* | Yes | Stable |
-| `IT` | Yes* | No | No | No | Stable |
-| `MX` | Yes* | No | No | No | Stable |
-| `NL` | Yes* | Yes* | Yes* | Yes | Stable |
-| `NO` | Yes* | No | No | No | Stable |
-| `NZ` | Yes* | No | No | No | Stable |
-| `PL` | Yes* | Yes* | No | Yes | Stable |
-| `SE` | Yes* | Yes* | No | Yes | Stable |
-| `SK` | Yes* | No | No | No | Experimental |
-| `US` | Yes* | No | No | No | Stable |
-
-`Yes*` means the path is implemented, but element coverage or dataset scope is intentionally conservative for that provider slice. See [Provider Model And Coverage](docs/providers.md) and the provider-specific notes for exact limits.
-
-Hungary also exposes a separate wind-only `historical_wind / 10min` capability alongside the generic `historical / 10min` path; see the [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md) for details.
-
-In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_speed` and `vapour_pressure` from official hourly IMGW synop observations via `--fill-missing allow-hourly-aggregate`; see [FAO-Oriented Daily Input Packaging Workflow](docs/download_fao.md) for the explicit provenance rules.
-
-## Supported Countries
-
-- `AT` via GeoSphere Austria
-- `BE` via RMI/KMI open-data AWS platform
-- `CA` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
-- `CH` via MeteoSwiss A1 automatic weather stations
-- `CZ` via CHMI
-- `DE` via DWD
-- `DK` via DMI open-data APIs
-- `FI` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
-- `FR` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
-- `HU` via HungaroMet open data on `odp.met.hu`
-- `IT` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
-- `MX` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
-- `NL` via KNMI Data Platform
-- `NO` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
-- `NZ` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
-- `PL` via IMGW-PIB public synop archives (`daily` and `1hour`) plus a separate daily `klimat` scope
-- `SE` via SMHI Meteorological Observations API
-- `SK` via SHMU OpenDATA (experimental, currently limited to `recent / daily`)
-- `US` via NOAA NCEI GHCN-Daily (currently limited to `ghcnd / daily`)
+See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model](docs/providers.md) for the conceptual explanation.
 
 ## Where To Start
 
-- Provider coverage, supported elements, dataset scopes, and country caveats: [Provider Model And Coverage](docs/providers.md)
+- Provider model and terminology: [Provider Model](docs/providers.md)
 - Generated current capability table from the registry/discovery APIs: [Supported Capabilities](docs/supported_capabilities.md)
 - Shared usage examples and workflow entry points: [Examples And Workflows](docs/examples.md)
 - Normalized station and observation schemas: [Normalized Output Schemas](docs/output_schema.md)
@@ -146,25 +94,14 @@ In the FAO-prep workflow, Poland can optionally supplement missing daily `wind_s
 
 ## Docs Index
 
-- [Provider Model And Coverage](docs/providers.md)
+- [Provider Model](docs/providers.md)
 - [Supported Capabilities](docs/supported_capabilities.md)
 - [Examples And Workflows](docs/examples.md)
 - [Normalized Output Schemas](docs/output_schema.md)
 - [Canonical Elements](docs/canonical_elements.md)
-- [GeoSphere Austria Provider Notes](docs/providers_at_geosphere.md)
-- [RMI/KMI Belgium Provider Notes](docs/providers_be_rmi.md)
-- [NOAA / GHCN-Daily Canada Provider Notes](docs/providers_ca_noaa_ghcnd.md)
-- [NOAA / GHCN-Daily Direct-Prefix Country Wrapper Notes](docs/providers_ghcnd_direct_prefix_wrappers.md)
-- [NOAA / GHCN-Daily Mexico Provider Notes](docs/providers_mx_noaa_ghcnd.md)
-- [MeteoSwiss Switzerland Provider Notes](docs/providers_ch_meteoswiss.md)
-- [DMI Denmark Provider Notes](docs/providers_dk_dmi.md)
-- [HungaroMet Hungary Provider Notes](docs/providers_hu_hungaromet.md)
-- [KNMI Netherlands Provider Notes](docs/providers_nl_knmi.md)
-- [IMGW-PIB Poland Provider Notes](docs/providers_pl_imgw.md)
-- [SMHI Sweden Provider Notes](docs/providers_se_smhi.md)
-- [Experimental Slovakia Provider Notes](docs/providers_sk_experimental.md)
-- [NOAA / GHCN-Daily Provider Notes](docs/providers_us_noaa_ghcnd.md)
 - [Changelog](docs/changelog.md)
+
+Provider-specific notes are linked from [Provider Model](docs/providers.md).
 
 ## Stable Cross-Country Invariants
 

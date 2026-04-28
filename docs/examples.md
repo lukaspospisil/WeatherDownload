@@ -19,7 +19,7 @@ This page helps you find the example scripts quickly.
 - Subdaily downloads: [`examples/basic/download_hourly.py`](../examples/basic/download_hourly.py) and [`examples/basic/download_tenmin.py`](../examples/basic/download_tenmin.py)
 - FAO-oriented daily input bundle: [`examples/workflows/download_fao.py`](../examples/workflows/download_fao.py) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
 - Generated current capability overview: [Supported Capabilities](supported_capabilities.md)
-- Provider coverage and country-specific limits: [Provider Model And Coverage](providers.md)
+- Provider model and country-specific caveats: [Provider Model](providers.md)
 
 Terminology note:
 
@@ -27,7 +27,7 @@ Terminology note:
 - `provider` is the preferred public name for the provider-specific dataset or source name
 - `dataset_scope` remains accepted as a backward-compatible alias
 - `resolution` selects the temporal resolution
-- scope names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model And Coverage](providers.md) for the exact meaning in each country path
+- scope names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model](providers.md) for the exact meaning in each country path
 - for a complete current country/provider/resolution/element overview, check [Supported Capabilities](supported_capabilities.md)
 - `utils/` is reserved for internal utilities and audits, not the main public example tour
 
@@ -396,7 +396,7 @@ Detailed workflow behavior, fill policies, and sidecar provenance are documented
 ## Recommended Reading Order
 
 1. start with the root [README](../README.md)
-2. check [Provider Model And Coverage](providers.md)
+2. check [Provider Model](providers.md)
 3. check [Canonical Elements](canonical_elements.md)
 4. check [Normalized Output Schemas](output_schema.md)
 5. then use the example scripts from this page

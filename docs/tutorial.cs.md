@@ -36,6 +36,8 @@ Knihovna umí zejména:
 - sjednotit práci s různými zeměmi přes **canonical elements**,
 - poskytovat workflow examples nad daty, například přípravu denních meteorologických vstupů pro pozdější FAO-orientované zpracování.
 
+Aktuální podporované kombinace země / provideru / rozlišení / elementu jsou v [Supported Capabilities](supported_capabilities.md).
+
 ---
 
 ## 2. Základní filozofie návrhu
@@ -81,6 +83,8 @@ Veřejný query model má tři oddělené dimenze:
 - `resolution` vybírá časové rozlišení
 
 Hodnoty `provider` nejsou globálně standardizované mezi zeměmi. Například `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat` a `US / ghcnd` označují různé provider-specific zdrojové cesty.
+
+Konceptuální vysvětlení tohoto modelu je v [Provider Model](providers.md).
 
 ---
 
@@ -258,6 +262,7 @@ Poznámka k interpretaci:
 - `provider` neznamená ve všech zemích totéž
 - pojmenovává konkrétní provider source, který WeatherDownload používá za vybranou country path
 - příklady: `CZ / historical_csv`, `CH / historical`, `HU / historical_wind`, `PL / historical_klimat`, `US / ghcnd`
+- pro aktuální úplný seznam podporovaných kombinací viz [Supported Capabilities](supported_capabilities.md)
 
 ### 7.2 Přehled rozlišení
 

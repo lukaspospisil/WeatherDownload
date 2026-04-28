@@ -10,7 +10,7 @@
 
 - Main project entry point: [README](../README.md)
 - Shared example overview: [Examples And Workflows](examples.md)
-- Provider coverage and country limits: [Provider Model And Coverage](providers.md)
+- Provider model and country limits: [Provider Model](providers.md)
 - Shared normalized station and observation columns: [Normalized Output Schemas](output_schema.md)
 
 Critical boundary:
