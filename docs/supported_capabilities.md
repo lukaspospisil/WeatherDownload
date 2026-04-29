@@ -12,18 +12,19 @@ Navigation:
 - provider-specific source notes: [Provider Notes](provider_notes/README.md)
 - canonical element semantics: [Canonical Elements](canonical_elements.md)
 
-Preferred public selection model:
+Conceptual model:
 
-- think in terms of `country + provider + resolution + element`
-- `provider` is the preferred public selector
-- `provider` is the public selector name and the normalized output column
+- `country` selects the country
+- `provider` selects the concrete data source or product within that country
+- `resolution` selects the temporal resolution
+- `element` selects the canonical meteorological variable
+- provider values are provider-specific and are not globally standardized
 
 Programmatic discovery:
 
 ```python
 from weatherdownload import list_providers, list_resolutions, list_supported_elements
 
-list_providers(country="CZ")
 list_providers(country="CZ")
 list_resolutions(country="US", provider="ghcnd")
 list_supported_elements(country="US", provider="ghcnd", resolution="daily")

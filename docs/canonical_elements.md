@@ -304,7 +304,7 @@ de_query = ObservationQuery(
 )
 ```
 
-Raw-code backward-compatible usage:
+Raw-code usage still works:
 
 ```python
 from weatherdownload import ObservationQuery

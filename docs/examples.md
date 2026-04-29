@@ -24,10 +24,10 @@ This page helps you find the example scripts quickly.
 
 Terminology note:
 
-- `country` selects the country/provider context
-- `provider` is the preferred public name for the provider-specific dataset or source name
-- `provider` is the public selector name
+- `country` selects the country
+- `provider` selects the concrete data source or product within that country
 - `resolution` selects the temporal resolution
+- `element` selects the canonical meteorological variable
 - provider names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model](providers.md) for the exact meaning in each country path
 - for a complete current country/provider/resolution/element overview, check [Supported Capabilities](supported_capabilities.md)
 - `utils/` is reserved for internal utilities and audits, not the main public example tour

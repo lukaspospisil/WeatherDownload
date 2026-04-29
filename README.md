@@ -53,11 +53,11 @@ weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --e
 
 Conceptual model:
 
-- `country` selects the country/provider context
-- `provider` is the preferred public name for the concrete provider-specific dataset, product, or source
-- `provider` selects the concrete provider-specific dataset, product, or source
+- `country` selects the country
+- `provider` selects the concrete data source or product within that country
 - `resolution` selects the temporal resolution
-- provider values are not globally standardized across countries
+- `element` selects the canonical meteorological variable
+- provider values are provider-specific and are not globally standardized across countries
 
 Examples:
 

@@ -26,19 +26,18 @@ Public discovery and download APIs use the same shape across countries:
 - `read_station_metadata(country=...)`
 - `read_station_observation_metadata(country=...)`
 - `list_providers(country=...)`
-- `list_providers(country=...)`
 - `list_resolutions(country=..., provider=...)`
 - `list_supported_elements(country=..., provider=..., resolution=...)`
 - `download_observations(...)`
 
 Public query dimensions:
 
-- `country` selects the country/provider context
-- `provider` is the preferred public selector for the concrete source path
-- `provider` is the public selector name for `provider`
-- `resolution` selects the temporal resolution within that provider path
+- `country` selects the country
+- `provider` selects the concrete data source or product within that country
+- `resolution` selects the temporal resolution
+- `element` selects the canonical meteorological variable
 
-Compatibility notes:
+Notes:
 
 - normalized output tables use the `provider` column
 - provider values are provider-local names, not a universal cross-country taxonomy
@@ -133,7 +132,6 @@ Important constraints that should stay clear across the docs:
 The CLI mirrors the provider model:
 
 - `--country` selects the country
-- `--provider` is the preferred selector
 - `--provider` selects the concrete source path
 
 Examples:

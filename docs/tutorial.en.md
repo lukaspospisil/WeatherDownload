@@ -1,10 +1,10 @@
-# WeatherDownload Tutorial (English)
+Ôªø# WeatherDownload Tutorial (English)
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-[»esk· verze](tutorial.cs.md)
+[ƒåesk√° verze](tutorial.cs.md)
 
 This tutorial is a practical guide to **WeatherDownload**. It is written as a step-by-step overview of common and advanced use cases, so that users can work with the library without studying the full source code first.
 
@@ -48,7 +48,7 @@ The library separates several layers:
    Hides country/provider-specific details (`CZ` / `DE`).
 
 2. **canonical element layer**  
-   Users do not need to know raw provider codes such as `TMA`, `TMK`, `RSK`, `SSV1H`, Ö  
+   Users do not need to know raw provider codes such as `TMA`, `TMK`, `RSK`, `SSV1H`, ‚Ä¶  
    Instead, they can work with stable names such as:
    - `tas_mean`
    - `tas_max`
@@ -75,14 +75,15 @@ This means the user can mostly vary:
 
 without having to relearn a new data model for each provider.
 
-The public query model has three separate dimensions:
+The public query model uses four dimensions:
 
-- `country` selects the country/provider context
-- `provider` is the preferred public name for the concrete provider-specific dataset, product, or source
+- `country` selects the country
+- `provider` selects the concrete data source or product within that country
 - `provider` is the public selector name for `provider`
 - `resolution` selects the temporal resolution
+- `element` selects the canonical meteorological variable
 
-Provider values are not globally standardized across countries. For example, `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat`, and `US / ghcnd` all refer to different provider-specific source families.
+Provider values are provider-specific and are not globally standardized across countries. For example, `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat`, and `US / ghcnd` all refer to different source paths.
 
 The conceptual explanation of this model lives in [Provider Model](providers.md).
 
@@ -244,7 +245,7 @@ selected = filter_stations(stations, gh_ids=["L3CHEB01"])
 ### 7.1 Providers
 
 ```python
-from weatherdownload import list_providers, list_providers
+from weatherdownload import list_providers
 
 print(list_providers(country="CZ"))
 print(list_providers(country="DE"))
@@ -425,7 +426,7 @@ This is **correct** and expected.
 
 ## 11. What the observations downloader output looks like
 
-### 11.1 Daily observations ñ expected columns
+### 11.1 Daily observations ‚Äì expected columns
 
 Typical daily output contains:
 
@@ -441,7 +442,7 @@ Typical daily output contains:
 - `provider`
 - `resolution`
 
-### 11.2 Hourly / 10min ñ expected columns
+### 11.2 Hourly / 10min ‚Äì expected columns
 
 Typical subdaily output contains:
 
@@ -472,7 +473,7 @@ Instead:
 
 ---
 
-## 12. Daily observations ñ CZ
+## 12. Daily observations ‚Äì CZ
 
 ### 12.1 Explicit date range
 
@@ -501,7 +502,7 @@ A long-format table where:
 
 ---
 
-## 13. Daily observations ñ DE
+## 13. Daily observations ‚Äì DE
 
 ### 13.1 Daily temperature and precipitation in Germany
 
@@ -537,7 +538,7 @@ Again, a long-format table:
 
 ---
 
-## 14. Hourly observations ñ CZ
+## 14. Hourly observations ‚Äì CZ
 
 The current conservative subset for `CZ historical_csv 1hour` includes for example:
 
@@ -563,7 +564,7 @@ weatherdownload observations hourly --country CZ --station-id 0-20000-0-11406 --
 
 ---
 
-## 15. 10-minute observations ñ CZ
+## 15. 10-minute observations ‚Äì CZ
 
 The current conservative subset for `CZ historical_csv 10min` includes for example:
 
@@ -582,7 +583,7 @@ weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --e
 
 ---
 
-## 16. Hourly observations ñ DE
+## 16. Hourly observations ‚Äì DE
 
 The current narrow verified slice for `DE historical 1hour` includes:
 
@@ -607,7 +608,7 @@ Public output always uses timezone-aware UTC timestamps.
 
 ---
 
-## 17. 10-minute observations ñ DE
+## 17. 10-minute observations ‚Äì DE
 
 The current narrow verified slice for `DE historical 10min` includes:
 
@@ -625,7 +626,7 @@ weatherdownload observations 10min --country DE --station-id 00044 --element tas
 
 ## 18. Python API: observations
 
-### 18.1 Daily query ñ CZ
+### 18.1 Daily query ‚Äì CZ
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -644,7 +645,7 @@ df = download_observations(query)
 print(df.head())
 ```
 
-### 18.2 Daily query ñ DE
+### 18.2 Daily query ‚Äì DE
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -805,7 +806,7 @@ Provider-specific mapping is preserved in:
 
 ---
 
-## 23. FAO example ñ basic commands
+## 23. FAO example ‚Äì basic commands
 
 ### 23.1 CZ, full pipeline, Parquet
 
@@ -970,25 +971,25 @@ You get an overview of:
 - their mapping.
 
 Notes:
-- `--provider historical` remains valid and produces the same result
+- use `--provider` to select the source path explicitly
 
 ---
 
 ## 31. Common questions and typical mistakes
 
-### ìWhy do I only see one element in the CSV?î
+### ‚ÄúWhy do I only see one element in the CSV?‚Äù
 Because you only requested one element. Add more `--element`.
 
-### ìWhere are the actual temperatures?î
+### ‚ÄúWhere are the actual temperatures?‚Äù
 In the general observations downloader they are in `value`, not in a dedicated `tas_mean` column.
 
-### ìWhy do I not see tas_mean, tas_max, tas_min as separate columns?î
+### ‚ÄúWhy do I not see tas_mean, tas_max, tas_min as separate columns?‚Äù
 Because the general observations downloader returns long-format data.
 
-### ìI want everything available. Why do I need a date range?î
+### ‚ÄúI want everything available. Why do I need a date range?‚Äù
 Use explicit `--all-history`.
 
-### ìThe FAO example seems slowî
+### ‚ÄúThe FAO example seems slow‚Äù
 That is normal. Use `--mode download`, then `--mode build`, and optionally `--silent`.
 
 ---
@@ -1032,6 +1033,8 @@ The most important practical distinction is:
 - wide-format,
 - country-aware,
 - suitable as a clean daily meteorological input dataset for later FAO-oriented or other downstream physical/model-based processing.
+
+
 
 
 
