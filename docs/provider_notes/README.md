@@ -36,4 +36,4 @@ The capability matrix is the authoritative current overview of `country + provid
 - [NOAA GHCN-Daily Mexico](mx_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Direct-Prefix Wrappers](ghcnd_direct_prefix_wrappers.md)
 
-The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper note covers the current direct-prefix `FI`, `FR`, `IT`, `NO`, and `NZ` wrappers. Czech Republic stays separate because it is a mapped-prefix wrapper (`CZ` country, `EZ` GHCN prefix). The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.
+The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper helper supports both direct-prefix and mapped-prefix wrappers. The shared wrapper note covers the current direct-prefix `FI`, `FR`, `IT`, `NO`, and `NZ` wrappers. Czech Republic stays separate because it is a mapped-prefix wrapper (`CZ` country, `EZ` GHCN prefix). The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.

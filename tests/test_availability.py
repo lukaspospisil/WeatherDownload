@@ -95,7 +95,9 @@ class StationAvailabilityTests(unittest.TestCase):
             [{'dataset_scope': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
         )
         self.assertTrue(station_supports(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'))
+        self.assertTrue(station_supports(stations, 'EZM00011520', None, 'daily', country='CZ', provider='ghcnd'))
         self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
         self.assertEqual(list_station_elements(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'), ['precipitation'])
 
 

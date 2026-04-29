@@ -51,6 +51,7 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 ## Limitations and caveats
 
 - these wrappers are intentionally thin and share parser, metadata, inventory, and observation logic
+- the shared helper now supports both direct-prefix wrappers (`FI -> FI`) and mapped-prefix wrappers (`CZ -> EZ`) using the same configuration pattern
 - station-level availability is inventory-driven and can differ by station
 - `open_water_evaporation` is intentionally unsupported on these wrappers
 - the shared wrapper audit did not justify exposing raw `EVAP` for this group

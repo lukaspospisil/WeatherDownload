@@ -17,6 +17,7 @@ from weatherdownload import (
     station_supports,
 )
 from weatherdownload.cli import main
+from weatherdownload.providers.cz.ghcnd import _GHCND_BUNDLE
 from weatherdownload.providers.ghcnd.parser import build_station_supported_raw_elements
 from weatherdownload.providers.us.parser import GHCND_NORMALIZED_DAILY_COLUMNS, normalize_daily_observations_ghcnd, parse_ghcnd_dly_text, parse_ghcnd_inventory_text
 
@@ -38,6 +39,11 @@ class _MockResponse:
 
 
 class CzechGhcndProviderTests(unittest.TestCase):
+    def test_shared_mapped_prefix_bundle_uses_ez_prefix_for_cz(self) -> None:
+        self.assertEqual(_GHCND_BUNDLE.country_code, 'CZ')
+        self.assertEqual(_GHCND_BUNDLE.ghcn_prefix, 'EZ')
+        self.assertEqual(_GHCND_BUNDLE.supported_raw_elements, ('TMAX', 'TMIN', 'PRCP'))
+
     def test_discovery_country_cz_includes_historical_csv_and_ghcnd(self) -> None:
         self.assertEqual(list_dataset_scopes(country='CZ'), ['ghcnd', 'historical', 'historical_csv', 'now', 'recent'])
         self.assertEqual(list_providers(country='CZ'), ['ghcnd', 'historical', 'historical_csv', 'now', 'recent'])
@@ -126,7 +132,9 @@ class CzechGhcndProviderTests(unittest.TestCase):
         self.assertIn('EZM00011406', stations['station_id'].tolist())
         self.assertFalse(station_supports(stations, '0-20000-0-11406', 'ghcnd', 'daily', country='CZ'))
         self.assertFalse(station_supports(stations, 'EZM00011406', 'historical_csv', 'daily', country='CZ'))
+        self.assertTrue(station_supports(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'))
         self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', 'daily', country='CZ')[0], 'open_water_evaporation')
 
     def test_parse_and_normalize_cz_ghcnd_dly_converts_units_and_drops_missing(self) -> None:

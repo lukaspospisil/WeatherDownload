@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 from ..ghcnd.registry import GhcndDatasetSpec
-from .ghcnd_registry import (
+from .ghcnd import (
     get_dataset_spec as get_ghcnd_dataset_spec,
     list_dataset_specs as list_ghcnd_dataset_specs,
     list_implemented_dataset_specs as list_ghcnd_implemented_dataset_specs,

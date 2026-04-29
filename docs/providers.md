@@ -80,6 +80,7 @@ Shared GHCN-Daily characteristics:
 - wrappers keep raw GHCN station IDs as `station_id`
 - station metadata and station elements are inventory-driven from `ghcnd-inventory.txt`
 - the wrappers stay thin while the parser/downloader logic lives in the shared GHCN provider package
+- the shared GHCN wrapper helper supports both direct-prefix and mapped-prefix country adapters
 - some wrappers use mapped GHCN prefixes rather than the WeatherDownload country code, for example `CZ -> EZ`
 
 ## How To Discover Support

@@ -1,8 +1,0 @@
-from __future__ import annotations
-
-from ..ghcnd.wrappers import build_daily_observation_downloader, build_station_dly_url_builder
-from .ghcnd_registry import get_dataset_spec
-
-
-download_daily_observations_ghcnd = build_daily_observation_downloader(get_dataset_spec=get_dataset_spec)
-build_station_dly_url = build_station_dly_url_builder(get_dataset_spec=get_dataset_spec)

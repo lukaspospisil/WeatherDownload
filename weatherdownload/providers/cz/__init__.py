@@ -2,8 +2,8 @@
 
 import pandas as pd
 
-from .ghcnd_metadata import read_station_metadata_ghcnd, read_station_observation_metadata_ghcnd
-from .ghcnd_observations import download_daily_observations_ghcnd
+from .ghcnd import read_station_metadata_ghcnd, read_station_observation_metadata_ghcnd
+from .ghcnd import download_daily_observations_ghcnd
 from .registry import get_dataset_spec, list_dataset_specs, list_implemented_dataset_specs
 from ...metadata import _read_station_metadata_chmi, _read_station_observation_metadata_chmi
 from ..base import WeatherProvider

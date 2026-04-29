@@ -50,6 +50,7 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 ## Limitations and caveats
 
 - the wrapper is intentionally thin and shares parser, metadata, inventory, and observation logic with the common GHCN helper under `weatherdownload/providers/ghcnd/`
+- the mapped-prefix configuration (`CZ` country, `EZ` GHCN prefix) is now created through the shared GHCN wrapper helper rather than a CZ-only mini-wrapper stack
 - station-level availability is inventory-driven and can differ by station
 - only `TMAX`, `TMIN`, and `PRCP` are exposed on `CZ / ghcnd / daily`
 - `open_water_evaporation` is not advertised on this wrapper even if unrelated NOAA elements exist elsewhere in GHCN
