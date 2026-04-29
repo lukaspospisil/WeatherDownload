@@ -96,7 +96,7 @@ NOTES: dict[tuple[str, str, str], str] = {
     ('DK', 'historical', '10min'): 'Meteorological Observation API path for 10-minute data.',
     ('DK', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix DA; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('FI', 'ghcnd', 'daily'): 'Thin shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation.',
-    ('FR', 'meteo_france', 'daily'): 'National Meteo-France daily RR-T-Vent slice; native 8-digit Meteo-France station ids; station-level availability comes from official station metadata; no open_water_evaporation; tas_mean comes only from raw TM.',
+    ('FR', 'meteo_france', 'daily'): 'National Meteo-France daily RR-T-Vent slice; native 8-digit Meteo-France station ids; station-level availability comes from official station metadata; current RR-T-Vent RR/TN/TX/TM values are parsed as decimal mm/deg C without an extra /10 scaling step; no open_water_evaporation; tas_mean comes only from raw TM.',
     ('FR', 'ghcnd', 'daily'): 'Shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('HU', 'historical', 'daily'): 'Generic HungaroMet archive path; open_water_evaporation not implemented.',
     ('HU', 'historical', '1hour'): 'Generic HungaroMet archive path; open_water_evaporation not implemented.',

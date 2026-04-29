@@ -84,6 +84,7 @@ Notes:
 - normalized output tables use the `provider` column
 - the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `CZ`, `FI`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
 - `FR` now supports both `provider="meteo_france"` for the national daily RR-T-Vent slice and `provider="ghcnd"` for the shared GHCN-Daily path
+- `FR / meteo_france / daily` currently supports `tas_mean`, `tas_max`, `tas_min`, and `precipitation`; `open_water_evaporation` is intentionally unsupported, and current RR-T-Vent `RR`, `TN`, `TX`, and `TM` values are parsed as decimal `mm` / `deg C` without an extra `/10` scaling step
 - GHCN-Daily station support is inventory-driven, so not every station exposes `tas_mean` (`TAVG`) or `snow_depth` (`SNWD`); inspect a specific station with `weatherdownload stations elements --country US --provider ghcnd --station-id USC00000001 --resolution daily`
 
 See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model](docs/providers.md) for the conceptual explanation.

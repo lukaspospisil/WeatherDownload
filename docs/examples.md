@@ -101,11 +101,9 @@ FR notes:
 - `FR` uses the shared daily example path through the national `provider="meteo_france"` RR-T-Vent slice
 - the current national FR slice supports `tas_mean`, `tas_max`, `tas_min`, and `precipitation`
 - `tas_mean` comes only from raw Meteo-France `TM`
+- current RR-T-Vent `RR`, `TN`, `TX`, and `TM` values are parsed as already-decimal `mm` / `deg C`, without an additional `/10` scaling step
 - `open_water_evaporation` is intentionally unsupported on this path
 - station-level element availability comes from official station metadata, so provider-level support still does not guarantee that every station exposes every supported element
-- the mapped daily parameters are documented by DMI as local-day Denmark values, and the example keeps that provider-defined meaning behind the provider layer
-- raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
-- Greenland and Faroe Islands differences are intentionally out of scope for this pass
 
 HU notes:
 
