@@ -37,7 +37,8 @@ Supported canonical mappings:
 
 ## Units and normalization
 
-- observed RR-T-Vent sample files already serialize these fields as decimal values in the canonical output units
+- the current RR-T-Vent files used by this implementation already serialize `RR`, `TN`, `TX`, and `TM` as decimal values in the canonical output units
+- this is intentionally parsed as-is, without an additional `/10` scaling step, even though the field-dictionary wording still suggests tenths-based units
 - `RR` normalizes to `mm`
 - `TN`, `TX`, and `TM` normalize to `deg C`
 - missing source values become null normalized `value`

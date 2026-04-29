@@ -187,6 +187,47 @@ class FranceMeteoFranceProviderTests(unittest.TestCase):
         self.assertAlmostEqual(float(lookup[('tas_max', pd.Timestamp('2025-01-02').date())]), 8.1)
         self.assertNotIn(('tas_mean', pd.Timestamp('2025-01-02').date()), lookup.index)
 
+    def test_fr_rr_t_vent_values_are_parsed_without_additional_divide_by_ten(self) -> None:
+        station_metadata = read_station_metadata(country='FR', source_url=str(SAMPLE_STATIONS_PATH))
+
+        def fake_get(url: str, timeout: int = 60):
+            if url.endswith('Q_07_latest-2025-2026_RR-T-Vent.csv.gz'):
+                return _MockResponse(content=SAMPLE_DAILY_CSV_TEXT.encode('utf-8'))
+            raise AssertionError(f'unexpected url: {url}')
+
+        query = ObservationQuery(
+            country='FR',
+            provider='meteo_france',
+            resolution='daily',
+            station_ids=['07005001'],
+            start_date='2025-01-01',
+            end_date='2025-01-01',
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        with patch('weatherdownload.providers.fr.daily.requests.get', side_effect=fake_get):
+            observations = download_observations(query, country='FR', station_metadata=station_metadata)
+        lookup = observations.set_index('element')['value']
+        self.assertAlmostEqual(
+            float(lookup['precipitation']),
+            12.3,
+            msg='Current RR-T-Vent RR values are already decimal mm and must not be divided by 10 again.',
+        )
+        self.assertAlmostEqual(
+            float(lookup['tas_min']),
+            1.1,
+            msg='Current RR-T-Vent TN values are already decimal deg C and must not be divided by 10 again.',
+        )
+        self.assertAlmostEqual(
+            float(lookup['tas_max']),
+            9.8,
+            msg='Current RR-T-Vent TX values are already decimal deg C and must not be divided by 10 again.',
+        )
+        self.assertAlmostEqual(
+            float(lookup['tas_mean']),
+            5.4,
+            msg='Current RR-T-Vent TM values are already decimal deg C and must not be divided by 10 again.',
+        )
+
     def test_fr_meteo_france_daily_missing_values_become_na(self) -> None:
         station_metadata = read_station_metadata(country='FR', source_url=str(SAMPLE_STATIONS_PATH))
 
