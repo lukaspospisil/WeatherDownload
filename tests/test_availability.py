@@ -2,7 +2,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from weatherdownload import list_station_elements, list_station_paths, read_station_metadata, station_availability, station_supports
+import pandas as pd
+
+from weatherdownload import find_stations_with_elements, list_station_elements, list_station_paths, read_station_metadata, read_station_observation_metadata, station_availability, station_supports
 
 
 SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
@@ -73,6 +75,92 @@ class StationAvailabilityTests(unittest.TestCase):
         wind_speed = mapping[mapping['element'] == 'wind_speed'].iloc[0]
         self.assertEqual(wind_speed['element_raw'], 'F')
         self.assertEqual(wind_speed['raw_elements'], ['F', 'WSPD'])
+
+    def test_find_stations_with_required_elements_for_cz_historical_csv_uses_observation_metadata(self) -> None:
+        stations = self._read_stations()
+        observation_metadata = pd.DataFrame([
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11406', 'begin_date': '1863-10-01T00:00Z', 'end_date': '1960-12-31T23:59Z', 'element': 'T', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11406', 'begin_date': '1865-06-01T00:00Z', 'end_date': '1960-12-31T23:59Z', 'element': 'TMA', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11406', 'begin_date': '1865-06-01T00:00Z', 'end_date': '1960-12-31T23:59Z', 'element': 'TMI', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11406', 'begin_date': '1955-01-01T00:00Z', 'end_date': '1960-12-31T23:59Z', 'element': 'F', 'schedule': '', 'name': '', 'description': '', 'height': 10},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11406', 'begin_date': '1955-01-01T00:00Z', 'end_date': '2000-12-31T23:59Z', 'element': 'E', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11406', 'begin_date': '1955-01-01T00:00Z', 'end_date': '2000-12-31T23:59Z', 'element': 'SSV', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11406', 'begin_date': '1957-01-01T00:00Z', 'end_date': '1960-12-31T23:59Z', 'element': 'VY', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11414', 'begin_date': '1955-01-01T00:00Z', 'end_date': '1958-07-31T23:59Z', 'element': 'T', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+            {'obs_type': 'DLY', 'station_id': '0-20000-0-11414', 'begin_date': '1955-01-01T00:00Z', 'end_date': '1958-07-31T23:59Z', 'element': 'TMA', 'schedule': '', 'name': '', 'description': '', 'height': 2},
+        ])
+        matches = find_stations_with_elements(
+            country='CZ',
+            provider='historical_csv',
+            resolution='daily',
+            elements=['tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration', 'open_water_evaporation'],
+            stations=stations,
+            observation_metadata=observation_metadata,
+        )
+        self.assertEqual(matches['station_id'].tolist(), ['0-20000-0-11406'])
+        self.assertEqual(
+            matches.iloc[0]['matched_elements'],
+            ['tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration', 'open_water_evaporation'],
+        )
+        self.assertEqual(matches.iloc[0]['provider'], 'historical_csv')
+        self.assertEqual(matches.iloc[0]['dataset_scope'], 'historical_csv')
+        self.assertEqual(matches.iloc[0]['matching_begin_date'], '1957-01-01')
+        self.assertEqual(matches.iloc[0]['matching_end_date'], '1960-12-31')
+
+    def test_find_stations_with_required_elements_for_us_ghcnd_is_inventory_driven(self) -> None:
+        stations = read_station_metadata(country='US', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        observation_metadata = read_station_observation_metadata(country='US', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        matches = find_stations_with_elements(
+            country='US',
+            provider='ghcnd',
+            resolution='daily',
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+            stations=stations,
+            observation_metadata=observation_metadata,
+        )
+        self.assertEqual(matches['station_id'].tolist(), ['USC00000001'])
+        self.assertEqual(
+            matches.iloc[0]['matched_elements'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
+        self.assertEqual(matches.iloc[0]['provider'], 'ghcnd')
+
+    def test_find_stations_with_required_elements_accepts_dataset_scope_alias(self) -> None:
+        stations = read_station_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        observation_metadata = read_station_observation_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        matches = find_stations_with_elements(
+            country='CA',
+            dataset_scope='ghcnd',
+            resolution='daily',
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+            stations=stations,
+            observation_metadata=observation_metadata,
+        )
+        self.assertEqual(matches['station_id'].tolist(), ['CA000000001'])
+
+    def test_find_stations_with_required_elements_rejects_provider_level_unsupported_element(self) -> None:
+        stations = read_station_metadata(country='US', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        observation_metadata = read_station_observation_metadata(country='US', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        with self.assertRaisesRegex(ValueError, "Unsupported elements for provider='ghcnd' and resolution='daily': wind_speed"):
+            find_stations_with_elements(
+                country='US',
+                provider='ghcnd',
+                resolution='daily',
+                elements=['tas_mean', 'wind_speed'],
+                stations=stations,
+                observation_metadata=observation_metadata,
+            )
+
+    def test_find_stations_with_required_elements_requires_explicit_provider_when_country_is_ambiguous(self) -> None:
+        stations = self._read_stations()
+        with self.assertRaisesRegex(ValueError, "Multiple providers support country='CZ' and resolution='daily'"):
+            find_stations_with_elements(
+                country='CZ',
+                resolution='daily',
+                elements=['tas_mean'],
+                stations=stations,
+                observation_metadata=pd.DataFrame(columns=['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height']),
+            )
 
     def test_ca_station_availability_and_elements_are_inventory_driven(self) -> None:
         stations = read_station_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .availability import list_station_elements, list_station_paths, station_availability, station_supports
+from .availability import find_stations_with_elements, list_station_elements, list_station_paths, station_availability, station_supports
 from .exporting import export_table
 from .metadata import read_station_metadata
 from .observations import download_observations
@@ -85,6 +85,25 @@ def build_parser() -> argparse.ArgumentParser:
     elements_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     elements_parser.add_argument("--source-url", default=None, help="Optional provider-specific metadata URL override.")
     elements_parser.set_defaults(handler=handle_station_elements)
+
+    find_parser = stations_subparsers.add_parser(
+        "find",
+        help="Find stations that support all requested elements for a provider path.",
+    )
+    _add_country_argument(find_parser)
+    _add_provider_arguments(
+        find_parser,
+        required=False,
+        help_text="Preferred provider/source selector within the country. Use it explicitly when multiple providers support the same resolution; --dataset-scope remains a backward-compatible alias.",
+    )
+    find_parser.add_argument("--resolution", required=True, help="Resolution to inspect.")
+    find_parser.add_argument("--element", action="append", required=True, dest="elements", help="Required canonical or raw provider element code. Can be provided multiple times.")
+    find_parser.add_argument("--station-id", action="append", dest="station_ids", default=None, help="Optional canonical station_id filter. Can be provided multiple times.")
+    find_parser.add_argument("--active-on", default=None, dest="active_on", help="Optional date filter in YYYY-MM-DD format.")
+    find_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
+    find_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
+    find_parser.add_argument("--source-url", default=None, help="Optional provider-specific station metadata URL override.")
+    find_parser.set_defaults(handler=handle_station_find)
 
     observations_parser = subparsers.add_parser("observations", help="Work with observations.")
     observations_subparsers = observations_parser.add_subparsers(dest="observations_command")
@@ -250,6 +269,29 @@ def handle_station_elements(args: argparse.Namespace) -> int:
         raise SystemExit("Missing required --output for file export.")
     destination = export_table(table, output_path=args.output, format=args.format)
     print(f"Exported station elements to {destination}")
+    return 0
+
+
+def handle_station_find(args: argparse.Namespace) -> int:
+    provider_scope = None
+    if getattr(args, 'provider', None) is not None or getattr(args, 'dataset_scope', None) is not None:
+        provider_scope = _resolve_provider_for_cli(args, default=None)
+    stations = find_stations_with_elements(
+        country=args.country,
+        provider=provider_scope,
+        resolution=args.resolution,
+        elements=args.elements,
+        station_ids=args.station_ids,
+        active_on=args.active_on,
+        source_url=getattr(args, 'source_url', None),
+    )
+    if args.format == "screen":
+        print(_format_table(stations, metadata_view=False))
+        return 0
+    if not args.output:
+        raise SystemExit("Missing required --output for file export.")
+    destination = export_table(stations, output_path=args.output, format=args.format)
+    print(f"Exported station search results to {destination}")
     return 0
 
 

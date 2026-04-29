@@ -330,6 +330,44 @@ Run:
 python examples/workflows/station_availability.py
 ```
 
+### Find Stations By Required Elements
+
+Use the public station-discovery API or CLI when you need stations that support a required set of canonical elements on one provider path.
+
+Important boundary:
+
+- provider-level support does not mean every station supports every element on that path
+- station-level availability is provider-specific and can be inventory-driven, metadata-driven, or provider-wide depending on the source
+- `provider` is the preferred selector; `dataset_scope` remains a backward-compatible alias
+
+Python example:
+
+```python
+from weatherdownload import find_stations_with_elements
+
+cz_matches = find_stations_with_elements(
+    country="CZ",
+    provider="historical_csv",
+    resolution="daily",
+    elements=[
+        "tas_mean",
+        "tas_max",
+        "tas_min",
+        "wind_speed",
+        "vapour_pressure",
+        "sunshine_duration",
+        "open_water_evaporation",
+    ],
+)
+```
+
+CLI examples:
+
+```powershell
+weatherdownload stations find --country CZ --provider historical_csv --resolution daily --element tas_mean --element tas_max --element tas_min --element wind_speed --element vapour_pressure --element sunshine_duration --element open_water_evaporation
+weatherdownload stations find --country US --provider ghcnd --resolution daily --element tas_mean --element tas_max --element tas_min --element precipitation --element snow_depth
+```
+
 ## Maintainer Utilities
 
 ### `scripts/dev/inspect_file.py`
@@ -351,6 +389,7 @@ python scripts/dev/inspect_file.py outputs/fao_daily.cz
 Internal utility note:
 
 - `utils/find_cz_fao_plus_evaporation.py` is kept as a repository utility for CZ station-audit work, not as a polished public quickstart example
+- it now acts as a specialized CZ workflow on top of the shared station-discovery feature, rather than a separate discovery mechanism
 
 ## Maintainer And Experimental Helpers
 

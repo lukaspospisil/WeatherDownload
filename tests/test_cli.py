@@ -895,6 +895,27 @@ class StationAvailabilityCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_station_find_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '0-20000-0-11406',
+                'gh_id': 'L3CHEB01',
+                'full_name': 'Cheb',
+                'longitude': 12.391389,
+                'latitude': 50.068333,
+                'elevation_m': 483.0,
+                'begin_date': '2001-01-01T00:00Z',
+                'end_date': '3999-12-31T23:59Z',
+                'provider': 'historical_csv',
+                'dataset_scope': 'historical_csv',
+                'resolution': 'daily',
+                'matched_elements': ['tas_mean', 'tas_max', 'open_water_evaporation'],
+                'missing_requested_elements': [],
+                'matching_begin_date': '1957-01-01',
+                'matching_end_date': '1960-12-31',
+            }
+        ])
+
     def test_station_metadata_cli_uses_default_country_cz(self) -> None:
         with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()) as read_mock:
             exit_code = main(['stations', 'metadata'])
@@ -1078,6 +1099,79 @@ class StationAvailabilityCliTests(unittest.TestCase):
                 content = output_path.read_text(encoding='utf-8')
                 self.assertIn('tas_mean', content)
                 self.assertIn('Exported station elements to outputs', buffer.getvalue())
+            finally:
+                os.chdir(original_cwd)
+
+    def test_station_find_cli_screen_output(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.find_stations_with_elements', return_value=self._sample_station_find_table()) as find_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'stations', 'find', '--country', 'CZ', '--provider', 'historical_csv', '--resolution', 'daily',
+                    '--element', 'tas_mean', '--element', 'tas_max', '--element', 'open_water_evaporation'
+                ])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(find_mock.call_args.kwargs['provider'], 'historical_csv')
+        self.assertIn('0-20000-0-11406', buffer.getvalue())
+        self.assertIn('open_water_evaporation', buffer.getvalue())
+
+    def test_station_find_cli_accepts_dataset_scope_alias(self) -> None:
+        with patch('weatherdownload.cli.find_stations_with_elements', return_value=self._sample_station_find_table()) as find_mock:
+            exit_code = main([
+                'stations', 'find', '--country', 'US', '--dataset-scope', 'ghcnd', '--resolution', 'daily',
+                '--element', 'tas_mean', '--element', 'snow_depth'
+            ])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(find_mock.call_args.kwargs['provider'], 'ghcnd')
+
+    def test_station_find_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([
+                'stations', 'find', '--country', 'DE', '--provider', 'historical', '--dataset-scope', 'ghcnd', '--resolution', 'daily',
+                '--element', 'tas_mean'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('Conflicting provider selectors', stderr.getvalue())
+
+    def test_station_find_cli_surfaces_ambiguous_provider_error(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([
+                'stations', 'find', '--country', 'CZ', '--resolution', 'daily', '--element', 'tas_mean'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Multiple providers support country='CZ' and resolution='daily'", stderr.getvalue())
+
+    def test_station_find_cli_surfaces_unsupported_element_error(self) -> None:
+        stderr = io.StringIO()
+        with patch('weatherdownload.cli.find_stations_with_elements', side_effect=ValueError("Unsupported elements for provider='ghcnd' and resolution='daily': wind_speed")):
+            with redirect_stderr(stderr):
+                exit_code = main([
+                    'stations', 'find', '--country', 'US', '--provider', 'ghcnd', '--resolution', 'daily', '--element', 'wind_speed'
+                ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Unsupported elements for provider='ghcnd' and resolution='daily': wind_speed", stderr.getvalue())
+
+    def test_station_find_cli_csv_export(self) -> None:
+        original_cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.chdir(temp_dir)
+            try:
+                buffer = io.StringIO()
+                with patch('weatherdownload.cli.find_stations_with_elements', return_value=self._sample_station_find_table()):
+                    with redirect_stdout(buffer):
+                        exit_code = main([
+                            'stations', 'find', '--country', 'CZ', '--provider', 'historical_csv', '--resolution', 'daily',
+                            '--element', 'tas_mean', '--format', 'csv', '--output', 'station_find.csv'
+                        ])
+                self.assertEqual(exit_code, 0)
+                output_path = Path('outputs/station_find.csv')
+                self.assertTrue(output_path.exists())
+                content = output_path.read_text(encoding='utf-8')
+                self.assertIn('historical_csv', content)
+                self.assertIn('matched_elements', content)
+                self.assertIn('Exported station search results to outputs', buffer.getvalue())
             finally:
                 os.chdir(original_cwd)
 

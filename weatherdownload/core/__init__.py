@@ -1,4 +1,4 @@
-﻿from .availability import list_station_elements, list_station_paths, station_availability, station_supports
+from .availability import find_stations_with_elements, list_station_elements, list_station_paths, station_availability, station_supports
 from .discovery import list_dataset_scopes, list_resolutions, list_supported_elements
 from .errors import DatasetNotImplementedError, DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from .exporting import export_table

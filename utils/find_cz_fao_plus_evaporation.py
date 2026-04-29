@@ -12,6 +12,7 @@ from weatherdownload import (
     ObservationQuery,
     download_observations,
     export_table,
+    find_stations_with_elements,
     read_station_observation_metadata,
     read_station_metadata,
 )
@@ -81,13 +82,39 @@ def discover_matching_stations(
     max_stations: int | None = None,
     metadata_projector: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
 ) -> tuple[pd.DataFrame, int]:
-    projector = metadata_projector or _project_cz_daily_required_metadata
     inspected = stations.copy()
     if station_ids:
         normalized_station_ids = [station_id.strip().upper() for station_id in station_ids if station_id and station_id.strip()]
         inspected = inspected[inspected['station_id'].astype(str).isin(normalized_station_ids)].copy()
     inspected = inspected.drop_duplicates(subset=['station_id'], keep='first').reset_index(drop=True)
     inspected_count = len(inspected)
+    if metadata_projector is None:
+        matches = find_stations_with_elements(
+            country=COUNTRY,
+            provider=PROVIDER,
+            resolution=RESOLUTION,
+            elements=REQUIRED_ELEMENTS,
+            stations=inspected,
+            observation_metadata=observation_metadata,
+        )
+        if matches.empty:
+            return pd.DataFrame(columns=['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'available_required_elements', 'first_required_date', 'last_required_date']), inspected_count
+        candidates = matches.rename(
+            columns={
+                'matched_elements': 'available_required_elements',
+                'matching_begin_date': 'first_required_date',
+                'matching_end_date': 'last_required_date',
+            }
+        ).copy()
+        candidates['available_required_elements'] = candidates['available_required_elements'].apply(lambda values: ','.join(values))
+        candidates = candidates.loc[:, ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'available_required_elements', 'first_required_date', 'last_required_date']]
+        if max_stations is not None:
+            if max_stations < 1:
+                raise ValueError('--max-stations must be positive when provided.')
+            candidates = candidates.head(max_stations).reset_index(drop=True)
+        return candidates.reset_index(drop=True), inspected_count
+
+    projector = metadata_projector
     projected = projector(observation_metadata)
     if projected.empty:
         return pd.DataFrame(columns=['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'available_required_elements', 'first_required_date', 'last_required_date']), inspected_count
