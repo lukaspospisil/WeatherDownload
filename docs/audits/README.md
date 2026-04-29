@@ -21,5 +21,6 @@ Navigation:
 ## Current Audits
 
 - [France, Spain, And Australia Open-Water Evaporation Audit](fr_es_au_open_water_evaporation.md)
+- [Local Provider Candidate Audit](local_provider_candidates.md)
 - [Slovakia Historical Daily Climate Investigation](sk_historical_investigation.md)
 
