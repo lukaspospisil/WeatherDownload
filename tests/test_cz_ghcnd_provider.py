@@ -7,7 +7,6 @@ from unittest.mock import patch
 from weatherdownload import (
     ObservationQuery,
     download_observations,
-    list_dataset_scopes,
     list_providers,
     list_resolutions,
     list_station_elements,
@@ -45,7 +44,6 @@ class CzechGhcndProviderTests(unittest.TestCase):
         self.assertEqual(_GHCND_BUNDLE.supported_raw_elements, ('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'))
 
     def test_discovery_country_cz_includes_historical_csv_and_ghcnd(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='CZ'), ['ghcnd', 'historical', 'historical_csv', 'now', 'recent'])
         self.assertEqual(list_providers(country='CZ'), ['ghcnd', 'historical', 'historical_csv', 'now', 'recent'])
         self.assertEqual(list_resolutions(country='CZ', provider='ghcnd'), ['daily'])
 
@@ -66,7 +64,7 @@ class CzechGhcndProviderTests(unittest.TestCase):
     def test_query_normalizes_canonical_and_raw_cz_ghcnd_elements(self) -> None:
         canonical_query = ObservationQuery(
             country='CZ',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['ezm00011406'],
             start_date='2020-05-01',
@@ -134,16 +132,14 @@ class CzechGhcndProviderTests(unittest.TestCase):
         self.assertIn('EZM00011406', stations['station_id'].tolist())
         self.assertFalse(station_supports(stations, '0-20000-0-11406', 'ghcnd', 'daily', country='CZ'))
         self.assertFalse(station_supports(stations, 'EZM00011406', 'historical_csv', 'daily', country='CZ'))
-        self.assertTrue(station_supports(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'))
         self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
-        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', 'daily', country='CZ')[0], 'open_water_evaporation')
 
     def test_parse_and_normalize_cz_ghcnd_dly_converts_units_and_drops_missing(self) -> None:
         raw_table = parse_ghcnd_dly_text(SAMPLE_GHCND_DLY_PATH.read_text(encoding='utf-8'))
         query = ObservationQuery(
             country='CZ',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['EZM00011406'],
             start_date='2020-05-01',

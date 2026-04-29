@@ -8,7 +8,7 @@ from weatherdownload import (
     ObservationQuery,
     download_observations,
     get_provider,
-    list_dataset_scopes,
+    list_providers,
     list_providers,
     list_resolutions,
     list_station_elements,
@@ -98,8 +98,8 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
             with self.subTest(country=country):
                 provider = get_provider(country)
                 self.assertEqual(provider.supported_country_codes, (country,))
-                self.assertIn('ghcnd', provider.supported_dataset_scopes)
-                self.assertEqual(spec['national_provider'] in provider.supported_dataset_scopes, True)
+                self.assertIn('ghcnd', provider.supported_providers)
+                self.assertEqual(spec['national_provider'] in provider.supported_providers, True)
                 self.assertIn('daily', provider.supported_resolutions)
                 for element in ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'):
                     self.assertIn(element, provider.supported_canonical_elements)
@@ -108,9 +108,9 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
     def test_discovery_for_mapped_prefix_countries_returns_ghcnd_daily_without_evap(self) -> None:
         for country, spec in COUNTRY_SPECS.items():
             with self.subTest(country=country):
-                self.assertEqual(list_dataset_scopes(country=country), ['ghcnd', spec['national_provider']])
                 self.assertEqual(list_providers(country=country), ['ghcnd', spec['national_provider']])
-                self.assertEqual(list_resolutions(country=country, dataset_scope='ghcnd'), ['daily'])
+                self.assertEqual(list_providers(country=country), ['ghcnd', spec['national_provider']])
+                self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
@@ -126,7 +126,7 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
             with self.subTest(country=country):
                 canonical_query = ObservationQuery(
                     country=country,
-                    dataset_scope='ghcnd',
+                    provider='ghcnd',
                     resolution='daily',
                     station_ids=[spec['station_core'].lower()],
                     start_date=spec['start_date'],
@@ -204,7 +204,7 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                 raw_table = parse_ghcnd_dly_text(spec['fixture_path'].read_text(encoding='utf-8'))
                 query = ObservationQuery(
                     country=country,
-                    dataset_scope='ghcnd',
+                    provider='ghcnd',
                     resolution='daily',
                     station_ids=[spec['station_core']],
                     start_date=spec['start_date'],

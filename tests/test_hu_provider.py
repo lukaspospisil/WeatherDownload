@@ -1,4 +1,4 @@
-﻿import io
+import io
 import unittest
 import zipfile
 from pathlib import Path
@@ -10,7 +10,7 @@ from weatherdownload import (
     ObservationQuery,
     QueryValidationError,
     download_observations,
-    list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_supported_countries,
     list_supported_elements,
@@ -99,9 +99,9 @@ def _build_zip_bytes(filename: str, csv_text: str) -> bytes:
 class HungaryProviderTests(unittest.TestCase):
     def test_supported_countries_include_hu(self) -> None:
         self.assertIn('HU', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='HU'), ['historical', 'historical_wind'])
-        self.assertEqual(list_resolutions(country='HU', dataset_scope='historical'), ['10min', '1hour', 'daily'])
-        self.assertEqual(list_resolutions(country='HU', dataset_scope='historical_wind'), ['10min'])
+        self.assertEqual(list_providers(country='HU'), ['historical', 'historical_wind'])
+        self.assertEqual(list_resolutions(country='HU', provider='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(list_resolutions(country='HU', provider='historical_wind'), ['10min'])
 
     def test_read_station_metadata_country_hu_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='HU', source_url=str(SAMPLE_STATIONS_PATH))
@@ -153,57 +153,57 @@ class HungaryProviderTests(unittest.TestCase):
 
     def test_discovery_country_hu_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='HU', dataset_scope='historical', resolution='daily'),
+            list_supported_elements(country='HU', provider='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='HU', dataset_scope='historical', resolution='1hour'),
+            list_supported_elements(country='HU', provider='historical', resolution='1hour'),
             ['precipitation', 'tas_mean', 'pressure', 'relative_humidity', 'wind_speed'],
         )
         self.assertEqual(
-            list_supported_elements(country='HU', dataset_scope='historical', resolution='10min'),
+            list_supported_elements(country='HU', provider='historical', resolution='10min'),
             ['precipitation', 'tas_mean', 'pressure', 'relative_humidity', 'wind_speed'],
         )
         self.assertEqual(
-            list_supported_elements(country='HU', dataset_scope='historical_wind', resolution='10min'),
+            list_supported_elements(country='HU', provider='historical_wind', resolution='10min'),
             ['wind_speed', 'wind_speed_max'],
         )
         self.assertEqual(
-            list_supported_elements(country='HU', dataset_scope='historical_wind', resolution='10min', provider_raw=True),
+            list_supported_elements(country='HU', provider='historical_wind', resolution='10min', provider_raw=True),
             ['fs', 'fx'],
         )
 
     def test_hu_daily_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2025-07-29', elements=['tas_mean', 'precipitation'])
-        raw_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2025-07-29', elements=['t', 'rau'])
+        canonical_query = ObservationQuery(country='HU', provider='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2025-07-29', elements=['tas_mean', 'precipitation'])
+        raw_query = ObservationQuery(country='HU', provider='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2025-07-29', elements=['t', 'rau'])
         self.assertEqual(canonical_query.elements, ['t', 'rau'])
         self.assertEqual(raw_query.elements, ['t', 'rau'])
 
     def test_hu_hourly_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
-        raw_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['ta', 'p'])
+        canonical_query = ObservationQuery(country='HU', provider='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='HU', provider='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['ta', 'p'])
         self.assertEqual(canonical_query.elements, ['ta', 'p'])
         self.assertEqual(raw_query.elements, ['ta', 'p'])
 
     def test_hu_tenmin_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure'])
-        raw_query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['ta', 'p'])
+        canonical_query = ObservationQuery(country='HU', provider='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='HU', provider='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['ta', 'p'])
         self.assertEqual(canonical_query.elements, ['ta', 'p'])
         self.assertEqual(raw_query.elements, ['ta', 'p'])
 
     def test_hu_tenmin_wind_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='HU', dataset_scope='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['wind_speed', 'wind_speed_max'])
-        raw_query = ObservationQuery(country='HU', dataset_scope='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['fs', 'fx'])
+        canonical_query = ObservationQuery(country='HU', provider='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['wind_speed', 'wind_speed_max'])
+        raw_query = ObservationQuery(country='HU', provider='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['fs', 'fx'])
         self.assertEqual(canonical_query.elements, ['fs', 'fx'])
         self.assertEqual(raw_query.elements, ['fs', 'fx'])
 
     def test_hu_subdaily_query_rejects_date_only_inputs(self) -> None:
         with self.assertRaises(QueryValidationError):
-            ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start_date='2026-01-01', end_date='2026-01-01', elements=['tas_mean'])
+            ObservationQuery(country='HU', provider='historical', resolution='1hour', station_ids=['13704'], start_date='2026-01-01', end_date='2026-01-01', elements=['tas_mean'])
 
     def test_hu_wind_scope_rejects_unsupported_resolution(self) -> None:
         with self.assertRaises(QueryValidationError):
-            ObservationQuery(country='HU', dataset_scope='historical_wind', resolution='daily', station_ids=['26327'], start_date='2026-01-01', end_date='2026-01-01', elements=['wind_speed'])
+            ObservationQuery(country='HU', provider='historical_wind', resolution='daily', station_ids=['26327'], start_date='2026-01-01', end_date='2026-01-01', elements=['wind_speed'])
 
     def test_parse_hu_daily_csv_keeps_source_columns(self) -> None:
         parsed = parse_hu_daily_csv(SAMPLE_DAILY_HISTORICAL_CSV)
@@ -235,12 +235,12 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=recent_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2026-01-02', elements=['tas_mean', 'precipitation', 'sunshine_duration'])
+        query = ObservationQuery(country='HU', provider='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2026-01-02', elements=['tas_mean', 'precipitation', 'sunshine_duration'])
         with patch('weatherdownload.providers.hu.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_DAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'sunshine_duration', 'tas_mean'])
-        self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical'])
+        self.assertEqual(observations['provider'].unique().tolist(), ['historical'])
         self.assertEqual(observations['resolution'].unique().tolist(), ['daily'])
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
         self.assertIn(pd.Timestamp('2026-01-02').date(), observations['observation_date'].tolist())
@@ -261,12 +261,12 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=recent_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
+        query = ObservationQuery(country='HU', provider='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
         with patch('weatherdownload.providers.hu.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'pressure', 'tas_mean'])
-        self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical'])
+        self.assertEqual(observations['provider'].unique().tolist(), ['historical'])
         self.assertEqual(observations['resolution'].unique().tolist(), ['1hour'])
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
         self.assertEqual(str(observations.iloc[0]['timestamp']), '2025-12-31 23:00:00+00:00')
@@ -287,12 +287,12 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=recent_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
+        query = ObservationQuery(country='HU', provider='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure', 'precipitation'])
         with patch('weatherdownload.providers.hu.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'pressure', 'tas_mean'])
-        self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical'])
+        self.assertEqual(observations['provider'].unique().tolist(), ['historical'])
         self.assertEqual(observations['resolution'].unique().tolist(), ['10min'])
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
         self.assertEqual(str(observations.iloc[0]['timestamp']), '2025-12-31 23:50:00+00:00')
@@ -315,12 +315,12 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=recent_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['wind_speed', 'wind_speed_max'])
+        query = ObservationQuery(country='HU', provider='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['wind_speed', 'wind_speed_max'])
         with patch('weatherdownload.providers.hu.tenmin_wind.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), HU_NORMALIZED_SUBDAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['wind_speed', 'wind_speed_max'])
-        self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical_wind'])
+        self.assertEqual(observations['provider'].unique().tolist(), ['historical_wind'])
         self.assertEqual(observations['resolution'].unique().tolist(), ['10min'])
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
         self.assertEqual(str(observations.iloc[0]['timestamp']), '2025-12-31 23:50:00+00:00')
@@ -341,7 +341,7 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=historical_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='daily', station_ids=['13704'], start_date='2005-07-28', end_date='2005-07-29', elements=list(EXPECTED_HU_DAILY_MAPPING.keys()))
+        query = ObservationQuery(country='HU', provider='historical', resolution='daily', station_ids=['13704'], start_date='2005-07-28', end_date='2005-07-29', elements=list(EXPECTED_HU_DAILY_MAPPING.keys()))
         with patch('weatherdownload.providers.hu.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -367,7 +367,7 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=recent_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=list(EXPECTED_HU_HOURLY_MAPPING.keys()))
+        query = ObservationQuery(country='HU', provider='historical', resolution='1hour', station_ids=['13704'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=list(EXPECTED_HU_HOURLY_MAPPING.keys()))
         with patch('weatherdownload.providers.hu.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -390,7 +390,7 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=recent_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_HU_TENMIN_MAPPING.keys()))
+        query = ObservationQuery(country='HU', provider='historical', resolution='10min', station_ids=['13704'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_HU_TENMIN_MAPPING.keys()))
         with patch('weatherdownload.providers.hu.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -413,7 +413,7 @@ class HungaryProviderTests(unittest.TestCase):
                 return _MockResponse(content=recent_zip)
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='HU', dataset_scope='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_HU_TENMIN_WIND_MAPPING.keys()))
+        query = ObservationQuery(country='HU', provider='historical_wind', resolution='10min', station_ids=['26327'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_HU_TENMIN_WIND_MAPPING.keys()))
         with patch('weatherdownload.providers.hu.tenmin_wind.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='HU', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import json
@@ -14,11 +14,11 @@ from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_C
 
 KNMI_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 KNMI_NORMALIZED_SUBDAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 
 _STATION_ID_ALIASES = {'wsi', 'stationid', 'station_id', 'wigosstationidentifier', 'wigosstationid', 'wigosid'}

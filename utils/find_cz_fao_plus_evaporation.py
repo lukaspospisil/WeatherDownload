@@ -188,7 +188,7 @@ def download_candidate_observations(
         'value',
         'flag',
         'quality',
-        'dataset_scope',
+        'provider',
         'resolution',
     ]
     return prepared.loc[:, ordered_columns]

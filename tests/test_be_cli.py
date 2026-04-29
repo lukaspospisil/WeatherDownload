@@ -20,7 +20,7 @@ class BelgiumTenminCliTests(unittest.TestCase):
                 'value': 4.15,
                 'flag': '{"validated":{"TEMP_DRY_SHELTER_AVG":true}}',
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': '10min',
             }
         ])
@@ -33,7 +33,7 @@ class BelgiumTenminCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'BE')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '10min')
         self.assertEqual(query.elements, ['temp_dry_shelter_avg'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'BE')

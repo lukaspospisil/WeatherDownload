@@ -10,7 +10,7 @@ This note documents the current `US / ghcnd / daily` wrapper around the shared N
 
 - country: `US`
 - provider: `ghcnd`
-- backward-compatible `dataset_scope`: `ghcnd`
+- `provider`: `ghcnd`
 - resolution(s): `daily`
 
 ## Source

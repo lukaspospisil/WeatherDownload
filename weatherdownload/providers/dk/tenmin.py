@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 import requests
@@ -25,7 +25,7 @@ def download_tenmin_observations_dk(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '10min':
+    if query.provider != 'historical' or query.resolution != '10min':
         raise UnsupportedQueryError('The DMI Denmark 10min downloader only supports historical/10min.')
     if not query.elements:
         raise UnsupportedQueryError('The DMI Denmark 10min downloader requires at least one element.')
@@ -107,7 +107,7 @@ def normalize_tenmin_observations_dk(
                 'value': pd.to_numeric(pd.Series([properties.get('value')]), errors='coerce').iloc[0],
                 'flag': pd.NA,
                 'quality': pd.Series([pd.NA], dtype=NULLABLE_INT_DTYPE).iloc[0],
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

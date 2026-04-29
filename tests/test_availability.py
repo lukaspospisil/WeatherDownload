@@ -30,7 +30,7 @@ class StationAvailabilityTests(unittest.TestCase):
         stations = self._read_stations()
         availability = station_availability(stations, station_ids=['0-20000-0-11406'])
         self.assertEqual(
-            set(tuple(item) for item in availability[['dataset_scope', 'resolution']].to_records(index=False)),
+            set(tuple(item) for item in availability[['provider', 'resolution']].to_records(index=False)),
             {('historical_csv', '10min'), ('historical_csv', '1hour'), ('historical_csv', 'daily')},
         )
 
@@ -68,7 +68,7 @@ class StationAvailabilityTests(unittest.TestCase):
     def test_list_station_elements_can_return_mapping_table(self) -> None:
         stations = self._read_stations()
         mapping = list_station_elements(stations, '0-20000-0-11406', 'historical_csv', 'daily', include_mapping=True)
-        self.assertEqual(list(mapping.columns), ['station_id', 'dataset_scope', 'resolution', 'element', 'element_raw', 'raw_elements'])
+        self.assertEqual(list(mapping.columns), ['station_id', 'provider', 'resolution', 'element', 'element_raw', 'raw_elements'])
         evaporation = mapping[mapping['element'] == 'open_water_evaporation'].iloc[0]
         self.assertEqual(evaporation['element_raw'], 'VY')
         self.assertEqual(evaporation['raw_elements'], ['VY'])
@@ -103,7 +103,7 @@ class StationAvailabilityTests(unittest.TestCase):
             ['tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'vapour_pressure', 'sunshine_duration', 'open_water_evaporation'],
         )
         self.assertEqual(matches.iloc[0]['provider'], 'historical_csv')
-        self.assertEqual(matches.iloc[0]['dataset_scope'], 'historical_csv')
+        self.assertEqual(matches.iloc[0]['provider'], 'historical_csv')
         self.assertEqual(matches.iloc[0]['matching_begin_date'], '1957-01-01')
         self.assertEqual(matches.iloc[0]['matching_end_date'], '1960-12-31')
 
@@ -125,12 +125,12 @@ class StationAvailabilityTests(unittest.TestCase):
         )
         self.assertEqual(matches.iloc[0]['provider'], 'ghcnd')
 
-    def test_find_stations_with_required_elements_accepts_dataset_scope_alias(self) -> None:
+    def test_find_stations_with_required_elements_accepts_provider(self) -> None:
         stations = read_station_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
         observation_metadata = read_station_observation_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
         matches = find_stations_with_elements(
             country='CA',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
             stations=stations,
@@ -166,39 +166,33 @@ class StationAvailabilityTests(unittest.TestCase):
         stations = read_station_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
         availability = station_availability(stations, station_ids=['CA000000002'], country='CA')
         self.assertEqual(
-            availability[['dataset_scope', 'resolution', 'supported_elements']].to_dict('records'),
-            [{'dataset_scope': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
+            availability[['provider', 'resolution', 'supported_elements']].to_dict('records'),
+            [{'provider': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
         )
         self.assertTrue(station_supports(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'))
-        self.assertTrue(station_supports(stations, 'CA000000002', None, 'daily', country='CA', provider='ghcnd'))
         self.assertEqual(list_station_elements(stations, 'CA000000001', 'ghcnd', 'daily', country='CA'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
-        self.assertEqual(list_station_elements(stations, 'CA000000001', None, 'daily', country='CA', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'), ['precipitation'])
 
     def test_cz_ghcnd_station_availability_and_elements_are_inventory_driven(self) -> None:
         stations = read_station_metadata(country='CZ', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
         availability = station_availability(stations, station_ids=['EZM00011520'], country='CZ')
         self.assertEqual(
-            availability[['dataset_scope', 'resolution', 'supported_elements']].to_dict('records'),
-            [{'dataset_scope': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
+            availability[['provider', 'resolution', 'supported_elements']].to_dict('records'),
+            [{'provider': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
         )
         self.assertTrue(station_supports(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'))
-        self.assertTrue(station_supports(stations, 'EZM00011520', None, 'daily', country='CZ', provider='ghcnd'))
         self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
-        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'), ['precipitation'])
 
     def test_de_ghcnd_station_availability_and_elements_are_inventory_driven(self) -> None:
         stations = read_station_metadata(country='DE', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
         availability = station_availability(stations, station_ids=['GM000000002'], country='DE')
         self.assertEqual(
-            availability[['dataset_scope', 'resolution', 'supported_elements']].to_dict('records'),
-            [{'dataset_scope': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
+            availability[['provider', 'resolution', 'supported_elements']].to_dict('records'),
+            [{'provider': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
         )
         self.assertTrue(station_supports(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'))
-        self.assertTrue(station_supports(stations, 'GM000000002', None, 'daily', country='DE', provider='ghcnd'))
         self.assertEqual(list_station_elements(stations, 'GM000000001', 'ghcnd', 'daily', country='DE'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
-        self.assertEqual(list_station_elements(stations, 'GM000000001', None, 'daily', country='DE', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'), ['precipitation'])
 
 

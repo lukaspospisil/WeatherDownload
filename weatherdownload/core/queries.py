@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -13,14 +13,9 @@ class QueryValidationError(ValueError):
 
 @dataclass(slots=True)
 class ObservationQuery:
-    """Public observation query.
+    """Public observation query."""
 
-    `provider` is the preferred public selector for the country-specific source.
-    `dataset_scope` remains accepted as a backward-compatible alias and is
-    normalized internally to the same canonical value.
-    """
-
-    dataset_scope: str = ''
+    provider: str = ''
     resolution: str = ''
     station_ids: list[str] = field(default_factory=list)
     start: datetime | str | None = None
@@ -30,28 +25,18 @@ class ObservationQuery:
     all_history: bool = False
     elements: list[str] | None = None
     country: str = 'CZ'
-    provider: str | None = None
 
     def __post_init__(self) -> None:
         validate_observation_query(self)
 
 
-def normalize_provider_scope(
-    dataset_scope: str | None = None,
-    provider: str | None = None,
-) -> str:
-    """Resolve `provider` and `dataset_scope` into one canonical provider token."""
+def normalize_provider_name(provider: str | None) -> str:
+    """Validate and normalize a provider token."""
 
-    normalized_dataset_scope = _normalize_optional_scope(dataset_scope, field_name='dataset_scope')
-    normalized_provider = _normalize_optional_scope(provider, field_name='provider')
-
-    if normalized_dataset_scope is None and normalized_provider is None:
-        raise QueryValidationError('Either provider or dataset_scope is required.')
-    if normalized_dataset_scope is not None and normalized_provider is not None and normalized_dataset_scope != normalized_provider:
-        raise QueryValidationError(
-            f"Conflicting provider selectors: provider='{normalized_provider}' does not match dataset_scope='{normalized_dataset_scope}'."
-        )
-    return normalized_provider or normalized_dataset_scope or ''
+    normalized_provider = _normalize_optional_provider(provider, field_name='provider')
+    if normalized_provider is None:
+        raise QueryValidationError('provider is required.')
+    return normalized_provider
 
 
 def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
@@ -59,38 +44,29 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
 
     from ..providers import get_provider, normalize_country_code
 
-    query.dataset_scope = normalize_provider_scope(
-        getattr(query, 'dataset_scope', None),
-        getattr(query, 'provider', None),
-    )
-    query.provider = query.dataset_scope
-
-    if not query.dataset_scope:
-        raise QueryValidationError('provider is required.')
+    query.provider = normalize_provider_name(getattr(query, 'provider', None))
     if not query.resolution:
         raise QueryValidationError('resolution is required.')
 
     query.country = normalize_country_code(query.country)
-    provider = get_provider(query.country)
+    weather_provider = get_provider(query.country)
     query.resolution = _normalize_scalar(query.resolution, field_name='resolution')
 
-    supported_scopes = sorted({spec.dataset_scope for spec in provider.list_dataset_specs()})
-    if query.dataset_scope not in supported_scopes:
+    supported_providers = sorted({spec.provider for spec in weather_provider.list_dataset_specs()})
+    if query.provider not in supported_providers:
         raise QueryValidationError(
-            f"Unsupported provider '{query.dataset_scope}' for country '{query.country}'. "
-            'dataset_scope remains accepted as a backward-compatible alias.'
+            f"Unsupported provider '{query.provider}' for country '{query.country}'."
         )
 
     supported_resolutions = sorted({
-        spec.resolution for spec in provider.list_dataset_specs() if spec.dataset_scope == query.dataset_scope
+        spec.resolution for spec in weather_provider.list_dataset_specs() if spec.provider == query.provider
     })
     if query.resolution not in supported_resolutions:
         raise QueryValidationError(
-            f"Unsupported resolution '{query.resolution}' for provider '{query.dataset_scope}'. "
-            'dataset_scope remains accepted as a backward-compatible alias.'
+            f"Unsupported resolution '{query.resolution}' for provider '{query.provider}'."
         )
 
-    dataset_spec = provider.get_dataset_spec(query.dataset_scope, query.resolution)
+    dataset_spec = weather_provider.get_dataset_spec(query.provider, query.resolution)
 
     query.station_ids = _normalize_string_sequence(query.station_ids, 'station_ids', uppercase=True, required=True)
 
@@ -99,8 +75,8 @@ def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
         unsupported_elements = unsupported_requested_elements(normalized_input_elements, dataset_spec)
         if unsupported_elements:
             raise QueryValidationError(
-                f"Unsupported elements for provider '{query.dataset_scope}' and resolution '{query.resolution}': "
-                f'{unsupported_elements}. dataset_scope remains accepted as a backward-compatible alias.'
+                f"Unsupported elements for provider '{query.provider}' and resolution '{query.resolution}': "
+                f'{unsupported_elements}.'
             )
         query.elements = normalize_requested_elements(normalized_input_elements, dataset_spec)
 
@@ -167,7 +143,7 @@ def _normalize_scalar(value: object, field_name: str) -> str:
     return normalized
 
 
-def _normalize_optional_scope(value: object, field_name: str) -> str | None:
+def _normalize_optional_provider(value: object, field_name: str) -> str | None:
     if value is None:
         return None
     if isinstance(value, str) and not value.strip():
@@ -246,5 +222,3 @@ def _coerce_date(value: date | str, field_name: str) -> date:
         except ValueError as exc:
             raise QueryValidationError(f'Invalid date for {field_name}: {value}') from exc
     raise QueryValidationError(f'{field_name} must be a date or ISO date string.')
-
-

@@ -12,7 +12,7 @@ from .ghcnd import (
 
 @dataclass(frozen=True)
 class DwdDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     source_id: str
     label: str
@@ -72,7 +72,7 @@ _DWD_TENMIN_PRECIPITATION_CANONICAL_ELEMENTS = {
 
 _DWD_DATASET_SPECS = [
     DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         source_id='daily_kl',
         label='DWD daily climate summary',
@@ -83,7 +83,7 @@ _DWD_DATASET_SPECS = [
         implemented=True,
     ),
     DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         source_id='hourly_air_temperature',
         label='DWD hourly air temperature',
@@ -94,7 +94,7 @@ _DWD_DATASET_SPECS = [
         implemented=True,
     ),
     DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         source_id='hourly_wind',
         label='DWD hourly wind',
@@ -105,7 +105,7 @@ _DWD_DATASET_SPECS = [
         implemented=True,
     ),
     DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         source_id='hourly_precipitation',
         label='DWD hourly precipitation',
@@ -116,7 +116,7 @@ _DWD_DATASET_SPECS = [
         implemented=False,
     ),
     DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         source_id='tenmin_air_temperature',
         label='DWD 10-minute air temperature',
@@ -127,7 +127,7 @@ _DWD_DATASET_SPECS = [
         implemented=True,
     ),
     DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         source_id='tenmin_wind',
         label='DWD 10-minute wind',
@@ -138,7 +138,7 @@ _DWD_DATASET_SPECS = [
         implemented=True,
     ),
     DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         source_id='tenmin_precipitation',
         label='DWD 10-minute precipitation',
@@ -160,22 +160,22 @@ def list_implemented_dataset_specs() -> list[DwdDatasetSpec]:
     for spec in _DWD_DATASET_SPECS:
         if not spec.implemented:
             continue
-        implemented_pairs[(spec.dataset_scope, spec.resolution)] = get_dataset_spec(spec.dataset_scope, spec.resolution)
+        implemented_pairs[(spec.provider, spec.resolution)] = get_dataset_spec(spec.provider, spec.resolution)
     return [*list(implemented_pairs.values()), *list_ghcnd_implemented_dataset_specs()]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> DwdDatasetSpec | GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> DwdDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     if normalized_scope == 'ghcnd':
         return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     matching = [
         spec
         for spec in _DWD_DATASET_SPECS
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution
     ]
     if not matching:
-        raise ValueError(f'Unsupported DWD dataset combination: {dataset_scope}/{resolution}')
+        raise ValueError(f'Unsupported DWD dataset combination: {provider}/{resolution}')
 
     implemented_matching = [spec for spec in matching if spec.implemented]
     effective_specs = implemented_matching or matching
@@ -186,7 +186,7 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> DwdDatasetSpec | Gh
             existing = combined_canonical_elements.get(canonical_name, ())
             combined_canonical_elements[canonical_name] = tuple(dict.fromkeys(existing + tuple(raw_codes)))
     return DwdDatasetSpec(
-        dataset_scope=normalized_scope,
+        provider=normalized_scope,
         resolution=normalized_resolution,
         source_id=f'{normalized_scope}_{normalized_resolution}',
         label=f'DWD {normalized_scope} {normalized_resolution}',

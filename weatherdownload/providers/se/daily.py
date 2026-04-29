@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import date
 
@@ -18,7 +18,7 @@ def download_daily_observations_se(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != 'daily':
+    if query.provider != 'historical' or query.resolution != 'daily':
         raise UnsupportedQueryError('The SMHI Sweden daily downloader only supports historical/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The SMHI Sweden daily downloader requires at least one element.')
@@ -93,7 +93,7 @@ def normalize_daily_observations_se(
                 'value': record.value,
                 'flag': record.flag,
                 'quality': pd.Series([pd.NA], dtype='Int64').iloc[0],
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

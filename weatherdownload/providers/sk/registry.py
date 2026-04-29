@@ -12,7 +12,7 @@ from .ghcnd import (
 
 @dataclass(frozen=True)
 class ShmuDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     source_id: str
     label: str
@@ -36,7 +36,7 @@ _SHMU_RECENT_DAILY_CANONICAL_ELEMENTS = {
 
 _SHMU_DATASET_SPECS = [
     ShmuDatasetSpec(
-        dataset_scope='recent',
+        provider='recent',
         resolution='daily',
         source_id='recent_daily_kli_inter',
         label='SHMU recent daily climatological stations',
@@ -62,12 +62,12 @@ def list_implemented_dataset_specs() -> list[ShmuDatasetSpec]:
     ]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> ShmuDatasetSpec | GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> ShmuDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     if normalized_scope == 'ghcnd':
         return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     for spec in _SHMU_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported SHMU dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported SHMU dataset combination: {provider}/{resolution}')

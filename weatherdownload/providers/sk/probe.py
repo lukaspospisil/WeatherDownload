@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -19,7 +19,7 @@ SHMU_NOW_METADATA_URL = 'https://opendata.shmu.sk/meteorology/climate/now/metada
 SHMU_NOW_DATA_INDEX_URL = 'https://opendata.shmu.sk/meteorology/climate/now/data/'
 
 PROBE_COLUMNS = [
-    'dataset_scope',
+    'provider',
     'resolution',
     'source_id',
     'implemented',
@@ -52,7 +52,7 @@ def _probe_recent_daily(timeout: int) -> dict[str, object]:
     payload_metadata, payload_table = parse_recent_daily_payload_json(_read_text(latest_url, timeout=timeout))
     statistics = payload_metadata.get('statistics') if isinstance(payload_metadata.get('statistics'), dict) else {}
     return {
-        'dataset_scope': spec.dataset_scope,
+        'provider': spec.provider,
         'resolution': spec.resolution,
         'source_id': spec.source_id,
         'implemented': spec.implemented,
@@ -94,7 +94,7 @@ def _probe_now_aws1min(timeout: int) -> dict[str, object]:
     except Exception as exc:  # pragma: no cover - network availability varies
         notes = f'{notes} Probe warning: {exc}'
     return {
-        'dataset_scope': 'now',
+        'provider': 'now',
         'resolution': '1min',
         'source_id': 'aws1min_now',
         'implemented': False,

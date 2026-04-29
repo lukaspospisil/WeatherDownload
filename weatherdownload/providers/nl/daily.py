@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import re
 from datetime import date
@@ -20,7 +20,7 @@ def download_daily_observations_knmi(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != 'daily':
+    if query.provider != 'historical' or query.resolution != 'daily':
         raise UnsupportedQueryError('The KNMI daily downloader only supports historical/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The KNMI daily downloader requires at least one element.')
@@ -106,7 +106,7 @@ def normalize_daily_observations_knmi(
                 'value': pd.to_numeric(pd.Series(selected_values), errors='coerce'),
                 'flag': pd.NA,
                 'quality': pd.Series(pd.NA, index=selected.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
                 'gh_id': pd.NA,
             }

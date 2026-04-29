@@ -10,7 +10,7 @@ This note documents the current conservative KNMI slice used for the Netherlands
 
 - country: `NL`
 - provider: `historical`
-- backward-compatible `dataset_scope`: `historical`
+- `provider`: `historical`
 - resolution(s): `daily`, `1hour`, `10min`
 
 ## Source

@@ -12,7 +12,7 @@ from .ghcnd import (
 
 @dataclass(frozen=True)
 class DenmarkDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     label: str
     metadata_url: str
@@ -151,7 +151,7 @@ DK_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
 
 _DK_DATASET_SPECS = [
     DenmarkDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         label='DMI Climate Data historical daily station observations',
         metadata_url=f'{DMI_CLIMATE_STATION_URL}?limit=300000',
@@ -171,7 +171,7 @@ _DK_DATASET_SPECS = [
         implemented=True,
     ),
     DenmarkDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         label='DMI Climate Data historical hourly station observations',
         metadata_url=f'{DMI_CLIMATE_STATION_URL}?limit=300000',
@@ -189,7 +189,7 @@ _DK_DATASET_SPECS = [
         implemented=True,
     ),
     DenmarkDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         label='DMI Meteorological Observation API historical 10-minute station observations',
         metadata_url=f'{DMI_CLIMATE_STATION_URL}?limit=300000',
@@ -220,12 +220,12 @@ def list_implemented_dataset_specs() -> list[DenmarkDatasetSpec]:
     ]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> DenmarkDatasetSpec | GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> DenmarkDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     if normalized_scope == 'ghcnd':
         return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     for spec in _DK_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported DMI Denmark dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported DMI Denmark dataset combination: {provider}/{resolution}')

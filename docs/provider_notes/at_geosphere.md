@@ -10,7 +10,7 @@ This note documents the current conservative GeoSphere Austria station-observati
 
 - country: `AT`
 - provider: `historical`
-- backward-compatible `dataset_scope`: `historical`
+- `provider`: `historical`
 - resolution(s): `daily`, `1hour`, `10min`
 
 ## Source

@@ -16,14 +16,14 @@ Preferred public selection model:
 
 - think in terms of `country + provider + resolution + element`
 - `provider` is the preferred public selector
-- `dataset_scope` remains accepted as a backward-compatible alias and still appears in normalized output schemas
+- `provider` is the public selector name and the normalized output column
 
 Programmatic discovery:
 
 ```python
-from weatherdownload import list_dataset_scopes, list_providers, list_resolutions, list_supported_elements
+from weatherdownload import list_providers, list_resolutions, list_supported_elements
 
-list_dataset_scopes(country="CZ")  # compatibility alias
+list_providers(country="CZ")
 list_providers(country="CZ")
 list_resolutions(country="US", provider="ghcnd")
 list_supported_elements(country="US", provider="ghcnd", resolution="daily")

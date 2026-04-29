@@ -401,7 +401,7 @@ SE_PROVIDER_ELEMENT_MAPPING = {
 @dataclass(frozen=True)
 class FaoCountryConfig:
     country: str
-    dataset_scope: str
+    provider: str
     resolution: str
     obs_types: tuple[str, ...]
     canonical_to_raw: dict[str, tuple[str, ...]]
@@ -413,7 +413,7 @@ class FaoCountryConfig:
     assumptions: dict[str, str]
     dataset_type: str
     source: str
-    hourly_dataset_scope: str | None = None
+    hourly_provider: str | None = None
     hourly_resolution: str | None = None
     hourly_query_elements: tuple[str, ...] = ()
 
@@ -1086,7 +1086,7 @@ def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config
     try:
         query = ObservationQuery(
             country=config.country,
-            dataset_scope=config.dataset_scope,
+            provider=config.provider,
             resolution=config.resolution,
             station_ids=[station_id],
             all_history=True,
@@ -1122,7 +1122,7 @@ def ensure_hourly_observations_cached(station_id: str, *, cache_dir: Path, confi
     try:
         query = ObservationQuery(
             country=config.country,
-            dataset_scope=config.hourly_dataset_scope,
+            provider=config.hourly_provider,
             resolution=config.hourly_resolution,
             station_ids=[station_id],
             all_history=True,

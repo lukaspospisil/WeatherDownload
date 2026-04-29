@@ -1,11 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class HungaryDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     label: str
     metadata_url: str
@@ -189,7 +189,7 @@ HU_TENMIN_WIND_PARAMETER_METADATA: dict[str, dict[str, str]] = {
 
 _HU_DATASET_SPECS = [
     HungaryDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         label='HungaroMet historical daily station observations',
         metadata_url=HU_METADATA_URL,
@@ -201,7 +201,7 @@ _HU_DATASET_SPECS = [
         implemented=True,
     ),
     HungaryDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         label='HungaroMet historical hourly station observations',
         metadata_url=HU_METADATA_URL,
@@ -213,7 +213,7 @@ _HU_DATASET_SPECS = [
         implemented=True,
     ),
     HungaryDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         label='HungaroMet historical 10-minute station observations',
         metadata_url=HU_METADATA_URL,
@@ -225,7 +225,7 @@ _HU_DATASET_SPECS = [
         implemented=True,
     ),
     HungaryDatasetSpec(
-        dataset_scope='historical_wind',
+        provider='historical_wind',
         resolution='10min',
         label='HungaroMet historical 10-minute wind station observations',
         metadata_url=HU_TENMIN_WIND_METADATA_URL,
@@ -247,11 +247,11 @@ def list_implemented_dataset_specs() -> list[HungaryDatasetSpec]:
     return [spec for spec in _HU_DATASET_SPECS if spec.implemented]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> HungaryDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> HungaryDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     for spec in _HU_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported HungaroMet Hungary dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported HungaroMet Hungary dataset combination: {provider}/{resolution}')
 

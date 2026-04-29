@@ -1,4 +1,4 @@
-﻿import io
+import io
 import unittest
 import zipfile
 from unittest.mock import patch
@@ -58,7 +58,7 @@ class DwdDailyDownloaderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='DE',
-            dataset_scope='historical',
+            provider='historical',
             resolution='daily',
             station_ids=['00003'],
             start_date='2024-01-01',
@@ -71,7 +71,7 @@ class DwdDailyDownloaderTests(unittest.TestCase):
 
         self.assertEqual(
             list(observations.columns),
-            ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'],
+            ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution'],
         )
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean', 'wind_speed'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['FM', 'RSK', 'TMK'])
@@ -79,7 +79,7 @@ class DwdDailyDownloaderTests(unittest.TestCase):
         self.assertTrue(observations['gh_id'].isna().all())
         self.assertTrue(observations['time_function'].isna().all())
         self.assertTrue(observations['flag'].isna().all())
-        self.assertTrue(observations['dataset_scope'].eq('historical').all())
+        self.assertTrue(observations['provider'].eq('historical').all())
         self.assertTrue(observations['resolution'].eq('daily').all())
 
         tmk = observations[observations['element'] == 'tas_mean'].reset_index(drop=True)

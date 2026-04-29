@@ -24,5 +24,5 @@ def list_implemented_dataset_specs() -> list[GhcndDatasetSpec]:
     return list_country_implemented_dataset_specs(_GHCND_DATASET_SPECS)
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> GhcndDatasetSpec:
-    return get_country_dataset_spec(_GHCND_DATASET_SPECS, dataset_scope, resolution)
+def get_dataset_spec(provider: str, resolution: str) -> GhcndDatasetSpec:
+    return get_country_dataset_spec(_GHCND_DATASET_SPECS, provider, resolution)

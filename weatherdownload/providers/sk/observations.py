@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -26,7 +26,7 @@ NORMALIZED_SHMU_DAILY_COLUMNS = [
     'value',
     'flag',
     'quality',
-    'dataset_scope',
+    'provider',
     'resolution',
 ]
 
@@ -36,7 +36,7 @@ def download_daily_observations_shmu(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'recent' or query.resolution != 'daily':
+    if query.provider != 'recent' or query.resolution != 'daily':
         raise UnsupportedQueryError('Experimental SHMU provider currently supports only recent/daily observations.')
     if query.all_history:
         raise UnsupportedQueryError('Experimental SHMU recent/daily downloader does not support all_history yet.')
@@ -126,7 +126,7 @@ def normalize_daily_observations_shmu(
     normalized['time_function'] = pd.NA
     normalized['flag'] = pd.NA
     normalized['quality'] = pd.NA
-    normalized['dataset_scope'] = query.dataset_scope
+    normalized['provider'] = query.provider
     normalized['resolution'] = query.resolution
 
     if station_metadata is not None and not station_metadata.empty:

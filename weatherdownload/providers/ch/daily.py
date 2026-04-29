@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -35,7 +35,7 @@ def download_daily_observations_ch(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != 'daily':
+    if query.provider != 'historical' or query.resolution != 'daily':
         raise UnsupportedQueryError('The MeteoSwiss Switzerland daily downloader only supports historical/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The MeteoSwiss Switzerland daily downloader requires at least one element.')
@@ -69,7 +69,7 @@ def download_daily_observations_ch(
 
 
 def build_ch_daily_download_targets(query: ObservationQuery, timeout: int = 60) -> list[ChDailyDownloadTarget]:
-    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = get_dataset_spec(query.provider, query.resolution)
     if not spec.implemented:
         raise UnsupportedQueryError('The requested MeteoSwiss Switzerland dataset path is not implemented.')
 
@@ -109,7 +109,7 @@ def normalize_daily_observations_ch(table: pd.DataFrame, query: ObservationQuery
                 'value': to_numeric_with_missing(table[raw_code]),
                 'flag': empty_flag_series(table.index),
                 'quality': pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
                 '_source_kind': table['_source_kind'].astype('string'),
             }

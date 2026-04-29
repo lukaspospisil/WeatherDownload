@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 import requests
@@ -18,7 +18,7 @@ def download_daily_observations_geosphere(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != 'daily':
+    if query.provider != 'historical' or query.resolution != 'daily':
         raise UnsupportedQueryError('The GeoSphere Austria daily downloader only supports historical/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The GeoSphere Austria daily downloader requires at least one element.')
@@ -95,7 +95,7 @@ def normalize_daily_observations_geosphere(
                 'value': pd.to_numeric(table[raw_code], errors='coerce'),
                 'flag': pd.NA,
                 'quality': pd.to_numeric(table[quality_column], errors='coerce').astype('Int64') if quality_column else pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
                 'gh_id': pd.NA,
             }

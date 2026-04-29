@@ -26,7 +26,7 @@ Public discovery and download APIs use the same shape across countries:
 - `read_station_metadata(country=...)`
 - `read_station_observation_metadata(country=...)`
 - `list_providers(country=...)`
-- `list_dataset_scopes(country=...)`
+- `list_providers(country=...)`
 - `list_resolutions(country=..., provider=...)`
 - `list_supported_elements(country=..., provider=..., resolution=...)`
 - `download_observations(...)`
@@ -35,12 +35,12 @@ Public query dimensions:
 
 - `country` selects the country/provider context
 - `provider` is the preferred public selector for the concrete source path
-- `dataset_scope` remains accepted as a backward-compatible alias for `provider`
+- `provider` is the public selector name for `provider`
 - `resolution` selects the temporal resolution within that provider path
 
 Compatibility notes:
 
-- normalized output tables still expose the `dataset_scope` column for backward compatibility
+- normalized output tables use the `provider` column
 - provider values are provider-local names, not a universal cross-country taxonomy
 - similar-looking names such as `historical`, `recent`, or `ghcnd` should always be interpreted within the selected country/provider path
 
@@ -90,13 +90,12 @@ Use the discovery APIs when you need the current supported options:
 
 ```python
 from weatherdownload import (
-    list_dataset_scopes,
     list_providers,
     list_resolutions,
     list_supported_elements,
 )
 
-list_dataset_scopes(country="CZ")  # compatibility alias
+list_providers(country="CZ")
 list_providers(country="US")
 list_resolutions(country="US", provider="ghcnd")
 list_supported_elements(country="US", provider="ghcnd", resolution="daily")
@@ -135,7 +134,7 @@ The CLI mirrors the provider model:
 
 - `--country` selects the country
 - `--provider` is the preferred selector
-- `--dataset-scope` remains a backward-compatible alias
+- `--provider` selects the concrete source path
 
 Examples:
 

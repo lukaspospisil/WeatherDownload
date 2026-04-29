@@ -1,4 +1,4 @@
-﻿import io
+import io
 import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
@@ -20,7 +20,7 @@ class DenmarkTenminCliTests(unittest.TestCase):
                 'value': 2.1,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': '10min',
             }
         ])
@@ -33,7 +33,7 @@ class DenmarkTenminCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DK')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '10min')
         self.assertEqual(query.elements, ['temp_dry'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DK')

@@ -11,7 +11,7 @@ from .exporting import export_table
 from .metadata import read_station_metadata
 from .observations import download_observations
 from .providers import get_provider
-from .queries import ObservationQuery, normalize_provider_scope
+from .queries import ObservationQuery, normalize_provider_name
 
 
 OUTPUT_FORMATS = ["screen", "csv", "excel", "parquet", "mat"]
@@ -60,7 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_provider_arguments(
         supports_parser,
         required=True,
-        help_text="Concrete provider/source to check. --dataset-scope is kept as a backward-compatible alias.",
+        help_text="Concrete provider/source to check.",
     )
     supports_parser.add_argument("--resolution", required=True, help="Resolution to check.")
     supports_parser.add_argument("--active-on", default=None, dest="active_on", help="Optional date filter in YYYY-MM-DD format.")
@@ -76,7 +76,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_provider_arguments(
         elements_parser,
         required=True,
-        help_text="Concrete provider/source to inspect. --dataset-scope is kept as a backward-compatible alias.",
+        help_text="Concrete provider/source to inspect.",
     )
     elements_parser.add_argument("--resolution", required=True, help="Resolution to inspect.")
     elements_parser.add_argument("--active-on", default=None, dest="active_on", help="Optional date filter in YYYY-MM-DD format.")
@@ -94,7 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_provider_arguments(
         find_parser,
         required=False,
-        help_text="Preferred provider/source selector within the country. Use it explicitly when multiple providers support the same resolution; --dataset-scope remains a backward-compatible alias.",
+        help_text="Preferred provider/source selector within the country. Use it explicitly when multiple providers support the same resolution.",
     )
     find_parser.add_argument("--resolution", required=True, help="Resolution to inspect.")
     find_parser.add_argument("--element", action="append", required=True, dest="elements", help="Required canonical or raw provider element code. Can be provided multiple times.")
@@ -118,7 +118,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_provider_arguments(
         tenmin_parser,
         required=False,
-        help_text="Preferred provider/source selector within the country. Defaults to the country-specific 10min provider when omitted; --dataset-scope remains a backward-compatible alias.",
+        help_text="Preferred provider/source selector within the country. Defaults to the country-specific 10min provider when omitted.",
     )
     tenmin_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     tenmin_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
@@ -135,7 +135,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_provider_arguments(
         hourly_parser,
         required=False,
-        help_text="Preferred provider/source selector within the country. Defaults to the country-specific hourly provider when omitted; --dataset-scope remains a backward-compatible alias.",
+        help_text="Preferred provider/source selector within the country. Defaults to the country-specific hourly provider when omitted.",
     )
     hourly_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     hourly_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
@@ -152,7 +152,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_provider_arguments(
         daily_parser,
         required=False,
-        help_text="Preferred provider/source selector within the country. Defaults to the country-specific daily provider when omitted; --dataset-scope remains a backward-compatible alias.",
+        help_text="Preferred provider/source selector within the country. Defaults to the country-specific daily provider when omitted.",
     )
     daily_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     daily_parser.add_argument("--layout", choices=["wide", "long"], default=None, help="Observation output layout. Defaults to wide for screen/csv/excel and long for parquet/mat.")
@@ -218,7 +218,7 @@ def handle_station_supports(args: argparse.Namespace) -> int:
     result = pd.DataFrame([
         {
             "station_id": args.station_id,
-            "dataset_scope": provider_scope,
+            "provider": provider_scope,
             "resolution": args.resolution,
             "active_on": args.active_on,
             "supported": supported,
@@ -254,13 +254,13 @@ def handle_station_elements(args: argparse.Namespace) -> int:
             [
                 {
                     "station_id": args.station_id,
-                    "dataset_scope": provider_scope,
+                    "provider": provider_scope,
                     "resolution": args.resolution,
                     "element": element,
                 }
                 for element in elements
             ],
-            columns=["station_id", "dataset_scope", "resolution", "element"],
+            columns=["station_id", "provider", "resolution", "element"],
         )
     if args.format == "screen":
         print(_format_table(table, metadata_view=False))
@@ -274,7 +274,7 @@ def handle_station_elements(args: argparse.Namespace) -> int:
 
 def handle_station_find(args: argparse.Namespace) -> int:
     provider_scope = None
-    if getattr(args, 'provider', None) is not None or getattr(args, 'dataset_scope', None) is not None:
+    if getattr(args, 'provider', None) is not None:
         provider_scope = _resolve_provider_for_cli(args, default=None)
     stations = find_stations_with_elements(
         country=args.country,
@@ -300,14 +300,13 @@ def handle_tenmin_observations(args: argparse.Namespace) -> int:
     provider_scope = _resolve_provider_or_default(args, '10min')
     query = ObservationQuery(
         country=args.country,
-        dataset_scope=provider_scope,
+        provider=provider_scope,
         resolution="10min",
         station_ids=args.station_ids,
         start=args.start,
         end=args.end,
         all_history=args.all_history,
         elements=args.elements,
-        provider=args.provider,
     )
     observations = _prepare_observation_output(
         download_observations(query, country=args.country),
@@ -329,14 +328,13 @@ def handle_hourly_observations(args: argparse.Namespace) -> int:
     provider_scope = _resolve_provider_or_default(args, '1hour')
     query = ObservationQuery(
         country=args.country,
-        dataset_scope=provider_scope,
+        provider=provider_scope,
         resolution="1hour",
         station_ids=args.station_ids,
         start=args.start,
         end=args.end,
         all_history=args.all_history,
         elements=args.elements,
-        provider=args.provider,
     )
     observations = _prepare_observation_output(
         download_observations(query, country=args.country),
@@ -358,14 +356,13 @@ def handle_daily_observations(args: argparse.Namespace) -> int:
     provider_scope = _resolve_provider_or_default(args, 'daily')
     query = ObservationQuery(
         country=args.country,
-        dataset_scope=provider_scope,
+        provider=provider_scope,
         resolution="daily",
         station_ids=args.station_ids,
         start_date=args.start_date,
         end_date=args.end_date,
         all_history=args.all_history,
         elements=args.elements,
-        provider=args.provider,
     )
     observations = _prepare_observation_output(
         download_observations(query, country=args.country),
@@ -407,8 +404,7 @@ def _add_country_argument(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_provider_arguments(parser: argparse.ArgumentParser, *, required: bool, help_text: str) -> None:
-    parser.add_argument("--provider", dest="provider", required=False, help=help_text)
-    parser.add_argument("--dataset-scope", dest="dataset_scope", required=False, help="Deprecated alias for --provider kept for backward compatibility.")
+    parser.add_argument("--provider", dest="provider", required=required, help=help_text)
 
 
 def _resolve_provider_for_cli(
@@ -417,50 +413,45 @@ def _resolve_provider_for_cli(
     default: str | None,
     required: bool = False,
 ) -> str:
-    dataset_scope = getattr(args, "dataset_scope", None)
     provider = getattr(args, "provider", None)
-    if default is None and required and dataset_scope is None and provider is None:
-        raise ValueError('Use --provider (preferred) or --dataset-scope.')
-    if default is not None and dataset_scope is None and provider is None:
+    if default is None and required and provider is None:
+        raise ValueError('Use --provider.')
+    if default is not None and provider is None:
         return default
     try:
-        return normalize_provider_scope(dataset_scope=dataset_scope, provider=provider)
+        return normalize_provider_name(provider)
     except Exception as exc:
         raise ValueError(str(exc)) from exc
-
-
-def _default_dataset_scope(country: str) -> str:
-    return _default_provider_for_resolution(country, resolution=None)
 
 
 def _default_provider_for_resolution(country: str, resolution: str | None) -> str:
     normalized = country.strip().upper()
 
-    provider = get_provider(normalized)
-    specs = provider.list_implemented_dataset_specs()
+    weather_provider = get_provider(normalized)
+    specs = weather_provider.list_implemented_dataset_specs()
     if resolution is not None:
-        matching_scopes = sorted({spec.dataset_scope for spec in specs if spec.resolution == resolution})
-        if len(matching_scopes) == 1:
-            return matching_scopes[0]
-        if len(matching_scopes) > 1:
-            choices = ', '.join(matching_scopes)
+        matching_providers = sorted({spec.provider for spec in specs if spec.resolution == resolution})
+        if len(matching_providers) == 1:
+            return matching_providers[0]
+        if len(matching_providers) > 1:
+            choices = ', '.join(matching_providers)
             raise ValueError(
                 f"Multiple providers support country='{normalized}' and resolution='{resolution}': {choices}. "
-                'Use --provider (preferred) or --dataset-scope explicitly.'
+                'Use --provider explicitly.'
             )
 
-    scopes = sorted({spec.dataset_scope for spec in specs})
-    if len(scopes) == 1:
-        return scopes[0]
-    choices = ', '.join(scopes)
+    providers = sorted({spec.provider for spec in specs})
+    if len(providers) == 1:
+        return providers[0]
+    choices = ', '.join(providers)
     raise ValueError(
         f"Multiple providers are available for country='{normalized}': {choices}. "
-        'Use --provider (preferred) or --dataset-scope explicitly.'
+        'Use --provider explicitly.'
     )
 
 
 def _resolve_provider_or_default(args: argparse.Namespace, resolution: str) -> str:
-    if getattr(args, 'provider', None) is not None or getattr(args, 'dataset_scope', None) is not None:
+    if getattr(args, 'provider', None) is not None:
         return _resolve_provider_for_cli(args, default=None)
     return _default_provider_for_resolution(args.country, resolution)
 

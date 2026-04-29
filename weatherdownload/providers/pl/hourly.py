@@ -38,7 +38,7 @@ def download_hourly_observations_pl(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '1hour':
+    if query.provider != 'historical' or query.resolution != '1hour':
         raise UnsupportedQueryError('The IMGW Poland hourly downloader supports only historical/1hour.')
     if not query.elements:
         raise UnsupportedQueryError('The IMGW Poland hourly downloader requires at least one element.')
@@ -79,7 +79,7 @@ def download_hourly_observations_pl(
 
 
 def build_pl_hourly_download_targets(query: ObservationQuery) -> list[PlHourlyDownloadTarget]:
-    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = get_dataset_spec(query.provider, query.resolution)
     if not spec.implemented:
         raise UnsupportedQueryError('The requested IMGW Poland dataset path is not implemented.')
 
@@ -139,7 +139,7 @@ def normalize_hourly_observations_pl(
                 'value': to_numeric_with_missing(table[raw_code]),
                 'flag': flag_with_missing(flag_series),
                 'quality': pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

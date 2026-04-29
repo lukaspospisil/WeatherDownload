@@ -26,8 +26,8 @@ This page documents the stable public columns, not the provider-specific raw fil
 - raw provider quality or status information is preserved in `flag` when the source exposes it
 - normalized `quality` is only populated where WeatherDownload has an explicit provider-specific normalization; otherwise it remains null
 - `provider` is the preferred public input name for choosing the concrete source within a country
-- `dataset_scope` records the provider-specific dataset/product/source selected by the query; it is not a universal cross-country category
-- output tables keep the `dataset_scope` column name for backward compatibility
+- `provider` records the provider-specific dataset/product/source selected by the query; it is not a universal cross-country category
+- output tables use the `provider` column name
 - the public schema stays stable even when countries expose different subsets of canonical elements
 - unavailable fields are not synthesized by default; they remain null/missing in fixed-shape downstream packaging workflows
 
@@ -86,7 +86,7 @@ Returned by `download_observations(...)` for `resolution="daily"`.
 | `value` | Source-backed observation value |
 | `flag` | Raw provider flag or status field, nullable |
 | `quality` | Normalized quality indicator, nullable when no cross-provider normalization is defined |
-| `dataset_scope` | Dataset scope used in the query |
+| `provider` | Provider used in the query |
 | `resolution` | `daily` |
 
 Daily semantics:
@@ -94,7 +94,7 @@ Daily semantics:
 - use `start_date` and `end_date`
 - output uses `observation_date`
 - `time_function` is provider-dependent
-- `dataset_scope` keeps the provider-local public token used in the query, such as `historical_csv`, `historical`, `historical_klimat`, `recent`, or `ghcnd`
+- `provider` keeps the provider-local public token used in the query, such as `historical_csv`, `historical`, `historical_klimat`, `recent`, or `ghcnd`
 - countries can expose different daily element coverage while keeping the same column contract
 
 For example:
@@ -116,14 +116,14 @@ Returned by `download_observations(...)` for `resolution="1hour"` and `resolutio
 | `value` | Source-backed observation value |
 | `flag` | Raw provider flag or status field, nullable |
 | `quality` | Normalized quality indicator, nullable when no cross-provider normalization is defined |
-| `dataset_scope` | Dataset scope used in the query |
+| `provider` | Provider used in the query |
 | `resolution` | `1hour` or `10min` |
 
 Subdaily semantics:
 
 - use `start` and `end`
 - output uses `timestamp`
-- `dataset_scope` still keeps the provider-local scope name used in the query
+- `provider` keeps the provider-local public token used in the query
 - timestamps are normalized to UTC
 - countries can expose different subdaily element coverage while keeping the same column contract
 
@@ -152,7 +152,7 @@ For `1hour` and `10min` outputs, distinguish these cases explicitly:
 | `value` present, `flag` null, `quality` null | observed value with no raw provider flag and no normalized quality mapping |
 | `value` present, `flag` present, `quality` null | observed value with raw provider-side QC/status preserved, but no normalized quality mapping |
 | `value` null for a returned row | the field is supported for that provider path, but the value is missing for that specific `station_id` / `timestamp` / `element` row |
-| no rows for a requested canonical field because the provider path does not support it | the field is unavailable for that country / dataset scope / resolution slice |
+| no rows for a requested canonical field because the provider path does not support it | the field is unavailable for that country / provider / resolution slice |
 
 Subdaily provider variability is expected:
 

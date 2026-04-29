@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import re
 
@@ -19,7 +19,7 @@ def download_hourly_observations_knmi(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '1hour':
+    if query.provider != 'historical' or query.resolution != '1hour':
         raise UnsupportedQueryError('The KNMI hourly downloader only supports historical/1hour.')
     if not query.elements:
         raise UnsupportedQueryError('The KNMI hourly downloader requires at least one element.')
@@ -107,7 +107,7 @@ def normalize_hourly_observations_knmi(
                 'value': pd.to_numeric(pd.Series(selected_values), errors='coerce'),
                 'flag': pd.NA,
                 'quality': pd.Series(pd.NA, index=selected.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
                 'gh_id': pd.NA,
             }

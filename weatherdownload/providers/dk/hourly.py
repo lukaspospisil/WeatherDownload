@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 import requests
@@ -26,7 +26,7 @@ def download_hourly_observations_dk(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '1hour':
+    if query.provider != 'historical' or query.resolution != '1hour':
         raise UnsupportedQueryError('The DMI Denmark hourly downloader only supports historical/1hour.')
     if not query.elements:
         raise UnsupportedQueryError('The DMI Denmark hourly downloader requires at least one element.')
@@ -108,7 +108,7 @@ def normalize_hourly_observations_dk(
                 'value': pd.to_numeric(pd.Series([properties.get('value')]), errors='coerce').iloc[0],
                 'flag': build_dk_flag(properties),
                 'quality': pd.Series([pd.NA], dtype=NULLABLE_INT_DTYPE).iloc[0],
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

@@ -1,4 +1,4 @@
-﻿import importlib.util
+import importlib.util
 import io
 import json
 import tempfile
@@ -48,7 +48,7 @@ class ProbeShmuSkExampleTests(unittest.TestCase):
             def fake_probe(timeout: int = 60) -> pd.DataFrame:
                 return pd.DataFrame([
                     {
-                        'dataset_scope': 'recent',
+                        'provider': 'recent',
                         'resolution': 'daily',
                         'source_id': 'recent_daily_kli_inter',
                         'implemented': True,

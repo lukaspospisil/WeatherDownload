@@ -55,7 +55,7 @@ Conceptual model:
 
 - `country` selects the country/provider context
 - `provider` is the preferred public name for the concrete provider-specific dataset, product, or source
-- `dataset_scope` is kept as a backward-compatible alias for `provider`
+- `provider` selects the concrete provider-specific dataset, product, or source
 - `resolution` selects the temporal resolution
 - provider values are not globally standardized across countries
 
@@ -77,10 +77,10 @@ Examples:
 | `PL` | `historical_klimat` | IMGW daily klimat source |
 | `US` | `ghcnd` | NOAA GHCN-Daily source |
 
-Compatibility note:
+Notes:
 
-- existing Python and CLI usage with `dataset_scope` or `--dataset-scope` remains valid
-- normalized output tables still keep the `dataset_scope` column for backward compatibility
+- `provider` is the only public selector name in Python and CLI
+- normalized output tables use the `provider` column
 - the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `CZ`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
 - GHCN-Daily station support is inventory-driven, so not every station exposes `tas_mean` (`TAVG`) or `snow_depth` (`SNWD`); inspect a specific station with `weatherdownload stations elements --country US --provider ghcnd --station-id USC00000001 --resolution daily`
 

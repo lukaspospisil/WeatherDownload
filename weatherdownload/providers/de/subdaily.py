@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import re
@@ -16,7 +16,7 @@ from ...errors import EmptyResultError, StationNotFoundError, UnsupportedQueryEr
 from ...queries import ObservationQuery
 
 NORMALIZED_DWD_SUBDAILY_COLUMNS = [
-    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'
 ]
 _DWD_MISSING_SENTINELS = {'-999', '-999.0', '-9999', '-9999.0'}
 _BERLIN_TZ = ZoneInfo('Europe/Berlin')
@@ -76,14 +76,14 @@ def download_subdaily_observations_dwd(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution not in {'1hour', '10min'}:
+    if query.provider != 'historical' or query.resolution not in {'1hour', '10min'}:
         raise UnsupportedQueryError('The DWD subdaily downloader only supports historical/1hour and historical/10min.')
     if not query.elements:
         raise UnsupportedQueryError('The DWD subdaily downloader requires at least one element.')
 
     source_specs = _implemented_source_specs_for_query(query)
     if not source_specs:
-        raise UnsupportedQueryError(f"No implemented DWD downloader is available for {query.dataset_scope}/{query.resolution}.")
+        raise UnsupportedQueryError(f"No implemented DWD downloader is available for {query.provider}/{query.resolution}.")
 
     targets = _build_subdaily_download_targets(query, source_specs, timeout=timeout)
     if not targets:
@@ -112,7 +112,7 @@ def _implemented_source_specs_for_query(query: ObservationQuery) -> list[DwdData
     matches = [
         spec
         for spec in list_dataset_specs()
-        if spec.dataset_scope == query.dataset_scope and spec.resolution == query.resolution and spec.implemented
+        if spec.provider == query.provider and spec.resolution == query.resolution and spec.implemented
     ]
     return [spec for spec in matches if raw_elements.intersection(spec.supported_elements)]
 
@@ -194,7 +194,7 @@ def normalize_subdaily_observations_dwd(
                     'value': _to_numeric_with_missing(source_table[element]),
                     'flag': pd.NA,
                     'quality': quality_series,
-                    'dataset_scope': query.dataset_scope,
+                    'provider': query.provider,
                     'resolution': query.resolution,
                 }
             )

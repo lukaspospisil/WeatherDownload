@@ -10,7 +10,7 @@ This note covers the thin `MX / ghcnd / daily` wrapper around the shared NOAA GH
 
 - country: `MX`
 - provider: `ghcnd`
-- backward-compatible `dataset_scope`: `ghcnd`
+- `provider`: `ghcnd`
 - resolution(s): `daily`
 
 ## Source

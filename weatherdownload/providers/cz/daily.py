@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 from dataclasses import dataclass
@@ -14,7 +14,7 @@ from ...queries import ObservationQuery
 RAW_DAILY_COLUMNS = ['STATION', 'ELEMENT', 'TIMEFUNC', 'DT', 'VALUE', 'FLAG', 'QUALITY']
 NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 
 
@@ -27,7 +27,7 @@ class DailyDownloadTarget:
 
 
 def build_daily_download_targets(query: ObservationQuery) -> list[DailyDownloadTarget]:
-    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = get_dataset_spec(query.provider, query.resolution)
     if spec.time_semantics != 'date':
         raise UnsupportedQueryError(
             f"Unsupported time semantics for daily downloader: {spec.time_semantics}"
@@ -89,7 +89,7 @@ def normalize_daily_observations(table: pd.DataFrame, query: ObservationQuery, s
     normalized['value'] = pd.to_numeric(normalized['value'], errors='coerce')
     normalized['quality'] = pd.to_numeric(normalized['quality'], errors='coerce').astype('Int64')
     normalized['flag'] = normalized['flag'].astype('string').replace({'': pd.NA})
-    normalized['dataset_scope'] = query.dataset_scope
+    normalized['provider'] = query.provider
     normalized['resolution'] = query.resolution
     if station_metadata is not None and not station_metadata.empty:
         mapping = station_metadata.loc[:, ['station_id', 'gh_id']].drop_duplicates(subset=['station_id'])

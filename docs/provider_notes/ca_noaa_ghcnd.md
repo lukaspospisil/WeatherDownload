@@ -10,7 +10,7 @@ This note covers the thin `CA / ghcnd / daily` wrapper around the shared NOAA GH
 
 - country: `CA`
 - provider: `ghcnd`
-- backward-compatible `dataset_scope`: `ghcnd`
+- `provider`: `ghcnd`
 - resolution(s): `daily`
 
 ## Source

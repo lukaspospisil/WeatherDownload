@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import csv
 import io
@@ -12,11 +12,11 @@ from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_C
 
 CH_NORMALIZED_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 CH_NORMALIZED_SUBDAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 
 _CH_MISSING_SENTINELS = {'', '-', '--', '-999', '-999.0'}

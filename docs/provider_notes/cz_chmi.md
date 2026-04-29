@@ -10,8 +10,8 @@ This note covers the existing Czech Hydrometeorological Institute provider famil
 
 - country: `CZ`
 - implemented provider: `historical_csv`
-- additional registered compatibility/provider tokens: `historical`, `recent`, `now`
-- backward-compatible `dataset_scope`: same token values as `provider`
+- additional registered provider tokens: `historical`, `recent`, `now`
+- `provider`: same token values as `provider`
 - implemented resolution(s): `daily`, `1hour`, `10min`
 
 ## Source
@@ -42,8 +42,8 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 
 ## Limitations and caveats
 
-- `provider` is the preferred public selector; `dataset_scope` remains the backward-compatible alias
-- `historical`, `recent`, and `now` remain registered compatibility/provider tokens, but the currently implemented CHMI observation download path is `historical_csv`
+- `provider` is the public selector for the concrete source path
+- `historical`, `recent`, and `now` remain registered provider tokens, but the currently implemented CHMI observation download path is `historical_csv`
 - measured `open_water_evaporation` for Czech stations is supported here through raw `VY`, not through the Czech GHCN wrapper
 
 ## Examples

@@ -12,7 +12,7 @@ from .ghcnd import (
 
 @dataclass(frozen=True)
 class GeosphereDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     source_id: str
     label: str
@@ -54,7 +54,7 @@ _GEOSPHERE_TENMIN_CANONICAL_ELEMENTS = {
 
 _GEOSPHERE_DATASET_SPECS = [
     GeosphereDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         source_id='klima-v2-1d',
         label='GeoSphere Austria station historical daily climate observations v2',
@@ -65,7 +65,7 @@ _GEOSPHERE_DATASET_SPECS = [
         implemented=True,
     ),
     GeosphereDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         source_id='klima-v2-1h',
         label='GeoSphere Austria station historical hourly climate observations v2',
@@ -76,7 +76,7 @@ _GEOSPHERE_DATASET_SPECS = [
         implemented=True,
     ),
     GeosphereDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         source_id='klima-v2-10min',
         label='GeoSphere Austria station historical 10-minute climate observations v2',
@@ -100,12 +100,12 @@ def list_implemented_dataset_specs() -> list[GeosphereDatasetSpec]:
     ]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> GeosphereDatasetSpec | GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> GeosphereDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     if normalized_scope == 'ghcnd':
         return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     for spec in _GEOSPHERE_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported GeoSphere Austria dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported GeoSphere Austria dataset combination: {provider}/{resolution}')

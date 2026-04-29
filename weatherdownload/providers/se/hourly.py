@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 import requests
@@ -16,7 +16,7 @@ def download_hourly_observations_se(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '1hour':
+    if query.provider != 'historical' or query.resolution != '1hour':
         raise UnsupportedQueryError('The SMHI Sweden hourly downloader only supports historical/1hour.')
     if not query.elements:
         raise UnsupportedQueryError('The SMHI Sweden hourly downloader requires at least one element.')
@@ -90,7 +90,7 @@ def normalize_hourly_observations_se(
                 'value': record.value,
                 'flag': record.flag,
                 'quality': pd.Series([pd.NA], dtype='Int64').iloc[0],
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

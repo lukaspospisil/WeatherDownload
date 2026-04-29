@@ -20,7 +20,7 @@ GHCND_NORMALIZED_DAILY_COLUMNS = [
     'value',
     'flag',
     'quality',
-    'dataset_scope',
+    'provider',
     'resolution',
 ]
 
@@ -285,7 +285,7 @@ def normalize_daily_observations_ghcnd(
     normalized['flag'] = normalized.apply(_compose_flag, axis=1)
     normalized['quality'] = normalized['qflag'].astype('object')
     normalized.loc[normalized['quality'].isna(), 'quality'] = pd.NA
-    normalized['dataset_scope'] = query.dataset_scope
+    normalized['provider'] = query.provider
     normalized['resolution'] = query.resolution
 
     if station_metadata is not None and not station_metadata.empty and 'gh_id' in station_metadata.columns:

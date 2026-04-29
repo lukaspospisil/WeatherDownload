@@ -18,7 +18,7 @@ def download_daily_observations_ghcnd(
     *,
     spec: GhcndDatasetSpec,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'ghcnd' or query.resolution != 'daily':
+    if query.provider != 'ghcnd' or query.resolution != 'daily':
         raise UnsupportedQueryError('NOAA GHCN-Daily support currently implements only ghcnd/daily observations.')
     if not query.elements:
         raise UnsupportedQueryError('NOAA GHCN-Daily daily downloader requires at least one element.')

@@ -12,14 +12,14 @@ from weatherdownload.cli import build_parser, main
 
 
 class ObservationCliTests(unittest.TestCase):
-    def test_cli_help_prefers_provider_and_mentions_dataset_scope_alias(self) -> None:
+    def test_cli_help_mentions_provider_only(self) -> None:
         buffer = io.StringIO()
         with self.assertRaises(SystemExit):
             with redirect_stdout(buffer):
                 build_parser().parse_args(['observations', 'daily', '--help'])
         help_text = buffer.getvalue()
         self.assertIn('--provider', help_text)
-        self.assertIn('--dataset-scope', help_text)
+        self.assertNotIn('--dataset-scope', help_text)
 
     def _sample_tenmin_table(self) -> pd.DataFrame:
         return pd.DataFrame([
@@ -32,7 +32,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': -1.2,
                 'flag': None,
                 'quality': 0,
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': '10min',
             },
             {
@@ -44,7 +44,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': -0.5,
                 'flag': None,
                 'quality': 0,
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': '10min',
             },
         ])
@@ -60,7 +60,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 82.0,
                 'flag': None,
                 'quality': 0,
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': '1hour',
             },
             {
@@ -72,7 +72,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 1012.5,
                 'flag': None,
                 'quality': 0,
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': '1hour',
             },
         ])
@@ -89,7 +89,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 18.5,
                 'flag': None,
                 'quality': 0,
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': 'daily',
             },
             {
@@ -102,7 +102,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 21.0,
                 'flag': None,
                 'quality': 0,
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': 'daily',
             },
         ])
@@ -119,7 +119,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 3.4,
                 'flag': None,
                 'quality': 1,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
             }
         ])
@@ -135,7 +135,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 3.1,
                 'flag': None,
                 'quality': 1,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': '1hour',
             }
         ])
@@ -151,7 +151,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 2.8,
                 'flag': None,
                 'quality': 2,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': '10min',
             }
         ])
@@ -168,7 +168,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 4.2,
                 'flag': '{"validated":{"TEMP_AVG":true}}',
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
             }
         ])
@@ -184,7 +184,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 3.4,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
             }
         ])
@@ -200,7 +200,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 3.1,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': '1hour',
             }
         ])
@@ -216,7 +216,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 3.1,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': '10min',
             }
         ])
@@ -233,7 +233,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 21.5,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'ghcnd',
+                'provider': 'ghcnd',
                 'resolution': 'daily',
             }
         ])
@@ -250,7 +250,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 23.5,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'ghcnd',
+                'provider': 'ghcnd',
                 'resolution': 'daily',
             }
         ])
@@ -267,7 +267,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 30.1,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'ghcnd',
+                'provider': 'ghcnd',
                 'resolution': 'daily',
             }
         ])
@@ -284,7 +284,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 24.5,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'ghcnd',
+                'provider': 'ghcnd',
                 'resolution': 'daily',
             }
         ])
@@ -301,7 +301,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 6.1,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'ghcnd',
+                'provider': 'ghcnd',
                 'resolution': 'daily',
             }
         ])
@@ -318,7 +318,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': -1.1,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'ghcnd',
+                'provider': 'ghcnd',
                 'resolution': 'daily',
             }
         ])
@@ -335,7 +335,7 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 21.5,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'ghcnd',
+                'provider': 'ghcnd',
                 'resolution': 'daily',
             }
         ])
@@ -358,7 +358,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'CZ')
-        self.assertEqual(query.dataset_scope, 'historical_csv')
+        self.assertEqual(query.provider, 'historical_csv')
         self.assertEqual(query.elements, ['T'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'CZ')
 
@@ -381,7 +381,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DE')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '10min')
         self.assertEqual(query.elements, ['TT_10'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
@@ -398,7 +398,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'NL')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '10min')
         self.assertEqual(query.elements, ['ta'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
@@ -457,7 +457,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DE')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '1hour')
         self.assertEqual(query.elements, ['TT_TU'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
@@ -474,7 +474,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'NL')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '1hour')
         self.assertEqual(query.elements, ['T'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
@@ -552,7 +552,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DE')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMK'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
@@ -569,7 +569,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'BE')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['temp_avg'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'BE')
@@ -585,7 +585,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'NL')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TG'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
@@ -602,7 +602,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'US')
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'US')
@@ -619,7 +619,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'CA')
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'CA')
@@ -636,7 +636,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'MX')
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'MX')
@@ -653,7 +653,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'FI')
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'FI')
@@ -670,21 +670,21 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DE')
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('GM000000001', buffer.getvalue())
         self.assertIn('tas_max', buffer.getvalue())
 
-    def test_daily_cli_explicit_country_de_dataset_scope_ghcnd_uses_ghcnd_query_shape(self) -> None:
+    def test_daily_cli_explicit_country_de_provider_ghcnd_uses_ghcnd_query_shape(self) -> None:
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_de_ghcnd_daily_table()) as download_mock:
             exit_code = main([
-                'observations', 'daily', '--country', 'DE', '--dataset-scope', 'ghcnd', '--station-id', 'GM000000001', '--element', 'tas_max', '--start-date', '2020-12-01', '--end-date', '2020-12-02'
+                'observations', 'daily', '--country', 'DE', '--provider', 'ghcnd', '--station-id', 'GM000000001', '--element', 'tas_max', '--start-date', '2020-12-01', '--end-date', '2020-12-02'
             ])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.provider, 'ghcnd')
 
     def test_daily_cli_explicit_country_sk_provider_ghcnd_uses_ghcnd_query_shape(self) -> None:
@@ -697,7 +697,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'SK')
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'SK')
@@ -714,7 +714,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'CZ')
-        self.assertEqual(query.dataset_scope, 'ghcnd')
+        self.assertEqual(query.provider, 'ghcnd')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TMAX'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'CZ')
@@ -731,18 +731,17 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'CZ')
-        self.assertEqual(query.dataset_scope, 'historical_csv')
+        self.assertEqual(query.provider, 'historical_csv')
         self.assertEqual(query.elements, ['T'])
         self.assertIn('0-20000-0-11406', buffer.getvalue())
 
-    def test_daily_cli_accepts_provider_alias(self) -> None:
+    def test_daily_cli_accepts_provider(self) -> None:
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_us_daily_table()) as download_mock:
             exit_code = main([
                 'observations', 'daily', '--country', 'US', '--provider', 'ghcnd', '--station-id', 'USC00000001', '--element', 'tas_max', '--start-date', '2020-05-01', '--end-date', '2020-05-03'
             ])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
-        self.assertEqual(query.dataset_scope, 'ghcnd')
         self.assertEqual(query.provider, 'ghcnd')
 
     def test_daily_cli_explicit_country_ch_provider_historical_uses_national_query_shape(self) -> None:
@@ -755,7 +754,7 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'CH')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
 
     def test_daily_cli_ambiguous_country_pl_requires_explicit_provider(self) -> None:
         stderr = io.StringIO()
@@ -802,14 +801,12 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertIn("Multiple providers support country='HU' and resolution='10min'", stderr.getvalue())
 
-    def test_daily_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
-        stderr = io.StringIO()
-        with redirect_stderr(stderr):
-            exit_code = main([
-                'observations', 'daily', '--country', 'US', '--provider', 'ghcnd', '--dataset-scope', 'historical', '--station-id', 'USC00000001', '--element', 'tas_max', '--start-date', '2020-05-01', '--end-date', '2020-05-03'
+    def test_daily_cli_rejects_dataset_scope_argument(self) -> None:
+        with self.assertRaises(SystemExit):
+            build_parser().parse_args([
+                'observations', 'daily', '--country', 'US', '--dataset-scope', 'ghcnd', '--station-id', 'USC00000001',
+                '--element', 'tas_max', '--start-date', '2020-05-01', '--end-date', '2020-05-03'
             ])
-        self.assertEqual(exit_code, 1)
-        self.assertIn('Conflicting provider selectors', stderr.getvalue())
 
     def test_daily_cli_csv_export_defaults_to_wide_layout(self) -> None:
         original_cwd = Path.cwd()
@@ -852,7 +849,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
             {
                 'station_id': '0-20000-0-11406',
                 'gh_id': 'L3CHEB01',
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': '10min',
                 'implemented': True,
                 'supported_elements': ['tas_mean'],
@@ -864,7 +861,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
             {
                 'station_id': '0-20000-0-11406',
                 'gh_id': 'L3CHEB01',
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': '10min',
                 'implemented': True,
             }
@@ -889,7 +886,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
             {
                 'station_id': '00044',
                 'gh_id': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
                 'implemented': True,
             }
@@ -907,7 +904,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
                 'begin_date': '2001-01-01T00:00Z',
                 'end_date': '3999-12-31T23:59Z',
                 'provider': 'historical_csv',
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': 'daily',
                 'matched_elements': ['tas_mean', 'tas_max', 'open_water_evaporation'],
                 'missing_requested_elements': [],
@@ -976,33 +973,29 @@ class StationAvailabilityCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
             with patch('weatherdownload.cli.station_supports', return_value=True):
                 with redirect_stdout(buffer):
-                    exit_code = main(['stations', 'supports', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min'])
+                    exit_code = main(['stations', 'supports', '--station-id', '0-20000-0-11406', '--provider', 'historical_csv', '--resolution', '10min'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('0-20000-0-11406', output)
         self.assertIn('True', output)
 
-    def test_station_supports_cli_accepts_provider_alias(self) -> None:
+    def test_station_supports_cli_accepts_provider(self) -> None:
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
             with patch('weatherdownload.cli.station_supports', return_value=True) as supports_mock:
                 exit_code = main(['stations', 'supports', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         self.assertEqual(supports_mock.call_args.args[2], 'historical')
 
-    def test_station_supports_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
-        stderr = io.StringIO()
-        with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-            with redirect_stderr(stderr):
-                exit_code = main(['stations', 'supports', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
-        self.assertEqual(exit_code, 1)
-        self.assertIn('Conflicting provider selectors', stderr.getvalue())
+    def test_station_supports_cli_rejects_dataset_scope_argument(self) -> None:
+        with self.assertRaises(SystemExit):
+            build_parser().parse_args(['stations', 'supports', '--country', 'DE', '--station-id', '00044', '--dataset-scope', 'historical', '--resolution', 'daily'])
 
     def test_station_elements_cli_screen_output(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
             with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean', 'open_water_evaporation']):
                 with redirect_stdout(buffer):
-                    exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', 'daily'])
+                    exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--provider', 'historical_csv', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('tas_mean', output)
@@ -1013,7 +1006,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
             with patch('weatherdownload.cli.list_station_elements', return_value=['tas_max', 'precipitation', 'open_water_evaporation']) as elements_mock:
                 with redirect_stdout(buffer):
-                    exit_code = main(['stations', 'elements', '--country', 'US', '--station-id', 'USC00000001', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
+                    exit_code = main(['stations', 'elements', '--country', 'US', '--station-id', 'USC00000001', '--provider', 'ghcnd', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         self.assertEqual(elements_mock.call_args.kwargs['country'], 'US')
         self.assertIn('tas_max', buffer.getvalue())
@@ -1025,7 +1018,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
             with patch('weatherdownload.cli.list_station_elements', return_value=['tas_max', 'precipitation']) as elements_mock:
                 with redirect_stdout(buffer):
-                    exit_code = main(['stations', 'elements', '--country', 'CA', '--station-id', 'CA000000001', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
+                    exit_code = main(['stations', 'elements', '--country', 'CA', '--station-id', 'CA000000001', '--provider', 'ghcnd', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         self.assertEqual(elements_mock.call_args.kwargs['country'], 'CA')
         self.assertIn('tas_max', buffer.getvalue())
@@ -1068,20 +1061,16 @@ class StationAvailabilityCliTests(unittest.TestCase):
         self.assertIn('precipitation', buffer.getvalue())
         self.assertNotIn('open_water_evaporation', buffer.getvalue())
 
-    def test_station_elements_cli_accepts_provider_alias(self) -> None:
+    def test_station_elements_cli_accepts_provider(self) -> None:
         with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
             with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean']) as elements_mock:
                 exit_code = main(['stations', 'elements', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         self.assertEqual(elements_mock.call_args.args[2], 'historical')
 
-    def test_station_elements_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
-        stderr = io.StringIO()
-        with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
-            with redirect_stderr(stderr):
-                exit_code = main(['stations', 'elements', '--country', 'DE', '--station-id', '00044', '--provider', 'historical', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
-        self.assertEqual(exit_code, 1)
-        self.assertIn('Conflicting provider selectors', stderr.getvalue())
+    def test_station_elements_cli_rejects_dataset_scope_argument(self) -> None:
+        with self.assertRaises(SystemExit):
+            build_parser().parse_args(['stations', 'elements', '--country', 'DE', '--station-id', '00044', '--dataset-scope', 'historical', '--resolution', 'daily'])
 
     def test_station_elements_cli_csv_export(self) -> None:
         original_cwd = Path.cwd()
@@ -1092,7 +1081,7 @@ class StationAvailabilityCliTests(unittest.TestCase):
                 with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
                     with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean']):
                         with redirect_stdout(buffer):
-                            exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--dataset-scope', 'historical_csv', '--resolution', '10min', '--format', 'csv', '--output', 'elements.csv'])
+                            exit_code = main(['stations', 'elements', '--station-id', '0-20000-0-11406', '--provider', 'historical_csv', '--resolution', '10min', '--format', 'csv', '--output', 'elements.csv'])
                 self.assertEqual(exit_code, 0)
                 output_path = Path('outputs/elements.csv')
                 self.assertTrue(output_path.exists())
@@ -1115,24 +1104,20 @@ class StationAvailabilityCliTests(unittest.TestCase):
         self.assertIn('0-20000-0-11406', buffer.getvalue())
         self.assertIn('open_water_evaporation', buffer.getvalue())
 
-    def test_station_find_cli_accepts_dataset_scope_alias(self) -> None:
+    def test_station_find_cli_accepts_provider(self) -> None:
         with patch('weatherdownload.cli.find_stations_with_elements', return_value=self._sample_station_find_table()) as find_mock:
             exit_code = main([
-                'stations', 'find', '--country', 'US', '--dataset-scope', 'ghcnd', '--resolution', 'daily',
+                'stations', 'find', '--country', 'US', '--provider', 'ghcnd', '--resolution', 'daily',
                 '--element', 'tas_mean', '--element', 'snow_depth'
             ])
         self.assertEqual(exit_code, 0)
         self.assertEqual(find_mock.call_args.kwargs['provider'], 'ghcnd')
 
-    def test_station_find_cli_rejects_conflicting_provider_and_dataset_scope(self) -> None:
-        stderr = io.StringIO()
-        with redirect_stderr(stderr):
-            exit_code = main([
-                'stations', 'find', '--country', 'DE', '--provider', 'historical', '--dataset-scope', 'ghcnd', '--resolution', 'daily',
-                '--element', 'tas_mean'
+    def test_station_find_cli_rejects_dataset_scope_argument(self) -> None:
+        with self.assertRaises(SystemExit):
+            build_parser().parse_args([
+                'stations', 'find', '--country', 'DE', '--dataset-scope', 'historical', '--resolution', 'daily', '--element', 'tas_mean'
             ])
-        self.assertEqual(exit_code, 1)
-        self.assertIn('Conflicting provider selectors', stderr.getvalue())
 
     def test_station_find_cli_surfaces_ambiguous_provider_error(self) -> None:
         stderr = io.StringIO()

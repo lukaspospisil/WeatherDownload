@@ -10,7 +10,7 @@ This note documents the current conservative Sweden slice built from official SM
 
 - country: `SE`
 - provider: `historical`
-- backward-compatible `dataset_scope`: `historical`
+- `provider`: `historical`
 - resolution(s): `daily`, `1hour`
 
 ## Source

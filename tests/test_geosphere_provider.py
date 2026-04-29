@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -7,7 +7,7 @@ import pandas as pd
 from weatherdownload import (
     ObservationQuery,
     download_observations,
-    list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_supported_countries,
     list_supported_elements,
@@ -34,10 +34,10 @@ SAMPLE_GHCND_STATIONS_TEXT = Path('tests/data/sample_ghcnd_stations.txt').read_t
 SAMPLE_GHCND_INVENTORY_TEXT = Path('tests/data/sample_ghcnd_inventory.txt').read_text(encoding='utf-8')
 EXPECTED_AT_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 EXPECTED_AT_SUBDAILY_COLUMNS = [
-    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 EXPECTED_AT_CANONICAL_MAPPING = {
     'tas_mean': 'tl_mittel',
@@ -81,9 +81,9 @@ class _MockResponse:
 class GeosphereProviderTests(unittest.TestCase):
     def test_supported_countries_include_at(self) -> None:
         self.assertIn('AT', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='AT'), ['ghcnd', 'historical'])
-        self.assertEqual(list_resolutions(country='AT', dataset_scope='ghcnd'), ['daily'])
-        self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(list_providers(country='AT'), ['ghcnd', 'historical'])
+        self.assertEqual(list_resolutions(country='AT', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='AT', provider='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_at_from_sample(self) -> None:
         def fake_get(url, timeout=60):
@@ -128,45 +128,45 @@ class GeosphereProviderTests(unittest.TestCase):
 
     def test_discovery_country_at_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='AT', dataset_scope='historical', resolution='daily'),
+            list_supported_elements(country='AT', provider='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration', 'wind_speed', 'pressure', 'relative_humidity'],
         )
         self.assertEqual(
-            list_supported_elements(country='AT', dataset_scope='historical', resolution='daily', provider_raw=True),
+            list_supported_elements(country='AT', provider='historical', resolution='daily', provider_raw=True),
             ['tl_mittel', 'tlmax', 'tlmin', 'rr', 'so_h', 'vv_mittel', 'p_mittel', 'rf_mittel'],
         )
         self.assertEqual(
-            list_supported_elements(country='AT', dataset_scope='historical', resolution='1hour'),
+            list_supported_elements(country='AT', provider='historical', resolution='1hour'),
             ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='AT', dataset_scope='historical', resolution='1hour', provider_raw=True),
+            list_supported_elements(country='AT', provider='historical', resolution='1hour', provider_raw=True),
             ['tl', 'rr', 'ff', 'rf', 'p', 'so'],
         )
         self.assertEqual(
-            list_supported_elements(country='AT', dataset_scope='historical', resolution='10min'),
+            list_supported_elements(country='AT', provider='historical', resolution='10min'),
             ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='AT', dataset_scope='historical', resolution='10min', provider_raw=True),
+            list_supported_elements(country='AT', provider='historical', resolution='10min', provider_raw=True),
             ['tl', 'rr', 'ff', 'rf', 'p', 'so'],
         )
 
     def test_at_daily_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
-        raw_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tl_mittel', 'rr'])
+        canonical_query = ObservationQuery(country='AT', provider='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
+        raw_query = ObservationQuery(country='AT', provider='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tl_mittel', 'rr'])
         self.assertEqual(canonical_query.elements, ['tl_mittel', 'rr'])
         self.assertEqual(raw_query.elements, ['tl_mittel', 'rr'])
 
     def test_at_hourly_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
-        raw_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tl', 'p'])
+        canonical_query = ObservationQuery(country='AT', provider='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='AT', provider='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tl', 'p'])
         self.assertEqual(canonical_query.elements, ['tl', 'p'])
         self.assertEqual(raw_query.elements, ['tl', 'p'])
 
     def test_at_tenmin_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
-        raw_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tl', 'p'])
+        canonical_query = ObservationQuery(country='AT', provider='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='AT', provider='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tl', 'p'])
         self.assertEqual(canonical_query.elements, ['tl', 'p'])
         self.assertEqual(raw_query.elements, ['tl', 'p'])
 
@@ -182,7 +182,7 @@ class GeosphereProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_CSV_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
         with patch('weatherdownload.providers.at.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
 
@@ -207,7 +207,7 @@ class GeosphereProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_HOURLY_CSV_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
         with patch('weatherdownload.providers.at.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
 
@@ -232,7 +232,7 @@ class GeosphereProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_TENMIN_CSV_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
         with patch('weatherdownload.providers.at.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
 
@@ -247,7 +247,7 @@ class GeosphereProviderTests(unittest.TestCase):
 
     def test_at_daily_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=list(EXPECTED_AT_CANONICAL_MAPPING.keys()))
+        query = ObservationQuery(country='AT', provider='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=list(EXPECTED_AT_CANONICAL_MAPPING.keys()))
         with patch('weatherdownload.providers.at.daily.requests.get', return_value=_MockResponse(SAMPLE_CSV_TEXT)):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -260,7 +260,7 @@ class GeosphereProviderTests(unittest.TestCase):
 
     def test_at_hourly_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=list(EXPECTED_AT_HOURLY_MAPPING.keys()))
+        query = ObservationQuery(country='AT', provider='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=list(EXPECTED_AT_HOURLY_MAPPING.keys()))
         with patch('weatherdownload.providers.at.hourly.requests.get', return_value=_MockResponse(SAMPLE_HOURLY_CSV_TEXT)):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -273,7 +273,7 @@ class GeosphereProviderTests(unittest.TestCase):
 
     def test_at_tenmin_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:30:00Z', elements=list(EXPECTED_AT_TENMIN_MAPPING.keys()))
+        query = ObservationQuery(country='AT', provider='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:30:00Z', elements=list(EXPECTED_AT_TENMIN_MAPPING.keys()))
         with patch('weatherdownload.providers.at.tenmin.requests.get', return_value=_MockResponse(SAMPLE_TENMIN_CSV_TEXT)):
             observations = download_observations(query, country='AT', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -286,7 +286,7 @@ class GeosphereProviderTests(unittest.TestCase):
 
     def test_at_daily_all_history_uses_station_coverage(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='daily', station_ids=['1'], all_history=True, elements=['tas_mean'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='daily', station_ids=['1'], all_history=True, elements=['tas_mean'])
         captured: dict[str, object] = {}
 
         def fake_get(url, params=None, timeout=60):
@@ -300,7 +300,7 @@ class GeosphereProviderTests(unittest.TestCase):
 
     def test_at_hourly_all_history_uses_station_coverage(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], all_history=True, elements=['tas_mean'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='1hour', station_ids=['1'], all_history=True, elements=['tas_mean'])
         captured: dict[str, object] = {}
 
         def fake_get(url, params=None, timeout=60):
@@ -316,7 +316,7 @@ class GeosphereProviderTests(unittest.TestCase):
 
     def test_at_tenmin_all_history_uses_station_coverage(self) -> None:
         station_metadata = read_station_metadata(country='AT', source_url=str(SAMPLE_METADATA_PATH))
-        query = ObservationQuery(country='AT', dataset_scope='historical', resolution='10min', station_ids=['1'], all_history=True, elements=['tas_mean'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='10min', station_ids=['1'], all_history=True, elements=['tas_mean'])
         captured: dict[str, object] = {}
 
         def fake_get(url, params=None, timeout=60):

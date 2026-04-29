@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 import requests
@@ -21,7 +21,7 @@ def download_hourly_observations_geosphere(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '1hour':
+    if query.provider != 'historical' or query.resolution != '1hour':
         raise UnsupportedQueryError('The GeoSphere Austria hourly downloader only supports historical/1hour.')
     if not query.elements:
         raise UnsupportedQueryError('The GeoSphere Austria hourly downloader requires at least one element.')
@@ -97,7 +97,7 @@ def normalize_hourly_observations_geosphere(
                 'value': pd.to_numeric(table[raw_code], errors='coerce'),
                 'flag': table[flag_column].map(build_geosphere_flag) if flag_column else pd.Series(pd.NA, index=table.index, dtype='object'),
                 'quality': pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
                 'gh_id': pd.NA,
             }

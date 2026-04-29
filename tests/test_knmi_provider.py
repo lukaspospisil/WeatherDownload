@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import unittest
 from pathlib import Path
@@ -9,7 +9,7 @@ import pandas as pd
 from weatherdownload import (
     ObservationQuery,
     download_observations,
-    list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_supported_countries,
     list_supported_elements,
@@ -47,8 +47,8 @@ class KnmiProviderTests(unittest.TestCase):
 
     def test_supported_countries_include_nl(self) -> None:
         self.assertIn('NL', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='NL'), ['historical'])
-        self.assertEqual(list_resolutions(country='NL', dataset_scope='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(list_providers(country='NL'), ['historical'])
+        self.assertEqual(list_resolutions(country='NL', provider='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_nl_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='NL', source_url=str(SAMPLE_STATIONS_PATH))
@@ -74,34 +74,34 @@ class KnmiProviderTests(unittest.TestCase):
 
     def test_discovery_country_nl_returns_daily_hourly_and_tenmin_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='NL', dataset_scope='historical', resolution='daily'),
+            list_supported_elements(country='NL', provider='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration', 'wind_speed', 'pressure', 'relative_humidity'],
         )
         self.assertEqual(
-            list_supported_elements(country='NL', dataset_scope='historical', resolution='daily', provider_raw=True),
+            list_supported_elements(country='NL', provider='historical', resolution='daily', provider_raw=True),
             ['TG', 'TX', 'TN', 'RH', 'SQ', 'FG', 'PG', 'UG'],
         )
         self.assertEqual(
-            list_supported_elements(country='NL', dataset_scope='historical', resolution='1hour'),
+            list_supported_elements(country='NL', provider='historical', resolution='1hour'),
             ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='NL', dataset_scope='historical', resolution='1hour', provider_raw=True),
+            list_supported_elements(country='NL', provider='historical', resolution='1hour', provider_raw=True),
             ['T', 'RH', 'FH', 'U', 'P', 'SQ'],
         )
         self.assertEqual(
-            list_supported_elements(country='NL', dataset_scope='historical', resolution='10min'),
+            list_supported_elements(country='NL', provider='historical', resolution='10min'),
             ['tas_mean', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='NL', dataset_scope='historical', resolution='10min', provider_raw=True),
+            list_supported_elements(country='NL', provider='historical', resolution='10min', provider_raw=True),
             ['ta', 'ff', 'rh', 'pp', 'ss'],
         )
 
     def test_nl_queries_accept_canonical_and_raw_codes(self) -> None:
         daily_query = ObservationQuery(
             country='NL',
-            dataset_scope='historical',
+            provider='historical',
             resolution='daily',
             station_ids=['0-20000-0-06260'],
             start_date='2024-01-01',
@@ -110,7 +110,7 @@ class KnmiProviderTests(unittest.TestCase):
         )
         hourly_query = ObservationQuery(
             country='NL',
-            dataset_scope='historical',
+            provider='historical',
             resolution='1hour',
             station_ids=['0-20000-0-06260'],
             start='2024-01-01T01:00:00Z',
@@ -119,7 +119,7 @@ class KnmiProviderTests(unittest.TestCase):
         )
         tenmin_query = ObservationQuery(
             country='NL',
-            dataset_scope='historical',
+            provider='historical',
             resolution='10min',
             station_ids=['0-20000-0-06260'],
             start='2024-01-01T09:10:00Z',
@@ -128,7 +128,7 @@ class KnmiProviderTests(unittest.TestCase):
         )
         raw_query = ObservationQuery(
             country='NL',
-            dataset_scope='historical',
+            provider='historical',
             resolution='10min',
             station_ids=['0-20000-0-06260'],
             start='2024-01-01T09:10:00Z',
@@ -173,7 +173,7 @@ class KnmiProviderTests(unittest.TestCase):
                 with patch('weatherdownload.providers.nl.daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
                     query = ObservationQuery(
                         country='NL',
-                        dataset_scope='historical',
+                        provider='historical',
                         resolution='daily',
                         station_ids=['0-20000-0-06260'],
                         start_date='2024-01-01',
@@ -184,7 +184,7 @@ class KnmiProviderTests(unittest.TestCase):
 
         self.assertEqual(
             list(observations.columns),
-            ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'],
+            ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution'],
         )
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['RH', 'TG'])
@@ -227,7 +227,7 @@ class KnmiProviderTests(unittest.TestCase):
                 with patch('weatherdownload.providers.nl.hourly.parse_knmi_hourly_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
                     query = ObservationQuery(
                         country='NL',
-                        dataset_scope='historical',
+                        provider='historical',
                         resolution='1hour',
                         station_ids=['0-20000-0-06260'],
                         start='2024-01-01T01:00:00Z',
@@ -238,7 +238,7 @@ class KnmiProviderTests(unittest.TestCase):
 
         self.assertEqual(
             list(observations.columns),
-            ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'],
+            ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'],
         )
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['P', 'T'])
@@ -280,7 +280,7 @@ class KnmiProviderTests(unittest.TestCase):
                 with patch('weatherdownload.providers.nl.tenmin.parse_knmi_tenmin_netcdf_bytes', side_effect=lambda payload: parsed_payloads[payload.decode('utf-8')]):
                     query = ObservationQuery(
                         country='NL',
-                        dataset_scope='historical',
+                        provider='historical',
                         resolution='10min',
                         station_ids=['0-20000-0-06260'],
                         start='2024-01-01T09:10:00Z',
@@ -291,7 +291,7 @@ class KnmiProviderTests(unittest.TestCase):
 
         self.assertEqual(
             list(observations.columns),
-            ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'],
+            ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'],
         )
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['pp', 'ta'])

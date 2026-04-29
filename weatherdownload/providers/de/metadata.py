@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import re
 from collections.abc import Iterable
@@ -40,7 +40,7 @@ def read_station_observation_metadata_dwd(source_url: str | None = None, timeout
 
 def _single_source_spec(source_url: str) -> DwdDatasetSpec:
     return DwdDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         source_id='custom',
         label='Custom DWD source',

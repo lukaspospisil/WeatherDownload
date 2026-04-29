@@ -1,4 +1,4 @@
-﻿import io
+import io
 import unittest
 import zipfile
 from unittest.mock import patch
@@ -100,7 +100,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='DE',
-            dataset_scope='historical',
+            provider='historical',
             resolution='1hour',
             station_ids=['00044'],
             start='1999-12-31T22:00:00Z',
@@ -113,13 +113,13 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         self.assertEqual(
             list(observations.columns),
-            ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'],
+            ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'],
         )
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['relative_humidity', 'tas_mean', 'wind_speed'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['FF', 'RF_TU', 'TT_TU'])
         self.assertTrue(observations['flag'].isna().all())
         self.assertTrue(observations['gh_id'].isna().all())
-        self.assertTrue(observations['dataset_scope'].eq('historical').all())
+        self.assertTrue(observations['provider'].eq('historical').all())
         self.assertTrue(observations['resolution'].eq('1hour').all())
         self.assertIn(pd.Timestamp('1999-12-31T22:00:00Z'), observations['timestamp'].tolist())
         self.assertIn(pd.Timestamp('2000-01-01T00:00:00Z'), observations['timestamp'].tolist())
@@ -145,7 +145,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='DE',
-            dataset_scope='historical',
+            provider='historical',
             resolution='1hour',
             station_ids=['00044'],
             start='1999-12-31T22:00:00Z',
@@ -171,7 +171,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='DE',
-            dataset_scope='historical',
+            provider='historical',
             resolution='1hour',
             station_ids=['00044'],
             all_history=True,
@@ -202,7 +202,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='DE',
-            dataset_scope='historical',
+            provider='historical',
             resolution='10min',
             station_ids=['00044'],
             start='1999-12-31T22:50:00Z',
@@ -237,7 +237,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='DE',
-            dataset_scope='historical',
+            provider='historical',
             resolution='10min',
             station_ids=['00044'],
             start='1999-12-31T22:50:00Z',
@@ -263,7 +263,7 @@ class DwdSubdailyDownloaderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='DE',
-            dataset_scope='historical',
+            provider='historical',
             resolution='10min',
             station_ids=['00044'],
             all_history=True,

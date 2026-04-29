@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -7,7 +7,7 @@ import pandas as pd
 from weatherdownload import (
     ObservationQuery,
     download_observations,
-    list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_supported_countries,
     list_supported_elements,
@@ -23,11 +23,11 @@ SAMPLE_TENMIN_TEXT = Path('tests/data/sample_be_aws_10min.json').read_text(encod
 
 EXPECTED_BE_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 EXPECTED_BE_SUBDAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 EXPECTED_BE_DAILY_CANONICAL_MAPPING = {
     'tas_mean': 'temp_avg',
@@ -66,8 +66,8 @@ class _MockResponse:
 class BelgiumProviderTests(unittest.TestCase):
     def test_supported_countries_include_be(self) -> None:
         self.assertIn('BE', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='BE'), ['historical'])
-        self.assertEqual(list_resolutions(country='BE', dataset_scope='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(list_providers(country='BE'), ['historical'])
+        self.assertEqual(list_resolutions(country='BE', provider='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_be_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
@@ -103,33 +103,33 @@ class BelgiumProviderTests(unittest.TestCase):
 
     def test_discovery_country_be_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='BE', dataset_scope='historical', resolution='daily'),
+            list_supported_elements(country='BE', provider='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='BE', dataset_scope='historical', resolution='1hour'),
+            list_supported_elements(country='BE', provider='historical', resolution='1hour'),
             ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='BE', dataset_scope='historical', resolution='10min'),
+            list_supported_elements(country='BE', provider='historical', resolution='10min'),
             ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
         )
 
     def test_be_daily_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
-        raw_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['temp_avg', 'precip_quantity'])
+        canonical_query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
+        raw_query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['temp_avg', 'precip_quantity'])
         self.assertEqual(canonical_query.elements, ['temp_avg', 'precip_quantity'])
         self.assertEqual(raw_query.elements, ['temp_avg', 'precip_quantity'])
 
     def test_be_hourly_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
-        raw_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
+        canonical_query = ObservationQuery(country='BE', provider='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='BE', provider='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
         self.assertEqual(canonical_query.elements, ['temp_dry_shelter_avg', 'pressure'])
         self.assertEqual(raw_query.elements, ['temp_dry_shelter_avg', 'pressure'])
 
     def test_be_tenmin_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
-        raw_query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
+        canonical_query = ObservationQuery(country='BE', provider='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        raw_query = ObservationQuery(country='BE', provider='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['temp_dry_shelter_avg', 'pressure'])
         self.assertEqual(canonical_query.elements, ['temp_dry_shelter_avg', 'pressure'])
         self.assertEqual(raw_query.elements, ['temp_dry_shelter_avg', 'pressure'])
 
@@ -144,7 +144,7 @@ class BelgiumProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_DAILY_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
+        query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
         with patch('weatherdownload.providers.be.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_BE_DAILY_COLUMNS)
@@ -163,7 +163,7 @@ class BelgiumProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_HOURLY_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        query = ObservationQuery(country='BE', provider='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
         with patch('weatherdownload.providers.be.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_BE_SUBDAILY_COLUMNS)
@@ -183,7 +183,7 @@ class BelgiumProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_TENMIN_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        query = ObservationQuery(country='BE', provider='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
         with patch('weatherdownload.providers.be.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_BE_SUBDAILY_COLUMNS)
@@ -193,7 +193,7 @@ class BelgiumProviderTests(unittest.TestCase):
 
     def test_be_daily_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
-        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=list(EXPECTED_BE_DAILY_CANONICAL_MAPPING.keys()))
+        query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=list(EXPECTED_BE_DAILY_CANONICAL_MAPPING.keys()))
         with patch('weatherdownload.providers.be.daily.requests.get', return_value=_MockResponse(SAMPLE_DAILY_TEXT)):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -203,7 +203,7 @@ class BelgiumProviderTests(unittest.TestCase):
 
     def test_be_hourly_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
-        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=list(EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING.keys()))
+        query = ObservationQuery(country='BE', provider='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=list(EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING.keys()))
         with patch('weatherdownload.providers.be.hourly.requests.get', return_value=_MockResponse(SAMPLE_HOURLY_TEXT)):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -214,7 +214,7 @@ class BelgiumProviderTests(unittest.TestCase):
 
     def test_be_tenmin_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
-        query = ObservationQuery(country='BE', dataset_scope='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=list(EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING.keys()))
+        query = ObservationQuery(country='BE', provider='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=list(EXPECTED_BE_SUBDAILY_CANONICAL_MAPPING.keys()))
         with patch('weatherdownload.providers.be.tenmin.requests.get', return_value=_MockResponse(SAMPLE_TENMIN_TEXT)):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}

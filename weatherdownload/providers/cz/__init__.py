@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 
@@ -13,7 +13,7 @@ def _download_observations(*args, **kwargs):
     from ...observations import _download_observations_chmi
 
     query = args[0] if args else kwargs.get('query')
-    if getattr(query, 'dataset_scope', None) == 'ghcnd':
+    if getattr(query, 'provider', None) == 'ghcnd':
         return download_daily_observations_ghcnd(*args, **kwargs)
     return _download_observations_chmi(*args, **kwargs)
 
@@ -28,13 +28,13 @@ def _is_ghcnd_metadata_source(source_url: str | None) -> bool:
 
 def _build_station_elements_attrs(chmi_table: pd.DataFrame, ghcnd_table: pd.DataFrame) -> dict[tuple[str, str], dict[str, list[str]]]:
     attrs: dict[tuple[str, str], dict[str, list[str]]] = {
-        (spec.dataset_scope, spec.resolution): {}
+        (spec.provider, spec.resolution): {}
         for spec in list_implemented_dataset_specs()
     }
-    implemented_chmi_specs = [spec for spec in list_implemented_dataset_specs() if spec.dataset_scope != 'ghcnd']
+    implemented_chmi_specs = [spec for spec in list_implemented_dataset_specs() if spec.provider != 'ghcnd']
     chmi_station_ids = [str(value) for value in chmi_table.get('station_id', pd.Series(dtype='object')).tolist()]
     for spec in implemented_chmi_specs:
-        attrs[(spec.dataset_scope, spec.resolution)] = {
+        attrs[(spec.provider, spec.resolution)] = {
             station_id: list(spec.supported_elements)
             for station_id in chmi_station_ids
         }
@@ -120,7 +120,7 @@ PROVIDER = WeatherProvider(
     get_dataset_spec=get_dataset_spec,
     download_observations=_download_observations,
     supported_country_codes=('CZ',),
-    supported_dataset_scopes=('ghcnd', 'historical', 'historical_csv', 'now', 'recent'),
+    supported_providers=('ghcnd', 'historical', 'historical_csv', 'now', 'recent'),
     supported_resolutions=('10min', '1hour', 'daily', 'monthly', 'pentadic', 'phenomena', 'yearly'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
 )

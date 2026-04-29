@@ -20,7 +20,7 @@ class DenmarkHourlyCliTests(unittest.TestCase):
                 'value': 2.8,
                 'flag': '{"qcStatus":"manual","validity":true}',
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': '1hour',
             }
         ])
@@ -33,7 +33,7 @@ class DenmarkHourlyCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DK')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '1hour')
         self.assertEqual(query.elements, ['mean_temp'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DK')

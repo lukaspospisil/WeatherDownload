@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -10,7 +10,7 @@ from weatherdownload import (
     QueryValidationError,
     download_observations,
     get_provider,
-    list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_supported_countries,
     list_supported_elements,
@@ -39,7 +39,7 @@ EXPECTED_SK_DAILY_COLUMNS = [
     'value',
     'flag',
     'quality',
-    'dataset_scope',
+    'provider',
     'resolution',
 ]
 EXPECTED_SK_CANONICAL_MAPPING = {
@@ -54,14 +54,14 @@ EXPECTED_SK_CANONICAL_MAPPING = {
 class ShmuProviderTests(unittest.TestCase):
     def test_supported_countries_include_experimental_sk(self) -> None:
         self.assertIn('SK', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='SK'), ['ghcnd', 'recent'])
-        self.assertEqual(list_resolutions(country='SK', dataset_scope='ghcnd'), ['daily'])
-        self.assertEqual(list_resolutions(country='SK', dataset_scope='recent'), ['daily'])
+        self.assertEqual(list_providers(country='SK'), ['ghcnd', 'recent'])
+        self.assertEqual(list_resolutions(country='SK', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='SK', provider='recent'), ['daily'])
 
     def test_provider_capability_metadata_is_explicit(self) -> None:
         provider = get_provider('SK')
         self.assertEqual(provider.supported_country_codes, ('SK',))
-        self.assertEqual(provider.supported_dataset_scopes, ('ghcnd', 'recent'))
+        self.assertEqual(provider.supported_providers, ('ghcnd', 'recent'))
         self.assertEqual(provider.supported_resolutions, ('daily',))
         self.assertEqual(
             provider.supported_canonical_elements,
@@ -71,22 +71,22 @@ class ShmuProviderTests(unittest.TestCase):
 
     def test_discovery_country_sk_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='SK', dataset_scope='recent', resolution='daily'),
+            list_supported_elements(country='SK', provider='recent', resolution='daily'),
             ['tas_max', 'tas_min', 'sunshine_duration', 'precipitation', 'open_water_evaporation'],
         )
         self.assertEqual(
-            list_supported_elements(country='SK', dataset_scope='recent', resolution='daily', provider_raw=True),
+            list_supported_elements(country='SK', provider='recent', resolution='daily', provider_raw=True),
             ['t_max', 't_min', 'sln_svit', 'zra_uhrn', 'voda_vypar'],
         )
 
-    def test_invalid_dataset_scope_for_sk_fails_clearly(self) -> None:
+    def test_invalid_provider_for_sk_fails_clearly(self) -> None:
         with self.assertRaisesRegex(
             QueryValidationError,
-            r"Unsupported provider 'historical' for country 'SK'.*dataset_scope remains accepted",
+            r"Unsupported provider 'historical' for country 'SK'\.",
         ):
             ObservationQuery(
                 country='SK',
-                dataset_scope='historical',
+                provider='historical',
                 resolution='daily',
                 station_ids=['11800'],
                 start_date='2025-01-01',
@@ -97,11 +97,11 @@ class ShmuProviderTests(unittest.TestCase):
     def test_invalid_resolution_for_sk_fails_clearly(self) -> None:
         with self.assertRaisesRegex(
             QueryValidationError,
-            r"Unsupported resolution '1hour' for provider 'recent'.*dataset_scope remains accepted",
+            r"Unsupported resolution '1hour' for provider 'recent'\.",
         ):
             ObservationQuery(
                 country='SK',
-                dataset_scope='recent',
+                provider='recent',
                 resolution='1hour',
                 station_ids=['11800'],
                 start='2025-01-01T00:00:00Z',
@@ -112,11 +112,11 @@ class ShmuProviderTests(unittest.TestCase):
     def test_invalid_element_for_sk_fails_clearly(self) -> None:
         with self.assertRaisesRegex(
             QueryValidationError,
-            r"Unsupported elements for provider 'recent' and resolution 'daily': \['tas_mean'\].*dataset_scope remains accepted",
+            r"Unsupported elements for provider 'recent' and resolution 'daily': \['tas_mean'\]\.",
         ):
             ObservationQuery(
                 country='SK',
-                dataset_scope='recent',
+                provider='recent',
                 resolution='daily',
                 station_ids=['11800'],
                 start_date='2025-01-01',
@@ -126,13 +126,13 @@ class ShmuProviderTests(unittest.TestCase):
 
     def test_provider_guard_rejects_non_sk_query_deterministically(self) -> None:
         provider = get_provider('SK')
-        query = SimpleNamespace(country='DE', dataset_scope='recent', resolution='daily')
+        query = SimpleNamespace(country='DE', provider='recent', resolution='daily')
         with self.assertRaisesRegex(UnsupportedQueryError, r"Experimental SHMU provider supports only country='SK'\."):
             provider.download_observations(query, 60, None)
 
     def test_provider_guard_rejects_non_daily_query_deterministically(self) -> None:
         provider = get_provider('SK')
-        query = SimpleNamespace(country='SK', dataset_scope='recent', resolution='10min')
+        query = SimpleNamespace(country='SK', provider='recent', resolution='10min')
         with self.assertRaisesRegex(UnsupportedQueryError, r"Experimental SHMU provider supports only resolution='daily'\."):
             provider.download_observations(query, 60, None)
 
@@ -209,7 +209,7 @@ class ShmuProviderTests(unittest.TestCase):
     def test_query_normalizes_canonical_and_raw_shmu_elements(self) -> None:
         canonical_query = ObservationQuery(
             country='SK',
-            dataset_scope='recent',
+            provider='recent',
             resolution='daily',
             station_ids=['11800'],
             start_date='2025-01-01',
@@ -218,7 +218,7 @@ class ShmuProviderTests(unittest.TestCase):
         )
         raw_query = ObservationQuery(
             country='SK',
-            dataset_scope='recent',
+            provider='recent',
             resolution='daily',
             station_ids=['11800'],
             start_date='2025-01-01',
@@ -244,7 +244,7 @@ class ShmuProviderTests(unittest.TestCase):
     def test_build_recent_daily_month_urls_from_sample_index(self) -> None:
         query = ObservationQuery(
             country='SK',
-            dataset_scope='recent',
+            provider='recent',
             resolution='daily',
             station_ids=['11800'],
             start_date='2025-01-01',
@@ -295,7 +295,7 @@ class ShmuProviderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='SK',
-            dataset_scope='recent',
+            provider='recent',
             resolution='daily',
             station_ids=['11800'],
             start_date='2025-01-01',
@@ -342,7 +342,7 @@ class ShmuProviderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='SK',
-            dataset_scope='recent',
+            provider='recent',
             resolution='daily',
             station_ids=['11800'],
             start_date='2025-01-01',
@@ -368,7 +368,7 @@ class ShmuProviderTests(unittest.TestCase):
 
         query = ObservationQuery(
             country='SK',
-            dataset_scope='recent',
+            provider='recent',
             resolution='daily',
             station_ids=['11800'],
             start_date='2025-01-01',

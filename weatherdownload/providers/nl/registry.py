@@ -1,11 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class KnmiDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     dataset_name: str
     dataset_version: str
@@ -132,7 +132,7 @@ KNMI_PARAMETER_METADATA: dict[str, dict[str, str]] = {
 
 _KNMI_DATASET_SPECS = [
     KnmiDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         dataset_name='daily-in-situ-meteorological-observations-validated',
         dataset_version='1.0',
@@ -143,7 +143,7 @@ _KNMI_DATASET_SPECS = [
         implemented=True,
     ),
     KnmiDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         dataset_name='hourly-in-situ-meteorological-observations-validated',
         dataset_version='1.0',
@@ -154,7 +154,7 @@ _KNMI_DATASET_SPECS = [
         implemented=True,
     ),
     KnmiDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         dataset_name='10-minute-in-situ-meteorological-observations',
         dataset_version='1.0',
@@ -175,11 +175,11 @@ def list_implemented_dataset_specs() -> list[KnmiDatasetSpec]:
     return [spec for spec in _KNMI_DATASET_SPECS if spec.implemented]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> KnmiDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> KnmiDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     for spec in _KNMI_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported KNMI dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported KNMI dataset combination: {provider}/{resolution}')
 

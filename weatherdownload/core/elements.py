@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -127,7 +127,7 @@ def canonicalize_element_series(raw_series: pd.Series, query: Any) -> pd.DataFra
     from ..providers import get_provider
 
     provider = get_provider(query.country)
-    spec = provider.get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = provider.get_dataset_spec(query.provider, query.resolution)
     raw_to_canonical = raw_to_canonical_map_for_spec(spec)
     element_raw = raw_series.astype('string').str.strip()
     element = element_raw.map(lambda raw: raw_to_canonical.get(str(raw).casefold(), str(raw)))

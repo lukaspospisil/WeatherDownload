@@ -134,7 +134,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_cz_mapping(self) -> None:
         config = download_fao.get_fao_country_config('CZ')
         self.assertEqual(config.country, 'CZ')
-        self.assertEqual(config.dataset_scope, 'historical_csv')
+        self.assertEqual(config.provider, 'historical_csv')
         self.assertEqual(config.canonical_to_raw['tas_mean'], ('T',))
         self.assertEqual(config.time_function_by_canonical['tas_max'], '20:00')
         self.assertEqual(config.obs_types, ('DLY',))
@@ -142,7 +142,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_de_mapping(self) -> None:
         config = download_fao.get_fao_country_config('DE')
         self.assertEqual(config.country, 'DE')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.canonical_to_raw['vapour_pressure'], ('VPM',))
         self.assertEqual(config.raw_to_canonical['TMK'], 'tas_mean')
         self.assertEqual(config.raw_to_canonical['SDK'], 'sunshine_duration')
@@ -152,7 +152,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_ch_mapping(self) -> None:
         config = download_fao.get_fao_country_config('CH')
         self.assertEqual(config.country, 'CH')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, download_fao.FAO_CANONICAL_ELEMENTS)
         self.assertEqual(config.canonical_to_raw['tas_mean'], ('tre200d0',))
         self.assertEqual(config.canonical_to_raw['vapour_pressure'], ('pva200d0',))
@@ -162,7 +162,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_pl_mapping(self) -> None:
         config = download_fao.get_fao_country_config('PL')
         self.assertEqual(config.country, 'PL')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['STD'], 'tas_mean')
         self.assertEqual(config.raw_to_canonical['USL'], 'sunshine_duration')
@@ -172,7 +172,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_pl_hourly_aggregate_mapping_when_enabled(self) -> None:
         config = download_fao.get_fao_country_config('PL', fill_missing='allow-hourly-aggregate')
         self.assertEqual(config.country, 'PL')
-        self.assertEqual(config.hourly_dataset_scope, 'historical')
+        self.assertEqual(config.hourly_provider, 'historical')
         self.assertEqual(config.hourly_resolution, '1hour')
         self.assertEqual(config.hourly_query_elements, ('wind_speed', 'vapour_pressure'))
         self.assertEqual(config.provider_element_mapping['wind_speed']['status'], 'aggregated_hourly_opt_in')
@@ -357,7 +357,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
                 'value': 1.0,
                 'flag': None,
                 'quality': 0,
-                'dataset_scope': 'historical_csv',
+                'provider': 'historical_csv',
                 'resolution': 'daily',
             }
         ])
@@ -441,7 +441,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_nl_mapping(self) -> None:
         config = download_fao.get_fao_country_config('NL')
         self.assertEqual(config.country, 'NL')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['TG'], 'tas_mean')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
@@ -455,14 +455,14 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_at_mapping(self) -> None:
         config = download_fao.get_fao_country_config('AT')
         self.assertEqual(config.country, 'AT')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['VV_MITTEL'], 'wind_speed')
 
     def test_get_fao_country_config_returns_be_mapping(self) -> None:
         config = download_fao.get_fao_country_config('BE')
         self.assertEqual(config.country, 'BE')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['TEMP_AVG'], 'tas_mean')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
@@ -470,7 +470,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_dk_mapping(self) -> None:
         config = download_fao.get_fao_country_config('DK')
         self.assertEqual(config.country, 'DK')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['MEAN_TEMP'], 'tas_mean')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
@@ -478,7 +478,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_hu_mapping(self) -> None:
         config = download_fao.get_fao_country_config('HU')
         self.assertEqual(config.country, 'HU')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['T'], 'tas_mean')
         self.assertEqual(config.raw_to_canonical['F'], 'sunshine_duration')
@@ -495,7 +495,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
         csv_text = GEOSPHERE_SAMPLE_CSV_PATH.read_text(encoding='utf-8')
         query = ObservationQuery(
             country='AT',
-            dataset_scope='historical',
+            provider='historical',
             resolution='daily',
             station_ids=['1'],
             start_date='2024-01-01',
@@ -895,7 +895,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_se_mapping(self) -> None:
         config = download_fao.get_fao_country_config('SE')
         self.assertEqual(config.country, 'SE')
-        self.assertEqual(config.dataset_scope, 'historical')
+        self.assertEqual(config.provider, 'historical')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min'))
         self.assertEqual(config.raw_to_canonical['2'], 'tas_mean')
         self.assertEqual(config.provider_element_mapping['wind_speed']['status'], 'unavailable')

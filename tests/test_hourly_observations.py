@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,13 +16,13 @@ SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
 
 class HourlyObservationTests(unittest.TestCase):
     def test_query_to_download_mapping(self) -> None:
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T23:00:00Z', elements=['vapour_pressure'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T23:00:00Z', elements=['vapour_pressure'])
         targets = build_hourly_download_targets(query)
         self.assertEqual(len(targets), 1)
         self.assertTrue(targets[0].url.endswith('/humidity/2024/1h-0-20000-0-11406-E-202401.csv'))
 
     def test_hourly_mapping_supports_multiple_groups(self) -> None:
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T23:00:00Z', elements=['pressure', 'sunshine_duration'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T23:00:00Z', elements=['pressure', 'sunshine_duration'])
         targets = build_hourly_download_targets(query)
         self.assertEqual(len(targets), 2)
         self.assertTrue(targets[0].url.endswith('/synop/2024/1h-0-20000-0-11406-P-202401.csv'))
@@ -30,7 +30,7 @@ class HourlyObservationTests(unittest.TestCase):
 
     def test_hourly_mapping_uses_registry_endpoint_pattern(self) -> None:
         spec = get_dataset_spec('historical_csv', '1hour')
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T23:00:00Z', elements=['vapour_pressure'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-31T23:00:00Z', elements=['vapour_pressure'])
         target = build_hourly_download_targets(query)[0]
         expected = spec.endpoint_pattern.format(group=spec.element_groups['E'], year='2024', station_id='0-20000-0-11406', element='E', year_month='202401')
         self.assertEqual(target.url, expected)
@@ -52,7 +52,7 @@ class HourlyObservationTests(unittest.TestCase):
                 return _Response('<a href="1h-0-20000-0-11406-E-202401.csv">202401</a>')
             raise AssertionError(f'unexpected URL: {url}')
 
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], all_history=True, elements=['vapour_pressure'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], all_history=True, elements=['vapour_pressure'])
         with patch('weatherdownload.providers.cz.hourly.requests.get', side_effect=fake_get):
             targets = build_hourly_download_targets(query)
         self.assertEqual(len(targets), 2)
@@ -64,7 +64,7 @@ class HourlyObservationTests(unittest.TestCase):
         self.assertEqual(len(parsed), 3)
 
     def test_normalized_hourly_output_columns(self) -> None:
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['vapour_pressure'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['vapour_pressure'])
         parsed = parse_hourly_csv(SAMPLE_HOURLY_CSV)
         metadata = _parse_station_metadata_csv(SAMPLE_META1)
         normalized = normalize_hourly_observations(parsed, query, station_metadata=metadata)
@@ -76,21 +76,21 @@ class HourlyObservationTests(unittest.TestCase):
         self.assertEqual(str(normalized.iloc[0]['timestamp']), '2024-01-01 00:00:00+00:00')
 
     def test_normalized_hourly_supports_synop_element(self) -> None:
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['pressure'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['pressure'])
         parsed = parse_hourly_csv(SAMPLE_HOURLY_P_CSV)
         normalized = normalize_hourly_observations(parsed, query)
         self.assertEqual(normalized['element'].tolist(), ['pressure', 'pressure', 'pressure'])
         self.assertEqual(normalized['element_raw'].tolist(), ['P', 'P', 'P'])
 
     def test_normalized_hourly_supports_sunshine_element(self) -> None:
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['sunshine_duration'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['sunshine_duration'])
         parsed = parse_hourly_csv(SAMPLE_HOURLY_SSV1H_CSV)
         normalized = normalize_hourly_observations(parsed, query)
         self.assertEqual(normalized['element'].tolist(), ['sunshine_duration', 'sunshine_duration', 'sunshine_duration'])
         self.assertEqual(normalized['element_raw'].tolist(), ['SSV1H', 'SSV1H', 'SSV1H'])
 
     def test_hourly_gh_id_is_nullable_without_metadata(self) -> None:
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['vapour_pressure'])
+        query = ObservationQuery(provider='historical_csv', resolution='1hour', station_ids=['0-20000-0-11406'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['vapour_pressure'])
         parsed = parse_hourly_csv(SAMPLE_HOURLY_CSV)
         normalized = normalize_hourly_observations(parsed, query)
         self.assertTrue(normalized['gh_id'].isna().all())

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import re
@@ -43,7 +43,7 @@ def download_hourly_observations_hu(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '1hour':
+    if query.provider != 'historical' or query.resolution != '1hour':
         raise UnsupportedQueryError('The HungaroMet Hungary hourly downloader only supports historical/1hour.')
     if not query.elements:
         raise UnsupportedQueryError('The HungaroMet Hungary hourly downloader requires at least one element.')
@@ -77,7 +77,7 @@ def download_hourly_observations_hu(
 
 
 def build_hu_hourly_download_targets(query: ObservationQuery, timeout: int = 60) -> list[HuHourlyDownloadTarget]:
-    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = get_dataset_spec(query.provider, query.resolution)
     if not spec.implemented:
         raise UnsupportedQueryError('The requested HungaroMet Hungary dataset path is not implemented.')
 
@@ -135,7 +135,7 @@ def _normalize_hu_subdaily_observations(table: pd.DataFrame, query: ObservationQ
                 'value': to_numeric_with_missing(table[raw_code]),
                 'flag': flag_with_missing(table[quality_column]) if quality_column in table.columns else pd.Series(pd.NA, index=table.index, dtype='string'),
                 'quality': pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

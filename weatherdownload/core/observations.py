@@ -82,22 +82,22 @@ def _download_observations_chmi(
 ) -> pd.DataFrame:
     from .metadata import read_station_metadata
 
-    dataset_spec = get_chmi_dataset_spec(query.dataset_scope, query.resolution)
+    dataset_spec = get_chmi_dataset_spec(query.provider, query.resolution)
     if not dataset_spec.implemented:
         raise DatasetNotImplementedError(
-            f"Dataset path '{query.dataset_scope}/{query.resolution}' is valid in CHMI, but is not implemented by this library yet."
+            f"Dataset path '{query.provider}/{query.resolution}' is valid in CHMI, but is not implemented by this library yet."
         )
     metadata_table = station_metadata if station_metadata is not None else read_station_metadata(country='CZ', timeout=timeout)
 
-    if query.dataset_scope == 'historical_csv' and query.resolution == '10min':
+    if query.provider == 'historical_csv' and query.resolution == '10min':
         return _download_tenmin_observations(query, timeout=timeout, station_metadata=metadata_table)
-    if query.dataset_scope == 'historical_csv' and query.resolution == 'daily':
+    if query.provider == 'historical_csv' and query.resolution == 'daily':
         return _download_daily_observations(query, timeout=timeout, station_metadata=metadata_table)
-    if query.dataset_scope == 'historical_csv' and query.resolution == '1hour':
+    if query.provider == 'historical_csv' and query.resolution == '1hour':
         return _download_hourly_observations(query, timeout=timeout, station_metadata=metadata_table)
 
     raise UnsupportedQueryError(
-        f'Unsupported query combination for the current downloader implementation: {query.dataset_scope}/{query.resolution}'
+        f'Unsupported query combination for the current downloader implementation: {query.provider}/{query.resolution}'
     )
 
 
@@ -106,11 +106,11 @@ def _download_observations_be(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_be(query, timeout=timeout, station_metadata=station_metadata).loc[:, BE_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_be(query, timeout=timeout, station_metadata=station_metadata).loc[:, BE_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '10min':
+    if query.provider == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_be(query, timeout=timeout, station_metadata=station_metadata).loc[:, BE_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('RMI/KMI Belgium support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
@@ -119,11 +119,11 @@ def _download_observations_ch(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_ch(query, timeout=timeout, station_metadata=station_metadata).loc[:, CH_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_ch(query, timeout=timeout, station_metadata=station_metadata).loc[:, CH_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '10min':
+    if query.provider == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_ch(query, timeout=timeout, station_metadata=station_metadata).loc[:, CH_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('MeteoSwiss Switzerland support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
@@ -133,9 +133,9 @@ def _download_observations_dwd(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_dwd(query, timeout=timeout, station_metadata=station_metadata)
-    if query.dataset_scope == 'historical' and query.resolution in {'1hour', '10min'}:
+    if query.provider == 'historical' and query.resolution in {'1hour', '10min'}:
         return download_subdaily_observations_dwd(query, timeout=timeout, station_metadata=station_metadata).loc[:, NORMALIZED_DWD_SUBDAILY_COLUMNS]
     raise NotImplementedError('Only the first DWD historical downloader paths for daily, 1hour, and 10min are implemented so far.')
 
@@ -146,11 +146,11 @@ def _download_observations_geosphere(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_geosphere(query, timeout=timeout, station_metadata=station_metadata).loc[:, GEOSPHERE_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_geosphere(query, timeout=timeout, station_metadata=station_metadata).loc[:, GEOSPHERE_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '10min':
+    if query.provider == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_geosphere(query, timeout=timeout, station_metadata=station_metadata).loc[:, GEOSPHERE_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('GeoSphere Austria support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
@@ -161,11 +161,11 @@ def _download_observations_knmi(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '10min':
+    if query.provider == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('KNMI Netherlands support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
@@ -176,11 +176,11 @@ def _download_observations_dk(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '10min':
+    if query.provider == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('DMI Denmark support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
 
@@ -189,9 +189,9 @@ def _download_observations_se(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_se(query, timeout=timeout, station_metadata=station_metadata).loc[:, SE_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_se(query, timeout=timeout, station_metadata=station_metadata).loc[:, SE_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('SMHI Sweden support currently implements only historical/daily and historical/1hour station observations.')
 
@@ -202,13 +202,13 @@ def _download_observations_hu(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'historical' and query.resolution == 'daily':
+    if query.provider == 'historical' and query.resolution == 'daily':
         return download_daily_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '10min':
+    if query.provider == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.dataset_scope == 'historical_wind' and query.resolution == '10min':
+    if query.provider == 'historical_wind' and query.resolution == '10min':
         return download_tenmin_wind_observations_hu(query, timeout=timeout, station_metadata=station_metadata).loc[:, HU_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('HungaroMet Hungary support currently implements historical/daily, historical/1hour, historical/10min, and historical_wind/10min station observations.')
 
@@ -217,9 +217,9 @@ def _download_observations_pl(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope in {'historical', 'historical_klimat'} and query.resolution == 'daily':
+    if query.provider in {'historical', 'historical_klimat'} and query.resolution == 'daily':
         return download_daily_observations_pl(query, timeout=timeout, station_metadata=station_metadata).loc[:, PL_NORMALIZED_DAILY_COLUMNS]
-    if query.dataset_scope == 'historical' and query.resolution == '1hour':
+    if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_pl(query, timeout=timeout, station_metadata=station_metadata).loc[:, PL_NORMALIZED_SUBDAILY_COLUMNS]
     raise NotImplementedError('IMGW Poland support currently implements historical/daily, historical/1hour, and historical_klimat/daily station observations.')
 def _download_observations_shmu(
@@ -227,7 +227,7 @@ def _download_observations_shmu(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope == 'recent' and query.resolution == 'daily':
+    if query.provider == 'recent' and query.resolution == 'daily':
         return download_daily_observations_shmu(query, timeout=timeout, station_metadata=station_metadata).loc[:, NORMALIZED_SHMU_DAILY_COLUMNS]
     raise NotImplementedError('Experimental SHMU support currently implements only recent/daily station observations.')
 

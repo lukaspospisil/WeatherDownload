@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import re
@@ -43,7 +43,7 @@ def download_tenmin_wind_observations_hu(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical_wind' or query.resolution != '10min':
+    if query.provider != 'historical_wind' or query.resolution != '10min':
         raise UnsupportedQueryError('The HungaroMet Hungary 10-minute wind downloader only supports historical_wind/10min.')
     if not query.elements:
         raise UnsupportedQueryError('The HungaroMet Hungary 10-minute wind downloader requires at least one element.')
@@ -77,7 +77,7 @@ def download_tenmin_wind_observations_hu(
 
 
 def build_hu_tenmin_wind_download_targets(query: ObservationQuery, timeout: int = 60) -> list[HuTenminWindDownloadTarget]:
-    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = get_dataset_spec(query.provider, query.resolution)
     if not spec.implemented:
         raise UnsupportedQueryError('The requested HungaroMet Hungary dataset path is not implemented.')
 
@@ -131,7 +131,7 @@ def normalize_tenmin_wind_observations_hu(table: pd.DataFrame, query: Observatio
                 'value': to_numeric_with_missing(table[raw_code]),
                 'flag': flag_with_missing(table[quality_column]) if quality_column in table.columns else pd.Series(pd.NA, index=table.index, dtype='string'),
                 'quality': pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

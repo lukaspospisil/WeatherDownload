@@ -10,7 +10,7 @@ from weatherdownload import (
     ObservationQuery,
     download_observations,
     get_provider,
-    list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_station_elements,
     list_supported_countries,
@@ -35,22 +35,22 @@ class CanadaGhcndProviderTests(unittest.TestCase):
     def test_provider_capability_metadata_is_explicit(self) -> None:
         provider = get_provider('CA')
         self.assertEqual(provider.supported_country_codes, ('CA',))
-        self.assertEqual(provider.supported_dataset_scopes, ('ghcnd',))
+        self.assertEqual(provider.supported_providers, ('ghcnd',))
         self.assertEqual(provider.supported_resolutions, ('daily',))
         self.assertEqual(provider.supported_canonical_elements, ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'))
 
     def test_discovery_country_ca_returns_ghcnd_daily_elements_without_evap(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='CA'), ['ghcnd'])
-        self.assertEqual(list_resolutions(country='CA', dataset_scope='ghcnd'), ['daily'])
+        self.assertEqual(list_providers(country='CA'), ['ghcnd'])
+        self.assertEqual(list_resolutions(country='CA', provider='ghcnd'), ['daily'])
         self.assertEqual(
-            list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily'),
+            list_supported_elements(country='CA', provider='ghcnd', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
-            list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily', provider_raw=True),
+            list_supported_elements(country='CA', provider='ghcnd', resolution='daily', provider_raw=True),
             ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
         )
-        mapping = list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily', include_mapping=True)
+        mapping = list_supported_elements(country='CA', provider='ghcnd', resolution='daily', include_mapping=True)
         self.assertEqual(
             mapping[['element', 'element_raw']].to_dict('records'),
             [
@@ -65,7 +65,7 @@ class CanadaGhcndProviderTests(unittest.TestCase):
     def test_query_normalizes_canonical_and_raw_ca_ghcnd_elements(self) -> None:
         canonical_query = ObservationQuery(
             country='CA',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['ca000000001'],
             start_date='2012-06-01',
@@ -74,7 +74,7 @@ class CanadaGhcndProviderTests(unittest.TestCase):
         )
         raw_query = ObservationQuery(
             country='CA',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['CA000000001'],
             start_date='2012-06-01',
@@ -134,7 +134,7 @@ class CanadaGhcndProviderTests(unittest.TestCase):
         raw_table = parse_ghcnd_dly_text(SAMPLE_DLY_PATH.read_text(encoding='utf-8'))
         query = ObservationQuery(
             country='CA',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['CA000000001'],
             start_date='2020-06-01',
@@ -165,7 +165,7 @@ class CanadaGhcndProviderTests(unittest.TestCase):
     def test_download_observations_reads_local_ca_dly_fixture_and_canonicalizes_output(self) -> None:
         query = ObservationQuery(
             country='CA',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['CA000000001'],
             start_date='2020-06-01',
@@ -203,7 +203,7 @@ class CanadaGhcndProviderTests(unittest.TestCase):
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=stations):
             with redirect_stdout(buffer):
-                exit_code = main(['stations', 'elements', '--country', 'CA', '--station-id', 'CA000000002', '--dataset-scope', 'ghcnd', '--resolution', 'daily'])
+                exit_code = main(['stations', 'elements', '--country', 'CA', '--station-id', 'CA000000002', '--provider', 'ghcnd', '--resolution', 'daily'])
         self.assertEqual(exit_code, 0)
         output = buffer.getvalue()
         self.assertIn('precipitation', output)

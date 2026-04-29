@@ -8,7 +8,7 @@ from weatherdownload.cli import main
 
 
 class ShmuCliTests(unittest.TestCase):
-    def test_daily_cli_country_sk_uses_recent_dataset_scope(self) -> None:
+    def test_daily_cli_country_sk_uses_recent_provider(self) -> None:
         captured: dict[str, object] = {}
 
         def fake_download(query, country=None):
@@ -25,7 +25,7 @@ class ShmuCliTests(unittest.TestCase):
                     'value': 5.2,
                     'flag': pd.NA,
                     'quality': pd.NA,
-                    'dataset_scope': 'recent',
+                    'provider': 'recent',
                     'resolution': 'daily',
                 }
             ])
@@ -46,7 +46,7 @@ class ShmuCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = captured['query']
         self.assertEqual(query.country, 'SK')
-        self.assertEqual(query.dataset_scope, 'recent')
+        self.assertEqual(query.provider, 'recent')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['t_max'])
         self.assertEqual(captured['country'], 'SK')

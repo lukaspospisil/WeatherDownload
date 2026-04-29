@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import json
@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     # Reuse the public query model so canonical element handling matches the rest of the library.
     query = ObservationQuery(
         country='SK',
-        dataset_scope='recent',
+        provider='recent',
         resolution='daily',
         station_ids=[station_id],
         start_date=date_value,

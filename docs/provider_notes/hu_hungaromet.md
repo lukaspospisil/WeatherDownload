@@ -10,7 +10,7 @@ This note documents the current HungaroMet public-source integration. It include
 
 - country: `HU`
 - provider: `historical`, `historical_wind`
-- backward-compatible `dataset_scope`: `historical`, `historical_wind`
+- `provider`: `historical`, `historical_wind`
 - resolution(s):
   - `historical`: `daily`, `1hour`, `10min`
   - `historical_wind`: `10min`

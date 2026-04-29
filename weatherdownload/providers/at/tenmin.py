@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import pandas as pd
 import requests
@@ -21,7 +21,7 @@ def download_tenmin_observations_geosphere(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != '10min':
+    if query.provider != 'historical' or query.resolution != '10min':
         raise UnsupportedQueryError('The GeoSphere Austria 10min downloader only supports historical/10min.')
     if not query.elements:
         raise UnsupportedQueryError('The GeoSphere Austria 10min downloader requires at least one element.')
@@ -97,7 +97,7 @@ def normalize_tenmin_observations_geosphere(
                 'value': pd.to_numeric(table[raw_code], errors='coerce'),
                 'flag': table[flag_column].map(build_geosphere_flag) if flag_column else pd.Series(pd.NA, index=table.index, dtype='object'),
                 'quality': pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
                 'gh_id': pd.NA,
             }

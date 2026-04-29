@@ -1,10 +1,10 @@
-Ôªø# WeatherDownload Tutorial (English)
+# WeatherDownload Tutorial (English)
 
 <p align="right">
   <img src="images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-[ƒåesk√° verze](tutorial.cs.md)
+[»esk· verze](tutorial.cs.md)
 
 This tutorial is a practical guide to **WeatherDownload**. It is written as a step-by-step overview of common and advanced use cases, so that users can work with the library without studying the full source code first.
 
@@ -48,7 +48,7 @@ The library separates several layers:
    Hides country/provider-specific details (`CZ` / `DE`).
 
 2. **canonical element layer**  
-   Users do not need to know raw provider codes such as `TMA`, `TMK`, `RSK`, `SSV1H`, ‚Ä¶  
+   Users do not need to know raw provider codes such as `TMA`, `TMK`, `RSK`, `SSV1H`, Ö  
    Instead, they can work with stable names such as:
    - `tas_mean`
    - `tas_max`
@@ -79,7 +79,7 @@ The public query model has three separate dimensions:
 
 - `country` selects the country/provider context
 - `provider` is the preferred public name for the concrete provider-specific dataset, product, or source
-- `dataset_scope` remains accepted as a backward-compatible alias for `provider`
+- `provider` is the public selector name for `provider`
 - `resolution` selects the temporal resolution
 
 Provider values are not globally standardized across countries. For example, `CZ / historical_csv`, `SK / recent`, `PL / historical_klimat`, and `US / ghcnd` all refer to different provider-specific source families.
@@ -241,13 +241,13 @@ selected = filter_stations(stations, gh_ids=["L3CHEB01"])
 
 ## 7. Discovery: what the library knows and supports
 
-### 7.1 Dataset scopes
+### 7.1 Providers
 
 ```python
-from weatherdownload import list_dataset_scopes, list_providers
+from weatherdownload import list_providers, list_providers
 
-print(list_dataset_scopes(country="CZ"))
-print(list_dataset_scopes(country="DE"))
+print(list_providers(country="CZ"))
+print(list_providers(country="DE"))
 print(list_providers(country="US"))
 ```
 
@@ -300,7 +300,7 @@ print(mapping)
 
 - default mode: a list of canonical names,
 - `provider_raw=True`: a list of raw provider codes,
-- `include_mapping=True`: a table / `DataFrame` describing canonical ‚Üî raw mapping.
+- `include_mapping=True`: a table / `DataFrame` describing canonical - raw mapping.
 
 ---
 
@@ -416,7 +416,7 @@ For daily data, the output typically contains something like:
 - `value`
 - `flag`
 - `quality`
-- `dataset_scope`
+- `provider`
 - `resolution`
 
 This is **correct** and expected.
@@ -425,7 +425,7 @@ This is **correct** and expected.
 
 ## 11. What the observations downloader output looks like
 
-### 11.1 Daily observations ‚Äì expected columns
+### 11.1 Daily observations ñ expected columns
 
 Typical daily output contains:
 
@@ -438,10 +438,10 @@ Typical daily output contains:
 - `value`
 - `flag`
 - `quality`
-- `dataset_scope`
+- `provider`
 - `resolution`
 
-### 11.2 Hourly / 10min ‚Äì expected columns
+### 11.2 Hourly / 10min ñ expected columns
 
 Typical subdaily output contains:
 
@@ -453,7 +453,7 @@ Typical subdaily output contains:
 - `value`
 - `flag`
 - `quality`
-- `dataset_scope`
+- `provider`
 - `resolution`
 
 ### 11.3 What this means in practice
@@ -472,7 +472,7 @@ Instead:
 
 ---
 
-## 12. Daily observations ‚Äì CZ
+## 12. Daily observations ñ CZ
 
 ### 12.1 Explicit date range
 
@@ -501,7 +501,7 @@ A long-format table where:
 
 ---
 
-## 13. Daily observations ‚Äì DE
+## 13. Daily observations ñ DE
 
 ### 13.1 Daily temperature and precipitation in Germany
 
@@ -537,7 +537,7 @@ Again, a long-format table:
 
 ---
 
-## 14. Hourly observations ‚Äì CZ
+## 14. Hourly observations ñ CZ
 
 The current conservative subset for `CZ historical_csv 1hour` includes for example:
 
@@ -563,7 +563,7 @@ weatherdownload observations hourly --country CZ --station-id 0-20000-0-11406 --
 
 ---
 
-## 15. 10-minute observations ‚Äì CZ
+## 15. 10-minute observations ñ CZ
 
 The current conservative subset for `CZ historical_csv 10min` includes for example:
 
@@ -582,7 +582,7 @@ weatherdownload observations 10min --country CZ --station-id 0-20000-0-11406 --e
 
 ---
 
-## 16. Hourly observations ‚Äì DE
+## 16. Hourly observations ñ DE
 
 The current narrow verified slice for `DE historical 1hour` includes:
 
@@ -607,7 +607,7 @@ Public output always uses timezone-aware UTC timestamps.
 
 ---
 
-## 17. 10-minute observations ‚Äì DE
+## 17. 10-minute observations ñ DE
 
 The current narrow verified slice for `DE historical 10min` includes:
 
@@ -625,7 +625,7 @@ weatherdownload observations 10min --country DE --station-id 00044 --element tas
 
 ## 18. Python API: observations
 
-### 18.1 Daily query ‚Äì CZ
+### 18.1 Daily query ñ CZ
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -644,7 +644,7 @@ df = download_observations(query)
 print(df.head())
 ```
 
-### 18.2 Daily query ‚Äì DE
+### 18.2 Daily query ñ DE
 
 ```python
 from weatherdownload import ObservationQuery, download_observations
@@ -805,7 +805,7 @@ Provider-specific mapping is preserved in:
 
 ---
 
-## 23. FAO example ‚Äì basic commands
+## 23. FAO example ñ basic commands
 
 ### 23.1 CZ, full pipeline, Parquet
 
@@ -969,26 +969,26 @@ You get an overview of:
 - raw provider codes,
 - their mapping.
 
-Compatibility note:
-- `--dataset-scope historical` remains valid and produces the same result
+Notes:
+- `--provider historical` remains valid and produces the same result
 
 ---
 
 ## 31. Common questions and typical mistakes
 
-### ‚ÄúWhy do I only see one element in the CSV?‚Äù
+### ìWhy do I only see one element in the CSV?î
 Because you only requested one element. Add more `--element`.
 
-### ‚ÄúWhere are the actual temperatures?‚Äù
+### ìWhere are the actual temperatures?î
 In the general observations downloader they are in `value`, not in a dedicated `tas_mean` column.
 
-### ‚ÄúWhy do I not see tas_mean, tas_max, tas_min as separate columns?‚Äù
+### ìWhy do I not see tas_mean, tas_max, tas_min as separate columns?î
 Because the general observations downloader returns long-format data.
 
-### ‚ÄúI want everything available. Why do I need a date range?‚Äù
+### ìI want everything available. Why do I need a date range?î
 Use explicit `--all-history`.
 
-### ‚ÄúThe FAO example seems slow‚Äù
+### ìThe FAO example seems slowî
 That is normal. Use `--mode download`, then `--mode build`, and optionally `--silent`.
 
 ---

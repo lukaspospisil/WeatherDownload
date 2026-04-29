@@ -46,7 +46,7 @@ PROVIDER = WeatherProvider(
     get_dataset_spec=get_dataset_spec,
     download_observations=_download_observations,
     supported_country_codes=('DE',),
-    supported_dataset_scopes=('ghcnd', 'historical'),
+    supported_providers=('ghcnd', 'historical'),
     supported_resolutions=('10min', '1hour', 'daily'),
     supported_canonical_elements=(
         'wind_speed_max',

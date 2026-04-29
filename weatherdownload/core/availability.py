@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import date, datetime
@@ -7,16 +7,17 @@ import pandas as pd
 
 from .elements import element_mapping_dict_for_spec, element_mapping_for_spec, supported_elements_for_spec
 from .metadata import STATION_METADATA_COLUMNS, filter_stations, read_station_metadata, read_station_observation_metadata
-from .queries import normalize_provider_scope
+from .queries import normalize_provider_name
 
 AVAILABILITY_COLUMNS = [
     'station_id',
     'gh_id',
-    'dataset_scope',
+    'provider',
     'resolution',
     'implemented',
     'supported_elements',
 ]
+
 FIND_STATIONS_COLUMNS = [
     'station_id',
     'gh_id',
@@ -27,7 +28,6 @@ FIND_STATIONS_COLUMNS = [
     'begin_date',
     'end_date',
     'provider',
-    'dataset_scope',
     'resolution',
     'matched_elements',
     'missing_requested_elements',
@@ -47,9 +47,9 @@ def station_availability(
 ) -> pd.DataFrame:
     from ..providers import get_provider
 
-    provider = get_provider(country)
+    weather_provider = get_provider(country)
     filtered = filter_stations(stations, station_ids=station_ids, active_on=active_on)
-    specs = provider.list_implemented_dataset_specs() if implemented_only else []
+    specs = weather_provider.list_implemented_dataset_specs() if implemented_only else weather_provider.list_dataset_specs()
     rows: list[dict[str, object]] = []
 
     for station in filtered.itertuples(index=False):
@@ -67,7 +67,7 @@ def station_availability(
             row = {
                 'station_id': station.station_id,
                 'gh_id': station.gh_id,
-                'dataset_scope': spec.dataset_scope,
+                'provider': spec.provider,
                 'resolution': spec.resolution,
                 'implemented': spec.implemented,
                 'supported_elements': station_supported_elements,
@@ -84,17 +84,16 @@ def station_availability(
 def station_supports(
     stations: pd.DataFrame,
     station_id: str,
-    dataset_scope: str | None,
+    provider: str,
     resolution: str,
     active_on: date | datetime | str | None = None,
     country: str = 'CZ',
-    provider: str | None = None,
 ) -> bool:
     from ..providers import get_provider
 
     weather_provider = get_provider(country)
-    normalized_scope = normalize_provider_scope(dataset_scope=dataset_scope, provider=provider)
-    spec = weather_provider.get_dataset_spec(normalized_scope, resolution)
+    normalized_provider = normalize_provider_name(provider)
+    spec = weather_provider.get_dataset_spec(normalized_provider, resolution)
     if not spec.implemented:
         return False
     availability = station_availability(
@@ -105,7 +104,7 @@ def station_supports(
         country=country,
     )
     return not availability[
-        (availability['dataset_scope'] == spec.dataset_scope)
+        (availability['provider'] == spec.provider)
         & (availability['resolution'] == spec.resolution)
     ].empty
 
@@ -138,17 +137,16 @@ def list_station_paths(
 def list_station_elements(
     stations: pd.DataFrame,
     station_id: str,
-    dataset_scope: str | None,
+    provider: str,
     resolution: str,
     active_on: date | datetime | str | None = None,
     country: str = 'CZ',
     provider_raw: bool = False,
     include_mapping: bool = False,
-    provider: str | None = None,
 ):
     from ..providers import get_provider
 
-    normalized_scope = normalize_provider_scope(dataset_scope=dataset_scope, provider=provider)
+    normalized_provider = normalize_provider_name(provider)
     availability = station_availability(
         stations,
         station_ids=[station_id],
@@ -158,20 +156,20 @@ def list_station_elements(
         provider_raw=provider_raw,
     )
     matches = availability[
-        (availability['dataset_scope'] == normalized_scope)
+        (availability['provider'] == normalized_provider)
         & (availability['resolution'] == resolution.strip())
     ]
     if matches.empty:
         if include_mapping:
-            return pd.DataFrame(columns=['station_id', 'dataset_scope', 'resolution', 'element', 'element_raw', 'raw_elements'])
+            return pd.DataFrame(columns=['station_id', 'provider', 'resolution', 'element', 'element_raw', 'raw_elements'])
         return []
     if include_mapping:
         weather_provider = get_provider(country)
-        spec = weather_provider.get_dataset_spec(normalized_scope, resolution)
+        spec = weather_provider.get_dataset_spec(normalized_provider, resolution)
         station_mapping = _station_mapping_frame_for_spec(stations, station_id, spec)
         mapping = station_mapping.copy() if station_mapping is not None else element_mapping_for_spec(spec).copy()
         mapping.insert(0, 'resolution', resolution.strip())
-        mapping.insert(0, 'dataset_scope', normalized_scope)
+        mapping.insert(0, 'provider', normalized_provider)
         mapping.insert(0, 'station_id', station_id)
         return mapping.reset_index(drop=True)
     return list(matches.iloc[0]['supported_elements'])
@@ -182,7 +180,6 @@ def find_stations_with_elements(
     elements: Sequence[str],
     resolution: str,
     country: str = 'CZ',
-    dataset_scope: str | None = None,
     provider: str | None = None,
     station_ids: Sequence[str] | None = None,
     active_on: date | datetime | str | None = None,
@@ -199,7 +196,6 @@ def find_stations_with_elements(
         weather_provider,
         country=country,
         resolution=resolution,
-        dataset_scope=dataset_scope,
         provider=provider,
     )
     spec = weather_provider.get_dataset_spec(resolved_provider, resolution)
@@ -239,8 +235,7 @@ def find_stations_with_elements(
         return pd.DataFrame(columns=FIND_STATIONS_COLUMNS)
 
     station_matches.insert(8, 'provider', resolved_provider)
-    station_matches.insert(9, 'dataset_scope', resolved_provider)
-    station_matches.insert(10, 'resolution', spec.resolution)
+    station_matches.insert(9, 'resolution', spec.resolution)
     return station_matches.loc[:, FIND_STATIONS_COLUMNS].reset_index(drop=True)
 
 
@@ -250,7 +245,7 @@ def _station_provider_raw_elements_by_path(stations: pd.DataFrame) -> dict[tuple
 
 def _station_raw_elements_for_spec(stations: pd.DataFrame, station_id: str, spec) -> list[str] | None:
     mapping = _station_provider_raw_elements_by_path(stations)
-    station_map = mapping.get((spec.dataset_scope, spec.resolution))
+    station_map = mapping.get((spec.provider, spec.resolution))
     if station_map is None:
         return None
     raw_elements = station_map.get(str(station_id))
@@ -309,25 +304,24 @@ def _resolve_provider_for_station_search(
     *,
     country: str,
     resolution: str,
-    dataset_scope: str | None,
     provider: str | None,
 ) -> str:
-    if dataset_scope is not None or provider is not None:
-        return normalize_provider_scope(dataset_scope=dataset_scope, provider=provider)
+    if provider is not None:
+        return normalize_provider_name(provider)
 
     normalized_country = country.strip().upper()
-    matching_scopes = sorted({
-        spec.dataset_scope
+    matching_providers = sorted({
+        spec.provider
         for spec in weather_provider.list_implemented_dataset_specs()
         if spec.resolution == resolution.strip()
     })
-    if len(matching_scopes) == 1:
-        return matching_scopes[0]
-    if len(matching_scopes) > 1:
-        choices = ', '.join(matching_scopes)
+    if len(matching_providers) == 1:
+        return matching_providers[0]
+    if len(matching_providers) > 1:
+        choices = ', '.join(matching_providers)
         raise ValueError(
             f"Multiple providers support country='{normalized_country}' and resolution='{resolution.strip()}': {choices}. "
-            'Use provider=... (preferred) or dataset_scope=... explicitly.'
+            'Use provider=... explicitly.'
         )
     raise ValueError(f"Unsupported resolution '{resolution.strip()}' for country '{normalized_country}'.")
 
@@ -363,7 +357,7 @@ def _normalize_requested_canonical_elements(elements: Sequence[str], spec) -> li
         supported = ', '.join(canonical_elements)
         unsupported_joined = ', '.join(unsupported)
         raise ValueError(
-            f"Unsupported elements for provider='{spec.dataset_scope}' and resolution='{spec.resolution}': {unsupported_joined}. "
+            f"Unsupported elements for provider='{spec.provider}' and resolution='{spec.resolution}': {unsupported_joined}. "
             f"Supported canonical elements: {supported}."
         )
     return normalized
@@ -480,7 +474,7 @@ def _find_station_matches_from_station_availability(
         country=country,
     )
     availability = availability[
-        (availability['dataset_scope'] == spec.dataset_scope)
+        (availability['provider'] == spec.provider)
         & (availability['resolution'] == spec.resolution)
     ].copy()
     if availability.empty:
@@ -537,5 +531,3 @@ def _format_timestamp_series(series: pd.Series) -> pd.Series:
     if non_null.any():
         formatted.loc[non_null] = pd.to_datetime(series.loc[non_null], utc=True).dt.strftime('%Y-%m-%d')
     return formatted
-
-

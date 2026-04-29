@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Mapping
@@ -13,7 +13,7 @@ from .ghcnd import (
 
 @dataclass(frozen=True, slots=True)
 class ChmiDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     endpoint_pattern: str | None
     supported_elements: tuple[str, ...]
@@ -95,7 +95,7 @@ _HOURLY_HISTORICAL_CSV_CANONICAL_ELEMENTS: dict[str, tuple[str, ...]] = {
 
 
 def _build_spec(
-    dataset_scope: str,
+    provider: str,
     resolution: str,
     *,
     supported_elements: tuple[str, ...] = (),
@@ -108,7 +108,7 @@ def _build_spec(
 ) -> ChmiDatasetSpec:
     effective_supported_elements = tuple(element_groups.keys()) if element_groups is not None else supported_elements
     return ChmiDatasetSpec(
-        dataset_scope=dataset_scope,
+        provider=provider,
         resolution=resolution,
         endpoint_pattern=endpoint_pattern,
         supported_elements=effective_supported_elements,
@@ -168,13 +168,13 @@ _DATASET_REGISTRY: dict[tuple[str, str], ChmiDatasetSpec] = {
 }
 
 
-def get_chmi_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec:
-    key = (dataset_scope.strip(), resolution.strip())
+def get_chmi_dataset_spec(provider: str, resolution: str) -> ChmiDatasetSpec:
+    key = (provider.strip(), resolution.strip())
     try:
         return _DATASET_REGISTRY[key]
     except KeyError as exc:
         raise ValueError(
-            f"No CHMI dataset spec is registered for dataset_scope='{dataset_scope}' and resolution='{resolution}'."
+            f"No CHMI dataset spec is registered for provider='{provider}' and resolution='{resolution}'."
         ) from exc
 
 
@@ -189,8 +189,8 @@ def list_implemented_dataset_specs() -> list[ChmiDatasetSpec]:
     ]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> ChmiDatasetSpec | GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> ChmiDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     if normalized_scope == 'ghcnd':
         return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)

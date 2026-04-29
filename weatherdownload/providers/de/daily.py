@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import re
@@ -15,7 +15,7 @@ from ...queries import ObservationQuery
 
 NORMALIZED_DWD_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
-    'value', 'flag', 'quality', 'dataset_scope', 'resolution',
+    'value', 'flag', 'quality', 'provider', 'resolution',
 ]
 DWD_DAILY_DIRECTORY_URL = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/'
 _DWD_DAILY_ARCHIVE_PATTERN = re.compile(r'tageswerte_KL_(?P<station_id>\d{5})_\d{8}_\d{8}_hist\.zip')
@@ -35,7 +35,7 @@ def download_daily_observations_dwd(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != 'daily':
+    if query.provider != 'historical' or query.resolution != 'daily':
         raise UnsupportedQueryError('The DWD daily downloader only supports historical/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The DWD daily downloader requires at least one element.')
@@ -67,7 +67,7 @@ def download_daily_observations_dwd(
 
 
 def _build_daily_download_targets(query: ObservationQuery, archive_urls: dict[str, str]) -> list[DwdDailyDownloadTarget]:
-    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = get_dataset_spec(query.provider, query.resolution)
     if not spec.implemented:
         raise UnsupportedQueryError('The requested DWD dataset path is not implemented.')
     targets: list[DwdDailyDownloadTarget] = []
@@ -134,7 +134,7 @@ def normalize_daily_observations_dwd(
                 'value': _to_numeric_with_missing(table[normalized_element]),
                 'flag': pd.NA,
                 'quality': _to_quality_with_missing(table[quality_column]) if quality_column is not None else pd.Series(pd.NA, index=table.index, dtype='Int64'),
-                'dataset_scope': query.dataset_scope,
+                'provider': query.provider,
                 'resolution': query.resolution,
             }
         )

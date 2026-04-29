@@ -1,4 +1,4 @@
-﻿import json
+import json
 import unittest
 from pathlib import Path
 
@@ -80,7 +80,7 @@ class DenmarkParserTests(unittest.TestCase):
         station_metadata = normalize_dk_station_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT))
         query = ObservationQuery(
             country='DK',
-            dataset_scope='historical',
+            provider='historical',
             resolution='daily',
             station_ids=['06180'],
             start_date='2024-01-01',
@@ -88,7 +88,7 @@ class DenmarkParserTests(unittest.TestCase):
             elements=['tas_mean', 'precipitation'],
         )
         observations = normalize_daily_observations_dk(parse_dk_feature_collection_json(SAMPLE_DAILY_TEXT), query, station_metadata=station_metadata)
-        self.assertEqual(list(observations.columns), ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'])
+        self.assertEqual(list(observations.columns), ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution'])
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['acc_precip', 'mean_temp'])
         lookup = observations.set_index(['element', 'observation_date'])['value']
@@ -100,7 +100,7 @@ class DenmarkParserTests(unittest.TestCase):
         station_metadata = normalize_dk_station_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT))
         query = ObservationQuery(
             country='DK',
-            dataset_scope='historical',
+            provider='historical',
             resolution='1hour',
             station_ids=['06180'],
             start='2024-01-01T01:00:00Z',
@@ -108,7 +108,7 @@ class DenmarkParserTests(unittest.TestCase):
             elements=['tas_mean', 'pressure'],
         )
         observations = normalize_hourly_observations_dk(parse_dk_feature_collection_json(SAMPLE_HOURLY_TEXT), query, station_metadata=station_metadata)
-        self.assertEqual(list(observations.columns), ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'])
+        self.assertEqual(list(observations.columns), ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'])
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['mean_pressure', 'mean_temp'])
         lookup = observations.set_index(['element', 'timestamp'])['value']
@@ -120,7 +120,7 @@ class DenmarkParserTests(unittest.TestCase):
         station_metadata = normalize_dk_station_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT))
         query = ObservationQuery(
             country='DK',
-            dataset_scope='historical',
+            provider='historical',
             resolution='10min',
             station_ids=['06180'],
             start='2024-01-01T00:10:00Z',
@@ -128,7 +128,7 @@ class DenmarkParserTests(unittest.TestCase):
             elements=['tas_mean', 'pressure'],
         )
         observations = normalize_tenmin_observations_dk(parse_dk_feature_collection_json(SAMPLE_TENMIN_TEXT), query, station_metadata=station_metadata)
-        self.assertEqual(list(observations.columns), ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'])
+        self.assertEqual(list(observations.columns), ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'])
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'tas_mean'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['pressure', 'temp_dry'])
         lookup = observations.set_index(['element', 'timestamp'])['value']

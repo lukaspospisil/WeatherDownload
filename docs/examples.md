@@ -26,9 +26,9 @@ Terminology note:
 
 - `country` selects the country/provider context
 - `provider` is the preferred public name for the provider-specific dataset or source name
-- `dataset_scope` remains accepted as a backward-compatible alias
+- `provider` is the public selector name
 - `resolution` selects the temporal resolution
-- scope names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model](providers.md) for the exact meaning in each country path
+- provider names such as `historical`, `historical_csv`, `recent`, or `ghcnd` are not global categories; check [Provider Model](providers.md) for the exact meaning in each country path
 - for a complete current country/provider/resolution/element overview, check [Supported Capabilities](supported_capabilities.md)
 - `utils/` is reserved for internal utilities and audits, not the main public example tour
 
@@ -107,11 +107,11 @@ HU notes:
 - `HU` currently supports `historical / daily`, `historical / 1hour`, and `historical / 10min` through the shared examples
 PL notes:
 
-- `PL` uses the shared daily example path through the official IMGW-PIB public `historical / daily` synop slice by default; the separate `historical_klimat / daily` scope is documented in the provider notes
+- `PL` uses the shared daily example path through the official IMGW-PIB public `historical / daily` synop slice by default; the separate `historical_klimat / daily` provider path is documented in the provider notes
 - station metadata use the official `dane_meteorologiczne/wykaz_stacji.csv` station list, with the 5-character IMGW station code as canonical `station_id`
 - daily observations use deterministic yearly station archives for completed years and current-year monthly all-station archives when the requested range reaches the current year
 - raw IMGW daily status codes such as `WSTD`, `WSMDB`, and `WUSL` are preserved in `flag`, while normalized `quality` stays null
-- `PL` currently supports `historical / daily` and `historical / 1hour` in the shared example defaults, while the separate `historical_klimat / daily` scope is available through the same public API when requested explicitly
+- `PL` currently supports `historical / daily` and `historical / 1hour` in the shared example defaults, while the separate `historical_klimat / daily` provider path is available through the same public API when requested explicitly
 
 NL notes:
 
@@ -338,7 +338,7 @@ Important boundary:
 
 - provider-level support does not mean every station supports every element on that path
 - station-level availability is provider-specific and can be inventory-driven, metadata-driven, or provider-wide depending on the source
-- `provider` is the preferred selector; `dataset_scope` remains a backward-compatible alias
+- `provider` selects the concrete source path
 
 Python example:
 

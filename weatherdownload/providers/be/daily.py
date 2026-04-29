@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import date
 
@@ -18,7 +18,7 @@ def download_daily_observations_be(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.dataset_scope != 'historical' or query.resolution != 'daily':
+    if query.provider != 'historical' or query.resolution != 'daily':
         raise UnsupportedQueryError('The RMI/KMI Belgium daily downloader only supports historical/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The RMI/KMI Belgium daily downloader requires at least one element.')
@@ -92,7 +92,7 @@ def normalize_daily_observations_be(
                     'value': pd.to_numeric(pd.Series([properties.get(raw_code)]), errors='coerce').iloc[0],
                     'flag': properties.get('qc_flags') if properties.get('qc_flags') not in (None, '') else pd.NA,
                     'quality': pd.Series([pd.NA], dtype='Int64').iloc[0],
-                    'dataset_scope': query.dataset_scope,
+                    'provider': query.provider,
                     'resolution': query.resolution,
                 }
             )

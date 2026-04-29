@@ -10,7 +10,7 @@ This note documents the current IMGW-PIB public archive integration for Poland. 
 
 - country: `PL`
 - provider: `historical`, `historical_klimat`
-- backward-compatible `dataset_scope`: `historical`, `historical_klimat`
+- `provider`: `historical`, `historical_klimat`
 - resolution(s):
   - `historical`: `daily`, `1hour`
   - `historical_klimat`: `daily`

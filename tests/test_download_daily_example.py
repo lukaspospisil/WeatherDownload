@@ -1,4 +1,4 @@
-﻿import importlib.util
+import importlib.util
 import io
 import sys
 import unittest
@@ -36,7 +36,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                 'value': -2.2,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
             }
         ])
@@ -47,7 +47,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                     download_daily.main()
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'CH')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.station_ids, ['AIG'])
         self.assertEqual(query.elements, ['tre200d0', 'rre150d0', 'sre000d0'])
@@ -65,7 +65,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                 'value': 3.5,
                 'flag': '{"qcStatus":"manual","validity":true}',
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
             }
         ])
@@ -76,7 +76,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                     download_daily.main()
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DK')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.station_ids, ['06180'])
         self.assertEqual(query.elements, ['mean_temp', 'acc_precip', 'bright_sunshine'])
@@ -94,7 +94,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                 'value': 3.8,
                 'flag': None,
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
             }
         ])
@@ -105,7 +105,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                     download_daily.main()
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'PL')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.station_ids, ['00375'])
         self.assertEqual(query.elements, ['STD', 'SMDB', 'USL'])
@@ -123,7 +123,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                 'value': 11.1,
                 'flag': 'Y',
                 'quality': None,
-                'dataset_scope': 'historical',
+                'provider': 'historical',
                 'resolution': 'daily',
             }
         ])
@@ -134,7 +134,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                     download_daily.main()
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'SE')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.station_ids, ['98230'])
         self.assertEqual(query.elements, ['2', '20', '5'])

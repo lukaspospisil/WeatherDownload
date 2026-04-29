@@ -1,4 +1,4 @@
-﻿import json
+import json
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -9,7 +9,7 @@ from weatherdownload import (
     ObservationQuery,
     QueryValidationError,
     download_observations,
-    list_dataset_scopes,
+    list_providers,
     list_resolutions,
     list_supported_countries,
     list_supported_elements,
@@ -83,9 +83,9 @@ class _MockResponse:
 class SwitzerlandProviderTests(unittest.TestCase):
     def test_supported_countries_include_ch(self) -> None:
         self.assertIn('CH', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='CH'), ['ghcnd', 'historical'])
-        self.assertEqual(list_resolutions(country='CH', dataset_scope='ghcnd'), ['daily'])
-        self.assertEqual(list_resolutions(country='CH', dataset_scope='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(list_providers(country='CH'), ['ghcnd', 'historical'])
+        self.assertEqual(list_resolutions(country='CH', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='CH', provider='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_ch_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='CH', source_url=str(SAMPLE_STATIONS_PATH))
@@ -106,35 +106,35 @@ class SwitzerlandProviderTests(unittest.TestCase):
 
     def test_discovery_country_ch_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='CH', dataset_scope='historical', resolution='daily'),
+            list_supported_elements(country='CH', provider='historical', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'vapour_pressure', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='CH', dataset_scope='historical', resolution='1hour'),
+            list_supported_elements(country='CH', provider='historical', resolution='1hour'),
             ['tas_mean', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'vapour_pressure', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='CH', dataset_scope='historical', resolution='10min'),
+            list_supported_elements(country='CH', provider='historical', resolution='10min'),
             ['tas_mean', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'vapour_pressure', 'pressure', 'sunshine_duration'],
         )
         self.assertEqual(
-            list_supported_elements(country='CH', dataset_scope='historical', resolution='10min', provider_raw=True),
+            list_supported_elements(country='CH', provider='historical', resolution='10min', provider_raw=True),
             ['tre200s0', 'rre150z0', 'fkl010z0', 'fkl010z1', 'ure200s0', 'pva200s0', 'prestas0', 'sre000z0'],
         )
 
     def test_ch_queries_accept_canonical_and_raw_codes(self) -> None:
-        daily_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='daily', station_ids=['AIG'], start_date='2025-12-31', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
-        hourly_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='1hour', station_ids=['AIG'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
-        tenmin_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='10min', station_ids=['AIG'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure'])
+        daily_query = ObservationQuery(country='CH', provider='historical', resolution='daily', station_ids=['AIG'], start_date='2025-12-31', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
+        hourly_query = ObservationQuery(country='CH', provider='historical', resolution='1hour', station_ids=['AIG'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
+        tenmin_query = ObservationQuery(country='CH', provider='historical', resolution='10min', station_ids=['AIG'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure'])
         self.assertEqual(daily_query.elements, ['tre200d0', 'rre150d0'])
         self.assertEqual(hourly_query.elements, ['tre200h0', 'prestah0'])
         self.assertEqual(tenmin_query.elements, ['tre200s0', 'prestas0'])
 
     def test_ch_query_rejects_unsupported_resolution_and_ambiguous_element(self) -> None:
         with self.assertRaises(QueryValidationError):
-            ObservationQuery(country='CH', dataset_scope='historical', resolution='monthly', station_ids=['AIG'], start='2026-01-01T00:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean'])
+            ObservationQuery(country='CH', provider='historical', resolution='monthly', station_ids=['AIG'], start='2026-01-01T00:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean'])
         with self.assertRaises(QueryValidationError):
-            ObservationQuery(country='CH', dataset_scope='historical', resolution='10min', station_ids=['AIG'], start='2026-01-01T00:00:00Z', end='2026-01-01T00:10:00Z', elements=['gre000z0'])
+            ObservationQuery(country='CH', provider='historical', resolution='10min', station_ids=['AIG'], start='2026-01-01T00:00:00Z', end='2026-01-01T00:10:00Z', elements=['gre000z0'])
 
     def test_parse_ch_observation_csv_keeps_source_columns(self) -> None:
         parsed = parse_ch_observation_csv(SAMPLE_TENMIN_HISTORICAL_PATH.read_text(encoding='cp1252'))
@@ -155,12 +155,12 @@ class SwitzerlandProviderTests(unittest.TestCase):
                 return _MockResponse(content=SAMPLE_DAILY_RECENT_PATH.read_bytes())
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='CH', dataset_scope='historical', resolution='daily', station_ids=['AIG'], start_date='2025-12-31', end_date='2026-01-02', elements=['tas_mean', 'pressure', 'precipitation'])
+        query = ObservationQuery(country='CH', provider='historical', resolution='daily', station_ids=['AIG'], start_date='2025-12-31', end_date='2026-01-02', elements=['tas_mean', 'pressure', 'precipitation'])
         with patch('weatherdownload.providers.ch.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='CH', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), CH_NORMALIZED_DAILY_COLUMNS)
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'pressure', 'tas_mean'])
-        self.assertEqual(observations['dataset_scope'].unique().tolist(), ['historical'])
+        self.assertEqual(observations['provider'].unique().tolist(), ['historical'])
         self.assertEqual(observations['resolution'].unique().tolist(), ['daily'])
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
         lookup = observations.set_index(['element', 'observation_date'])['value']
@@ -179,7 +179,7 @@ class SwitzerlandProviderTests(unittest.TestCase):
                 return _MockResponse(content=SAMPLE_HOURLY_RECENT_PATH.read_bytes())
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='CH', dataset_scope='historical', resolution='1hour', station_ids=['AIG'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure', 'vapour_pressure'])
+        query = ObservationQuery(country='CH', provider='historical', resolution='1hour', station_ids=['AIG'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=['tas_mean', 'pressure', 'vapour_pressure'])
         with patch('weatherdownload.providers.ch.hourly.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='CH', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), CH_NORMALIZED_SUBDAILY_COLUMNS)
@@ -202,7 +202,7 @@ class SwitzerlandProviderTests(unittest.TestCase):
                 return _MockResponse(content=SAMPLE_TENMIN_RECENT_PATH.read_bytes())
             return _MockResponse(status_code=404)
 
-        query = ObservationQuery(country='CH', dataset_scope='historical', resolution='10min', station_ids=['AIG'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure', 'wind_speed_max'])
+        query = ObservationQuery(country='CH', provider='historical', resolution='10min', station_ids=['AIG'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=['tas_mean', 'pressure', 'wind_speed_max'])
         with patch('weatherdownload.providers.ch.tenmin.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='CH', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), CH_NORMALIZED_SUBDAILY_COLUMNS)
@@ -225,7 +225,7 @@ class SwitzerlandProviderTests(unittest.TestCase):
                 return _MockResponse(content=SAMPLE_DAILY_RECENT_PATH.read_bytes())
             return _MockResponse(status_code=404)
 
-        daily_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='daily', station_ids=['AIG'], start_date='2025-12-31', end_date='2026-01-02', elements=list(EXPECTED_CH_DAILY_MAPPING.keys()))
+        daily_query = ObservationQuery(country='CH', provider='historical', resolution='daily', station_ids=['AIG'], start_date='2025-12-31', end_date='2026-01-02', elements=list(EXPECTED_CH_DAILY_MAPPING.keys()))
         with patch('weatherdownload.providers.ch.daily.requests.get', side_effect=fake_daily_get):
             daily = download_observations(daily_query, country='CH', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in daily[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -240,7 +240,7 @@ class SwitzerlandProviderTests(unittest.TestCase):
                 return _MockResponse(content=SAMPLE_HOURLY_RECENT_PATH.read_bytes())
             return _MockResponse(status_code=404)
 
-        hourly_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='1hour', station_ids=['AIG'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=list(EXPECTED_CH_HOURLY_MAPPING.keys()))
+        hourly_query = ObservationQuery(country='CH', provider='historical', resolution='1hour', station_ids=['AIG'], start='2025-12-31T23:00:00Z', end='2026-01-01T01:00:00Z', elements=list(EXPECTED_CH_HOURLY_MAPPING.keys()))
         with patch('weatherdownload.providers.ch.hourly.requests.get', side_effect=fake_hourly_get):
             hourly = download_observations(hourly_query, country='CH', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in hourly[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
@@ -255,7 +255,7 @@ class SwitzerlandProviderTests(unittest.TestCase):
                 return _MockResponse(content=SAMPLE_TENMIN_RECENT_PATH.read_bytes())
             return _MockResponse(status_code=404)
 
-        tenmin_query = ObservationQuery(country='CH', dataset_scope='historical', resolution='10min', station_ids=['AIG'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_CH_TENMIN_MAPPING.keys()))
+        tenmin_query = ObservationQuery(country='CH', provider='historical', resolution='10min', station_ids=['AIG'], start='2025-12-31T23:50:00Z', end='2026-01-01T00:10:00Z', elements=list(EXPECTED_CH_TENMIN_MAPPING.keys()))
         with patch('weatherdownload.providers.ch.tenmin.requests.get', side_effect=fake_tenmin_get):
             tenmin = download_observations(tenmin_query, country='CH', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in tenmin[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}

@@ -6,7 +6,7 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 
 - country: `FI`, `FR`, `IT`, `NO`, `NZ`
 - provider: `ghcnd`
-- backward-compatible `dataset_scope`: `ghcnd`
+- `provider`: `ghcnd`
 - resolution(s): `daily`
 
 ## Source

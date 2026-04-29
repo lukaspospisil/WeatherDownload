@@ -8,7 +8,7 @@ from weatherdownload import (
     ObservationQuery,
     download_observations,
     get_provider,
-    list_dataset_scopes,
+    list_providers,
     list_providers,
     list_resolutions,
     list_station_elements,
@@ -39,14 +39,14 @@ class MexicoGhcndProviderTests(unittest.TestCase):
     def test_provider_capability_metadata_is_explicit(self) -> None:
         provider = get_provider('MX')
         self.assertEqual(provider.supported_country_codes, ('MX',))
-        self.assertEqual(provider.supported_dataset_scopes, ('ghcnd',))
+        self.assertEqual(provider.supported_providers, ('ghcnd',))
         self.assertEqual(provider.supported_resolutions, ('daily',))
         self.assertEqual(provider.supported_canonical_elements, ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'))
 
     def test_discovery_country_mx_returns_ghcnd_daily_elements_without_evap(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='MX'), ['ghcnd'])
         self.assertEqual(list_providers(country='MX'), ['ghcnd'])
-        self.assertEqual(list_resolutions(country='MX', dataset_scope='ghcnd'), ['daily'])
+        self.assertEqual(list_providers(country='MX'), ['ghcnd'])
+        self.assertEqual(list_resolutions(country='MX', provider='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='MX', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='MX', provider='ghcnd', resolution='daily'),
@@ -71,7 +71,7 @@ class MexicoGhcndProviderTests(unittest.TestCase):
     def test_query_normalizes_canonical_and_raw_mx_ghcnd_elements(self) -> None:
         canonical_query = ObservationQuery(
             country='MX',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['mx000000001'],
             start_date='2016-07-01',
@@ -80,7 +80,7 @@ class MexicoGhcndProviderTests(unittest.TestCase):
         )
         raw_query = ObservationQuery(
             country='MX',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['MX000000001'],
             start_date='2016-07-01',
@@ -140,7 +140,7 @@ class MexicoGhcndProviderTests(unittest.TestCase):
         raw_table = parse_ghcnd_dly_text(SAMPLE_DLY_PATH.read_text(encoding='utf-8'))
         query = ObservationQuery(
             country='MX',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['MX000000001'],
             start_date='2020-07-01',
@@ -170,7 +170,7 @@ class MexicoGhcndProviderTests(unittest.TestCase):
     def test_download_observations_reads_local_mx_dly_fixture_and_canonicalizes_output(self) -> None:
         query = ObservationQuery(
             country='MX',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['MX000000001'],
             start_date='2020-07-01',

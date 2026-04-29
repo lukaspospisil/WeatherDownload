@@ -8,7 +8,7 @@ from weatherdownload import (
     ObservationQuery,
     download_observations,
     get_provider,
-    list_dataset_scopes,
+    list_providers,
     list_providers,
     list_resolutions,
     list_station_elements,
@@ -84,7 +84,7 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
             with self.subTest(country=country):
                 provider = get_provider(country)
                 self.assertEqual(provider.supported_country_codes, (country,))
-                self.assertEqual(provider.supported_dataset_scopes, ('ghcnd',))
+                self.assertEqual(provider.supported_providers, ('ghcnd',))
                 self.assertEqual(provider.supported_resolutions, ('daily',))
                 self.assertEqual(
                     provider.supported_canonical_elements,
@@ -94,9 +94,9 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
     def test_discovery_for_new_countries_returns_ghcnd_daily_without_evap(self) -> None:
         for country in COUNTRY_SPECS:
             with self.subTest(country=country):
-                self.assertEqual(list_dataset_scopes(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
-                self.assertEqual(list_resolutions(country=country, dataset_scope='ghcnd'), ['daily'])
+                self.assertEqual(list_providers(country=country), ['ghcnd'])
+                self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
@@ -112,7 +112,7 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
             with self.subTest(country=country):
                 canonical_query = ObservationQuery(
                     country=country,
-                    dataset_scope='ghcnd',
+                    provider='ghcnd',
                     resolution='daily',
                     station_ids=[spec['station_core'].lower()],
                     start_date=spec['start_date'],
@@ -121,7 +121,7 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
                 )
                 raw_query = ObservationQuery(
                     country=country,
-                    dataset_scope='ghcnd',
+                    provider='ghcnd',
                     resolution='daily',
                     station_ids=[spec['station_core']],
                     start_date=spec['start_date'],
@@ -180,7 +180,7 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
         raw_table = parse_ghcnd_dly_text(COUNTRY_SPECS['FI']['fixture_path'].read_text(encoding='utf-8'))
         query = ObservationQuery(
             country='FI',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['FI000000001'],
             start_date='2020-08-01',
@@ -204,7 +204,7 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
     def test_download_observations_reads_local_fi_fixture_and_canonicalizes_output(self) -> None:
         query = ObservationQuery(
             country='FI',
-            dataset_scope='ghcnd',
+            provider='ghcnd',
             resolution='daily',
             station_ids=['FI000000001'],
             start_date='2020-08-01',

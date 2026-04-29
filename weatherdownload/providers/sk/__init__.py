@@ -39,8 +39,8 @@ def _assert_supported_national_query(query) -> None:
         raise UnsupportedQueryError("Experimental SHMU provider requires an ObservationQuery.")
     if getattr(query, 'country', '').strip().upper() != 'SK':
         raise UnsupportedQueryError("Experimental SHMU provider supports only country='SK'.")
-    if getattr(query, 'dataset_scope', None) != 'recent':
-        raise UnsupportedQueryError("Experimental SHMU provider supports only dataset_scope='recent'.")
+    if getattr(query, 'provider', None) != 'recent':
+        raise UnsupportedQueryError("Experimental SHMU provider supports only provider='recent'.")
     if getattr(query, 'resolution', None) != 'daily':
         raise UnsupportedQueryError("Experimental SHMU provider supports only resolution='daily'.")
 
@@ -70,7 +70,7 @@ PROVIDER = WeatherProvider(
     get_dataset_spec=get_dataset_spec,
     download_observations=_download_observations,
     supported_country_codes=('SK',),
-    supported_dataset_scopes=('ghcnd', 'recent'),
+    supported_providers=('ghcnd', 'recent'),
     supported_resolutions=('daily',),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=True,

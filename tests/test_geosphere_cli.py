@@ -8,7 +8,7 @@ from weatherdownload.cli import main
 
 
 class GeosphereCliTests(unittest.TestCase):
-    def test_daily_cli_country_at_uses_historical_dataset_scope(self) -> None:
+    def test_daily_cli_country_at_uses_historical_provider(self) -> None:
         captured: dict[str, object] = {}
 
         def fake_download(query, country=None):
@@ -25,7 +25,7 @@ class GeosphereCliTests(unittest.TestCase):
                     'value': 2.2,
                     'flag': pd.NA,
                     'quality': 20,
-                    'dataset_scope': 'historical',
+                    'provider': 'historical',
                     'resolution': 'daily',
                 }
             ])
@@ -46,13 +46,13 @@ class GeosphereCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = captured['query']
         self.assertEqual(query.country, 'AT')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['tl_mittel'])
         self.assertEqual(captured['country'], 'AT')
         self.assertIn('tas_mean', stdout.getvalue())
 
-    def test_hourly_cli_country_at_uses_historical_dataset_scope(self) -> None:
+    def test_hourly_cli_country_at_uses_historical_provider(self) -> None:
         captured: dict[str, object] = {}
 
         def fake_download(query, country=None):
@@ -68,7 +68,7 @@ class GeosphereCliTests(unittest.TestCase):
                     'value': 2.1,
                     'flag': '20',
                     'quality': pd.NA,
-                    'dataset_scope': 'historical',
+                    'provider': 'historical',
                     'resolution': '1hour',
                 }
             ])
@@ -88,14 +88,14 @@ class GeosphereCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = captured['query']
         self.assertEqual(query.country, 'AT')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '1hour')
         self.assertEqual(query.elements, ['tl'])
         self.assertEqual(captured['country'], 'AT')
         self.assertIn('tas_mean', stdout.getvalue())
 
 
-    def test_tenmin_cli_country_at_uses_historical_dataset_scope(self) -> None:
+    def test_tenmin_cli_country_at_uses_historical_provider(self) -> None:
         captured: dict[str, object] = {}
 
         def fake_download(query, country=None):
@@ -111,7 +111,7 @@ class GeosphereCliTests(unittest.TestCase):
                     'value': 0.1,
                     'flag': '12',
                     'quality': pd.NA,
-                    'dataset_scope': 'historical',
+                    'provider': 'historical',
                     'resolution': '10min',
                 }
             ])
@@ -131,7 +131,7 @@ class GeosphereCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         query = captured['query']
         self.assertEqual(query.country, 'AT')
-        self.assertEqual(query.dataset_scope, 'historical')
+        self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '10min')
         self.assertEqual(query.elements, ['tl'])
         self.assertEqual(captured['country'], 'AT')

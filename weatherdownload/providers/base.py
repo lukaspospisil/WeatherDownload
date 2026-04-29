@@ -20,7 +20,7 @@ class WeatherProvider:
     get_dataset_spec: Callable[[str, str], Any]
     download_observations: Callable[[ObservationQuery, int, pd.DataFrame | None], pd.DataFrame]
     supported_country_codes: tuple[str, ...] = field(default_factory=tuple)
-    supported_dataset_scopes: tuple[str, ...] = field(default_factory=tuple)
+    supported_providers: tuple[str, ...] = field(default_factory=tuple)
     supported_resolutions: tuple[str, ...] = field(default_factory=tuple)
     supported_canonical_elements: tuple[str, ...] = field(default_factory=tuple)
     experimental: bool = False

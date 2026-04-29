@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class PolandDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     label: str
     station_metadata_url: str
@@ -100,7 +100,7 @@ PL_HOURLY_SYNOP_PARAMETER_METADATA = {
 
 _PL_DATASET_SPECS = [
     PolandDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         label='IMGW-PIB historical daily synop station observations',
         station_metadata_url=PL_STATION_METADATA_URL,
@@ -111,7 +111,7 @@ _PL_DATASET_SPECS = [
         implemented=True,
     ),
     PolandDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         label='IMGW-PIB historical hourly synop station observations',
         station_metadata_url=PL_STATION_METADATA_URL,
@@ -122,7 +122,7 @@ _PL_DATASET_SPECS = [
         implemented=True,
     ),
     PolandDatasetSpec(
-        dataset_scope='historical_klimat',
+        provider='historical_klimat',
         resolution='daily',
         label='IMGW-PIB historical daily klimat station observations',
         station_metadata_url=PL_STATION_METADATA_URL,
@@ -145,10 +145,10 @@ def list_implemented_dataset_specs() -> list[PolandDatasetSpec]:
 
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> PolandDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> PolandDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     for spec in _PL_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported IMGW Poland dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported IMGW Poland dataset combination: {provider}/{resolution}')

@@ -10,7 +10,7 @@ This note covers the thin `CZ / ghcnd / daily` wrapper around the shared NOAA GH
 
 - country: `CZ`
 - provider: `ghcnd`
-- backward-compatible `dataset_scope`: `ghcnd`
+- `provider`: `ghcnd`
 - resolution(s): `daily`
 - GHCN country prefix used by the wrapper: `EZ`
 

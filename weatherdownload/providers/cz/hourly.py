@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import re
@@ -14,7 +14,7 @@ from ...queries import ObservationQuery
 
 RAW_HOURLY_COLUMNS = ['STATION', 'ELEMENT', 'DT', 'VALUE', 'FLAG', 'QUALITY']
 NORMALIZED_HOURLY_COLUMNS = [
-    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution'
+    'station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'
 ]
 _YEAR_LINK_PATTERN = re.compile(r'href=["\'](?P<year>\d{4})/["\']')
 
@@ -30,7 +30,7 @@ class HourlyDownloadTarget:
 
 
 def build_hourly_download_targets(query: ObservationQuery, timeout: int = 60) -> list[HourlyDownloadTarget]:
-    spec = get_dataset_spec(query.dataset_scope, query.resolution)
+    spec = get_dataset_spec(query.provider, query.resolution)
     if spec.time_semantics != 'datetime':
         raise UnsupportedQueryError(
             f"Unsupported time semantics for hourly downloader: {spec.time_semantics}"
@@ -103,7 +103,7 @@ def normalize_hourly_observations(table: pd.DataFrame, query: ObservationQuery, 
     normalized['value'] = pd.to_numeric(normalized['value'], errors='coerce')
     normalized['quality'] = pd.to_numeric(normalized['quality'], errors='coerce').astype('Int64')
     normalized['flag'] = normalized['flag'].astype('string').replace({'': pd.NA})
-    normalized['dataset_scope'] = query.dataset_scope
+    normalized['provider'] = query.provider
     normalized['resolution'] = query.resolution
     if station_metadata is not None and not station_metadata.empty:
         mapping = station_metadata.loc[:, ['station_id', 'gh_id']].drop_duplicates(subset=['station_id'])

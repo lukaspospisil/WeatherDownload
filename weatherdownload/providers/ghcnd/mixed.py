@@ -12,7 +12,7 @@ def build_mixed_observation_downloader(
 ) -> Callable[..., pd.DataFrame]:
     def _download_observations(*args, **kwargs):
         query = args[0] if args else kwargs.get('query')
-        if getattr(query, 'dataset_scope', None) == 'ghcnd':
+        if getattr(query, 'provider', None) == 'ghcnd':
             return download_ghcnd_observations(*args, **kwargs)
         return download_national_observations(*args, **kwargs)
 
@@ -84,16 +84,16 @@ def _build_station_elements_attrs(
     list_implemented_dataset_specs: Callable[[], list[object]],
 ) -> dict[tuple[str, str], dict[str, list[str]]]:
     attrs: dict[tuple[str, str], dict[str, list[str]]] = {
-        (spec.dataset_scope, spec.resolution): {}
+        (spec.provider, spec.resolution): {}
         for spec in list_implemented_dataset_specs()
     }
     implemented_national_specs = [
         spec for spec in list_implemented_dataset_specs()
-        if spec.dataset_scope != 'ghcnd'
+        if spec.provider != 'ghcnd'
     ]
     national_station_ids = [str(value) for value in national_table.get('station_id', pd.Series(dtype='object')).tolist()]
     for spec in implemented_national_specs:
-        attrs[(spec.dataset_scope, spec.resolution)] = {
+        attrs[(spec.provider, spec.resolution)] = {
             station_id: list(spec.supported_elements)
             for station_id in national_station_ids
         }

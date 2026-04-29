@@ -23,7 +23,7 @@ GHCND_US_CANONICAL_ELEMENTS = {
 
 @dataclass(frozen=True)
 class GhcndDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     source_id: str
     label: str
@@ -44,7 +44,7 @@ def build_dataset_spec(
     source_id: str = 'ncei_ghcnd_daily',
 ) -> GhcndDatasetSpec:
     return GhcndDatasetSpec(
-        dataset_scope='ghcnd',
+        provider='ghcnd',
         resolution='daily',
         source_id=source_id,
         label=label,
@@ -85,12 +85,12 @@ def list_country_implemented_dataset_specs(specs: list[GhcndDatasetSpec]) -> lis
 
 def get_country_dataset_spec(
     specs: list[GhcndDatasetSpec],
-    dataset_scope: str,
+    provider: str,
     resolution: str,
 ) -> GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     for spec in specs:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported GHCN-Daily dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported GHCN-Daily dataset combination: {provider}/{resolution}')

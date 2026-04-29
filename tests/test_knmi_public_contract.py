@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,7 +13,7 @@ def test_nl_hourly_download_contract_matches_shared_subdaily_schema() -> None:
     station_metadata = read_station_metadata(country='NL', source_url=str(SAMPLE_STATIONS_PATH))
     query = ObservationQuery(
         country='NL',
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         station_ids=['0-20000-0-06260'],
         start='2024-01-01T01:00:00Z',
@@ -46,11 +46,11 @@ def test_nl_hourly_download_contract_matches_shared_subdaily_schema() -> None:
                 with patch('weatherdownload.providers.nl.hourly.parse_knmi_hourly_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
                     observations = download_observations(query, country='NL', station_metadata=station_metadata)
 
-    assert list(observations.columns) == ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'dataset_scope', 'resolution']
+    assert list(observations.columns) == ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution']
     assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
     assert observations['element_raw'].notna().all()
     assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
-    assert observations['dataset_scope'].eq('historical').all()
+    assert observations['provider'].eq('historical').all()
     assert observations['resolution'].eq('1hour').all()
     assert observations['gh_id'].isna().all()
     assert observations['flag'].isna().all()

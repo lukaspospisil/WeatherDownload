@@ -1,11 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class BelgiumDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     label: str
     metadata_url: str
@@ -145,7 +145,7 @@ BE_PARAMETER_METADATA = {**BE_DAILY_PARAMETER_METADATA, **BE_HOURLY_PARAMETER_ME
 
 _BE_DATASET_SPECS = [
     BelgiumDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         label='RMI/KMI AWS historical daily observations',
         metadata_url=(
@@ -168,7 +168,7 @@ _BE_DATASET_SPECS = [
         implemented=True,
     ),
     BelgiumDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         label='RMI/KMI AWS historical hourly observations',
         metadata_url=(
@@ -189,7 +189,7 @@ _BE_DATASET_SPECS = [
         implemented=True,
     ),
     BelgiumDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         label='RMI/KMI AWS historical 10-minute observations',
         metadata_url=(
@@ -220,11 +220,11 @@ def list_implemented_dataset_specs() -> list[BelgiumDatasetSpec]:
     return [spec for spec in _BE_DATASET_SPECS if spec.implemented]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> BelgiumDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> BelgiumDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     for spec in _BE_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported RMI/KMI Belgium dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported RMI/KMI Belgium dataset combination: {provider}/{resolution}')
 

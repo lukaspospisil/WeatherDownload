@@ -12,7 +12,7 @@ from .ghcnd import (
 
 @dataclass(frozen=True)
 class SwedenDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     label: str
     metadata_url: str
@@ -132,7 +132,7 @@ SE_PARAMETER_METADATA = {
 
 _SE_DATASET_SPECS = [
     SwedenDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         label='SMHI Meteorological Observations historical daily corrected-archive station observations',
         metadata_url=SMHI_PARAMETER_URL_TEMPLATE.format(parameter_id='2'),
@@ -143,7 +143,7 @@ _SE_DATASET_SPECS = [
         implemented=True,
     ),
     SwedenDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         label='SMHI Meteorological Observations historical hourly corrected-archive station observations',
         metadata_url=SMHI_PARAMETER_URL_TEMPLATE.format(parameter_id='1'),
@@ -167,12 +167,12 @@ def list_implemented_dataset_specs() -> list[SwedenDatasetSpec]:
     ]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> SwedenDatasetSpec | GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> SwedenDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     if normalized_scope == 'ghcnd':
         return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     for spec in _SE_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported SMHI Sweden dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported SMHI Sweden dataset combination: {provider}/{resolution}')

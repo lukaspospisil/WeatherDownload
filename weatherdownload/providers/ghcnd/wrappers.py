@@ -47,9 +47,9 @@ def assert_supported_ghcnd_query(query: ObservationQuery | None, *, country_code
         raise UnsupportedQueryError('NOAA GHCN-Daily provider requires an ObservationQuery.')
     if getattr(query, 'country', '').strip().upper() != country_code:
         raise UnsupportedQueryError(f"NOAA GHCN-Daily provider supports only country='{country_code}'.")
-    if getattr(query, 'dataset_scope', None) != 'ghcnd':
+    if getattr(query, 'provider', None) != 'ghcnd':
         raise UnsupportedQueryError(
-            "NOAA GHCN-Daily provider supports provider='ghcnd' (dataset_scope='ghcnd')."
+            "NOAA GHCN-Daily provider supports provider='ghcnd' (provider='ghcnd')."
         )
     if getattr(query, 'resolution', None) != 'daily':
         raise UnsupportedQueryError("NOAA GHCN-Daily provider supports only resolution='daily'.")
@@ -81,7 +81,7 @@ def build_country_provider(
         get_dataset_spec=get_dataset_spec,
         download_observations=_download_observations,
         supported_country_codes=(country_code,),
-        supported_dataset_scopes=('ghcnd',),
+        supported_providers=('ghcnd',),
         supported_resolutions=('daily',),
         supported_canonical_elements=supported_canonical_elements,
     )
@@ -166,8 +166,8 @@ def build_country_wrapper_bundle(
     def _list_implemented_dataset_specs() -> list[GhcndDatasetSpec]:
         return list_country_implemented_dataset_specs(specs)
 
-    def _get_dataset_spec(dataset_scope: str, resolution: str) -> GhcndDatasetSpec:
-        return get_country_dataset_spec(specs, dataset_scope, resolution)
+    def _get_dataset_spec(provider: str, resolution: str) -> GhcndDatasetSpec:
+        return get_country_dataset_spec(specs, provider, resolution)
 
     read_station_metadata = build_station_metadata_reader(
         country_prefix=normalized_prefix,

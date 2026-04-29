@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -30,7 +30,7 @@ class DailyWorkflowIntegrationTests(unittest.TestCase):
 
         stations = read_station_metadata(source_url='tests/data/sample_meta1.csv')
         selected = filter_stations(stations, station_ids=['0-20000-0-11406'])
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='daily', station_ids=selected['station_id'].tolist(), start_date='1865-06-01', end_date='1865-06-03', elements=['TMA'])
+        query = ObservationQuery(provider='historical_csv', resolution='daily', station_ids=selected['station_id'].tolist(), start_date='1865-06-01', end_date='1865-06-03', elements=['TMA'])
         with patch('weatherdownload.providers.cz.daily.requests.get', side_effect=fake_get):
             result = download_observations(query, station_metadata=selected)
         self.assertEqual(list(result['station_id'].unique()), ['0-20000-0-11406'])
@@ -47,7 +47,7 @@ class DailyWorkflowIntegrationTests(unittest.TestCase):
 
         stations = read_station_metadata(source_url='tests/data/sample_meta1.csv')
         selected = filter_stations(stations, station_ids=['0-20000-0-11406'])
-        query = ObservationQuery(dataset_scope='historical_csv', resolution='10min', station_ids=selected['station_id'].tolist(), start='2024-01-01T00:00:00Z', end='2024-01-01T00:20:00Z', elements=['T'])
+        query = ObservationQuery(provider='historical_csv', resolution='10min', station_ids=selected['station_id'].tolist(), start='2024-01-01T00:00:00Z', end='2024-01-01T00:20:00Z', elements=['T'])
         with patch('weatherdownload.providers.cz.tenmin.requests.get', side_effect=fake_get):
             result = download_observations(query, station_metadata=selected)
         self.assertEqual(list(result['station_id'].unique()), ['0-20000-0-11406'])

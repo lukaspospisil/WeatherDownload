@@ -10,7 +10,7 @@ This note documents the current experimental SHMU OpenDATA slice. The implementa
 
 - country: `SK`
 - provider: `recent`
-- backward-compatible `dataset_scope`: `recent`
+- `provider`: `recent`
 - resolution(s): `daily`
 
 ## Source

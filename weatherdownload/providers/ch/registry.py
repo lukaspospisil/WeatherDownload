@@ -12,7 +12,7 @@ from .ghcnd import (
 
 @dataclass(frozen=True)
 class SwitzerlandDatasetSpec:
-    dataset_scope: str
+    provider: str
     resolution: str
     label: str
     station_metadata_url: str
@@ -118,7 +118,7 @@ CH_TENMIN_PARAMETER_METADATA = {
 
 _CH_DATASET_SPECS = [
     SwitzerlandDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='daily',
         label='MeteoSwiss A1 historical daily station observations',
         station_metadata_url=CH_STATION_METADATA_URL,
@@ -131,7 +131,7 @@ _CH_DATASET_SPECS = [
         implemented=True,
     ),
     SwitzerlandDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='1hour',
         label='MeteoSwiss A1 historical hourly station observations',
         station_metadata_url=CH_STATION_METADATA_URL,
@@ -144,7 +144,7 @@ _CH_DATASET_SPECS = [
         implemented=True,
     ),
     SwitzerlandDatasetSpec(
-        dataset_scope='historical',
+        provider='historical',
         resolution='10min',
         label='MeteoSwiss A1 historical 10-minute station observations',
         station_metadata_url=CH_STATION_METADATA_URL,
@@ -170,12 +170,12 @@ def list_implemented_dataset_specs() -> list[SwitzerlandDatasetSpec]:
     ]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> SwitzerlandDatasetSpec | GhcndDatasetSpec:
-    normalized_scope = dataset_scope.strip()
+def get_dataset_spec(provider: str, resolution: str) -> SwitzerlandDatasetSpec | GhcndDatasetSpec:
+    normalized_scope = provider.strip()
     normalized_resolution = resolution.strip()
     if normalized_scope == 'ghcnd':
         return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     for spec in _CH_DATASET_SPECS:
-        if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
             return spec
-    raise ValueError(f'Unsupported MeteoSwiss Switzerland dataset combination: {dataset_scope}/{resolution}')
+    raise ValueError(f'Unsupported MeteoSwiss Switzerland dataset combination: {provider}/{resolution}')
