@@ -63,7 +63,10 @@ class ShmuProviderTests(unittest.TestCase):
         self.assertEqual(provider.supported_country_codes, ('SK',))
         self.assertEqual(provider.supported_dataset_scopes, ('ghcnd', 'recent'))
         self.assertEqual(provider.supported_resolutions, ('daily',))
-        self.assertEqual(provider.supported_canonical_elements, ('tas_max', 'tas_min', 'sunshine_duration', 'precipitation', 'open_water_evaporation'))
+        self.assertEqual(
+            provider.supported_canonical_elements,
+            ('tas_mean', 'tas_max', 'tas_min', 'sunshine_duration', 'precipitation', 'snow_depth', 'open_water_evaporation'),
+        )
         self.assertTrue(provider.experimental)
 
     def test_discovery_country_sk_returns_canonical_and_raw_elements(self) -> None:

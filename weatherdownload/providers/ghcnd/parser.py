@@ -27,6 +27,7 @@ GHCND_NORMALIZED_DAILY_COLUMNS = [
 GHCND_DAILY_SCALE_FACTORS = {
     'EVAP': 10.0,
     'PRCP': 10.0,
+    'TAVG': 10.0,
     'TMAX': 10.0,
     'TMIN': 10.0,
 }
@@ -207,7 +208,7 @@ def build_station_supported_raw_elements(
 def parse_ghcnd_dly_text(
     dly_text: str,
     *,
-    supported_elements: tuple[str, ...] = ('TMAX', 'TMIN', 'PRCP', 'EVAP'),
+    supported_elements: tuple[str, ...] = ('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD', 'EVAP'),
 ) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     supported = set(supported_elements)
@@ -320,6 +321,8 @@ def _observation_description(element_raw: str) -> str:
     descriptions = {
         'EVAP': 'Evaporation of water from evaporation pan [raw unit: tenths of mm; WeatherDownload output: mm]',
         'PRCP': 'Daily precipitation total [raw unit: tenths of mm; WeatherDownload output: mm]',
+        'SNWD': 'Daily snow depth [raw unit: mm; WeatherDownload output: mm]',
+        'TAVG': 'Daily average temperature [raw unit: tenths of degrees C; WeatherDownload output: degrees C]',
         'TMAX': 'Daily maximum temperature [raw unit: tenths of degrees C; WeatherDownload output: degrees C]',
         'TMIN': 'Daily minimum temperature [raw unit: tenths of degrees C; WeatherDownload output: degrees C]',
     }

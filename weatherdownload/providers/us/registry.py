@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..ghcnd.registry import (
+    GHCND_US_CANONICAL_ELEMENTS,
     GhcndDatasetSpec,
     build_country_dataset_specs,
     get_country_dataset_spec,
@@ -9,17 +10,9 @@ from ..ghcnd.registry import (
 )
 
 
-_GHCND_DAILY_CANONICAL_ELEMENTS = {
-    'tas_max': ('TMAX',),
-    'tas_min': ('TMIN',),
-    'precipitation': ('PRCP',),
-    'open_water_evaporation': ('EVAP',),
-}
-
-
 _GHCND_DATASET_SPECS = build_country_dataset_specs(
-    supported_elements=('TMAX', 'TMIN', 'PRCP', 'EVAP'),
-    canonical_elements=_GHCND_DAILY_CANONICAL_ELEMENTS,
+    supported_elements=('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD', 'EVAP'),
+    canonical_elements=GHCND_US_CANONICAL_ELEMENTS,
 )
 
 

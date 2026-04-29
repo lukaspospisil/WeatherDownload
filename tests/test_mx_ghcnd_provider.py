@@ -41,7 +41,7 @@ class MexicoGhcndProviderTests(unittest.TestCase):
         self.assertEqual(provider.supported_country_codes, ('MX',))
         self.assertEqual(provider.supported_dataset_scopes, ('ghcnd',))
         self.assertEqual(provider.supported_resolutions, ('daily',))
-        self.assertEqual(provider.supported_canonical_elements, ('tas_max', 'tas_min', 'precipitation'))
+        self.assertEqual(provider.supported_canonical_elements, ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'))
 
     def test_discovery_country_mx_returns_ghcnd_daily_elements_without_evap(self) -> None:
         self.assertEqual(list_dataset_scopes(country='MX'), ['ghcnd'])
@@ -50,19 +50,21 @@ class MexicoGhcndProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='MX', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='MX', provider='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
             list_supported_elements(country='MX', provider='ghcnd', resolution='daily', provider_raw=True),
-            ['TMAX', 'TMIN', 'PRCP'],
+            ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
         )
         mapping = list_supported_elements(country='MX', provider='ghcnd', resolution='daily', include_mapping=True)
         self.assertEqual(
             mapping[['element', 'element_raw']].to_dict('records'),
             [
+                {'element': 'tas_mean', 'element_raw': 'TAVG'},
                 {'element': 'tas_max', 'element_raw': 'TMAX'},
                 {'element': 'tas_min', 'element_raw': 'TMIN'},
                 {'element': 'precipitation', 'element_raw': 'PRCP'},
+                {'element': 'snow_depth', 'element_raw': 'SNWD'},
             ],
         )
 
@@ -94,12 +96,12 @@ class MexicoGhcndProviderTests(unittest.TestCase):
         station_elements = build_station_supported_raw_elements(
             inventory_table,
             country_prefix='MX',
-            supported_elements=('TMAX', 'TMIN', 'PRCP'),
+            supported_elements=('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'),
         )
         self.assertEqual(
             station_elements,
             {
-                'MX000000001': ['TMAX', 'TMIN', 'PRCP'],
+                'MX000000001': ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
                 'MX000000002': ['PRCP'],
             },
         )
@@ -123,12 +125,14 @@ class MexicoGhcndProviderTests(unittest.TestCase):
         )
         self.assertEqual(observation_metadata['station_id'].unique().tolist(), ['MX000000001', 'MX000000002'])
         self.assertEqual(
-            observation_metadata[['station_id', 'element']].to_dict('records'),
-            [
-                {'station_id': 'MX000000001', 'element': 'PRCP'},
-                {'station_id': 'MX000000001', 'element': 'TMAX'},
-                {'station_id': 'MX000000001', 'element': 'TMIN'},
-                {'station_id': 'MX000000002', 'element': 'PRCP'},
+                    observation_metadata[['station_id', 'element']].to_dict('records'),
+                    [
+                        {'station_id': 'MX000000001', 'element': 'PRCP'},
+                        {'station_id': 'MX000000001', 'element': 'SNWD'},
+                        {'station_id': 'MX000000001', 'element': 'TAVG'},
+                        {'station_id': 'MX000000001', 'element': 'TMAX'},
+                        {'station_id': 'MX000000001', 'element': 'TMIN'},
+                        {'station_id': 'MX000000002', 'element': 'PRCP'},
             ],
         )
 
@@ -141,17 +145,21 @@ class MexicoGhcndProviderTests(unittest.TestCase):
             station_ids=['MX000000001'],
             start_date='2020-07-01',
             end_date='2020-07-02',
-            elements=['tas_max', 'tas_min', 'precipitation'],
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         normalized = normalize_daily_observations_ghcnd(raw_table, query=query)
         self.assertEqual(list(normalized.columns), GHCND_NORMALIZED_DAILY_COLUMNS)
         lookup = {(row.element, str(row.observation_date)): row for row in normalized.itertuples(index=False)}
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-07-01')].value), 22.0)
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-07-02')].value), 22.6)
         self.assertAlmostEqual(float(lookup[('tas_max', '2020-07-01')].value), 30.1)
         self.assertAlmostEqual(float(lookup[('tas_max', '2020-07-02')].value), 30.5)
         self.assertAlmostEqual(float(lookup[('tas_min', '2020-07-01')].value), 14.8)
         self.assertNotIn(('tas_min', '2020-07-02'), lookup)
         self.assertAlmostEqual(float(lookup[('precipitation', '2020-07-01')].value), 3.4)
         self.assertAlmostEqual(float(lookup[('precipitation', '2020-07-02')].value), 0.0)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-07-01')].value), 0.0)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-07-02')].value), 0.0)
 
     def test_build_station_dly_url_uses_official_all_directory(self) -> None:
         self.assertEqual(
@@ -182,14 +190,14 @@ class MexicoGhcndProviderTests(unittest.TestCase):
         stations = read_station_metadata(country='MX', source_url=str(SAMPLE_STATIONS_PATH))
         self.assertEqual(
             list_station_elements(stations, 'MX000000001', 'ghcnd', 'daily', country='MX'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
             list_station_elements(stations, 'MX000000002', 'ghcnd', 'daily', country='MX'),
             ['precipitation'],
         )
         mapping = list_station_elements(stations, 'MX000000001', 'ghcnd', 'daily', country='MX', include_mapping=True)
-        self.assertEqual(mapping['element_raw'].tolist(), ['TMAX', 'TMIN', 'PRCP'])
+        self.assertEqual(mapping['element_raw'].tolist(), ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'])
 
     def test_station_metadata_excludes_mx_station_with_only_unsupported_elements(self) -> None:
         stations = read_station_metadata(country='MX', source_url=str(SAMPLE_STATIONS_PATH))

@@ -1,16 +1,13 @@
 from __future__ import annotations
 
+from ..ghcnd.registry import GHCND_STANDARD_CANONICAL_ELEMENTS
 from ..ghcnd.wrappers import build_country_wrapper_bundle
 
 
 _GHCND_BUNDLE = build_country_wrapper_bundle(
     country_code='AT',
     ghcn_prefix='AU',
-    canonical_elements={
-        'tas_max': ('TMAX',),
-        'tas_min': ('TMIN',),
-        'precipitation': ('PRCP',),
-    },
+    canonical_elements=GHCND_STANDARD_CANONICAL_ELEMENTS,
 )
 
 SUPPORTED_CANONICAL_ELEMENTS = _GHCND_BUNDLE.supported_canonical_elements

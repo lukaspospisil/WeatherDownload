@@ -80,7 +80,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='CA', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
 
     def test_discovery_country_us_includes_conservative_ghcnd_core(self) -> None:
@@ -88,7 +88,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='US', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='US', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth', 'open_water_evaporation'],
         )
 
     def test_discovery_country_mx_includes_conservative_ghcnd_core_without_evap(self) -> None:
@@ -98,7 +98,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='MX', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='MX', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
@@ -110,7 +110,7 @@ class ProviderTests(unittest.TestCase):
                 self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(
                     list_supported_elements(country=country, dataset_scope='ghcnd', resolution='daily'),
-                    ['tas_max', 'tas_min', 'precipitation'],
+                    ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
 
     def test_discovery_country_cz_includes_chmi_and_ghcnd_daily_without_evap_on_ghcnd(self) -> None:
@@ -119,7 +119,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='CZ', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='CZ', provider='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertIn(
             'open_water_evaporation',
@@ -159,7 +159,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_dataset_scopes(country='DE'), ['ghcnd', 'historical'])
         self.assertEqual(
             list_supported_elements(country='DE', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(list_resolutions(country='DE', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         hourly_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='1hour')
@@ -177,7 +177,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_dataset_scopes(country='AT'), ['ghcnd', 'historical'])
         self.assertEqual(
             list_supported_elements(country='AT', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         daily_elements = list_supported_elements(country='AT', dataset_scope='historical', resolution='daily')
@@ -199,7 +199,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_dataset_scopes(country='CH'), ['ghcnd', 'historical'])
         self.assertEqual(
             list_supported_elements(country='CH', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(list_resolutions(country='CH', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         self.assertEqual(
@@ -273,7 +273,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_dataset_scopes(country='DK'), ['ghcnd', 'historical'])
         self.assertEqual(
             list_supported_elements(country='DK', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(list_resolutions(country='DK', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         daily_elements = list_supported_elements(country='DK', dataset_scope='historical', resolution='daily')
@@ -354,7 +354,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_dataset_scopes(country='SE'), ['ghcnd', 'historical'])
         self.assertEqual(
             list_supported_elements(country='SE', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(list_resolutions(country='SE', dataset_scope='historical'), ['1hour', 'daily'])
         self.assertEqual(

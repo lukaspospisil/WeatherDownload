@@ -83,8 +83,8 @@ class StationAvailabilityTests(unittest.TestCase):
         )
         self.assertTrue(station_supports(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'))
         self.assertTrue(station_supports(stations, 'CA000000002', None, 'daily', country='CA', provider='ghcnd'))
-        self.assertEqual(list_station_elements(stations, 'CA000000001', 'ghcnd', 'daily', country='CA'), ['tas_max', 'tas_min', 'precipitation'])
-        self.assertEqual(list_station_elements(stations, 'CA000000001', None, 'daily', country='CA', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'CA000000001', 'ghcnd', 'daily', country='CA'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
+        self.assertEqual(list_station_elements(stations, 'CA000000001', None, 'daily', country='CA', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'), ['precipitation'])
 
     def test_cz_ghcnd_station_availability_and_elements_are_inventory_driven(self) -> None:
@@ -96,8 +96,8 @@ class StationAvailabilityTests(unittest.TestCase):
         )
         self.assertTrue(station_supports(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'))
         self.assertTrue(station_supports(stations, 'EZM00011520', None, 'daily', country='CZ', provider='ghcnd'))
-        self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_max', 'tas_min', 'precipitation'])
-        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
+        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'), ['precipitation'])
 
     def test_de_ghcnd_station_availability_and_elements_are_inventory_driven(self) -> None:
@@ -109,8 +109,8 @@ class StationAvailabilityTests(unittest.TestCase):
         )
         self.assertTrue(station_supports(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'))
         self.assertTrue(station_supports(stations, 'GM000000002', None, 'daily', country='DE', provider='ghcnd'))
-        self.assertEqual(list_station_elements(stations, 'GM000000001', 'ghcnd', 'daily', country='DE'), ['tas_max', 'tas_min', 'precipitation'])
-        self.assertEqual(list_station_elements(stations, 'GM000000001', None, 'daily', country='DE', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'GM000000001', 'ghcnd', 'daily', country='DE'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
+        self.assertEqual(list_station_elements(stations, 'GM000000001', None, 'daily', country='DE', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'), ['precipitation'])
 
 

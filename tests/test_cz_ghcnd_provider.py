@@ -42,7 +42,7 @@ class CzechGhcndProviderTests(unittest.TestCase):
     def test_shared_mapped_prefix_bundle_uses_ez_prefix_for_cz(self) -> None:
         self.assertEqual(_GHCND_BUNDLE.country_code, 'CZ')
         self.assertEqual(_GHCND_BUNDLE.ghcn_prefix, 'EZ')
-        self.assertEqual(_GHCND_BUNDLE.supported_raw_elements, ('TMAX', 'TMIN', 'PRCP'))
+        self.assertEqual(_GHCND_BUNDLE.supported_raw_elements, ('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'))
 
     def test_discovery_country_cz_includes_historical_csv_and_ghcnd(self) -> None:
         self.assertEqual(list_dataset_scopes(country='CZ'), ['ghcnd', 'historical', 'historical_csv', 'now', 'recent'])
@@ -52,11 +52,11 @@ class CzechGhcndProviderTests(unittest.TestCase):
     def test_discovery_country_cz_ghcnd_daily_elements_exclude_open_water_evaporation(self) -> None:
         self.assertEqual(
             list_supported_elements(country='CZ', provider='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
             list_supported_elements(country='CZ', provider='ghcnd', resolution='daily', provider_raw=True),
-            ['TMAX', 'TMIN', 'PRCP'],
+            ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
         )
         self.assertIn(
             'open_water_evaporation',
@@ -91,12 +91,12 @@ class CzechGhcndProviderTests(unittest.TestCase):
         station_elements = build_station_supported_raw_elements(
             inventory_table,
             country_prefix='EZ',
-            supported_elements=('TMAX', 'TMIN', 'PRCP'),
+            supported_elements=('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'),
         )
         self.assertEqual(
             station_elements,
             {
-                'EZM00011406': ['TMAX', 'TMIN', 'PRCP'],
+                'EZM00011406': ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
                 'EZM00011520': ['PRCP'],
             },
         )
@@ -116,6 +116,8 @@ class CzechGhcndProviderTests(unittest.TestCase):
             observation_metadata[['station_id', 'element']].to_dict('records'),
             [
                 {'station_id': 'EZM00011406', 'element': 'PRCP'},
+                {'station_id': 'EZM00011406', 'element': 'SNWD'},
+                {'station_id': 'EZM00011406', 'element': 'TAVG'},
                 {'station_id': 'EZM00011406', 'element': 'TMAX'},
                 {'station_id': 'EZM00011406', 'element': 'TMIN'},
                 {'station_id': 'EZM00011520', 'element': 'PRCP'},
@@ -133,8 +135,8 @@ class CzechGhcndProviderTests(unittest.TestCase):
         self.assertFalse(station_supports(stations, '0-20000-0-11406', 'ghcnd', 'daily', country='CZ'))
         self.assertFalse(station_supports(stations, 'EZM00011406', 'historical_csv', 'daily', country='CZ'))
         self.assertTrue(station_supports(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'))
-        self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_max', 'tas_min', 'precipitation'])
-        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'EZM00011406', 'ghcnd', 'daily', country='CZ'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
+        self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, '0-20000-0-11406', 'historical_csv', 'daily', country='CZ')[0], 'open_water_evaporation')
 
     def test_parse_and_normalize_cz_ghcnd_dly_converts_units_and_drops_missing(self) -> None:
@@ -146,17 +148,21 @@ class CzechGhcndProviderTests(unittest.TestCase):
             station_ids=['EZM00011406'],
             start_date='2020-05-01',
             end_date='2020-05-02',
-            elements=['tas_max', 'tas_min', 'precipitation'],
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         normalized = normalize_daily_observations_ghcnd(raw_table, query=query)
         self.assertEqual(list(normalized.columns), GHCND_NORMALIZED_DAILY_COLUMNS)
         lookup = {(row.element, str(row.observation_date)): row for row in normalized.itertuples(index=False)}
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-05-01')].value), 13.8)
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-05-02')].value), 14.5)
         self.assertAlmostEqual(float(lookup[('tas_max', '2020-05-01')].value), 21.5)
         self.assertAlmostEqual(float(lookup[('tas_max', '2020-05-02')].value), 22.0)
         self.assertAlmostEqual(float(lookup[('precipitation', '2020-05-01')].value), 1.8)
         self.assertAlmostEqual(float(lookup[('precipitation', '2020-05-02')].value), 4.2)
         self.assertAlmostEqual(float(lookup[('tas_min', '2020-05-01')].value), 5.5)
         self.assertNotIn(('tas_min', '2020-05-02'), lookup)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-05-01')].value), 0.0)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-05-02')].value), 0.0)
 
     def test_download_observations_reads_local_cz_ghcnd_fixture_and_canonicalizes_output(self) -> None:
         query = ObservationQuery(

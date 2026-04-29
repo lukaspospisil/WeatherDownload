@@ -32,19 +32,24 @@ The official NOAA documentation describes `.dly` files as station-month records 
 
 Current raw-to-canonical mapping:
 
+- `TAVG` -> `tas_mean`
 - `TMAX` -> `tas_max`
 - `TMIN` -> `tas_min`
 - `PRCP` -> `precipitation`
+- `SNWD` -> `snow_depth`
 - `EVAP` -> `open_water_evaporation`
 
 `open_water_evaporation` is supported here only because NOAA explicitly documents `EVAP` as measured evaporation from an evaporation pan. PET, ET0, reference evaporation, modeled evaporation, and multiday `MDEV` totals remain intentionally unsupported.
+`tas_mean` is supported here only from raw NOAA `TAVG`; this wrapper does not derive a mean from `TMAX` and `TMIN`.
+`snowfall` remains intentionally unsupported because there is no existing canonical snowfall element wired for GHCN in this pass.
 
 For the authoritative current matrix, see [Supported Capabilities](../supported_capabilities.md).
 
 ## Units and conversions
 
-- `TMAX` and `TMIN`: tenths of degrees C -> degrees C
+- `TAVG`, `TMAX`, and `TMIN`: tenths of degrees C -> degrees C
 - `PRCP` and `EVAP`: tenths of mm -> mm
+- `SNWD`: mm -> mm
 - NOAA missing code `-9999` is treated as missing
 - normalized output preserves raw NOAA `element_raw`
 

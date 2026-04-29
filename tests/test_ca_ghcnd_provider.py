@@ -37,26 +37,28 @@ class CanadaGhcndProviderTests(unittest.TestCase):
         self.assertEqual(provider.supported_country_codes, ('CA',))
         self.assertEqual(provider.supported_dataset_scopes, ('ghcnd',))
         self.assertEqual(provider.supported_resolutions, ('daily',))
-        self.assertEqual(provider.supported_canonical_elements, ('tas_max', 'tas_min', 'precipitation'))
+        self.assertEqual(provider.supported_canonical_elements, ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'))
 
     def test_discovery_country_ca_returns_ghcnd_daily_elements_without_evap(self) -> None:
         self.assertEqual(list_dataset_scopes(country='CA'), ['ghcnd'])
         self.assertEqual(list_resolutions(country='CA', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
             list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily', provider_raw=True),
-            ['TMAX', 'TMIN', 'PRCP'],
+            ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
         )
         mapping = list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily', include_mapping=True)
         self.assertEqual(
             mapping[['element', 'element_raw']].to_dict('records'),
             [
+                {'element': 'tas_mean', 'element_raw': 'TAVG'},
                 {'element': 'tas_max', 'element_raw': 'TMAX'},
                 {'element': 'tas_min', 'element_raw': 'TMIN'},
                 {'element': 'precipitation', 'element_raw': 'PRCP'},
+                {'element': 'snow_depth', 'element_raw': 'SNWD'},
             ],
         )
 
@@ -88,12 +90,12 @@ class CanadaGhcndProviderTests(unittest.TestCase):
         station_elements = build_station_supported_raw_elements(
             inventory_table,
             country_prefix='CA',
-            supported_elements=('TMAX', 'TMIN', 'PRCP'),
+            supported_elements=('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'),
         )
         self.assertEqual(
             station_elements,
             {
-                'CA000000001': ['TMAX', 'TMIN', 'PRCP'],
+                'CA000000001': ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
                 'CA000000002': ['PRCP'],
             },
         )
@@ -117,12 +119,14 @@ class CanadaGhcndProviderTests(unittest.TestCase):
         )
         self.assertEqual(observation_metadata['station_id'].unique().tolist(), ['CA000000001', 'CA000000002'])
         self.assertEqual(
-            observation_metadata[['station_id', 'element']].to_dict('records'),
-            [
-                {'station_id': 'CA000000001', 'element': 'PRCP'},
-                {'station_id': 'CA000000001', 'element': 'TMAX'},
-                {'station_id': 'CA000000001', 'element': 'TMIN'},
-                {'station_id': 'CA000000002', 'element': 'PRCP'},
+                    observation_metadata[['station_id', 'element']].to_dict('records'),
+                    [
+                        {'station_id': 'CA000000001', 'element': 'PRCP'},
+                        {'station_id': 'CA000000001', 'element': 'SNWD'},
+                        {'station_id': 'CA000000001', 'element': 'TAVG'},
+                        {'station_id': 'CA000000001', 'element': 'TMAX'},
+                        {'station_id': 'CA000000001', 'element': 'TMIN'},
+                        {'station_id': 'CA000000002', 'element': 'PRCP'},
             ],
         )
 
@@ -135,18 +139,22 @@ class CanadaGhcndProviderTests(unittest.TestCase):
             station_ids=['CA000000001'],
             start_date='2020-06-01',
             end_date='2020-06-02',
-            elements=['tas_max', 'tas_min', 'precipitation'],
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         normalized = normalize_daily_observations_ghcnd(raw_table, query=query)
         self.assertEqual(list(normalized.columns), GHCND_NORMALIZED_DAILY_COLUMNS)
-        self.assertEqual(sorted(normalized['element'].unique().tolist()), ['precipitation', 'tas_max', 'tas_min'])
+        self.assertEqual(sorted(normalized['element'].unique().tolist()), ['precipitation', 'snow_depth', 'tas_max', 'tas_mean', 'tas_min'])
         lookup = {(row.element, str(row.observation_date)): row for row in normalized.itertuples(index=False)}
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-06-01')].value), 17.0)
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-06-02')].value), 17.5)
         self.assertAlmostEqual(float(lookup[('tas_max', '2020-06-01')].value), 23.5)
         self.assertAlmostEqual(float(lookup[('tas_max', '2020-06-02')].value), 24.0)
         self.assertAlmostEqual(float(lookup[('tas_min', '2020-06-01')].value), 10.5)
         self.assertNotIn(('tas_min', '2020-06-02'), lookup)
         self.assertAlmostEqual(float(lookup[('precipitation', '2020-06-01')].value), 1.2)
         self.assertAlmostEqual(float(lookup[('precipitation', '2020-06-02')].value), 0.0)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-06-01')].value), 50.0)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-06-02')].value), 40.0)
 
     def test_build_station_dly_url_uses_official_all_directory(self) -> None:
         self.assertEqual(
@@ -177,14 +185,14 @@ class CanadaGhcndProviderTests(unittest.TestCase):
         stations = read_station_metadata(country='CA', source_url=str(SAMPLE_STATIONS_PATH))
         self.assertEqual(
             list_station_elements(stations, 'CA000000001', 'ghcnd', 'daily', country='CA'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
             list_station_elements(stations, 'CA000000002', 'ghcnd', 'daily', country='CA'),
             ['precipitation'],
         )
         mapping = list_station_elements(stations, 'CA000000001', 'ghcnd', 'daily', country='CA', include_mapping=True)
-        self.assertEqual(mapping['element_raw'].tolist(), ['TMAX', 'TMIN', 'PRCP'])
+        self.assertEqual(mapping['element_raw'].tolist(), ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'])
 
     def test_station_metadata_excludes_ca_station_with_only_unsupported_elements(self) -> None:
         stations = read_station_metadata(country='CA', source_url=str(SAMPLE_STATIONS_PATH))

@@ -19,6 +19,7 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_max',
     'tas_min',
     'precipitation',
+    'snow_depth',
     'wind_speed',
     'relative_humidity',
     'pressure',

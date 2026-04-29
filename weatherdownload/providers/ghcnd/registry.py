@@ -7,6 +7,19 @@ GHCND_STATIONS_URL = 'https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-statio
 GHCND_INVENTORY_URL = 'https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt'
 GHCND_ALL_BASE_URL = 'https://www.ncei.noaa.gov/pub/data/ghcn/daily/all'
 
+GHCND_STANDARD_CANONICAL_ELEMENTS = {
+    'tas_mean': ('TAVG',),
+    'tas_max': ('TMAX',),
+    'tas_min': ('TMIN',),
+    'precipitation': ('PRCP',),
+    'snow_depth': ('SNWD',),
+}
+
+GHCND_US_CANONICAL_ELEMENTS = {
+    **GHCND_STANDARD_CANONICAL_ELEMENTS,
+    'open_water_evaporation': ('EVAP',),
+}
+
 
 @dataclass(frozen=True)
 class GhcndDatasetSpec:

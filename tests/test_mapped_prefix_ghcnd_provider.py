@@ -101,7 +101,8 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                 self.assertIn('ghcnd', provider.supported_dataset_scopes)
                 self.assertEqual(spec['national_provider'] in provider.supported_dataset_scopes, True)
                 self.assertIn('daily', provider.supported_resolutions)
-                self.assertIn('tas_max', provider.supported_canonical_elements)
+                for element in ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'):
+                    self.assertIn(element, provider.supported_canonical_elements)
                 self.assertNotIn('open_water_evaporation', list_supported_elements(country=country, provider='ghcnd', resolution='daily'))
 
     def test_discovery_for_mapped_prefix_countries_returns_ghcnd_daily_without_evap(self) -> None:
@@ -113,11 +114,11 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                 self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
-                    ['tas_max', 'tas_min', 'precipitation'],
+                    ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
                 self.assertEqual(
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily', provider_raw=True),
-                    ['TMAX', 'TMIN', 'PRCP'],
+                    ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
                 )
 
     def test_query_normalizes_canonical_and_raw_elements_for_mapped_prefix_countries(self) -> None:
@@ -130,7 +131,7 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                     station_ids=[spec['station_core'].lower()],
                     start_date=spec['start_date'],
                     end_date=spec['end_date'],
-                    elements=['tas_max', 'precipitation'],
+                    elements=['tas_mean', 'tas_max', 'precipitation', 'snow_depth'],
                 )
                 raw_query = ObservationQuery(
                     country=country,
@@ -139,11 +140,11 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                     station_ids=[spec['station_core']],
                     start_date=spec['start_date'],
                     end_date=spec['end_date'],
-                    elements=['TMAX', 'PRCP'],
+                    elements=['TAVG', 'TMAX', 'PRCP', 'SNWD'],
                 )
                 self.assertEqual(canonical_query.station_ids, [spec['station_core']])
-                self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
-                self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
+                self.assertEqual(canonical_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
+                self.assertEqual(raw_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
 
     def test_shared_inventory_filter_can_build_country_specific_station_elements(self) -> None:
         inventory_table = parse_ghcnd_inventory_text(SAMPLE_INVENTORY_PATH.read_text(encoding='utf-8'))
@@ -152,12 +153,12 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                 station_elements = build_station_supported_raw_elements(
                     inventory_table,
                     country_prefix=spec['ghcn_prefix'],
-                    supported_elements=('TMAX', 'TMIN', 'PRCP'),
+                    supported_elements=('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'),
                 )
                 self.assertEqual(
                     station_elements,
                     {
-                        spec['station_core']: ['TMAX', 'TMIN', 'PRCP'],
+                        spec['station_core']: ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
                         spec['station_prcp_only']: ['PRCP'],
                     },
                 )
@@ -181,6 +182,8 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                     observation_metadata[['station_id', 'element']].to_dict('records'),
                     [
                         {'station_id': spec['station_core'], 'element': 'PRCP'},
+                        {'station_id': spec['station_core'], 'element': 'SNWD'},
+                        {'station_id': spec['station_core'], 'element': 'TAVG'},
                         {'station_id': spec['station_core'], 'element': 'TMAX'},
                         {'station_id': spec['station_core'], 'element': 'TMIN'},
                         {'station_id': spec['station_prcp_only'], 'element': 'PRCP'},
@@ -189,12 +192,12 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
 
     def test_parse_and_normalize_country_dly_converts_units_and_drops_missing(self) -> None:
         expected_values = {
-            'DE': {'tas_max': (6.1, 7.3), 'tas_min': (-0.8, -0.3), 'precipitation': (1.2, 3.4)},
-            'SK': {'tas_max': (-1.1, 0.2), 'tas_min': (-12.6, -9.8), 'precipitation': (0.5, 1.8)},
-            'CH': {'tas_max': (7.5, 8.4), 'tas_min': (-0.9, 0.4), 'precipitation': (2.1, 0.8)},
-            'DK': {'tas_max': (4.9, 6.7), 'tas_min': (1.1, 2.4), 'precipitation': (1.4, 0.2)},
-            'SE': {'tas_max': (3.2, 4.5), 'tas_min': (-10.2, -8.8), 'precipitation': (0.0, 1.1)},
-            'AT': {'tas_max': (20.1, 21.6), 'tas_min': (9.8, 10.5), 'precipitation': (1.9, 0.7)},
+            'DE': {'tas_mean': (2.7, 3.5), 'tas_max': (6.1, 7.3), 'tas_min': (-0.8, -0.3), 'precipitation': (1.2, 3.4), 'snow_depth': (15.0, 18.0)},
+            'SK': {'tas_mean': (-6.8, -4.4), 'tas_max': (-1.1, 0.2), 'tas_min': (-12.6, -9.8), 'precipitation': (0.5, 1.8), 'snow_depth': (220.0, 215.0)},
+            'CH': {'tas_mean': (3.0, 4.0), 'tas_max': (7.5, 8.4), 'tas_min': (-0.9, 0.4), 'precipitation': (2.1, 0.8), 'snow_depth': (10.0, 12.0)},
+            'DK': {'tas_mean': (3.0, 4.5), 'tas_max': (4.9, 6.7), 'tas_min': (1.1, 2.4), 'precipitation': (1.4, 0.2), 'snow_depth': (0.0, 1.0)},
+            'SE': {'tas_mean': (-3.5, -2.0), 'tas_max': (3.2, 4.5), 'tas_min': (-10.2, -8.8), 'precipitation': (0.0, 1.1), 'snow_depth': (450.0, 440.0)},
+            'AT': {'tas_mean': (14.5, 15.5), 'tas_max': (20.1, 21.6), 'tas_min': (9.8, 10.5), 'precipitation': (1.9, 0.7), 'snow_depth': (0.0, 0.0)},
         }
         for country, spec in COUNTRY_SPECS.items():
             with self.subTest(country=country):
@@ -206,18 +209,22 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                     station_ids=[spec['station_core']],
                     start_date=spec['start_date'],
                     end_date=spec['end_date'],
-                    elements=['tas_max', 'tas_min', 'precipitation'],
+                    elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
                 normalized = normalize_daily_observations_ghcnd(raw_table, query=query)
                 self.assertEqual(list(normalized.columns), GHCND_NORMALIZED_DAILY_COLUMNS)
                 lookup = {(row.element, str(row.observation_date)): row for row in normalized.itertuples(index=False)}
                 start_date, end_date = spec['start_date'], spec['end_date']
+                self.assertAlmostEqual(float(lookup[('tas_mean', start_date)].value), expected_values[country]['tas_mean'][0])
+                self.assertAlmostEqual(float(lookup[('tas_mean', end_date)].value), expected_values[country]['tas_mean'][1])
                 self.assertAlmostEqual(float(lookup[('tas_max', start_date)].value), expected_values[country]['tas_max'][0])
                 self.assertAlmostEqual(float(lookup[('tas_max', end_date)].value), expected_values[country]['tas_max'][1])
                 self.assertAlmostEqual(float(lookup[('tas_min', start_date)].value), expected_values[country]['tas_min'][0])
                 self.assertAlmostEqual(float(lookup[('tas_min', end_date)].value), expected_values[country]['tas_min'][1])
                 self.assertAlmostEqual(float(lookup[('precipitation', start_date)].value), expected_values[country]['precipitation'][0])
                 self.assertAlmostEqual(float(lookup[('precipitation', end_date)].value), expected_values[country]['precipitation'][1])
+                self.assertAlmostEqual(float(lookup[('snow_depth', start_date)].value), expected_values[country]['snow_depth'][0])
+                self.assertAlmostEqual(float(lookup[('snow_depth', end_date)].value), expected_values[country]['snow_depth'][1])
 
     def test_download_observations_reads_local_fixture_and_canonicalizes_output(self) -> None:
         for country, spec in COUNTRY_SPECS.items():
@@ -246,7 +253,7 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
                 stations = read_station_metadata(country=country, source_url=str(SAMPLE_STATIONS_PATH))
                 self.assertEqual(
                     list_station_elements(stations, spec['station_core'], 'ghcnd', 'daily', country=country),
-                    ['tas_max', 'tas_min', 'precipitation'],
+                    ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
                 self.assertEqual(
                     list_station_elements(stations, spec['station_prcp_only'], 'ghcnd', 'daily', country=country),

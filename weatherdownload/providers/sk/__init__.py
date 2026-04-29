@@ -16,10 +16,12 @@ from ..ghcnd.mixed import (
 )
 
 SUPPORTED_CANONICAL_ELEMENTS = (
+    'tas_mean',
     'tas_max',
     'tas_min',
     'sunshine_duration',
     'precipitation',
+    'snow_depth',
     'open_water_evaporation',
 )
 

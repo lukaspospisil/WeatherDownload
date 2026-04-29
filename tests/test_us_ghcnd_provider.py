@@ -43,26 +43,31 @@ class GhcndProviderTests(unittest.TestCase):
         self.assertEqual(provider.supported_country_codes, ('US',))
         self.assertEqual(provider.supported_dataset_scopes, ('ghcnd',))
         self.assertEqual(provider.supported_resolutions, ('daily',))
-        self.assertEqual(provider.supported_canonical_elements, ('tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'))
+        self.assertEqual(
+            provider.supported_canonical_elements,
+            ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth', 'open_water_evaporation'),
+        )
 
     def test_discovery_country_us_returns_ghcnd_daily_elements(self) -> None:
         self.assertEqual(list_dataset_scopes(country='US'), ['ghcnd'])
         self.assertEqual(list_resolutions(country='US', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='US', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth', 'open_water_evaporation'],
         )
         self.assertEqual(
             list_supported_elements(country='US', dataset_scope='ghcnd', resolution='daily', provider_raw=True),
-            ['TMAX', 'TMIN', 'PRCP', 'EVAP'],
+            ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD', 'EVAP'],
         )
         mapping = list_supported_elements(country='US', dataset_scope='ghcnd', resolution='daily', include_mapping=True)
         self.assertEqual(
             mapping[['element', 'element_raw']].to_dict('records'),
             [
+                {'element': 'tas_mean', 'element_raw': 'TAVG'},
                 {'element': 'tas_max', 'element_raw': 'TMAX'},
                 {'element': 'tas_min', 'element_raw': 'TMIN'},
                 {'element': 'precipitation', 'element_raw': 'PRCP'},
+                {'element': 'snow_depth', 'element_raw': 'SNWD'},
                 {'element': 'open_water_evaporation', 'element_raw': 'EVAP'},
             ],
         )
@@ -75,7 +80,7 @@ class GhcndProviderTests(unittest.TestCase):
             station_ids=['usc00000001'],
             start_date='2020-05-01',
             end_date='2020-05-02',
-            elements=['tas_max', 'precipitation', 'open_water_evaporation'],
+            elements=['tas_mean', 'tas_max', 'precipitation', 'snow_depth', 'open_water_evaporation'],
         )
         raw_query = ObservationQuery(
             country='US',
@@ -84,11 +89,11 @@ class GhcndProviderTests(unittest.TestCase):
             station_ids=['USC00000001'],
             start_date='2020-05-01',
             end_date='2020-05-02',
-            elements=['TMAX', 'PRCP', 'EVAP'],
+            elements=['TAVG', 'TMAX', 'PRCP', 'SNWD', 'EVAP'],
         )
         self.assertEqual(canonical_query.station_ids, ['USC00000001'])
-        self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP', 'EVAP'])
-        self.assertEqual(raw_query.elements, ['TMAX', 'PRCP', 'EVAP'])
+        self.assertEqual(canonical_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD', 'EVAP'])
+        self.assertEqual(raw_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD', 'EVAP'])
 
     def test_read_station_metadata_filters_to_us_supported_core_inventory(self) -> None:
         stations = read_station_metadata(country='US', source_url=str(SAMPLE_STATIONS_PATH))
@@ -113,6 +118,8 @@ class GhcndProviderTests(unittest.TestCase):
             [
                 {'station_id': 'USC00000001', 'element': 'EVAP'},
                 {'station_id': 'USC00000001', 'element': 'PRCP'},
+                {'station_id': 'USC00000001', 'element': 'SNWD'},
+                {'station_id': 'USC00000001', 'element': 'TAVG'},
                 {'station_id': 'USC00000001', 'element': 'TMAX'},
                 {'station_id': 'USC00000001', 'element': 'TMIN'},
                 {'station_id': 'USC00000002', 'element': 'PRCP'},
@@ -132,7 +139,7 @@ class GhcndProviderTests(unittest.TestCase):
 
     def test_parse_dly_expands_monthly_supported_records(self) -> None:
         raw_table = parse_ghcnd_dly_text(SAMPLE_DLY_PATH.read_text(encoding='utf-8'))
-        self.assertEqual(len(raw_table), 124)
+        self.assertEqual(len(raw_table), 186)
         self.assertEqual(raw_table.iloc[0]['station_id'], 'USC00000001')
         self.assertEqual(raw_table.iloc[0]['element_raw'], 'EVAP')
         self.assertEqual(raw_table.iloc[0]['value_raw'], 12)
@@ -142,7 +149,7 @@ class GhcndProviderTests(unittest.TestCase):
     def test_parse_dly_handles_shorter_month_without_invalid_day_dates(self) -> None:
         september_text = SAMPLE_DLY_PATH.read_text(encoding='utf-8').replace('202005', '191709', 1)
         raw_table = parse_ghcnd_dly_text(september_text)
-        self.assertEqual(len(raw_table), 123)
+        self.assertEqual(len(raw_table), 185)
         evap_rows = raw_table[raw_table['element_raw'] == 'EVAP']
         self.assertEqual(evap_rows.iloc[-1]['observation_date'].isoformat(), '1917-09-30')
 
@@ -155,13 +162,13 @@ class GhcndProviderTests(unittest.TestCase):
             station_ids=['USC00000001'],
             start_date='2020-05-01',
             end_date='2020-05-03',
-            elements=['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'],
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth', 'open_water_evaporation'],
         )
         normalized = normalize_daily_observations_ghcnd(raw_table, query=query)
         self.assertEqual(list(normalized.columns), GHCND_NORMALIZED_DAILY_COLUMNS)
         self.assertEqual(
             sorted(normalized['element'].unique().tolist()),
-            ['open_water_evaporation', 'precipitation', 'tas_max', 'tas_min'],
+            ['open_water_evaporation', 'precipitation', 'snow_depth', 'tas_max', 'tas_mean', 'tas_min'],
         )
         lookup = {
             (row.element, str(row.observation_date)): row
@@ -170,7 +177,11 @@ class GhcndProviderTests(unittest.TestCase):
         self.assertAlmostEqual(float(lookup[('open_water_evaporation', '2020-05-01')].value), 1.2)
         self.assertAlmostEqual(float(lookup[('open_water_evaporation', '2020-05-02')].value), 0.0)
         self.assertAlmostEqual(float(lookup[('precipitation', '2020-05-01')].value), 2.5)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-05-01')].value), 120.0)
+        self.assertAlmostEqual(float(lookup[('snow_depth', '2020-05-02')].value), 0.0)
         self.assertAlmostEqual(float(lookup[('tas_max', '2020-05-01')].value), 21.5)
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-05-01')].value), 13.5)
+        self.assertAlmostEqual(float(lookup[('tas_mean', '2020-05-02')].value), 14.2)
         self.assertAlmostEqual(float(lookup[('tas_min', '2020-05-01')].value), 5.5)
         self.assertTrue(pd.isna(lookup[('open_water_evaporation', '2020-05-01')].quality))
         self.assertEqual(lookup[('open_water_evaporation', '2020-05-02')].quality, 'X')
@@ -189,7 +200,7 @@ class GhcndProviderTests(unittest.TestCase):
             station_ids=['USC00000001'],
             start_date='2020-05-01',
             end_date='2020-05-03',
-            elements=['tas_max', 'precipitation', 'open_water_evaporation'],
+            elements=['tas_mean', 'tas_max', 'precipitation', 'snow_depth', 'open_water_evaporation'],
         )
         with patch(
             'weatherdownload.providers.ghcnd.observations._read_text',
@@ -199,11 +210,11 @@ class GhcndProviderTests(unittest.TestCase):
         self.assertEqual(list(observations.columns), GHCND_NORMALIZED_DAILY_COLUMNS)
         self.assertEqual(
             sorted(observations['element'].unique().tolist()),
-            ['open_water_evaporation', 'precipitation', 'tas_max'],
+            ['open_water_evaporation', 'precipitation', 'snow_depth', 'tas_max', 'tas_mean'],
         )
         self.assertEqual(
             sorted(observations['element_raw'].unique().tolist()),
-            ['EVAP', 'PRCP', 'TMAX'],
+            ['EVAP', 'PRCP', 'SNWD', 'TAVG', 'TMAX'],
         )
         self.assertAlmostEqual(float(observations[observations['element'] == 'open_water_evaporation'].iloc[0]['value']), 1.2)
 
@@ -211,7 +222,7 @@ class GhcndProviderTests(unittest.TestCase):
         stations = read_station_metadata(country='US', source_url=str(SAMPLE_STATIONS_PATH))
         self.assertEqual(
             list_station_elements(stations, 'USC00000001', 'ghcnd', 'daily', country='US'),
-            ['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth', 'open_water_evaporation'],
         )
         self.assertEqual(
             list_station_elements(stations, 'USC00000002', 'ghcnd', 'daily', country='US'),

@@ -35,7 +35,7 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_list_supported_elements_accepts_provider_alias(self) -> None:
         elements = list_supported_elements(country='US', provider='ghcnd', resolution='daily')
-        self.assertEqual(elements, ['tas_max', 'tas_min', 'precipitation', 'open_water_evaporation'])
+        self.assertEqual(elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth', 'open_water_evaporation'])
 
     def test_cz_daily_query_accepts_open_water_evaporation_canonical_name(self) -> None:
         query = ObservationQuery(country='CZ', dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['open_water_evaporation'])
@@ -44,13 +44,13 @@ class DiscoveryTests(unittest.TestCase):
     def test_ca_daily_discovery_excludes_open_water_evaporation(self) -> None:
         self.assertEqual(
             list_supported_elements(country='CA', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
 
     def test_cz_ghcnd_daily_discovery_excludes_open_water_evaporation(self) -> None:
         self.assertEqual(
             list_supported_elements(country='CZ', dataset_scope='ghcnd', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
 
 
@@ -122,26 +122,26 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(canonical_query.elements, ['TMK', 'RSK'])
 
     def test_ca_daily_query_accepts_ghcnd_elements_and_canonical_names(self) -> None:
-        raw_query = ObservationQuery(country='CA', dataset_scope='ghcnd', resolution='daily', station_ids=['CA000000001'], start_date='2020-06-01', end_date='2020-06-02', elements=['tmax', 'prcp'])
-        canonical_query = ObservationQuery(country='CA', dataset_scope='ghcnd', resolution='daily', station_ids=['CA000000001'], start_date='2020-06-01', end_date='2020-06-02', elements=['tas_max', 'precipitation'])
+        raw_query = ObservationQuery(country='CA', dataset_scope='ghcnd', resolution='daily', station_ids=['CA000000001'], start_date='2020-06-01', end_date='2020-06-02', elements=['tavg', 'tmax', 'prcp', 'snwd'])
+        canonical_query = ObservationQuery(country='CA', dataset_scope='ghcnd', resolution='daily', station_ids=['CA000000001'], start_date='2020-06-01', end_date='2020-06-02', elements=['tas_mean', 'tas_max', 'precipitation', 'snow_depth'])
         self.assertEqual(raw_query.country, 'CA')
-        self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
-        self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
+        self.assertEqual(raw_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
+        self.assertEqual(canonical_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
 
     def test_cz_ghcnd_daily_query_accepts_ghcnd_elements_and_canonical_names(self) -> None:
-        raw_query = ObservationQuery(country='CZ', dataset_scope='ghcnd', resolution='daily', station_ids=['EZM00011406'], start_date='2020-05-01', end_date='2020-05-02', elements=['tmax', 'prcp'])
-        canonical_query = ObservationQuery(country='CZ', dataset_scope='ghcnd', resolution='daily', station_ids=['EZM00011406'], start_date='2020-05-01', end_date='2020-05-02', elements=['tas_max', 'precipitation'])
+        raw_query = ObservationQuery(country='CZ', dataset_scope='ghcnd', resolution='daily', station_ids=['EZM00011406'], start_date='2020-05-01', end_date='2020-05-02', elements=['tavg', 'tmax', 'prcp', 'snwd'])
+        canonical_query = ObservationQuery(country='CZ', dataset_scope='ghcnd', resolution='daily', station_ids=['EZM00011406'], start_date='2020-05-01', end_date='2020-05-02', elements=['tas_mean', 'tas_max', 'precipitation', 'snow_depth'])
         self.assertEqual(raw_query.country, 'CZ')
-        self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
-        self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
+        self.assertEqual(raw_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
+        self.assertEqual(canonical_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
 
     def test_de_ghcnd_daily_query_accepts_ghcnd_elements_and_canonical_names(self) -> None:
-        raw_query = ObservationQuery(country='DE', dataset_scope='ghcnd', resolution='daily', station_ids=['GM000000001'], start_date='2020-12-01', end_date='2020-12-02', elements=['tmax', 'prcp'])
-        canonical_query = ObservationQuery(country='DE', provider='ghcnd', resolution='daily', station_ids=['gm000000001'], start_date='2020-12-01', end_date='2020-12-02', elements=['tas_max', 'precipitation'])
+        raw_query = ObservationQuery(country='DE', dataset_scope='ghcnd', resolution='daily', station_ids=['GM000000001'], start_date='2020-12-01', end_date='2020-12-02', elements=['tavg', 'tmax', 'prcp', 'snwd'])
+        canonical_query = ObservationQuery(country='DE', provider='ghcnd', resolution='daily', station_ids=['gm000000001'], start_date='2020-12-01', end_date='2020-12-02', elements=['tas_mean', 'tas_max', 'precipitation', 'snow_depth'])
         self.assertEqual(raw_query.country, 'DE')
-        self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
+        self.assertEqual(raw_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
         self.assertEqual(canonical_query.station_ids, ['GM000000001'])
-        self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
+        self.assertEqual(canonical_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
 
     def test_at_hourly_query_accepts_at_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tl', 'p'])

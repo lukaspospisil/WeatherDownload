@@ -36,16 +36,19 @@ Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separate
 
 All wrappers in this note expose the same conservative `daily` core:
 
+- `TAVG` -> `tas_mean`
 - `TMAX` -> `tas_max`
 - `TMIN` -> `tas_min`
 - `PRCP` -> `precipitation`
+- `SNWD` -> `snow_depth`
 
 For the authoritative current matrix, see [Supported Capabilities](../supported_capabilities.md).
 
 ## Units and conversions
 
-- `TMAX` and `TMIN`: tenths of degrees C -> degrees C
+- `TAVG`, `TMAX`, and `TMIN`: tenths of degrees C -> degrees C
 - `PRCP`: tenths of mm -> mm
+- `SNWD`: mm -> mm
 - NOAA missing code `-9999` is treated as missing
 
 ## Limitations and caveats
@@ -53,6 +56,8 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - these wrappers are intentionally thin and share parser, metadata, inventory, and observation logic
 - the shared helper now supports both direct-prefix wrappers (`FI -> FI`) and mapped-prefix wrappers (`CZ -> EZ`) using the same configuration pattern
 - station-level availability is inventory-driven and can differ by station
+- `tas_mean` comes only from raw NOAA `TAVG`; this wrapper does not derive a mean from `TMAX` and `TMIN`
+- `snowfall` is intentionally unsupported because there is no existing canonical snowfall element wired for GHCN in this pass
 - `open_water_evaporation` is intentionally unsupported on these wrappers
 - the shared wrapper audit did not justify exposing raw `EVAP` for this group
 

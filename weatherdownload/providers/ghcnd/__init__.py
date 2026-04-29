@@ -14,7 +14,9 @@ from .parser import (
 from .registry import (
     GHCND_ALL_BASE_URL,
     GHCND_INVENTORY_URL,
+    GHCND_STANDARD_CANONICAL_ELEMENTS,
     GHCND_STATIONS_URL,
+    GHCND_US_CANONICAL_ELEMENTS,
     GhcndDatasetSpec,
     build_dataset_spec,
 )
@@ -23,8 +25,10 @@ __all__ = [
     'GHCND_ALL_BASE_URL',
     'GHCND_INVENTORY_URL',
     'GHCND_NORMALIZED_DAILY_COLUMNS',
+    'GHCND_STANDARD_CANONICAL_ELEMENTS',
     'GHCND_STATIONS_URL',
     'GHCND_STATION_ELEMENTS_ATTR',
+    'GHCND_US_CANONICAL_ELEMENTS',
     'GhcndDatasetSpec',
     'build_dataset_spec',
     'build_station_dly_url',

@@ -5,9 +5,11 @@ from .registry import get_dataset_spec, list_dataset_specs, list_implemented_dat
 from ..ghcnd.wrappers import build_country_provider
 
 SUPPORTED_CANONICAL_ELEMENTS = (
+    'tas_mean',
     'tas_max',
     'tas_min',
     'precipitation',
+    'snow_depth',
 )
 
 from .observations import download_daily_observations_ghcnd
