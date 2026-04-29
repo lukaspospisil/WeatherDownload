@@ -67,7 +67,8 @@ Examples:
 | `CZ` | `ghcnd` | NOAA GHCN-Daily wrapper with raw GHCN station ids |
 | `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
 | `FI` | `ghcnd` | NOAA GHCN-Daily source |
-| `FR` | `ghcnd` | NOAA GHCN-Daily source |
+| `FR` | `ghcnd` | NOAA GHCN-Daily wrapper with raw GHCN station ids |
+| `FR` | `meteo_france` | Meteo-France daily climatological base RR-T-Vent product |
 | `IT` | `ghcnd` | NOAA GHCN-Daily source |
 | `MX` | `ghcnd` | NOAA GHCN-Daily source |
 | `NO` | `ghcnd` | NOAA GHCN-Daily source |
@@ -81,7 +82,8 @@ Notes:
 
 - `provider` is the only public selector name in Python and CLI
 - normalized output tables use the `provider` column
-- the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `CZ`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
+- the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `CZ`, `FI`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
+- `FR` now supports both `provider="meteo_france"` for the national daily RR-T-Vent slice and `provider="ghcnd"` for the shared GHCN-Daily path
 - GHCN-Daily station support is inventory-driven, so not every station exposes `tas_mean` (`TAVG`) or `snow_depth` (`SNWD`); inspect a specific station with `weatherdownload stations elements --country US --provider ghcnd --station-id USC00000001 --resolution daily`
 
 See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model](docs/providers.md) for the conceptual explanation.

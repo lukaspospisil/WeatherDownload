@@ -9,6 +9,7 @@ from weatherdownload import find_stations_with_elements, list_station_elements, 
 
 SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
 SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
+SAMPLE_FR_STATIONS_PATH = Path('tests/data/sample_fr_meteo_france_fiches.json')
 
 
 class _MockResponse:
@@ -194,6 +195,23 @@ class StationAvailabilityTests(unittest.TestCase):
         self.assertTrue(station_supports(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'))
         self.assertEqual(list_station_elements(stations, 'GM000000001', 'ghcnd', 'daily', country='DE'), ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
         self.assertEqual(list_station_elements(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'), ['precipitation'])
+
+    def test_fr_meteo_france_station_availability_is_metadata_driven(self) -> None:
+        stations = read_station_metadata(country='FR', source_url=str(SAMPLE_FR_STATIONS_PATH))
+        availability = station_availability(stations, station_ids=['13055001'], country='FR')
+        self.assertEqual(
+            availability[['provider', 'resolution', 'supported_elements']].to_dict('records'),
+            [{'provider': 'meteo_france', 'resolution': 'daily', 'supported_elements': ['tas_max', 'precipitation']}],
+        )
+        self.assertTrue(station_supports(stations, '13055001', 'meteo_france', 'daily', country='FR'))
+        self.assertEqual(
+            list_station_elements(stations, '07005001', 'meteo_france', 'daily', country='FR'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertEqual(
+            list_station_elements(stations, '13055001', 'meteo_france', 'daily', country='FR'),
+            ['tas_max', 'precipitation'],
+        )
 
 
 if __name__ == '__main__':

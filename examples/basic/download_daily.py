@@ -46,6 +46,13 @@ COUNTRY_DEFAULTS = {
         'end_date': '2024-01-03',
         'elements': ['tas_mean', 'precipitation', 'sunshine_duration'],
     },
+    'FR': {
+        'provider': 'meteo_france',
+        'station_ids': ['07005001'],
+        'start_date': '2025-01-01',
+        'end_date': '2025-01-02',
+        'elements': ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+    },
     'HU': {
         'provider': 'historical',
         'station_ids': ['13704'],

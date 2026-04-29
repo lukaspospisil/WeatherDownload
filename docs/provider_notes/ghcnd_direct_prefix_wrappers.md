@@ -1,12 +1,11 @@
 # NOAA GHCN-Daily Direct-Prefix Wrappers
 
-This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `FI`, `FR`, `IT`, `NO`, and `NZ` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
+This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `FI`, `IT`, `NO`, and `NZ` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
 
 ## Provider identifiers
 
-- country: `FI`, `FR`, `IT`, `NO`, `NZ`
+- country: `FI`, `IT`, `NO`, `NZ`
 - provider: `ghcnd`
-- `provider`: `ghcnd`
 - resolution(s): `daily`
 
 ## Source
@@ -25,12 +24,11 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 These wrappers are grouped together because the GHCN country prefix matches the WeatherDownload country code directly:
 
 - `FI -> FI`
-- `FR -> FR`
 - `IT -> IT`
 - `NO -> NO`
 - `NZ -> NZ`
 
-Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separately in [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md). `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code.
+Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separately in [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md). `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code. France now keeps a separate national provider note because `FR` supports both `meteo_france / daily` and `ghcnd / daily`.
 
 ## Supported data
 

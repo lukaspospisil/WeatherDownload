@@ -1,0 +1,95 @@
+[
+  {
+    "id": "07005001",
+    "nom": "AUBENAS",
+    "dateDebut": "1990-01-01 00:00:00",
+    "dateFin": null,
+    "positions": [
+      {
+        "latitude": 44.6200,
+        "longitude": 4.3900,
+        "altitude": 240,
+        "dateDebut": "1990-01-01 00:00:00",
+        "dateFin": "2010-12-31 00:00:00"
+      },
+      {
+        "latitude": 44.6210,
+        "longitude": 4.3910,
+        "altitude": 242,
+        "dateDebut": "2011-01-01 00:00:00",
+        "dateFin": null
+      }
+    ],
+    "parametres": [
+      {
+        "nom": "HAUTEUR DE PRECIPITATIONS QUOTIDIENNE",
+        "dateDebut": "1990-01-01 00:00:00",
+        "dateFin": null
+      },
+      {
+        "nom": "TEMPERATURE MINIMALE SOUS ABRI QUOTIDIENNE",
+        "dateDebut": "1990-01-01 00:00:00",
+        "dateFin": null
+      },
+      {
+        "nom": "TEMPERATURE MAXIMALE SOUS ABRI QUOTIDIENNE",
+        "dateDebut": "1990-01-01 00:00:00",
+        "dateFin": null
+      },
+      {
+        "nom": "MOYENNE DES TM",
+        "dateDebut": "1995-01-01 00:00:00",
+        "dateFin": null
+      }
+    ]
+  },
+  {
+    "id": "13055001",
+    "nom": "MARSEILLE-TEST",
+    "dateDebut": "2000-01-01 00:00:00",
+    "dateFin": "2020-12-31 00:00:00",
+    "positions": [
+      {
+        "latitude": 43.3000,
+        "longitude": 5.3700,
+        "altitude": 10,
+        "dateDebut": "2000-01-01 00:00:00",
+        "dateFin": "2020-12-31 00:00:00"
+      }
+    ],
+    "parametres": [
+      {
+        "nom": "HAUTEUR DE PRECIPITATIONS QUOTIDIENNE",
+        "dateDebut": "2000-01-01 00:00:00",
+        "dateFin": "2020-12-31 00:00:00"
+      },
+      {
+        "nom": "TEMPERATURE MAXIMALE SOUS ABRI QUOTIDIENNE",
+        "dateDebut": "2000-01-01 00:00:00",
+        "dateFin": "2020-12-31 00:00:00"
+      }
+    ]
+  },
+  {
+    "id": "99000001",
+    "nom": "UNSUPPORTED ONLY",
+    "dateDebut": "2010-01-01 00:00:00",
+    "dateFin": null,
+    "positions": [
+      {
+        "latitude": 45.0000,
+        "longitude": 2.0000,
+        "altitude": 100,
+        "dateDebut": "2010-01-01 00:00:00",
+        "dateFin": null
+      }
+    ],
+    "parametres": [
+      {
+        "nom": "EVAPO-TRANSPIRATION MONTEITH QUOTIDIENNE",
+        "dateDebut": "2010-01-01 00:00:00",
+        "dateFin": null
+      }
+    ]
+  }
+]

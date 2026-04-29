@@ -50,6 +50,7 @@ Examples:
 | `CZ` | `ghcnd` | NOAA GHCN-Daily wrapper using raw GHCN station ids |
 | `DE` | `ghcnd` | NOAA GHCN-Daily wrapper using raw GHCN station ids |
 | `CZ` | `historical_csv` | CHMI historical CSV source |
+| `FR` | `meteo_france` | Meteo-France daily climatological base RR-T-Vent path |
 | `CH` | `historical` | MeteoSwiss historical station-data path |
 | `HU` | `historical_wind` | HungaroMet wind-only 10-minute product |
 | `PL` | `historical_klimat` | IMGW daily klimat path |
@@ -63,7 +64,7 @@ WeatherDownload currently uses two broad provider families:
 
 These use country-specific public source contracts and naming:
 
-- `AT`, `BE`, `CH`, `CZ`, `DE`, `DK`, `HU`, `NL`, `PL`, `SE`, `SK`
+- `AT`, `BE`, `CH`, `CZ`, `DE`, `DK`, `FR`, `HU`, `NL`, `PL`, `SE`, `SK`
 
 Country-specific details such as raw codes, URLs, units, QC fields, and source caveats live in the provider notes linked below.
 
@@ -82,6 +83,7 @@ Shared GHCN-Daily characteristics:
 - the wrappers stay thin while the parser/downloader logic lives in the shared GHCN provider package
 - the shared GHCN wrapper helper supports both direct-prefix and mapped-prefix country adapters
 - some wrappers use mapped GHCN prefixes rather than the WeatherDownload country code, for example `CZ -> EZ`, `DE -> GM`, and `AT -> AU`
+- `FR` is a mixed case: it keeps the shared `ghcnd` wrapper and also exposes the national `meteo_france / daily` path
 
 ## How To Discover Support
 

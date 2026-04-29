@@ -73,6 +73,8 @@ SAMPLE_GHCND_MX_DLY_TEXT = Path('tests/data/sample_ghcnd_MX000000001.dly').read_
 SAMPLE_GHCND_NO_DLY_TEXT = Path('tests/data/sample_ghcnd_NO000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_NZ_DLY_TEXT = Path('tests/data/sample_ghcnd_NZ000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_DLY_TEXT = Path('tests/data/sample_ghcnd_USC00000001.dly').read_text(encoding='utf-8')
+SAMPLE_FR_STATIONS_PATH = Path('tests/data/sample_fr_meteo_france_fiches.json')
+SAMPLE_FR_DAILY_TEXT = Path('tests/data/sample_fr_meteo_france_rr_t_vent.csv').read_text(encoding='utf-8')
 SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland Abgabe
 ----------- --------- --------- ------------- --------- --------- ----------------------------------------- ---------- ------
 00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\xfcrttemberg Frei
@@ -167,7 +169,7 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'FI':
         return read_station_metadata(country='FI', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'FR':
-        return read_station_metadata(country='FR', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        return read_station_metadata(country='FR', source_url=str(SAMPLE_FR_STATIONS_PATH))
     if country == 'IT':
         return read_station_metadata(country='IT', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'MX':
@@ -346,8 +348,14 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='FI', station_metadata=station_metadata)
     if country == 'FR':
         station_metadata = _read_station_metadata_fixture('FR')
-        query = ObservationQuery(country='FR', provider='ghcnd', resolution='daily', station_ids=['FR000000001'], start_date='2020-10-01', end_date='2020-10-02', elements=['tas_max', 'precipitation'])
-        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_FR_DLY_TEXT):
+        query = ObservationQuery(country='FR', provider='meteo_france', resolution='daily', station_ids=['07005001'], start_date='2025-01-01', end_date='2025-01-02', elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation'])
+
+        def fake_get(url: str, timeout: int = 60):
+            if url.endswith('Q_07_latest-2025-2026_RR-T-Vent.csv.gz'):
+                return _MockTextResponse(content=SAMPLE_FR_DAILY_TEXT.encode('utf-8'))
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.providers.fr.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='FR', station_metadata=station_metadata)
     if country == 'IT':
         station_metadata = _read_station_metadata_fixture('IT')
@@ -539,7 +547,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'DE': ['00003', '00044', 'GM000000001', 'GM000000002'],
         'DK': ['06030', '06180'],
         'FI': ['FI000000001', 'FI000000002'],
-        'FR': ['FR000000001', 'FR000000002'],
+        'FR': ['07005001', '13055001'],
         'HU': ['13704', '13704', '13711'],
         'IT': ['IT000000001', 'IT000000002'],
         'MX': ['MX000000001', 'MX000000002'],
@@ -565,7 +573,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AT': 'historical', 'BE': 'historical', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'FI': 'ghcnd', 'FR': 'ghcnd', 'HU': 'historical', 'IT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'SE': 'historical', 'SK': 'recent', 'US': 'ghcnd'}
+    expected_providers = {'AT': 'historical', 'BE': 'historical', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'FI': 'ghcnd', 'FR': 'meteo_france', 'HU': 'historical', 'IT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'SE': 'historical', 'SK': 'recent', 'US': 'ghcnd'}
 
     for country in ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'FI', 'FR', 'HU', 'IT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US']:
         observations = _download_daily_fixture(country)

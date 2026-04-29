@@ -67,6 +67,7 @@ python examples/basic/download_daily.py --country CH
 python examples/basic/download_daily.py --country CZ
 python examples/basic/download_daily.py --country DE
 python examples/basic/download_daily.py --country DK
+python examples/basic/download_daily.py --country FR
 python examples/basic/download_daily.py --country HU
 python examples/basic/download_daily.py --country NL
 python examples/basic/download_daily.py --country PL
@@ -94,6 +95,14 @@ DK notes:
 
 - `DK` uses the shared daily example path through the official DMI Climate Data `stationValue` collection
 - station discovery uses the official DMI Climate Data `station` collection filtered to Denmark stations only
+
+FR notes:
+
+- `FR` uses the shared daily example path through the national `provider="meteo_france"` RR-T-Vent slice
+- the current national FR slice supports `tas_mean`, `tas_max`, `tas_min`, and `precipitation`
+- `tas_mean` comes only from raw Meteo-France `TM`
+- `open_water_evaporation` is intentionally unsupported on this path
+- station-level element availability comes from official station metadata, so provider-level support still does not guarantee that every station exposes every supported element
 - the mapped daily parameters are documented by DMI as local-day Denmark values, and the example keeps that provider-defined meaning behind the provider layer
 - raw source `qcStatus` and `validity` are preserved in `flag` and normalized `quality` stays null
 - Greenland and Faroe Islands differences are intentionally out of scope for this pass
@@ -365,6 +374,7 @@ CLI examples:
 
 ```powershell
 weatherdownload stations find --country CZ --provider historical_csv --resolution daily --element tas_mean --element tas_max --element tas_min --element wind_speed --element vapour_pressure --element sunshine_duration --element open_water_evaporation
+weatherdownload stations find --country FR --provider meteo_france --resolution daily --element tas_mean --element tas_max --element tas_min --element precipitation
 weatherdownload stations find --country US --provider ghcnd --resolution daily --element tas_mean --element tas_max --element tas_min --element precipitation --element snow_depth
 ```
 

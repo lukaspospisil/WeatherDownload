@@ -289,6 +289,23 @@ class ObservationCliTests(unittest.TestCase):
             }
         ])
 
+    def _sample_fr_meteo_france_daily_table(self) -> pd.DataFrame:
+        return pd.DataFrame([
+            {
+                'station_id': '07005001',
+                'gh_id': None,
+                'element': 'tas_mean',
+                'element_raw': 'TM',
+                'observation_date': '2025-01-01',
+                'time_function': None,
+                'value': 5.4,
+                'flag': None,
+                'quality': 1,
+                'provider': 'meteo_france',
+                'resolution': 'daily',
+            }
+        ])
+
     def _sample_de_ghcnd_daily_table(self) -> pd.DataFrame:
         return pd.DataFrame([
             {
@@ -659,6 +676,23 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(download_mock.call_args.kwargs['country'], 'FI')
         self.assertIn('FI000000001', buffer.getvalue())
         self.assertIn('tas_max', buffer.getvalue())
+
+    def test_daily_cli_explicit_country_fr_provider_meteo_france_uses_fr_query_shape(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.download_observations', return_value=self._sample_fr_meteo_france_daily_table()) as download_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'daily', '--country', 'FR', '--provider', 'meteo_france', '--station-id', '07005001', '--element', 'tas_mean', '--start-date', '2025-01-01', '--end-date', '2025-01-02'
+                ])
+        self.assertEqual(exit_code, 0)
+        query = download_mock.call_args.args[0]
+        self.assertEqual(query.country, 'FR')
+        self.assertEqual(query.provider, 'meteo_france')
+        self.assertEqual(query.resolution, 'daily')
+        self.assertEqual(query.elements, ['TM'])
+        self.assertEqual(download_mock.call_args.kwargs['country'], 'FR')
+        self.assertIn('07005001', buffer.getvalue())
+        self.assertIn('tas_mean', buffer.getvalue())
 
     def test_daily_cli_explicit_country_de_provider_ghcnd_uses_ghcnd_query_shape(self) -> None:
         buffer = io.StringIO()
@@ -1058,6 +1092,18 @@ class StationAvailabilityCliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(elements_mock.call_args.kwargs['country'], 'CZ')
         self.assertIn('tas_max', buffer.getvalue())
+        self.assertIn('precipitation', buffer.getvalue())
+        self.assertNotIn('open_water_evaporation', buffer.getvalue())
+
+    def test_station_elements_cli_explicit_country_fr_meteo_france(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.read_station_metadata', return_value=pd.DataFrame()):
+            with patch('weatherdownload.cli.list_station_elements', return_value=['tas_mean', 'tas_max', 'tas_min', 'precipitation']) as elements_mock:
+                with redirect_stdout(buffer):
+                    exit_code = main(['stations', 'elements', '--country', 'FR', '--station-id', '07005001', '--provider', 'meteo_france', '--resolution', 'daily'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(elements_mock.call_args.kwargs['country'], 'FR')
+        self.assertIn('tas_mean', buffer.getvalue())
         self.assertIn('precipitation', buffer.getvalue())
         self.assertNotIn('open_water_evaporation', buffer.getvalue())
 

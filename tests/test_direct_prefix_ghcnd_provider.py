@@ -38,14 +38,6 @@ COUNTRY_SPECS = {
         'start_date': '2020-08-01',
         'end_date': '2020-08-02',
     },
-    'FR': {
-        'station_core': 'FR000000001',
-        'station_prcp_only': 'FR000000002',
-        'station_unsupported': 'FR000000003',
-        'fixture_path': Path('tests/data/sample_ghcnd_FR000000001.dly'),
-        'start_date': '2020-10-01',
-        'end_date': '2020-10-02',
-    },
     'IT': {
         'station_core': 'IT000000001',
         'station_prcp_only': 'IT000000002',

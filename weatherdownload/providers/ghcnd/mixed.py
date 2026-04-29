@@ -92,7 +92,15 @@ def _build_station_elements_attrs(
         if spec.provider != 'ghcnd'
     ]
     national_station_ids = [str(value) for value in national_table.get('station_id', pd.Series(dtype='object')).tolist()]
+    national_attrs = national_table.attrs.get('station_provider_raw_elements_by_path', {})
     for spec in implemented_national_specs:
+        station_map = national_attrs.get((spec.provider, spec.resolution))
+        if station_map is not None:
+            attrs[(spec.provider, spec.resolution)] = {
+                str(station_id): list(raw_elements)
+                for station_id, raw_elements in station_map.items()
+            }
+            continue
         attrs[(spec.provider, spec.resolution)] = {
             station_id: list(spec.supported_elements)
             for station_id in national_station_ids

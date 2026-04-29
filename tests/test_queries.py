@@ -50,6 +50,20 @@ class DiscoveryTests(unittest.TestCase):
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
 
+    def test_fr_meteo_france_daily_discovery_excludes_wind_and_open_water_evaporation(self) -> None:
+        self.assertEqual(
+            list_supported_elements(country='FR', provider='meteo_france', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertNotIn(
+            'open_water_evaporation',
+            list_supported_elements(country='FR', provider='meteo_france', resolution='daily'),
+        )
+        self.assertNotIn(
+            'wind_speed',
+            list_supported_elements(country='FR', provider='meteo_france', resolution='daily'),
+        )
+
     def test_ghcnd_daily_discovery_does_not_expose_raw_snow(self) -> None:
         self.assertNotIn('SNOW', list_supported_elements(country='US', provider='ghcnd', resolution='daily', provider_raw=True))
         self.assertNotIn('SNOW', list_supported_elements(country='CZ', provider='ghcnd', resolution='daily', provider_raw=True))
@@ -134,6 +148,13 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
         self.assertEqual(canonical_query.station_ids, ['GM000000001'])
         self.assertEqual(canonical_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
+
+    def test_fr_meteo_france_daily_query_accepts_canonical_and_raw_codes(self) -> None:
+        raw_query = ObservationQuery(country='FR', provider='meteo_france', resolution='daily', station_ids=['07005001'], start_date='2025-01-01', end_date='2025-01-02', elements=['tm', 'tx', 'tn', 'rr'])
+        canonical_query = ObservationQuery(country='FR', provider='meteo_france', resolution='daily', station_ids=['07005001'], start_date='2025-01-01', end_date='2025-01-02', elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(raw_query.country, 'FR')
+        self.assertEqual(raw_query.elements, ['TM', 'TX', 'TN', 'RR'])
+        self.assertEqual(canonical_query.elements, ['TM', 'TX', 'TN', 'RR'])
 
     def test_ghcnd_query_rejects_unmapped_raw_snow(self) -> None:
         with self.assertRaises(QueryValidationError):

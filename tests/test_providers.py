@@ -102,7 +102,7 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
-        for country in ['FI', 'FR', 'IT', 'NO', 'NZ']:
+        for country in ['FI', 'IT', 'NO', 'NZ']:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
@@ -112,6 +112,19 @@ class ProviderTests(unittest.TestCase):
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
                     ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
+
+    def test_discovery_country_fr_includes_meteo_france_and_ghcnd(self) -> None:
+        self.assertEqual(list_providers(country='FR'), ['ghcnd', 'meteo_france'])
+        self.assertEqual(list_resolutions(country='FR', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='FR', provider='meteo_france'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='FR', provider='meteo_france', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='FR', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
 
     def test_discovery_country_cz_includes_chmi_and_ghcnd_daily_without_evap_on_ghcnd(self) -> None:
         self.assertIn('historical_csv', list_providers(country='CZ'))
