@@ -132,9 +132,17 @@ US notes:
 
 - `US` uses the shared daily example path through the official NOAA NCEI GHCN-Daily station files
 - the current `US` slice is intentionally limited to `provider="ghcnd"` and `resolution="daily"`
+- GHCN station-level element availability is inventory-driven, so not every station exposes `tas_mean`, `snow_depth`, or `open_water_evaporation`
+- `tas_mean` is exposed only where raw NOAA `TAVG` exists; it is not derived from `TMAX` and `TMIN`
 - `open_water_evaporation` maps to official NOAA raw `EVAP`
 - NOAA documents `EVAP` as evaporation of water from an evaporation pan
 - NOAA raw `EVAP` values are in tenths of `mm`; WeatherDownload normalizes output `value` to `mm`
+- check a station before assuming GHCN coverage:
+
+```powershell
+weatherdownload stations elements --country US --provider ghcnd --station-id USC00000001 --resolution daily
+```
+
 - multiday `MDEV`, ET0, PET, FAO reference evaporation, and modeled evaporation remain unsupported on this slice
 
 ### `examples/basic/download_hourly.py`

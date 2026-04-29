@@ -82,6 +82,7 @@ Compatibility note:
 - existing Python and CLI usage with `dataset_scope` or `--dataset-scope` remains valid
 - normalized output tables still keep the `dataset_scope` column for backward compatibility
 - the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `CZ`, `FI`, `FR`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
+- GHCN-Daily station support is inventory-driven, so not every station exposes `tas_mean` (`TAVG`) or `snow_depth` (`SNWD`); inspect a specific station with `weatherdownload stations elements --country US --provider ghcnd --station-id USC00000001 --resolution daily`
 
 See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model](docs/providers.md) for the conceptual explanation.
 

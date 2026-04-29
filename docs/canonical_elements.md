@@ -109,6 +109,26 @@ The same pattern applies at station level:
 
 ## Implemented Path Mappings
 
+### Shared NOAA GHCN-Daily core
+
+All current GHCN-Daily wrappers use the same conservative raw-to-canonical core:
+
+| Canonical element | Raw code(s) |
+| --- | --- |
+| `tas_mean` | `TAVG` |
+| `tas_max` | `TMAX` |
+| `tas_min` | `TMIN` |
+| `precipitation` | `PRCP` |
+| `snow_depth` | `SNWD` |
+
+Important GHCN boundaries:
+
+- `tas_mean` comes only from raw NOAA `TAVG`; WeatherDownload does not derive it from `TMAX` and `TMIN`
+- `snow_depth` maps from raw NOAA `SNWD`
+- raw NOAA `SNOW` is intentionally not mapped because there is no canonical snowfall element wired for GHCN in this pass
+- station-level element availability is inventory-driven and can differ by station
+- `open_water_evaporation` is exposed only for `US / ghcnd / daily` via raw NOAA `EVAP`
+
 ### CZ `historical_csv / daily`
 
 | Canonical element | Raw code(s) |
@@ -144,32 +164,46 @@ The same pattern applies at station level:
 
 | Canonical element | Raw code(s) |
 | --- | --- |
+| `tas_mean` | `TAVG` |
 | `tas_max` | `TMAX` |
 | `tas_min` | `TMIN` |
 | `precipitation` | `PRCP` |
+| `snow_depth` | `SNWD` |
 
 On this NOAA GHCN-Daily Canada path:
 
+- `tas_mean` maps to `TAVG`, documented by NOAA as daily mean temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
 - `tas_max` maps to `TMAX`, documented by NOAA as daily maximum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
 - `tas_min` maps to `TMIN`, documented by NOAA as daily minimum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
 - `precipitation` maps to `PRCP`, documented by NOAA as precipitation in tenths of `mm`, normalized by WeatherDownload to `mm`
+- `snow_depth` maps to `SNWD`, documented by NOAA as snow depth in `mm`, normalized by WeatherDownload without a unit change
+- `tas_mean` is available only where raw `TAVG` exists; it is not derived from `TMAX` and `TMIN`
+- raw NOAA `SNOW` is intentionally unsupported because there is no canonical snowfall element wired for GHCN in this pass
+- station-level element availability is inventory-driven and can differ by station
 - `open_water_evaporation` is intentionally unavailable here because the current GHCN inventory audit found no Canadian `EVAP` stations
 
 ### US `ghcnd / daily`
 
 | Canonical element | Raw code(s) |
 | --- | --- |
+| `tas_mean` | `TAVG` |
 | `tas_max` | `TMAX` |
 | `tas_min` | `TMIN` |
 | `precipitation` | `PRCP` |
+| `snow_depth` | `SNWD` |
 | `open_water_evaporation` | `EVAP` |
 
 On this NOAA GHCN-Daily path:
 
+- `tas_mean` maps to `TAVG`, documented by NOAA as daily mean temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
 - `tas_max` maps to `TMAX`, documented by NOAA as daily maximum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
 - `tas_min` maps to `TMIN`, documented by NOAA as daily minimum temperature in tenths of degrees C, normalized by WeatherDownload to degrees C
 - `precipitation` maps to `PRCP`, documented by NOAA as precipitation in tenths of `mm`, normalized by WeatherDownload to `mm`
+- `snow_depth` maps to `SNWD`, documented by NOAA as snow depth in `mm`, normalized by WeatherDownload without a unit change
 - `open_water_evaporation` maps to `EVAP`, documented by NOAA as evaporation of water from an evaporation pan in tenths of `mm`, normalized by WeatherDownload to `mm`
+- `tas_mean` is available only where raw `TAVG` exists; it is not derived from `TMAX` and `TMIN`
+- raw NOAA `SNOW` is intentionally unsupported because there is no canonical snowfall element wired for GHCN in this pass
+- station-level element availability is inventory-driven and can differ by station
 
 `open_water_evaporation` here is measured pan evaporation. It is not ET0, PET, FAO reference evaporation, or another modeled evaporation product.
 

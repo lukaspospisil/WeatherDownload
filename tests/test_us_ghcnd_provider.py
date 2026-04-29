@@ -237,6 +237,13 @@ class GhcndProviderTests(unittest.TestCase):
         evap_mapping = list_station_elements(stations, 'USC00000003', 'ghcnd', 'daily', country='US', include_mapping=True)
         self.assertEqual(evap_mapping['element_raw'].tolist(), ['EVAP'])
 
+    def test_tas_mean_is_not_derived_when_inventory_lacks_tavg(self) -> None:
+        stations = read_station_metadata(country='US', source_url=str(SAMPLE_STATIONS_PATH))
+        station_elements = list_station_elements(stations, 'USC00000002', 'ghcnd', 'daily', country='US')
+        self.assertIn('tas_max', station_elements)
+        self.assertIn('tas_min', station_elements)
+        self.assertNotIn('tas_mean', station_elements)
+
     def test_station_metadata_excludes_station_with_only_unsupported_elements(self) -> None:
         stations = read_station_metadata(country='US', source_url=str(SAMPLE_STATIONS_PATH))
         self.assertNotIn('USC00000004', stations['station_id'].tolist())

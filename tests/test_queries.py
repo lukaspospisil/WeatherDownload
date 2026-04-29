@@ -53,6 +53,10 @@ class DiscoveryTests(unittest.TestCase):
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
 
+    def test_ghcnd_daily_discovery_does_not_expose_raw_snow(self) -> None:
+        self.assertNotIn('SNOW', list_supported_elements(country='US', dataset_scope='ghcnd', resolution='daily', provider_raw=True))
+        self.assertNotIn('SNOW', list_supported_elements(country='CZ', dataset_scope='ghcnd', resolution='daily', provider_raw=True))
+
 
 class ObservationQueryValidationTests(unittest.TestCase):
     def test_normalize_provider_scope_accepts_dataset_scope_or_provider(self) -> None:
@@ -142,6 +146,10 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
         self.assertEqual(canonical_query.station_ids, ['GM000000001'])
         self.assertEqual(canonical_query.elements, ['TAVG', 'TMAX', 'PRCP', 'SNWD'])
+
+    def test_ghcnd_query_rejects_unmapped_raw_snow(self) -> None:
+        with self.assertRaises(QueryValidationError):
+            ObservationQuery(country='US', dataset_scope='ghcnd', resolution='daily', station_ids=['USC00000001'], start_date='2020-05-01', end_date='2020-05-02', elements=['SNOW'])
 
     def test_at_hourly_query_accepts_at_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tl', 'p'])
