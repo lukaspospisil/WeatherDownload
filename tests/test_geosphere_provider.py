@@ -30,6 +30,8 @@ SAMPLE_HOURLY_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_1h.csv')
 SAMPLE_HOURLY_CSV_TEXT = SAMPLE_HOURLY_CSV_PATH.read_text(encoding='utf-8')
 SAMPLE_TENMIN_CSV_PATH = Path('tests/data/sample_geosphere_klima_v2_10min.csv')
 SAMPLE_TENMIN_CSV_TEXT = SAMPLE_TENMIN_CSV_PATH.read_text(encoding='utf-8')
+SAMPLE_GHCND_STATIONS_TEXT = Path('tests/data/sample_ghcnd_stations.txt').read_text(encoding='utf-8')
+SAMPLE_GHCND_INVENTORY_TEXT = Path('tests/data/sample_ghcnd_inventory.txt').read_text(encoding='utf-8')
 EXPECTED_AT_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
     'value', 'flag', 'quality', 'dataset_scope', 'resolution',
@@ -79,14 +81,24 @@ class _MockResponse:
 class GeosphereProviderTests(unittest.TestCase):
     def test_supported_countries_include_at(self) -> None:
         self.assertIn('AT', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='AT'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='AT'), ['ghcnd', 'historical'])
+        self.assertEqual(list_resolutions(country='AT', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_at_from_sample(self) -> None:
-        with patch('weatherdownload.providers.at.metadata.requests.get', return_value=_MockResponse(SAMPLE_METADATA_TEXT)):
+        def fake_get(url, timeout=60):
+            if 'geosphere.at' in url:
+                return _MockResponse(SAMPLE_METADATA_TEXT)
+            if url.endswith('ghcnd-stations.txt'):
+                return _MockResponse(SAMPLE_GHCND_STATIONS_TEXT)
+            if url.endswith('ghcnd-inventory.txt'):
+                return _MockResponse(SAMPLE_GHCND_INVENTORY_TEXT)
+            raise AssertionError(f'unexpected url: {url}')
+
+        with patch('weatherdownload.providers.at.metadata.requests.get', side_effect=fake_get):
             stations = read_station_metadata(country='AT')
         self.assertEqual(list(stations.columns), ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'])
-        self.assertEqual(stations['station_id'].tolist(), ['1', '2'])
+        self.assertEqual(stations['station_id'].tolist(), ['1', '2', 'AU000000001', 'AU000000002'])
         self.assertEqual(stations.iloc[0]['full_name'], 'Aflenz')
         self.assertTrue(stations['gh_id'].isna().all())
         self.assertEqual(stations.iloc[0]['begin_date'], '1983-05-01T00:00Z')
@@ -99,6 +111,8 @@ class GeosphereProviderTests(unittest.TestCase):
                 return _MockResponse(SAMPLE_HOURLY_METADATA_TEXT)
             if url.endswith('klima-v2-10min/metadata'):
                 return _MockResponse(SAMPLE_TENMIN_METADATA_TEXT)
+            if url.endswith('ghcnd-inventory.txt'):
+                return _MockResponse(SAMPLE_GHCND_INVENTORY_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
         with patch('weatherdownload.providers.at.metadata.requests.get', side_effect=fake_get):
@@ -106,6 +120,7 @@ class GeosphereProviderTests(unittest.TestCase):
         self.assertEqual(list(observation_metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('tl_mittel', observation_metadata['element'].tolist())
         self.assertIn('tl', observation_metadata['element'].tolist())
+        self.assertIn('TMAX', observation_metadata['element'].tolist())
         self.assertIn('HISTORICAL_DAILY', observation_metadata['obs_type'].tolist())
         self.assertIn('HISTORICAL_HOURLY', observation_metadata['obs_type'].tolist())
         self.assertIn('HISTORICAL_10MIN', observation_metadata['obs_type'].tolist())

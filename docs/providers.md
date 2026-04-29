@@ -49,6 +49,7 @@ Examples:
 | `country` | `provider` | Meaning |
 | --- | --- | --- |
 | `CZ` | `ghcnd` | NOAA GHCN-Daily wrapper using raw GHCN station ids |
+| `DE` | `ghcnd` | NOAA GHCN-Daily wrapper using raw GHCN station ids |
 | `CZ` | `historical_csv` | CHMI historical CSV source |
 | `CH` | `historical` | MeteoSwiss historical station-data path |
 | `HU` | `historical_wind` | HungaroMet wind-only 10-minute product |
@@ -71,7 +72,7 @@ Country-specific details such as raw codes, URLs, units, QC fields, and source c
 
 These are thin country wrappers around the shared implementation in `weatherdownload/providers/ghcnd/`:
 
-- `US`, `CA`, `MX`, `CZ`, `FI`, `FR`, `IT`, `NO`, `NZ`
+- `US`, `CA`, `MX`, `AT`, `CH`, `CZ`, `DE`, `DK`, `FI`, `FR`, `IT`, `NO`, `NZ`, `SE`, `SK`
 
 Shared GHCN-Daily characteristics:
 
@@ -81,7 +82,7 @@ Shared GHCN-Daily characteristics:
 - station metadata and station elements are inventory-driven from `ghcnd-inventory.txt`
 - the wrappers stay thin while the parser/downloader logic lives in the shared GHCN provider package
 - the shared GHCN wrapper helper supports both direct-prefix and mapped-prefix country adapters
-- some wrappers use mapped GHCN prefixes rather than the WeatherDownload country code, for example `CZ -> EZ`
+- some wrappers use mapped GHCN prefixes rather than the WeatherDownload country code, for example `CZ -> EZ`, `DE -> GM`, and `AT -> AU`
 
 ## How To Discover Support
 
@@ -125,7 +126,7 @@ Important constraints that should stay clear across the docs:
 - `CZ / historical_csv / daily` is supported via CHMI raw `VY`
 - `SK / recent / daily` is supported via SHMU raw `voda_vypar`
 - `US / ghcnd / daily` is supported via NOAA raw `EVAP`
-- `CA`, `CZ`, `MX`, `FI`, `FR`, `IT`, `NO`, and `NZ` GHCN wrappers do not expose `open_water_evaporation`
+- `AT`, `CA`, `CH`, `CZ`, `DE`, `DK`, `FI`, `FR`, `IT`, `MX`, `NO`, `NZ`, `SE`, and `SK` GHCN wrappers do not expose `open_water_evaporation`
 - `CH` FAO reference evaporation is not `open_water_evaporation`
 
 ## CLI Notes

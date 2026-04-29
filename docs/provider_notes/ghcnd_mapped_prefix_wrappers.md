@@ -1,10 +1,10 @@
-# NOAA GHCN-Daily Direct-Prefix Wrappers
+# NOAA GHCN-Daily Mapped-Prefix Wrappers
 
-This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `FI`, `FR`, `IT`, `NO`, and `NZ` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
+This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current mapped-prefix country adapters. These wrappers stay intentionally thin because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
 
 ## Provider identifiers
 
-- country: `FI`, `FR`, `IT`, `NO`, `NZ`
+- country: `AT`, `CH`, `CZ`, `DE`, `DK`, `SE`, `SK`
 - provider: `ghcnd`
 - backward-compatible `dataset_scope`: `ghcnd`
 - resolution(s): `daily`
@@ -12,6 +12,7 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 ## Source
 
 - official source: NOAA NCEI GHCN-Daily
+- country codes reference: `https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-countries.txt`
 - station metadata: `https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt`
 - station/element inventory: `https://www.ncei.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt`
 - observations: `https://www.ncei.noaa.gov/pub/data/ghcn/daily/all/{GHCN_STATION_ID}.dly`
@@ -22,15 +23,17 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 - country filtering stays explicit in the wrapper configuration
 - station metadata and station elements are inventory-driven from `ghcnd-inventory.txt`
 
-These wrappers are grouped together because the GHCN country prefix matches the WeatherDownload country code directly:
+These wrappers are grouped together because the WeatherDownload country code and the GHCN country prefix differ:
 
-- `FI -> FI`
-- `FR -> FR`
-- `IT -> IT`
-- `NO -> NO`
-- `NZ -> NZ`
+- `AT -> AU`
+- `CH -> SZ`
+- `CZ -> EZ`
+- `DE -> GM`
+- `DK -> DA`
+- `SE -> SW`
+- `SK -> LO`
 
-Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separately in [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md). `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code.
+The `AT -> AU` mapping is especially worth keeping explicit because GHCN `AU` means Austria here, not WeatherDownload country `AU`.
 
 ## Supported data
 
@@ -51,19 +54,19 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 ## Limitations and caveats
 
 - these wrappers are intentionally thin and share parser, metadata, inventory, and observation logic
-- the shared helper now supports both direct-prefix wrappers (`FI -> FI`) and mapped-prefix wrappers (`CZ -> EZ`) using the same configuration pattern
+- the shared helper supports both direct-prefix wrappers (`FI -> FI`) and mapped-prefix wrappers (`DE -> GM`) using the same configuration pattern
 - station-level availability is inventory-driven and can differ by station
 - `open_water_evaporation` is intentionally unsupported on these wrappers
-- the shared wrapper audit did not justify exposing raw `EVAP` for this group
+- national providers remain the place for country-specific station IDs and extra national-only elements such as `CZ / historical_csv / daily` raw `VY` or `SK / recent / daily` raw `voda_vypar`
 
 ## Examples
 
 ```powershell
-weatherdownload stations elements --country FI --provider ghcnd --resolution daily --include-mapping
+weatherdownload stations elements --country DE --provider ghcnd --station-id GM000001153 --resolution daily --include-mapping
 ```
 
 ```powershell
-weatherdownload observations daily --country NZ --provider ghcnd --station-id NZ000093844 --start-date 2024-01-01 --end-date 2024-01-03 --element precipitation
+weatherdownload observations daily --country SK --provider ghcnd --station-id LO000011934 --start-date 1951-01-01 --end-date 1951-01-03 --element precipitation
 ```
 
 ## Related documentation

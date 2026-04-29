@@ -20,6 +20,8 @@ def read_station_metadata_geosphere(source_url: str | None = None, timeout: int 
 def read_station_observation_metadata_geosphere(source_url: str | None = None, timeout: int = 60):
     frames = []
     for spec in list_implemented_dataset_specs():
+        if not isinstance(spec, type(get_dataset_spec('historical', 'daily'))):
+            continue
         metadata_text = read_text_from_source(source_url or spec.metadata_url, timeout, requests)
         payload = parse_geosphere_metadata_json(metadata_text)
         frames.append(normalize_geosphere_observation_metadata(payload, spec))

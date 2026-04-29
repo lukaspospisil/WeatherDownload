@@ -54,13 +54,14 @@ EXPECTED_SK_CANONICAL_MAPPING = {
 class ShmuProviderTests(unittest.TestCase):
     def test_supported_countries_include_experimental_sk(self) -> None:
         self.assertIn('SK', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='SK'), ['recent'])
+        self.assertEqual(list_dataset_scopes(country='SK'), ['ghcnd', 'recent'])
+        self.assertEqual(list_resolutions(country='SK', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='SK', dataset_scope='recent'), ['daily'])
 
     def test_provider_capability_metadata_is_explicit(self) -> None:
         provider = get_provider('SK')
         self.assertEqual(provider.supported_country_codes, ('SK',))
-        self.assertEqual(provider.supported_dataset_scopes, ('recent',))
+        self.assertEqual(provider.supported_dataset_scopes, ('ghcnd', 'recent'))
         self.assertEqual(provider.supported_resolutions, ('daily',))
         self.assertEqual(provider.supported_canonical_elements, ('tas_max', 'tas_min', 'sunshine_duration', 'precipitation', 'open_water_evaporation'))
         self.assertTrue(provider.experimental)

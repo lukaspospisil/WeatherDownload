@@ -53,7 +53,8 @@ class _MockResponse:
 class SwedenProviderTests(unittest.TestCase):
     def test_supported_countries_include_se(self) -> None:
         self.assertIn('SE', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='SE'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='SE'), ['ghcnd', 'historical'])
+        self.assertEqual(list_resolutions(country='SE', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='SE', dataset_scope='historical'), ['1hour', 'daily'])
 
     def test_read_station_metadata_country_se_from_local_fixture_dir(self) -> None:

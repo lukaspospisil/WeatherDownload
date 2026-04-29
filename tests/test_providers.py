@@ -16,6 +16,9 @@ from weatherdownload import (
 )
 
 SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
+SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
+SAMPLE_GHCND_STATIONS_TEXT = SAMPLE_GHCND_STATIONS_PATH.read_text(encoding='utf-8')
+SAMPLE_GHCND_INVENTORY_TEXT = Path('tests/data/sample_ghcnd_inventory.txt').read_text(encoding='utf-8')
 SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland Abgabe
 ----------- --------- --------- ------------- --------- --------- ----------------------------------------- ---------- ------
 00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\u00fcrttemberg Frei
@@ -33,6 +36,14 @@ class _MockResponse:
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
             raise RuntimeError(f'HTTP {self.status_code}')
+
+
+def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockResponse:
+    if url.endswith('ghcnd-stations.txt'):
+        return _MockResponse(SAMPLE_GHCND_STATIONS_TEXT)
+    if url.endswith('ghcnd-inventory.txt'):
+        return _MockResponse(SAMPLE_GHCND_INVENTORY_TEXT)
+    raise AssertionError(f'unexpected GHCND metadata URL: {url}')
 
 
 class ProviderTests(unittest.TestCase):
@@ -116,25 +127,40 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_read_station_metadata_country_de(self) -> None:
-        with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
+        def _mock_de_and_ghcnd_response(url: str, timeout: int = 60) -> _MockResponse:
+            if 'dwd.de' in url:
+                return _MockResponse(content=SAMPLE_DWD_STATIONS)
+            return _mock_ghcnd_metadata_response(url, timeout=timeout)
+
+        with patch('weatherdownload.providers.de.metadata.requests.get', side_effect=_mock_de_and_ghcnd_response):
             stations = read_station_metadata(country='DE')
         self.assertEqual(list(stations.columns), ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'])
         self.assertEqual(stations.iloc[0]['station_id'], '00003')
         self.assertTrue(stations['gh_id'].isna().all())
         self.assertIn('W\u00fcrttemberg', stations.iloc[0]['full_name'])
         self.assertNotIn('\ufffd', stations.iloc[0]['full_name'])
+        self.assertIn('GM000000001', stations['station_id'].tolist())
 
     def test_read_station_observation_metadata_country_de(self) -> None:
-        with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockResponse(content=SAMPLE_DWD_STATIONS)):
+        def _mock_de_and_ghcnd_response(url: str, timeout: int = 60) -> _MockResponse:
+            if 'dwd.de' in url:
+                return _MockResponse(content=SAMPLE_DWD_STATIONS)
+            return _mock_ghcnd_metadata_response(url, timeout=timeout)
+
+        with patch('weatherdownload.providers.de.metadata.requests.get', side_effect=_mock_de_and_ghcnd_response):
             observation_metadata = read_station_observation_metadata(country='DE')
         self.assertEqual(list(observation_metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('TMK', observation_metadata['element'].tolist())
         self.assertIn('TT_TU', observation_metadata['element'].tolist())
         self.assertIn('TT_10', observation_metadata['element'].tolist())
-        self.assertTrue(observation_metadata['station_id'].str.len().eq(5).all())
+        self.assertIn('GM000000001', observation_metadata['station_id'].tolist())
 
     def test_discovery_country_de_returns_canonical_names_by_default(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='DE'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='DE'), ['ghcnd', 'historical'])
+        self.assertEqual(
+            list_supported_elements(country='DE', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
         self.assertEqual(list_resolutions(country='DE', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         hourly_elements = list_supported_elements(country='DE', dataset_scope='historical', resolution='1hour')
         self.assertEqual(hourly_elements, ['tas_mean', 'relative_humidity', 'wind_speed'])
@@ -148,7 +174,11 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(tenmin_elements, ['FF_10', 'RF_10', 'TT_10'])
 
     def test_discovery_country_at_includes_daily_and_hourly(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='AT'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='AT'), ['ghcnd', 'historical'])
+        self.assertEqual(
+            list_supported_elements(country='AT', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
         self.assertEqual(list_resolutions(country='AT', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         daily_elements = list_supported_elements(country='AT', dataset_scope='historical', resolution='daily')
         hourly_elements = list_supported_elements(country='AT', dataset_scope='historical', resolution='1hour')
@@ -166,7 +196,11 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
     def test_discovery_country_ch_includes_daily_hourly_and_tenmin(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='CH'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='CH'), ['ghcnd', 'historical'])
+        self.assertEqual(
+            list_supported_elements(country='CH', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
         self.assertEqual(list_resolutions(country='CH', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         self.assertEqual(
             list_supported_elements(country='CH', dataset_scope='historical', resolution='daily'),
@@ -236,7 +270,11 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(tenmin_query.elements, ['ta', 'pp'])
 
     def test_discovery_country_dk_includes_daily(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='DK'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='DK'), ['ghcnd', 'historical'])
+        self.assertEqual(
+            list_supported_elements(country='DK', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
         self.assertEqual(list_resolutions(country='DK', dataset_scope='historical'), ['10min', '1hour', 'daily'])
         daily_elements = list_supported_elements(country='DK', dataset_scope='historical', resolution='daily')
         hourly_elements = list_supported_elements(country='DK', dataset_scope='historical', resolution='1hour')
@@ -313,7 +351,11 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_query.elements, ['TEMP', 'PPPS'])
         self.assertEqual(klimat_query.elements, ['STD', 'SMDB'])
     def test_discovery_country_se_includes_daily_and_hourly(self) -> None:
-        self.assertEqual(list_dataset_scopes(country='SE'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='SE'), ['ghcnd', 'historical'])
+        self.assertEqual(
+            list_supported_elements(country='SE', dataset_scope='ghcnd', resolution='daily'),
+            ['tas_max', 'tas_min', 'precipitation'],
+        )
         self.assertEqual(list_resolutions(country='SE', dataset_scope='historical'), ['1hour', 'daily'])
         self.assertEqual(
             list_supported_elements(country='SE', dataset_scope='historical', resolution='daily'),

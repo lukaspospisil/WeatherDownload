@@ -1,6 +1,13 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
+
+from ..ghcnd.registry import GhcndDatasetSpec
+from .ghcnd import (
+    get_dataset_spec as get_ghcnd_dataset_spec,
+    list_dataset_specs as list_ghcnd_dataset_specs,
+    list_implemented_dataset_specs as list_ghcnd_implemented_dataset_specs,
+)
 
 
 @dataclass(frozen=True)
@@ -145,7 +152,7 @@ _DWD_DATASET_SPECS = [
 
 
 def list_dataset_specs() -> list[DwdDatasetSpec]:
-    return list(_DWD_DATASET_SPECS)
+    return [*list(_DWD_DATASET_SPECS), *list_ghcnd_dataset_specs()]
 
 
 def list_implemented_dataset_specs() -> list[DwdDatasetSpec]:
@@ -154,12 +161,14 @@ def list_implemented_dataset_specs() -> list[DwdDatasetSpec]:
         if not spec.implemented:
             continue
         implemented_pairs[(spec.dataset_scope, spec.resolution)] = get_dataset_spec(spec.dataset_scope, spec.resolution)
-    return list(implemented_pairs.values())
+    return [*list(implemented_pairs.values()), *list_ghcnd_implemented_dataset_specs()]
 
 
-def get_dataset_spec(dataset_scope: str, resolution: str) -> DwdDatasetSpec:
+def get_dataset_spec(dataset_scope: str, resolution: str) -> DwdDatasetSpec | GhcndDatasetSpec:
     normalized_scope = dataset_scope.strip()
     normalized_resolution = resolution.strip()
+    if normalized_scope == 'ghcnd':
+        return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     matching = [
         spec
         for spec in _DWD_DATASET_SPECS
@@ -187,4 +196,3 @@ def get_dataset_spec(dataset_scope: str, resolution: str) -> DwdDatasetSpec:
         time_semantics=effective_specs[0].time_semantics,
         implemented=any(spec.implemented for spec in matching),
     )
-

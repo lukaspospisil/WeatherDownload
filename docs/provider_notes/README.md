@@ -31,9 +31,10 @@ The capability matrix is the authoritative current overview of `country + provid
 ## Shared-source wrappers
 
 - [NOAA GHCN-Daily United States](us_noaa_ghcnd.md)
-- [NOAA GHCN-Daily Czech Republic](cz_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Canada](ca_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Mexico](mx_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Direct-Prefix Wrappers](ghcnd_direct_prefix_wrappers.md)
+- [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md)
+- [NOAA GHCN-Daily Czech Republic](cz_noaa_ghcnd.md)
 
-The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper helper supports both direct-prefix and mapped-prefix wrappers. The shared wrapper note covers the current direct-prefix `FI`, `FR`, `IT`, `NO`, and `NZ` wrappers. Czech Republic stays separate because it is a mapped-prefix wrapper (`CZ` country, `EZ` GHCN prefix). The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.
+The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper helper supports both direct-prefix and mapped-prefix wrappers. The direct-prefix note covers the current `FI`, `FR`, `IT`, `NO`, and `NZ` wrappers. The mapped-prefix note covers the current `AT`, `CH`, `CZ`, `DE`, `DK`, `SE`, and `SK` wrappers. Czech Republic also keeps a short country-specific note because it sits next to the separate CHMI provider family. The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.

@@ -77,7 +77,8 @@ class _MockResponse:
 class DenmarkProviderTests(unittest.TestCase):
     def test_supported_countries_include_dk(self) -> None:
         self.assertIn('DK', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='DK'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='DK'), ['ghcnd', 'historical'])
+        self.assertEqual(list_resolutions(country='DK', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='DK', dataset_scope='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_dk_from_local_fixture(self) -> None:

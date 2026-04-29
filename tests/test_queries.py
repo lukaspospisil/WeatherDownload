@@ -135,6 +135,14 @@ class ObservationQueryValidationTests(unittest.TestCase):
         self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
         self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
 
+    def test_de_ghcnd_daily_query_accepts_ghcnd_elements_and_canonical_names(self) -> None:
+        raw_query = ObservationQuery(country='DE', dataset_scope='ghcnd', resolution='daily', station_ids=['GM000000001'], start_date='2020-12-01', end_date='2020-12-02', elements=['tmax', 'prcp'])
+        canonical_query = ObservationQuery(country='DE', provider='ghcnd', resolution='daily', station_ids=['gm000000001'], start_date='2020-12-01', end_date='2020-12-02', elements=['tas_max', 'precipitation'])
+        self.assertEqual(raw_query.country, 'DE')
+        self.assertEqual(raw_query.elements, ['TMAX', 'PRCP'])
+        self.assertEqual(canonical_query.station_ids, ['GM000000001'])
+        self.assertEqual(canonical_query.elements, ['TMAX', 'PRCP'])
+
     def test_at_hourly_query_accepts_at_elements_and_canonical_names(self) -> None:
         raw_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tl', 'p'])
         canonical_query = ObservationQuery(country='AT', dataset_scope='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])

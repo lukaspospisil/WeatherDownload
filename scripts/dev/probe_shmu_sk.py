@@ -8,11 +8,12 @@ import pandas as pd
 import requests
 
 from weatherdownload import ObservationQuery, export_table, read_station_metadata
-from weatherdownload.providers import get_provider
 from weatherdownload.providers.sk.observations import normalize_daily_observations_shmu
 from weatherdownload.providers.sk.parser import parse_recent_daily_payload_json
 from weatherdownload.providers.sk.probe import probe_shmu_observation_feeds, resolve_latest_recent_daily_probe_url
 from weatherdownload.providers.sk.registry import get_dataset_spec
+
+SHMU_PROVIDER_DISPLAY_NAME = 'SHMU (experimental)'
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -135,10 +136,9 @@ def write_shmu_cache_provenance(
     resolved_elements: list[str],
 ) -> Path:
     cache_root.mkdir(parents=True, exist_ok=True)
-    provider = get_provider('SK')
     provenance = {
-        'provider_name': provider.name,
-        'experimental': provider.experimental,
+        'provider_name': SHMU_PROVIDER_DISPLAY_NAME,
+        'experimental': True,
         'requested_date': requested_date,
         'requested_station_id': requested_station_id,
         'requested_elements': list(requested_elements),

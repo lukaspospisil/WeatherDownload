@@ -36,6 +36,7 @@ class GeosphereCliTests(unittest.TestCase):
                     'observations',
                     'daily',
                     '--country', 'AT',
+                    '--provider', 'historical',
                     '--station-id', '1',
                     '--element', 'tas_mean',
                     '--start-date', '2024-01-01',

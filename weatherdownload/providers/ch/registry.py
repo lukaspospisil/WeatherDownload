@@ -1,6 +1,13 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
+
+from ..ghcnd.registry import GhcndDatasetSpec
+from .ghcnd import (
+    get_dataset_spec as get_ghcnd_dataset_spec,
+    list_dataset_specs as list_ghcnd_dataset_specs,
+    list_implemented_dataset_specs as list_ghcnd_implemented_dataset_specs,
+)
 
 
 @dataclass(frozen=True)
@@ -153,20 +160,22 @@ _CH_DATASET_SPECS = [
 
 
 def list_dataset_specs() -> list[SwitzerlandDatasetSpec]:
-    return list(_CH_DATASET_SPECS)
-
+    return [*list(_CH_DATASET_SPECS), *list_ghcnd_dataset_specs()]
 
 
 def list_implemented_dataset_specs() -> list[SwitzerlandDatasetSpec]:
-    return [spec for spec in _CH_DATASET_SPECS if spec.implemented]
+    return [
+        *(spec for spec in _CH_DATASET_SPECS if spec.implemented),
+        *list_ghcnd_implemented_dataset_specs(),
+    ]
 
 
-
-def get_dataset_spec(dataset_scope: str, resolution: str) -> SwitzerlandDatasetSpec:
+def get_dataset_spec(dataset_scope: str, resolution: str) -> SwitzerlandDatasetSpec | GhcndDatasetSpec:
     normalized_scope = dataset_scope.strip()
     normalized_resolution = resolution.strip()
+    if normalized_scope == 'ghcnd':
+        return get_ghcnd_dataset_spec(normalized_scope, normalized_resolution)
     for spec in _CH_DATASET_SPECS:
         if spec.dataset_scope == normalized_scope and spec.resolution == normalized_resolution:
             return spec
     raise ValueError(f'Unsupported MeteoSwiss Switzerland dataset combination: {dataset_scope}/{resolution}')
-

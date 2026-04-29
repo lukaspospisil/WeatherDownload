@@ -36,6 +36,7 @@ class ShmuCliTests(unittest.TestCase):
                     'observations',
                     'daily',
                     '--country', 'SK',
+                    '--provider', 'recent',
                     '--station-id', '11800',
                     '--element', 'tas_max',
                     '--start-date', '2025-01-01',

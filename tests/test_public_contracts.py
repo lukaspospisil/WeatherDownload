@@ -63,6 +63,8 @@ SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
 SAMPLE_SHMU_INDEX_HTML = Path('tests/data/sample_shmu_recent_daily_index.html').read_text(encoding='utf-8')
 SAMPLE_SHMU_MONTH_INDEX_HTML = Path('tests/data/sample_shmu_recent_daily_month_index.html').read_text(encoding='utf-8')
 SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
+SAMPLE_GHCND_STATIONS_TEXT = SAMPLE_GHCND_STATIONS_PATH.read_text(encoding='utf-8')
+SAMPLE_GHCND_INVENTORY_TEXT = Path('tests/data/sample_ghcnd_inventory.txt').read_text(encoding='utf-8')
 SAMPLE_GHCND_CA_DLY_TEXT = Path('tests/data/sample_ghcnd_CA000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_FI_DLY_TEXT = Path('tests/data/sample_ghcnd_FI000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_FR_DLY_TEXT = Path('tests/data/sample_ghcnd_FR000000001.dly').read_text(encoding='utf-8')
@@ -115,18 +117,36 @@ def _build_sample_pl_zip(filename: str, csv_text: str) -> bytes:
     return buffer.getvalue()
 
 
+def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockTextResponse:
+    if url.endswith('ghcnd-stations.txt'):
+        return _MockTextResponse(SAMPLE_GHCND_STATIONS_TEXT)
+    if url.endswith('ghcnd-inventory.txt'):
+        return _MockTextResponse(SAMPLE_GHCND_INVENTORY_TEXT)
+    raise AssertionError(f'unexpected GHCND metadata URL: {url}')
+
+
 def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'CZ':
         return read_station_metadata(country='CZ', source_url='tests/data/sample_meta1.csv')
     if country == 'AT':
-        with patch('weatherdownload.providers.at.metadata.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_METADATA_TEXT)):
+        def _mock_at_and_ghcnd_response(url: str, timeout: int = 60) -> _MockTextResponse:
+            if 'geosphere.at' in url:
+                return _MockTextResponse(SAMPLE_GEOSPHERE_METADATA_TEXT)
+            return _mock_ghcnd_metadata_response(url, timeout=timeout)
+
+        with patch('weatherdownload.providers.at.metadata.requests.get', side_effect=_mock_at_and_ghcnd_response):
             return read_station_metadata(country='AT')
     if country == 'BE':
         return read_station_metadata(country='BE', source_url=str(SAMPLE_BE_STATIONS_PATH))
     if country == 'CH':
         return read_station_metadata(country='CH', source_url=str(SAMPLE_CH_STATIONS_PATH))
     if country == 'DE':
-        with patch('weatherdownload.providers.de.metadata.requests.get', return_value=_MockTextResponse(content=SAMPLE_DWD_STATIONS)):
+        def _mock_de_and_ghcnd_response(url: str, timeout: int = 60) -> _MockTextResponse:
+            if 'dwd.de' in url:
+                return _MockTextResponse(content=SAMPLE_DWD_STATIONS)
+            return _mock_ghcnd_metadata_response(url, timeout=timeout)
+
+        with patch('weatherdownload.providers.de.metadata.requests.get', side_effect=_mock_de_and_ghcnd_response):
             return read_station_metadata(country='DE')
     if country == 'DK':
         return read_station_metadata(country='DK', source_url=str(SAMPLE_DK_STATIONS_PATH))
@@ -511,12 +531,12 @@ def _download_tenmin_fixture(country: str) -> pd.DataFrame:
 
 def test_read_station_metadata_contract_is_stable_across_countries() -> None:
     expected_station_ids = {
-        'AT': ['1', '2'],
+        'AT': ['1', '2', 'AU000000001', 'AU000000002'],
         'BE': ['6414', '6438'],
         'CA': ['CA000000001', 'CA000000002'],
         'CH': ['ABO', 'AEG', 'AIG', 'ALT', 'AND'],
         'CZ': ['0-20000-0-11406', '0-20000-0-11414'],
-        'DE': ['00003', '00044'],
+        'DE': ['00003', '00044', 'GM000000001', 'GM000000002'],
         'DK': ['06030', '06180'],
         'FI': ['FI000000001', 'FI000000002'],
         'FR': ['FR000000001', 'FR000000002'],

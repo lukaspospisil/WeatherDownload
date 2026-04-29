@@ -20,6 +20,8 @@ def read_station_observation_metadata_dk(source_url: str | None = None, timeout:
     payload = parse_dk_feature_collection_json(stations_text)
     frames = []
     for spec in list_implemented_dataset_specs():
+        if not hasattr(spec, 'metadata_url'):
+            continue
         frames.append(normalize_dk_observation_metadata(payload, spec, _parameter_metadata_for_spec(spec)))
     if not frames:
         return normalize_dk_observation_metadata(payload, get_dataset_spec('historical', 'daily'), DK_DAILY_PARAMETER_METADATA)

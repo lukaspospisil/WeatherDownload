@@ -100,6 +100,19 @@ class StationAvailabilityTests(unittest.TestCase):
         self.assertEqual(list_station_elements(stations, 'EZM00011406', None, 'daily', country='CZ', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
         self.assertEqual(list_station_elements(stations, 'EZM00011520', 'ghcnd', 'daily', country='CZ'), ['precipitation'])
 
+    def test_de_ghcnd_station_availability_and_elements_are_inventory_driven(self) -> None:
+        stations = read_station_metadata(country='DE', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        availability = station_availability(stations, station_ids=['GM000000002'], country='DE')
+        self.assertEqual(
+            availability[['dataset_scope', 'resolution', 'supported_elements']].to_dict('records'),
+            [{'dataset_scope': 'ghcnd', 'resolution': 'daily', 'supported_elements': ['precipitation']}],
+        )
+        self.assertTrue(station_supports(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'))
+        self.assertTrue(station_supports(stations, 'GM000000002', None, 'daily', country='DE', provider='ghcnd'))
+        self.assertEqual(list_station_elements(stations, 'GM000000001', 'ghcnd', 'daily', country='DE'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'GM000000001', None, 'daily', country='DE', provider='ghcnd'), ['tas_max', 'tas_min', 'precipitation'])
+        self.assertEqual(list_station_elements(stations, 'GM000000002', 'ghcnd', 'daily', country='DE'), ['precipitation'])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -21,7 +21,7 @@ _DWD_STATION_LINE_PATTERN = re.compile(
 
 
 def read_station_metadata_dwd(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    specs = [_single_source_spec(source_url)] if source_url is not None else list_dataset_specs()
+    specs = [_single_source_spec(source_url)] if source_url is not None else _list_national_dataset_specs()
     station_tables = [_load_station_description(spec.metadata_url, timeout=timeout) for spec in specs]
     if not station_tables:
         return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
@@ -30,7 +30,7 @@ def read_station_metadata_dwd(source_url: str | None = None, timeout: int = 60) 
 
 
 def read_station_observation_metadata_dwd(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    specs = [_single_source_spec(source_url)] if source_url is not None else list_dataset_specs()
+    specs = [_single_source_spec(source_url)] if source_url is not None else _list_national_dataset_specs()
     rows: list[dict[str, object]] = []
     for spec in specs:
         stations = _load_station_description(spec.metadata_url, timeout=timeout)
@@ -49,6 +49,10 @@ def _single_source_spec(source_url: str) -> DwdDatasetSpec:
         time_semantics='date',
         implemented=False,
     )
+
+
+def _list_national_dataset_specs() -> list[DwdDatasetSpec]:
+    return [spec for spec in list_dataset_specs() if isinstance(spec, DwdDatasetSpec)]
 
 
 def _load_station_description(source_url: str, timeout: int) -> pd.DataFrame:

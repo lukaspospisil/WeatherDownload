@@ -83,7 +83,8 @@ class _MockResponse:
 class SwitzerlandProviderTests(unittest.TestCase):
     def test_supported_countries_include_ch(self) -> None:
         self.assertIn('CH', list_supported_countries())
-        self.assertEqual(list_dataset_scopes(country='CH'), ['historical'])
+        self.assertEqual(list_dataset_scopes(country='CH'), ['ghcnd', 'historical'])
+        self.assertEqual(list_resolutions(country='CH', dataset_scope='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='CH', dataset_scope='historical'), ['10min', '1hour', 'daily'])
 
     def test_read_station_metadata_country_ch_from_local_fixture(self) -> None:
