@@ -30,15 +30,20 @@ No other canonical elements are currently advertised on this provider.
 
 ## Current implementation scope
 
-This provider is registered and discoverable, but the current implementation is intentionally narrow:
+This provider is registered and discoverable, and supports live ECCC GeoMet daily observation downloads:
 
-- fixture/source_url-backed only
-- live GeoMet API fetching and pagination are not implemented yet
+- live GeoMet `climate-daily` fetching with pagination
+- local fixture/source_url-backed operation is still supported for tests and offline use
 
 In practice this means:
 
-- station metadata can be loaded from a local GeoJSON FeatureCollection fixture via `read_station_metadata(country="CA", source_url="...")`
-- daily observations can be downloaded only when the passed `station_metadata` were created from such a local fixture (the implementation reuses the fixture path stored in `station_metadata.attrs["source_url"]`)
+- station metadata can be loaded from the live GeoMet `climate-stations` collection, or from a local GeoJSON FeatureCollection fixture via `read_station_metadata(country="CA", source_url="...")`
+- daily observations can be downloaded either live (GeoMet API), or from a local fixture when the passed `station_metadata` were created from that fixture (the implementation reuses the fixture path stored in `station_metadata.attrs["source_url"]`)
+
+Important limitations:
+
+- GeoMet `climate-daily` is a documented subset collection, so station discovery should be treated as conservative (some stations may not appear, or may not have full coverage)
+- not all requested elements are guaranteed for every station/date; missing values are simply omitted from the normalized observation rows
 
 ## Source references
 

@@ -79,7 +79,7 @@ NOTES: dict[tuple[str, str, str], str] = {
     ('BE', 'historical', 'daily'): 'Provider-side daily aggregates; raw QC stays in flag.',
     ('BE', 'historical', '1hour'): 'Provider-side hourly aggregates; raw QC stays in flag.',
     ('BE', 'historical', '10min'): 'Raw 10-minute path; no derived daily/hourly recomputation.',
-    ('CA', 'eccc', 'daily'): 'Registered, but currently fixture/source_url-backed only; live GeoMet fetching and pagination are intentionally not implemented yet. `ghcnd` remains available as a separate daily provider.',
+    ('CA', 'eccc', 'daily'): 'Live GeoMet climate-daily fetching with pagination; station_id is ECCC CLIMATE_IDENTIFIER. Station discovery is conservative because climate-daily is a subset collection, and element coverage can vary by station/date. `ghcnd` remains available as a separate daily provider.',
     ('CA', 'ghcnd', 'daily'): 'Raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('CH', 'historical', 'daily'): 'MeteoSwiss daily path; FAO reference evaporation exists but is intentionally not mapped to open_water_evaporation.',
     ('CH', 'historical', '1hour'): 'FAO reference evaporation is not mapped to open_water_evaporation.',
