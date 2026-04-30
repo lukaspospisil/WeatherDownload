@@ -1,5 +1,10 @@
 import unittest
+import json
+from datetime import date
 from pathlib import Path
+from unittest.mock import patch
+
+import pandas as pd
 
 from weatherdownload import (
     ObservationQuery,
@@ -13,6 +18,7 @@ from weatherdownload import (
     read_station_observation_metadata,
 )
 from weatherdownload.providers.ca.eccc_parser import CA_ECCC_NORMALIZED_DAILY_COLUMNS
+from weatherdownload.providers.ca.observations import _build_eccc_daily_params, _iter_month_chunks
 
 
 SAMPLE_ECCC_DAILY_PATH = Path('tests/data/sample_ca_eccc_daily.json')
@@ -125,6 +131,81 @@ class CanadaEcccProviderTests(unittest.TestCase):
     def test_ca_ghcnd_metadata_path_remains_available(self) -> None:
         stations = read_station_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
         self.assertEqual(stations['station_id'].tolist(), ['CA000000001', 'CA000000002'])
+
+    def test_eccc_live_month_chunking_and_params_are_stable(self) -> None:
+        chunks = _iter_month_chunks(date(2025, 1, 31), date(2025, 2, 2))
+        self.assertEqual(chunks, [(date(2025, 1, 31), date(2025, 1, 31)), (date(2025, 2, 1), date(2025, 2, 2))])
+
+        params = _build_eccc_daily_params(
+            station_id='1021330',
+            chunk_start=date(2025, 1, 1),
+            chunk_end=date(2025, 1, 2),
+            limit=5000,
+        )
+        self.assertEqual(params['f'], 'json')
+        self.assertEqual(params['CLIMATE_IDENTIFIER'], '1021330')
+        self.assertEqual(params['datetime'], '2025-01-01/2025-01-02')
+        self.assertIn('LOCAL_DATE', params['properties'])
+        self.assertEqual(params['limit'], '5000')
+
+    def test_download_observations_can_fetch_live_eccc_with_pagination(self) -> None:
+        fixture_payload = json.loads(SAMPLE_ECCC_DAILY_PATH.read_text(encoding='utf-8'))
+        features = fixture_payload['features']
+        page1 = {
+            'type': 'FeatureCollection',
+            'features': features[:2],
+            'links': [
+                {
+                    'rel': 'next',
+                    'href': 'https://api.weather.gc.ca/collections/climate-daily/items?offset=2',
+                }
+            ],
+        }
+        page2 = {'type': 'FeatureCollection', 'features': features[2:], 'links': []}
+
+        class _MockResponse:
+            def __init__(self, text: str) -> None:
+                self.text = text
+                self.status_code = 200
+                self.encoding = 'utf-8'
+
+            def raise_for_status(self) -> None:
+                return None
+
+        base_url = 'https://api.weather.gc.ca/collections/climate-daily/items'
+        next_url = 'https://api.weather.gc.ca/collections/climate-daily/items?offset=2'
+
+        def _mock_get(url: str, params=None, timeout: int = 60):
+            if url == base_url and params is not None:
+                return _MockResponse(json.dumps(page1))
+            if url == next_url and params is None:
+                return _MockResponse(json.dumps(page2))
+            raise AssertionError(f'unexpected request: url={url!r} params={params!r}')
+
+        station_metadata = pd.DataFrame.from_records([{'station_id': '1021330'}])
+        query = ObservationQuery(
+            country='CA',
+            provider='eccc',
+            resolution='daily',
+            station_ids=['1021330'],
+            start_date='2025-01-01',
+            end_date='2025-01-02',
+            elements=['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+
+        with patch('weatherdownload.providers.ca.observations.requests.get', side_effect=_mock_get) as mock_get:
+            observations = download_observations(query, country='CA', station_metadata=station_metadata)
+
+        self.assertEqual(list(observations.columns), CA_ECCC_NORMALIZED_DAILY_COLUMNS)
+        self.assertEqual(observations['station_id'].unique().tolist(), ['1021330'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_max', 'tas_mean', 'tas_min'])
+        lookup = observations.set_index(['element', 'observation_date'])['value']
+        self.assertAlmostEqual(float(lookup[('tas_mean', query.start_date)]), 5.4)
+        self.assertAlmostEqual(float(lookup[('tas_min', query.start_date)]), 1.1)
+        self.assertAlmostEqual(float(lookup[('tas_max', query.end_date)]), 3.2)
+        self.assertAlmostEqual(float(lookup[('precipitation', query.end_date)]), 0.0)
+        self.assertNotIn(('tas_mean', query.end_date), lookup.index)
+        self.assertEqual(mock_get.call_count, 2)
 
 
 if __name__ == '__main__':
