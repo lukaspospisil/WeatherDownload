@@ -32,6 +32,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Read station metadata and print or export it.",
     )
     _add_country_argument(metadata_parser)
+    _add_provider_arguments(
+        metadata_parser,
+        required=False,
+        help_text="Preferred provider/source selector within the country. Required when multiple providers exist and --source-url is not provided.",
+    )
     metadata_parser.add_argument("--format", choices=OUTPUT_FORMATS, default="screen", help="Output format.")
     metadata_parser.add_argument("--output", type=Path, help="Output file path. A bare filename is written under outputs/. Not used for 'screen'.")
     metadata_parser.add_argument("--source-url", default=None, help="Optional provider-specific metadata URL override.")
@@ -163,7 +168,30 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def handle_station_metadata(args: argparse.Namespace) -> int:
-    stations = _read_stations_for_cli(args)
+    source_url = getattr(args, "source_url", None)
+    if source_url is None:
+        provider_scope = (
+            _resolve_provider_for_cli(args, default=None, required=True)
+            if getattr(args, "provider", None) is not None
+            else _default_provider_for_resolution(args.country, None)
+        )
+        # Prefer a provider-specific URL only when it cleanly selects that provider.
+        # For some national providers, passing a single metadata URL would narrow coverage
+        # compared to the provider's default "all national metadata sources" behavior.
+        source_url = _default_station_metadata_source_url(args.country, provider_scope)
+
+        if provider_scope == 'ghcnd':
+            stations = read_station_metadata(country=args.country, source_url=source_url)
+        else:
+            if source_url is not None:
+                stations = read_station_metadata(country=args.country, source_url=source_url)
+            else:
+                stations = read_station_metadata(country=args.country, source_url=None)
+                country_prefix = args.country.strip().upper()
+                if 'station_id' in stations.columns:
+                    stations = stations[~stations['station_id'].astype(str).str.upper().str.startswith(country_prefix)].reset_index(drop=True)
+    else:
+        stations = read_station_metadata(country=args.country, source_url=source_url)
     if args.format == "screen":
         print(_format_table(stations, metadata_view=True))
         return 0
@@ -458,6 +486,28 @@ def _resolve_provider_or_default(args: argparse.Namespace, resolution: str) -> s
 
 def _read_stations_for_cli(args: argparse.Namespace) -> pd.DataFrame:
     return read_station_metadata(country=args.country, source_url=getattr(args, "source_url", None))
+
+
+def _default_station_metadata_source_url(country: str, provider: str) -> str | None:
+    normalized_country = country.strip().upper()
+    normalized_provider = provider.strip()
+    weather_provider = get_provider(normalized_country)
+    specs = weather_provider.list_implemented_dataset_specs()
+    match = next((spec for spec in specs if getattr(spec, 'provider', None) == normalized_provider), None)
+    if match is None:
+        choices = ', '.join(sorted({getattr(spec, 'provider', '') for spec in specs if getattr(spec, 'provider', None)}))
+        raise ValueError(
+            f"Unsupported provider='{normalized_provider}' for country='{normalized_country}'. "
+            f'Valid providers: {choices}.'
+        )
+
+    # Only "station_metadata_url" is guaranteed to represent the full provider station set for
+    # national providers. For GHCN-Daily, the station list URL is the correct entrypoint.
+    if normalized_provider == 'ghcnd':
+        value = getattr(match, 'stations_url', None)
+        return value.strip() if isinstance(value, str) and value.strip() else None
+    value = getattr(match, 'station_metadata_url', None)
+    return value.strip() if isinstance(value, str) and value.strip() else None
 
 
 def _validate_observation_mode(args: argparse.Namespace, *, daily: bool) -> None:

@@ -45,7 +45,7 @@ observations = download_observations(query)
 CLI:
 
 ```powershell
-weatherdownload stations metadata --country HU --format screen
+weatherdownload stations metadata --country HU --provider historical --format screen
 weatherdownload observations daily --country DE --provider historical --station-id 00044 --element tas_mean --start-date 2024-01-01 --end-date 2024-01-10
 weatherdownload observations hourly --country HU --station-id 13704 --element tas_mean --element pressure --start 2026-01-01T00:00:00Z --end 2026-01-01T01:00:00Z
 weatherdownload observations 10min --country NL --station-id 0-20000-0-06260 --element tas_mean --element pressure --start 2024-01-01T09:10:00Z --end 2024-01-01T09:20:00Z

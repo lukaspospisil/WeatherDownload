@@ -960,19 +960,52 @@ class StationAvailabilityCliTests(unittest.TestCase):
         ])
 
     def test_station_metadata_cli_uses_default_country_cz(self) -> None:
-        with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()) as read_mock:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
             exit_code = main(['stations', 'metadata'])
-        self.assertEqual(exit_code, 0)
-        self.assertEqual(read_mock.call_args.kwargs['country'], 'CZ')
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Multiple providers are available for country='CZ'", stderr.getvalue())
 
     def test_station_metadata_cli_explicit_country_de(self) -> None:
         buffer = io.StringIO()
         with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()) as read_mock:
             with redirect_stdout(buffer):
-                exit_code = main(['stations', 'metadata', '--country', 'DE'])
+                exit_code = main(['stations', 'metadata', '--country', 'DE', '--provider', 'historical'])
         self.assertEqual(exit_code, 0)
         self.assertEqual(read_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
+
+    def test_station_metadata_cli_accepts_provider_for_country_ca_with_source_url_fixture(self) -> None:
+        buffer = io.StringIO()
+        with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()) as read_mock:
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'stations',
+                    'metadata',
+                    '--country',
+                    'CA',
+                    '--provider',
+                    'eccc',
+                    '--source-url',
+                    'tests/data/sample_ca_eccc_daily.json',
+                ])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(read_mock.call_args.kwargs['country'], 'CA')
+        self.assertEqual(read_mock.call_args.kwargs['source_url'], 'tests/data/sample_ca_eccc_daily.json')
+
+    def test_station_metadata_cli_surfaces_ambiguous_provider_error_for_ca(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main(['stations', 'metadata', '--country', 'CA'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Multiple providers are available for country='CA': eccc, ghcnd. Use --provider explicitly.", stderr.getvalue())
+
+    def test_station_metadata_cli_single_provider_country_us_still_works(self) -> None:
+        with patch('weatherdownload.cli.read_station_metadata', return_value=self._sample_de_metadata_table()) as read_mock:
+            exit_code = main(['stations', 'metadata', '--country', 'US'])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(read_mock.call_args.kwargs['country'], 'US')
+        self.assertTrue(str(read_mock.call_args.kwargs.get('source_url', '')).endswith('ghcnd-stations.txt'))
 
     def test_station_availability_cli_screen_output(self) -> None:
         buffer = io.StringIO()
