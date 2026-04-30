@@ -631,7 +631,7 @@ class ObservationCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_ca_daily_table()) as download_mock:
             with redirect_stdout(buffer):
                 exit_code = main([
-                    'observations', 'daily', '--country', 'CA', '--station-id', 'CA000000001', '--element', 'tas_max', '--start-date', '2020-06-01', '--end-date', '2020-06-02'
+                    'observations', 'daily', '--country', 'CA', '--provider', 'ghcnd', '--station-id', 'CA000000001', '--element', 'tas_max', '--start-date', '2020-06-01', '--end-date', '2020-06-02'
                 ])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
@@ -825,6 +825,18 @@ class ObservationCliTests(unittest.TestCase):
             ])
         self.assertEqual(exit_code, 1)
         self.assertIn("Multiple providers support country='SK' and resolution='daily'", stderr.getvalue())
+
+    def test_daily_cli_ambiguous_country_ca_requires_explicit_provider(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            exit_code = main([
+                'observations', 'daily', '--country', 'CA', '--station-id', 'CA000000001', '--element', 'tas_max', '--start-date', '2020-06-01', '--end-date', '2020-06-02'
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn(
+            "Multiple providers support country='CA' and resolution='daily': eccc, ghcnd. Use --provider explicitly.",
+            stderr.getvalue(),
+        )
 
     def test_tenmin_cli_ambiguous_country_hu_requires_explicit_provider(self) -> None:
         stderr = io.StringIO()
