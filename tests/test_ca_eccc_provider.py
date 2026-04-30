@@ -19,6 +19,7 @@ from weatherdownload import (
 )
 from weatherdownload.providers.ca.eccc_parser import CA_ECCC_NORMALIZED_DAILY_COLUMNS
 from weatherdownload.providers.ca.observations import _build_eccc_daily_params, _iter_month_chunks
+from weatherdownload.providers.ca.metadata import read_station_metadata_eccc
 
 
 SAMPLE_ECCC_DAILY_PATH = Path('tests/data/sample_ca_eccc_daily.json')
@@ -205,6 +206,81 @@ class CanadaEcccProviderTests(unittest.TestCase):
         self.assertAlmostEqual(float(lookup[('tas_max', query.end_date)]), 3.2)
         self.assertAlmostEqual(float(lookup[('precipitation', query.end_date)]), 0.0)
         self.assertNotIn(('tas_mean', query.end_date), lookup.index)
+        self.assertEqual(mock_get.call_count, 2)
+
+    def test_read_station_metadata_eccc_can_fetch_live_with_pagination(self) -> None:
+        page1 = {
+            'type': 'FeatureCollection',
+            'features': [
+                {
+                    'type': 'Feature',
+                    'geometry': {'type': 'Point', 'coordinates': [-123.1, 49.3]},
+                    'properties': {
+                        'CLIMATE_IDENTIFIER': '1021330',
+                        'STATION_NAME': 'TEST STATION A',
+                        'DLY_FIRST_DATE': '1990-01-01T00:00Z',
+                        'DLY_LAST_DATE': '1990-12-31T23:59Z',
+                        'ELEVATION': 12.5,
+                    },
+                }
+            ],
+            'links': [{'rel': 'next', 'href': 'https://api.weather.gc.ca/collections/climate-stations/items?offset=1'}],
+        }
+        page2 = {
+            'type': 'FeatureCollection',
+            'features': [
+                {
+                    'type': 'Feature',
+                    'geometry': {'type': 'Point', 'coordinates': [-75.7, 45.4]},
+                    'properties': {
+                        'CLIMATE_IDENTIFIER': '1022430',
+                        'STATION_NAME': 'TEST STATION B',
+                        'DLY_FIRST_DATE': '1991-05-04T00:00Z',
+                        'DLY_LAST_DATE': '1991-05-05T23:59Z',
+                        'ELEVATION': 70,
+                    },
+                }
+            ],
+            'links': [],
+        }
+
+        class _MockResponse:
+            def __init__(self, text: str) -> None:
+                self.text = text
+                self.status_code = 200
+                self.encoding = 'utf-8'
+
+            def raise_for_status(self) -> None:
+                return None
+
+        base_url = 'https://api.weather.gc.ca/collections/climate-stations/items'
+        next_url = 'https://api.weather.gc.ca/collections/climate-stations/items?offset=1'
+
+        def _mock_get(url: str, params=None, timeout: int = 60):
+            if url == base_url and params is not None:
+                self.assertEqual(params.get('f'), 'json')
+                self.assertEqual(params.get('limit'), '5000')
+                self.assertIn('CLIMATE_IDENTIFIER', params.get('properties', ''))
+                return _MockResponse(json.dumps(page1))
+            if url == next_url and params is None:
+                return _MockResponse(json.dumps(page2))
+            raise AssertionError(f'unexpected request: url={url!r} params={params!r}')
+
+        with patch('weatherdownload.providers.ca.metadata.requests.get', side_effect=_mock_get) as mock_get:
+            stations = read_station_metadata_eccc(source_url=None, timeout=60)
+
+        self.assertEqual(
+            list(stations.columns),
+            ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
+        )
+        self.assertEqual(stations['station_id'].tolist(), ['1021330', '1022430'])
+        self.assertEqual(stations.iloc[0]['full_name'], 'TEST STATION A')
+        self.assertEqual(stations.iloc[0]['begin_date'], '1990-01-01T00:00Z')
+        self.assertEqual(stations.iloc[0]['end_date'], '1990-12-31T23:59Z')
+        self.assertAlmostEqual(float(stations.iloc[0]['longitude']), -123.1)
+        self.assertAlmostEqual(float(stations.iloc[0]['latitude']), 49.3)
+        self.assertAlmostEqual(float(stations.iloc[0]['elevation_m']), 12.5)
+        self.assertTrue(stations['gh_id'].isna().all())
         self.assertEqual(mock_get.call_count, 2)
 
 
