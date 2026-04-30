@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
 
 
 CA_ECCC_NORMALIZED_DAILY_COLUMNS = [
@@ -135,6 +138,88 @@ def normalize_ca_eccc_daily_observations(
     return combined.loc[:, CA_ECCC_NORMALIZED_DAILY_COLUMNS]
 
 
+def parse_ca_eccc_station_metadata_feature_collection(json_text: str) -> pd.DataFrame:
+    payload = _parse_feature_collection_payload(json_text)
+    rows_by_station: dict[str, dict[str, object]] = {}
+    for properties, geometry in _feature_properties_and_geometry(payload):
+        station_id = normalize_ca_eccc_station_id(properties.get('CLIMATE_IDENTIFIER') or properties.get('id'))
+        if not station_id:
+            continue
+        row = rows_by_station.setdefault(
+            station_id,
+            {
+                'station_id': station_id,
+                'gh_id': pd.NA,
+                'begin_date': '',
+                'end_date': '',
+                'full_name': _clean_string(properties.get('STATION_NAME')) or pd.NA,
+                'longitude': _geometry_longitude(geometry),
+                'latitude': _geometry_latitude(geometry),
+                'elevation_m': _parse_float(properties.get('ELEVATION')),
+            },
+        )
+        begin_candidate = _station_begin_date(properties)
+        end_candidate = _station_end_date(properties)
+        row['begin_date'] = _min_datetime_string(row.get('begin_date'), begin_candidate)
+        row['end_date'] = _max_datetime_string(row.get('end_date'), end_candidate)
+        if pd.isna(row.get('full_name')) and _clean_string(properties.get('STATION_NAME')):
+            row['full_name'] = _clean_string(properties.get('STATION_NAME'))
+        if row.get('longitude') is None:
+            row['longitude'] = _geometry_longitude(geometry)
+        if row.get('latitude') is None:
+            row['latitude'] = _geometry_latitude(geometry)
+        if row.get('elevation_m') is None:
+            row['elevation_m'] = _parse_float(properties.get('ELEVATION'))
+
+    frame = pd.DataFrame.from_records(list(rows_by_station.values()), columns=STATION_METADATA_COLUMNS)
+    if frame.empty:
+        return frame
+    frame = frame.sort_values('station_id', kind='stable').reset_index(drop=True)
+    frame.attrs['station_provider_raw_elements_by_path'] = {
+        ('eccc', 'daily'): {
+            str(station_id): list(CA_ECCC_DAILY_RAW_TO_CANONICAL.keys())
+            for station_id in frame['station_id'].astype(str).tolist()
+        }
+    }
+    return frame
+
+
+def normalize_ca_eccc_observation_metadata(stations: pd.DataFrame) -> pd.DataFrame:
+    if stations.empty:
+        return pd.DataFrame(columns=STATION_OBSERVATION_METADATA_COLUMNS)
+
+    rows: list[dict[str, object]] = []
+    for station in stations.itertuples(index=False):
+        for raw_code in CA_ECCC_DAILY_RAW_TO_CANONICAL:
+            rows.append(
+                {
+                    'obs_type': 'HISTORICAL_DAILY',
+                    'station_id': station.station_id,
+                    'begin_date': station.begin_date,
+                    'end_date': station.end_date,
+                    'element': raw_code,
+                    'schedule': 'P1D ECCC GeoMet climate-daily',
+                    'name': raw_code,
+                    'description': _description_for_raw(raw_code),
+                    'height': pd.NA,
+                }
+            )
+    return pd.DataFrame.from_records(rows, columns=STATION_OBSERVATION_METADATA_COLUMNS).sort_values(
+        ['station_id', 'element'],
+        kind='stable',
+    ).reset_index(drop=True)
+
+
+def read_text_from_source(source: str, timeout: int, requests_module) -> str:
+    local_path = Path(source)
+    if local_path.exists():
+        return local_path.read_text(encoding='utf-8')
+    response = requests_module.get(source, timeout=timeout)
+    response.raise_for_status()
+    response.encoding = 'utf-8'
+    return response.text
+
+
 def normalize_ca_eccc_station_id(value: object) -> str:
     cleaned = _clean_string(value)
     if cleaned.endswith('.0'):
@@ -150,6 +235,111 @@ def parse_ca_eccc_local_date(value: object) -> date | None:
     if pd.isna(parsed):
         return None
     return parsed.date()
+
+
+def _parse_feature_collection_payload(json_text: str) -> dict[str, object]:
+    try:
+        payload = json.loads(json_text.lstrip('\ufeff'))
+    except json.JSONDecodeError as exc:
+        raise ValueError('ECCC GeoMet response is not valid JSON.') from exc
+    if not isinstance(payload, dict):
+        raise ValueError('ECCC GeoMet response must be a top-level JSON object.')
+    features = payload.get('features')
+    if not isinstance(features, list):
+        raise ValueError('ECCC GeoMet response is missing a features list.')
+    return payload
+
+
+def _feature_properties_and_geometry(payload: dict[str, object]) -> list[tuple[dict[str, object], dict[str, object] | None]]:
+    rows: list[tuple[dict[str, object], dict[str, object] | None]] = []
+    for feature in payload.get('features', []):
+        if not isinstance(feature, dict):
+            continue
+        properties = feature.get('properties')
+        if not isinstance(properties, dict):
+            continue
+        geometry = feature.get('geometry')
+        rows.append((properties, geometry if isinstance(geometry, dict) else None))
+    return rows
+
+
+def _station_begin_date(properties: dict[str, object]) -> str:
+    return (
+        _normalize_metadata_datetime(properties.get('DLY_FIRST_DATE'))
+        or _normalize_observation_date_to_begin(properties.get('LOCAL_DATE'))
+    )
+
+
+def _station_end_date(properties: dict[str, object]) -> str:
+    return (
+        _normalize_metadata_datetime(properties.get('DLY_LAST_DATE'))
+        or _normalize_observation_date_to_end(properties.get('LOCAL_DATE'))
+    )
+
+
+def _normalize_metadata_datetime(value: object) -> str:
+    cleaned = _clean_string(value)
+    if not cleaned:
+        return ''
+    parsed = pd.to_datetime(cleaned, errors='coerce', utc=True)
+    if pd.isna(parsed):
+        return ''
+    return parsed.strftime('%Y-%m-%dT%H:%MZ')
+
+
+def _normalize_observation_date_to_begin(value: object) -> str:
+    parsed = parse_ca_eccc_local_date(value)
+    if parsed is None:
+        return ''
+    return f'{parsed.isoformat()}T00:00Z'
+
+
+def _normalize_observation_date_to_end(value: object) -> str:
+    parsed = parse_ca_eccc_local_date(value)
+    if parsed is None:
+        return ''
+    return f'{parsed.isoformat()}T23:59Z'
+
+
+def _geometry_longitude(geometry: dict[str, object] | None) -> float | None:
+    coordinates = geometry.get('coordinates') if geometry else None
+    if isinstance(coordinates, (list, tuple)) and len(coordinates) >= 2:
+        return _parse_float(coordinates[0])
+    return None
+
+
+def _geometry_latitude(geometry: dict[str, object] | None) -> float | None:
+    coordinates = geometry.get('coordinates') if geometry else None
+    if isinstance(coordinates, (list, tuple)) and len(coordinates) >= 2:
+        return _parse_float(coordinates[1])
+    return None
+
+
+def _min_datetime_string(current: object, candidate: str) -> str:
+    current_cleaned = _clean_string(current)
+    if not current_cleaned:
+        return candidate
+    if not candidate:
+        return current_cleaned
+    return min(current_cleaned, candidate)
+
+
+def _max_datetime_string(current: object, candidate: str) -> str:
+    current_cleaned = _clean_string(current)
+    if not current_cleaned:
+        return candidate
+    if not candidate:
+        return current_cleaned
+    return max(current_cleaned, candidate)
+
+
+def _description_for_raw(raw_code: str) -> str:
+    return {
+        'MEAN_TEMPERATURE': 'Official ECCC GeoMet daily mean air temperature.',
+        'MAX_TEMPERATURE': 'Official ECCC GeoMet daily maximum air temperature.',
+        'MIN_TEMPERATURE': 'Official ECCC GeoMet daily minimum air temperature.',
+        'TOTAL_PRECIPITATION': 'Official ECCC GeoMet daily total precipitation.',
+    }[raw_code]
 
 
 def _clean_string(value: object) -> str:

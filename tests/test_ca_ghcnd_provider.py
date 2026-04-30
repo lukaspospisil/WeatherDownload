@@ -35,12 +35,12 @@ class CanadaGhcndProviderTests(unittest.TestCase):
     def test_provider_capability_metadata_is_explicit(self) -> None:
         provider = get_provider('CA')
         self.assertEqual(provider.supported_country_codes, ('CA',))
-        self.assertEqual(provider.supported_providers, ('ghcnd',))
+        self.assertEqual(provider.supported_providers, ('eccc', 'ghcnd'))
         self.assertEqual(provider.supported_resolutions, ('daily',))
         self.assertEqual(provider.supported_canonical_elements, ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'))
 
     def test_discovery_country_ca_returns_ghcnd_daily_elements_without_evap(self) -> None:
-        self.assertEqual(list_providers(country='CA'), ['ghcnd'])
+        self.assertEqual(list_providers(country='CA'), ['eccc', 'ghcnd'])
         self.assertEqual(list_resolutions(country='CA', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='CA', provider='ghcnd', resolution='daily'),
