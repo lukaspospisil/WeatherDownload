@@ -76,12 +76,16 @@ class ProviderTests(unittest.TestCase):
     def test_discovery_country_ca_includes_eccc_and_conservative_ghcnd_core_without_evap(self) -> None:
         self.assertEqual(list_providers(country='CA'), ['eccc', 'ghcnd'])
         self.assertEqual(list_providers(country='CA'), ['eccc', 'ghcnd'])
-        self.assertEqual(list_resolutions(country='CA', provider='eccc'), ['daily'])
+        self.assertEqual(list_resolutions(country='CA', provider='eccc'), ['1hour', 'daily'])
         self.assertEqual(list_resolutions(country='CA', provider='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='CA', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='CA', provider='eccc', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='CA', provider='eccc', resolution='1hour'),
+            ['tas_mean', 'relative_humidity'],
         )
         self.assertEqual(
             list_supported_elements(country='CA', provider='ghcnd', resolution='daily'),

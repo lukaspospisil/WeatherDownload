@@ -10,7 +10,7 @@ This note covers the current `CA / eccc / daily` provider registration based on 
 
 - country: `CA`
 - provider: `eccc`
-- resolution(s): `daily`
+- resolution(s): `daily`, `1hour`
 
 ## Station identifiers
 
@@ -28,11 +28,21 @@ First-slice canonical elements:
 
 No other canonical elements are currently advertised on this provider.
 
+Hourly first-slice canonical elements:
+
+- `tas_mean` (`TEMP`)
+- `relative_humidity` (`RELATIVE_HUMIDITY`)
+
+Hourly exclusions in this pass:
+
+- `STATION_PRESSURE`, `WIND_SPEED`, `PRECIP_AMOUNT`, and `DEW_POINT_TEMP` are intentionally not mapped yet (units/semantics need additional verification)
+
 ## Current implementation scope
 
-This provider is registered and discoverable, and supports live ECCC GeoMet daily observation downloads:
+This provider is registered and discoverable, and supports live ECCC GeoMet daily and hourly observation downloads:
 
 - live GeoMet `climate-daily` fetching with pagination
+- live GeoMet `climate-hourly` fetching with pagination (conservative first slice)
 - local fixture/source_url-backed operation is still supported for tests and offline use
 
 In practice this means:

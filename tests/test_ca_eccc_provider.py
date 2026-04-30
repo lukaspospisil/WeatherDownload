@@ -17,12 +17,13 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
-from weatherdownload.providers.ca.eccc_parser import CA_ECCC_NORMALIZED_DAILY_COLUMNS
+from weatherdownload.providers.ca.eccc_parser import CA_ECCC_NORMALIZED_DAILY_COLUMNS, CA_ECCC_NORMALIZED_HOURLY_COLUMNS
 from weatherdownload.providers.ca.observations import _build_eccc_daily_params, _iter_month_chunks
 from weatherdownload.providers.ca.metadata import read_station_metadata_eccc
 
 
 SAMPLE_ECCC_DAILY_PATH = Path('tests/data/sample_ca_eccc_daily.json')
+SAMPLE_ECCC_HOURLY_PATH = Path('tests/data/sample_ca_eccc_hourly.json')
 SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 
 
@@ -31,11 +32,11 @@ class CanadaEcccProviderTests(unittest.TestCase):
         provider = get_provider('CA')
         self.assertEqual(provider.supported_country_codes, ('CA',))
         self.assertEqual(provider.supported_providers, ('eccc', 'ghcnd'))
-        self.assertEqual(provider.supported_resolutions, ('daily',))
+        self.assertEqual(provider.supported_resolutions, ('daily', '1hour'))
 
-    def test_discovery_country_ca_includes_eccc_daily(self) -> None:
+    def test_discovery_country_ca_includes_eccc_daily_and_hourly(self) -> None:
         self.assertEqual(list_providers(country='CA'), ['eccc', 'ghcnd'])
-        self.assertEqual(list_resolutions(country='CA', provider='eccc'), ['daily'])
+        self.assertEqual(list_resolutions(country='CA', provider='eccc'), ['1hour', 'daily'])
         self.assertEqual(
             list_supported_elements(country='CA', provider='eccc', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
@@ -53,6 +54,14 @@ class CanadaEcccProviderTests(unittest.TestCase):
                 {'element': 'tas_min', 'element_raw': 'MIN_TEMPERATURE'},
                 {'element': 'precipitation', 'element_raw': 'TOTAL_PRECIPITATION'},
             ],
+        )
+        self.assertEqual(
+            list_supported_elements(country='CA', provider='eccc', resolution='1hour'),
+            ['tas_mean', 'relative_humidity'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='CA', provider='eccc', resolution='1hour', provider_raw=True),
+            ['TEMP', 'RELATIVE_HUMIDITY'],
         )
 
     def test_read_station_metadata_and_observation_metadata_from_eccc_fixture(self) -> None:
@@ -100,6 +109,28 @@ class CanadaEcccProviderTests(unittest.TestCase):
         self.assertEqual(canonical_query.elements, ['MEAN_TEMPERATURE', 'MAX_TEMPERATURE', 'MIN_TEMPERATURE', 'TOTAL_PRECIPITATION'])
         self.assertEqual(raw_query.elements, ['MEAN_TEMPERATURE', 'MAX_TEMPERATURE', 'MIN_TEMPERATURE', 'TOTAL_PRECIPITATION'])
 
+    def test_eccc_hourly_query_normalizes_canonical_and_raw_elements(self) -> None:
+        canonical_query = ObservationQuery(
+            country='CA',
+            provider='eccc',
+            resolution='1hour',
+            station_ids=['1017101'],
+            start='2024-10-02T09:00:00Z',
+            end='2024-10-02T10:00:00Z',
+            elements=['tas_mean', 'relative_humidity'],
+        )
+        raw_query = ObservationQuery(
+            country='CA',
+            provider='eccc',
+            resolution='1hour',
+            station_ids=['1017101'],
+            start='2024-10-02T09:00:00Z',
+            end='2024-10-02T10:00:00Z',
+            elements=['TEMP', 'RELATIVE_HUMIDITY'],
+        )
+        self.assertEqual(canonical_query.elements, ['TEMP', 'RELATIVE_HUMIDITY'])
+        self.assertEqual(raw_query.elements, ['TEMP', 'RELATIVE_HUMIDITY'])
+
     def test_download_observations_reads_local_eccc_fixture_via_station_metadata_source(self) -> None:
         station_metadata = read_station_metadata(country='CA', source_url=str(SAMPLE_ECCC_DAILY_PATH))
         query = ObservationQuery(
@@ -127,6 +158,13 @@ class CanadaEcccProviderTests(unittest.TestCase):
         self.assertEqual(
             list_station_elements(stations, '1021330', 'eccc', 'daily', country='CA'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+
+    def test_station_elements_for_eccc_hourly_are_conservative_when_not_marked_hourly(self) -> None:
+        stations = read_station_metadata(country='CA', source_url=str(SAMPLE_ECCC_DAILY_PATH))
+        self.assertEqual(
+            list_station_elements(stations, '1021330', 'eccc', '1hour', country='CA'),
+            [],
         )
 
     def test_ca_ghcnd_metadata_path_remains_available(self) -> None:
@@ -281,6 +319,63 @@ class CanadaEcccProviderTests(unittest.TestCase):
         self.assertAlmostEqual(float(stations.iloc[0]['latitude']), 49.3)
         self.assertAlmostEqual(float(stations.iloc[0]['elevation_m']), 12.5)
         self.assertTrue(stations['gh_id'].isna().all())
+        self.assertEqual(mock_get.call_count, 2)
+
+    def test_download_observations_can_fetch_live_hourly_eccc_with_pagination_and_empty_next_termination(self) -> None:
+        fixture_payload = json.loads(SAMPLE_ECCC_HOURLY_PATH.read_text(encoding='utf-8'))
+        features = fixture_payload['features']
+        page1 = {
+            'type': 'FeatureCollection',
+            'features': features,
+            'links': [
+                {
+                    'rel': 'next',
+                    'href': 'https://api.weather.gc.ca/collections/climate-hourly/items?offset=2',
+                }
+            ],
+        }
+        page2 = {'type': 'FeatureCollection', 'features': [], 'links': []}
+
+        class _MockResponse:
+            def __init__(self, text: str) -> None:
+                self.text = text
+                self.status_code = 200
+                self.encoding = 'utf-8'
+
+            def raise_for_status(self) -> None:
+                return None
+
+        base_url = 'https://api.weather.gc.ca/collections/climate-hourly/items'
+        next_url = 'https://api.weather.gc.ca/collections/climate-hourly/items?offset=2'
+
+        def _mock_get(url: str, params=None, timeout: int = 60):
+            if url == base_url and params is not None:
+                self.assertEqual(params.get('f'), 'json')
+                self.assertIn('CLIMATE_IDENTIFIER', params)
+                self.assertIn('datetime', params)
+                self.assertIn('properties', params)
+                return _MockResponse(json.dumps(page1))
+            if url == next_url and params is None:
+                return _MockResponse(json.dumps(page2))
+            raise AssertionError(f'unexpected request: url={url!r} params={params!r}')
+
+        station_metadata = pd.DataFrame.from_records([{'station_id': '1017101'}])
+        query = ObservationQuery(
+            country='CA',
+            provider='eccc',
+            resolution='1hour',
+            station_ids=['1017101'],
+            start='2024-10-02T09:00:00Z',
+            end='2024-10-02T10:00:00Z',
+            elements=['tas_mean', 'relative_humidity'],
+        )
+
+        with patch('weatherdownload.providers.ca.hourly.requests.get', side_effect=_mock_get) as mock_get:
+            observations = download_observations(query, country='CA', station_metadata=station_metadata)
+
+        self.assertEqual(list(observations.columns), CA_ECCC_NORMALIZED_HOURLY_COLUMNS)
+        self.assertEqual(observations['station_id'].unique().tolist(), ['1017101'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['relative_humidity', 'tas_mean'])
         self.assertEqual(mock_get.call_count, 2)
 
 

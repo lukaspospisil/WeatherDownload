@@ -27,12 +27,18 @@ class CanadaDatasetSpec:
 
 CA_ECCC_STATION_METADATA_URL = 'https://api.weather.gc.ca/collections/climate-stations/items?f=json'
 CA_ECCC_DAILY_DATA_URL = 'https://api.weather.gc.ca/collections/climate-daily/items?f=json'
+CA_ECCC_HOURLY_DATA_URL = 'https://api.weather.gc.ca/collections/climate-hourly/items?f=json'
 
 CA_ECCC_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('MEAN_TEMPERATURE',),
     'tas_max': ('MAX_TEMPERATURE',),
     'tas_min': ('MIN_TEMPERATURE',),
     'precipitation': ('TOTAL_PRECIPITATION',),
+}
+
+CA_ECCC_HOURLY_CANONICAL_ELEMENTS = {
+    'tas_mean': ('TEMP',),
+    'relative_humidity': ('RELATIVE_HUMIDITY',),
 }
 
 _CA_ECCC_DATASET_SPECS = [
@@ -45,6 +51,17 @@ _CA_ECCC_DATASET_SPECS = [
         supported_elements=('MEAN_TEMPERATURE', 'MAX_TEMPERATURE', 'MIN_TEMPERATURE', 'TOTAL_PRECIPITATION'),
         canonical_elements=CA_ECCC_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
+        implemented=True,
+    ),
+    CanadaDatasetSpec(
+        provider='eccc',
+        resolution='1hour',
+        label='Environment and Climate Change Canada GeoMet hourly climate observations',
+        station_metadata_url=CA_ECCC_STATION_METADATA_URL,
+        daily_data_url=CA_ECCC_HOURLY_DATA_URL,
+        supported_elements=('TEMP', 'RELATIVE_HUMIDITY'),
+        canonical_elements=CA_ECCC_HOURLY_CANONICAL_ELEMENTS,
+        time_semantics='datetime',
         implemented=True,
     ),
 ]

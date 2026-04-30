@@ -6,6 +6,7 @@ from .metadata import (
     read_station_observation_metadata_eccc,
     read_station_observation_metadata_ghcnd,
 )
+from .hourly import download_hourly_observations_eccc
 from .observations import download_daily_observations_eccc, download_daily_observations_ghcnd
 from .registry import get_dataset_spec, list_dataset_specs, list_implemented_dataset_specs
 from ..base import WeatherProvider
@@ -20,11 +21,15 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_max',
     'tas_min',
     'precipitation',
+    'relative_humidity',
     'snow_depth',
 )
 
 
 def _download_national_observations(*args, **kwargs):
+    query = args[0] if args else kwargs.get('query')
+    if getattr(query, 'resolution', None) == '1hour':
+        return download_hourly_observations_eccc(*args, **kwargs)
     return download_daily_observations_eccc(*args, **kwargs)
 
 
@@ -54,7 +59,7 @@ PROVIDER = WeatherProvider(
     download_observations=_download_observations,
     supported_country_codes=('CA',),
     supported_providers=('eccc', 'ghcnd'),
-    supported_resolutions=('daily',),
+    supported_resolutions=('daily', '1hour'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )

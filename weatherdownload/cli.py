@@ -485,7 +485,21 @@ def _resolve_provider_or_default(args: argparse.Namespace, resolution: str) -> s
 
 
 def _read_stations_for_cli(args: argparse.Namespace) -> pd.DataFrame:
-    return read_station_metadata(country=args.country, source_url=getattr(args, "source_url", None))
+    source_url = getattr(args, "source_url", None)
+    if source_url is None and getattr(args, "provider", None) is not None:
+        provider_scope = _resolve_provider_for_cli(args, default=None, required=True)
+        resolved = _default_station_metadata_source_url(args.country, provider_scope)
+        if provider_scope == 'ghcnd':
+            source_url = resolved
+        elif resolved is not None:
+            source_url = resolved
+        else:
+            stations = read_station_metadata(country=args.country, source_url=None)
+            country_prefix = args.country.strip().upper()
+            if 'station_id' in stations.columns:
+                stations = stations[~stations['station_id'].astype(str).str.upper().str.startswith(country_prefix)].reset_index(drop=True)
+            return stations
+    return read_station_metadata(country=args.country, source_url=source_url)
 
 
 def _default_station_metadata_source_url(country: str, provider: str) -> str | None:

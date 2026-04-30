@@ -5,14 +5,18 @@ import pandas as pd
 
 from weatherdownload.providers.ca.eccc_parser import (
     CA_ECCC_NORMALIZED_DAILY_COLUMNS,
+    CA_ECCC_NORMALIZED_HOURLY_COLUMNS,
     parse_ca_eccc_daily_feature_collection,
+    parse_ca_eccc_hourly_feature_collection,
     parse_ca_eccc_local_date,
     normalize_ca_eccc_daily_observations,
+    normalize_ca_eccc_hourly_observations,
     normalize_ca_eccc_station_id,
 )
 
 
 FIXTURE_PATH = Path('tests/data/sample_ca_eccc_daily.json')
+HOURLY_FIXTURE_PATH = Path('tests/data/sample_ca_eccc_hourly.json')
 
 
 def test_parse_ca_eccc_local_date_returns_python_date() -> None:
@@ -94,3 +98,34 @@ def test_normalize_ca_eccc_daily_observations_can_filter_station_range_and_raw_e
         {'element': 'tas_max', 'observation_date': date(2025, 1, 2)},
         {'element': 'tas_max', 'observation_date': date(2025, 1, 3)},
     ]
+
+
+def test_parse_ca_eccc_hourly_feature_collection_extracts_station_and_timestamps() -> None:
+    parsed = parse_ca_eccc_hourly_feature_collection(HOURLY_FIXTURE_PATH.read_text(encoding='utf-8'))
+    assert parsed['station_id'].tolist() == ['1017101', '1017101']
+    assert str(parsed['timestamp'].iloc[0]).startswith('2024-10-02 09:00:00')
+    assert pd.isna(parsed['TEMP'].iloc[1])
+    assert float(parsed['RELATIVE_HUMIDITY'].iloc[0]) == 95.0
+
+
+def test_normalize_ca_eccc_hourly_observations_maps_raw_fields_to_canonical_values_and_keeps_missing() -> None:
+    parsed = parse_ca_eccc_hourly_feature_collection(HOURLY_FIXTURE_PATH.read_text(encoding='utf-8'))
+    normalized = normalize_ca_eccc_hourly_observations(
+        parsed,
+        station_ids=['1017101'],
+        raw_elements=['TEMP', 'RELATIVE_HUMIDITY'],
+        start='2024-10-02T09:00:00Z',
+        end='2024-10-02T10:00:00Z',
+    )
+
+    assert list(normalized.columns) == CA_ECCC_NORMALIZED_HOURLY_COLUMNS
+    assert sorted(normalized['element'].unique().tolist()) == ['relative_humidity', 'tas_mean']
+    # Missing TEMP stays present as a row with value NaN/NA.
+    lookup = normalized.set_index(['element', 'timestamp'])['value']
+    first_ts = pd.to_datetime('2024-10-02T09:00:00Z')
+    second_ts = pd.to_datetime('2024-10-02T10:00:00Z')
+    assert float(lookup[('tas_mean', first_ts)]) == 9.8
+    assert pd.isna(lookup[('tas_mean', second_ts)])
+    flag_lookup = normalized.set_index(['element', 'timestamp'])['flag']
+    assert pd.isna(flag_lookup[('tas_mean', first_ts)])
+    assert flag_lookup[('relative_humidity', second_ts)] == 'E'

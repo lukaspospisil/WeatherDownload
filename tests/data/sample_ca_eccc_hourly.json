@@ -1,0 +1,40 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "1017101.2024.10.2.1",
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-123.044745, 48.7839075]
+      },
+      "properties": {
+        "CLIMATE_IDENTIFIER": "1017101",
+        "LOCAL_DATE": "2024-10-02 01:00:00",
+        "UTC_DATE": "2024-10-02T09:00:00",
+        "TEMP": 9.8,
+        "TEMP_FLAG": null,
+        "RELATIVE_HUMIDITY": 95,
+        "RELATIVE_HUMIDITY_FLAG": null
+      }
+    },
+    {
+      "id": "1017101.2024.10.2.2",
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-123.044745, 48.7839075]
+      },
+      "properties": {
+        "CLIMATE_IDENTIFIER": "1017101",
+        "LOCAL_DATE": "2024-10-02 02:00:00",
+        "UTC_DATE": "2024-10-02T10:00:00",
+        "TEMP": null,
+        "TEMP_FLAG": null,
+        "RELATIVE_HUMIDITY": 94,
+        "RELATIVE_HUMIDITY_FLAG": "E"
+      }
+    }
+  ]
+}
+

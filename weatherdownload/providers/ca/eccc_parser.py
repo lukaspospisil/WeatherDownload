@@ -24,11 +24,29 @@ CA_ECCC_NORMALIZED_DAILY_COLUMNS = [
     'resolution',
 ]
 
+CA_ECCC_NORMALIZED_HOURLY_COLUMNS = [
+    'station_id',
+    'gh_id',
+    'element',
+    'element_raw',
+    'timestamp',
+    'value',
+    'flag',
+    'quality',
+    'provider',
+    'resolution',
+]
+
 CA_ECCC_DAILY_RAW_TO_CANONICAL = {
     'MEAN_TEMPERATURE': 'tas_mean',
     'MAX_TEMPERATURE': 'tas_max',
     'MIN_TEMPERATURE': 'tas_min',
     'TOTAL_PRECIPITATION': 'precipitation',
+}
+
+CA_ECCC_HOURLY_RAW_TO_CANONICAL = {
+    'TEMP': 'tas_mean',
+    'RELATIVE_HUMIDITY': 'relative_humidity',
 }
 
 
@@ -73,6 +91,28 @@ def parse_ca_eccc_daily_feature_collection(json_text: str) -> pd.DataFrame:
         return pd.DataFrame()
     return pd.DataFrame.from_records(rows)
 
+
+def parse_ca_eccc_hourly_feature_collection(json_text: str) -> pd.DataFrame:
+    payload = _parse_feature_collection_payload(json_text)
+    rows: list[dict[str, object]] = []
+    for properties, _geometry in _feature_properties_and_geometry(payload):
+        station_id = normalize_ca_eccc_station_id(properties.get('CLIMATE_IDENTIFIER'))
+        timestamp = _parse_ca_eccc_utc_date(properties.get('UTC_DATE'))
+        if not station_id or timestamp is None:
+            continue
+        rows.append(
+            {
+                'station_id': station_id,
+                'timestamp': timestamp,
+                'TEMP': _parse_float(properties.get('TEMP')),
+                'TEMP_FLAG': _clean_string(properties.get('TEMP_FLAG')) or pd.NA,
+                'RELATIVE_HUMIDITY': _parse_float(properties.get('RELATIVE_HUMIDITY')),
+                'RELATIVE_HUMIDITY_FLAG': _clean_string(properties.get('RELATIVE_HUMIDITY_FLAG')) or pd.NA,
+            }
+        )
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame.from_records(rows)
 
 def normalize_ca_eccc_daily_observations(
     table: pd.DataFrame,
@@ -138,13 +178,87 @@ def normalize_ca_eccc_daily_observations(
     return combined.loc[:, CA_ECCC_NORMALIZED_DAILY_COLUMNS]
 
 
+def normalize_ca_eccc_hourly_observations(
+    table: pd.DataFrame,
+    *,
+    station_ids: list[str] | None = None,
+    raw_elements: list[str] | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    provider: str = 'eccc',
+    resolution: str = '1hour',
+) -> pd.DataFrame:
+    if table.empty:
+        return pd.DataFrame(columns=CA_ECCC_NORMALIZED_HOURLY_COLUMNS)
+
+    filtered = table.copy()
+    filtered['station_id'] = filtered['station_id'].astype('string').str.strip()
+    filtered['timestamp'] = pd.to_datetime(filtered['timestamp'], utc=True, errors='coerce')
+    filtered = filtered[filtered['timestamp'].notna()]
+    if station_ids is not None:
+        filtered = filtered[filtered['station_id'].isin(station_ids)]
+    if start is not None:
+        start_ts = pd.Timestamp(start)
+        if start_ts.tzinfo is None:
+            start_ts = start_ts.tz_localize('UTC')
+        else:
+            start_ts = start_ts.tz_convert('UTC')
+        filtered = filtered[filtered['timestamp'] >= start_ts]
+    if end is not None:
+        end_ts = pd.Timestamp(end)
+        if end_ts.tzinfo is None:
+            end_ts = end_ts.tz_localize('UTC')
+        else:
+            end_ts = end_ts.tz_convert('UTC')
+        filtered = filtered[filtered['timestamp'] <= end_ts]
+    if filtered.empty:
+        return pd.DataFrame(columns=CA_ECCC_NORMALIZED_HOURLY_COLUMNS)
+
+    selected_raw_elements = raw_elements or list(CA_ECCC_HOURLY_RAW_TO_CANONICAL.keys())
+    rows: list[pd.DataFrame] = []
+    for raw_code in selected_raw_elements:
+        canonical = CA_ECCC_HOURLY_RAW_TO_CANONICAL.get(raw_code)
+        if canonical is None or raw_code not in filtered.columns:
+            continue
+        flag_column = f'{raw_code}_FLAG'
+        normalized = pd.DataFrame(
+            {
+                'station_id': filtered['station_id'].astype('string'),
+                'gh_id': pd.Series(pd.NA, index=filtered.index, dtype='string'),
+                'element': canonical,
+                'element_raw': raw_code,
+                'timestamp': filtered['timestamp'],
+                'value': pd.to_numeric(filtered[raw_code], errors='coerce'),
+                'flag': (
+                    filtered[flag_column].astype('string').str.strip().replace({'': pd.NA})
+                    if flag_column in filtered.columns
+                    else pd.Series(pd.NA, index=filtered.index, dtype='string')
+                ),
+                'quality': pd.Series(pd.NA, index=filtered.index, dtype='Int64'),
+                'provider': provider,
+                'resolution': resolution,
+            }
+        )
+        rows.append(normalized)
+
+    if not rows:
+        return pd.DataFrame(columns=CA_ECCC_NORMALIZED_HOURLY_COLUMNS)
+
+    combined = pd.concat(rows, ignore_index=True)
+    combined = combined.sort_values(['station_id', 'timestamp', 'element'], kind='stable').reset_index(drop=True)
+    return combined.loc[:, CA_ECCC_NORMALIZED_HOURLY_COLUMNS]
+
 def parse_ca_eccc_station_metadata_feature_collection(json_text: str) -> pd.DataFrame:
     payload = _parse_feature_collection_payload(json_text)
     rows_by_station: dict[str, dict[str, object]] = {}
+    hourly_station_ids: set[str] = set()
     for properties, geometry in _feature_properties_and_geometry(payload):
         station_id = normalize_ca_eccc_station_id(properties.get('CLIMATE_IDENTIFIER') or properties.get('id'))
         if not station_id:
             continue
+        has_hourly = _clean_string(properties.get('HAS_HOURLY_DATA')).upper()
+        if has_hourly in {'Y', 'YES', 'TRUE', '1'}:
+            hourly_station_ids.add(station_id)
         row = rows_by_station.setdefault(
             station_id,
             {
@@ -180,6 +294,11 @@ def parse_ca_eccc_station_metadata_feature_collection(json_text: str) -> pd.Data
             str(station_id): list(CA_ECCC_DAILY_RAW_TO_CANONICAL.keys())
             for station_id in frame['station_id'].astype(str).tolist()
         }
+    }
+    frame.attrs['station_provider_raw_elements_by_path'][('eccc', '1hour')] = {
+        str(station_id): list(CA_ECCC_HOURLY_RAW_TO_CANONICAL.keys())
+        for station_id in sorted(hourly_station_ids)
+        if str(station_id) in set(frame['station_id'].astype(str).tolist())
     }
     return frame
 
@@ -235,6 +354,16 @@ def parse_ca_eccc_local_date(value: object) -> date | None:
     if pd.isna(parsed):
         return None
     return parsed.date()
+
+
+def _parse_ca_eccc_utc_date(value: object) -> pd.Timestamp | None:
+    cleaned = _clean_string(value)
+    if not cleaned:
+        return None
+    parsed = pd.to_datetime(cleaned, utc=True, errors='coerce')
+    if pd.isna(parsed):
+        return None
+    return parsed
 
 
 def _parse_feature_collection_payload(json_text: str) -> dict[str, object]:
