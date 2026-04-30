@@ -57,62 +57,13 @@ Conceptual model:
 - `provider` selects the concrete data source or product within that country
 - `resolution` selects the temporal resolution
 - `element` selects the canonical meteorological variable
-- provider values are provider-specific and are not globally standardized across countries
 
-Examples:
+For the authoritative current matrix of implemented country/provider/resolution/element paths, see [Supported Capabilities](docs/supported_capabilities.md).
 
-| `country` | `provider` | Meaning |
-| --- | --- | --- |
-| `CA` | `ghcnd` | NOAA GHCN-Daily source |
-| `CZ` | `ghcnd` | NOAA GHCN-Daily wrapper with raw GHCN station ids |
-| `CZ` | `historical_csv` | CHMI OpenData `historical_csv` product |
-| `FI` | `ghcnd` | NOAA GHCN-Daily source |
-| `FR` | `ghcnd` | NOAA GHCN-Daily wrapper with raw GHCN station ids |
-| `FR` | `meteo_france` | Meteo-France daily climatological base RR-T-Vent product |
-| `IT` | `ghcnd` | NOAA GHCN-Daily source |
-| `MX` | `ghcnd` | NOAA GHCN-Daily source |
-| `NO` | `ghcnd` | NOAA GHCN-Daily source |
-| `NZ` | `ghcnd` | NOAA GHCN-Daily source |
-| `SK` | `recent` | SHMU recent daily JSON source |
-| `HU` | `historical_wind` | HungaroMet special 10-minute wind product |
-| `PL` | `historical_klimat` | IMGW daily klimat source |
-| `US` | `ghcnd` | NOAA GHCN-Daily source |
+## Documentation
 
-Notes:
-
-- `provider` is the only public selector name in Python and CLI
-- normalized output tables use the `provider` column
-- the shared NOAA GHCN-Daily implementation lives in `weatherdownload/providers/ghcnd/`, while `US`, `CA`, `MX`, `CZ`, `FI`, `IT`, `NO`, and `NZ` stay thin country wrappers with raw GHCN station ids preserved as `station_id`
-- `FR` now supports both `provider="meteo_france"` for the national daily RR-T-Vent slice and `provider="ghcnd"` for the shared GHCN-Daily path
-- `FR / meteo_france / daily` currently supports `tas_mean`, `tas_max`, `tas_min`, and `precipitation`; `open_water_evaporation` is intentionally unsupported, and current RR-T-Vent `RR`, `TN`, `TX`, and `TM` values are parsed as decimal `mm` / `deg C` without an extra `/10` scaling step
-- GHCN-Daily station support is inventory-driven, so not every station exposes `tas_mean` (`TAVG`) or `snow_depth` (`SNWD`); inspect a specific station with `weatherdownload stations elements --country US --provider ghcnd --station-id USC00000001 --resolution daily`
-
-See [Supported Capabilities](docs/supported_capabilities.md) for the generated country/provider/resolution/element overview, and [Provider Model](docs/providers.md) for the conceptual explanation.
-
-## Where To Start
-
-- Provider model and terminology: [Provider Model](docs/providers.md)
-- Generated current capability table from the registry/discovery APIs: [Supported Capabilities](docs/supported_capabilities.md)
-- Shared usage examples and workflow entry points: [Examples And Workflows](docs/examples.md)
-- Normalized station and observation schemas: [Normalized Output Schemas](docs/output_schema.md)
-- FAO-oriented daily packaging example: [FAO-Oriented Daily Input Packaging Workflow](docs/download_fao.md)
-
-## Docs Index
-
-- [Provider Model](docs/providers.md)
-- [Supported Capabilities](docs/supported_capabilities.md)
-- [Provider Notes](docs/provider_notes/README.md)
-- [Examples And Workflows](docs/examples.md)
-- [Normalized Output Schemas](docs/output_schema.md)
-- [Canonical Elements](docs/canonical_elements.md)
-- [Changelog](docs/changelog.md)
-
-Provider-specific notes are indexed in [Provider Notes](docs/provider_notes/README.md).
-
-## Stable Cross-Country Invariants
-
-- public API shape stays the same across providers
-- `station_id` stays canonical per provider path
-- canonical meteorological element names stay shared across countries
-- normalized output schemas stay stable and DataFrame-first
-- missing variables stay missing by default instead of being silently derived
+- conceptual provider model and terminology: [Provider Model](docs/providers.md)
+- generated current capability table (checked in tests): [Supported Capabilities](docs/supported_capabilities.md)
+- provider-specific source notes: [Provider Notes](docs/provider_notes/README.md)
+- practical usage examples: [Examples And Workflows](docs/examples.md)
+- normalized station and observation schemas: [Normalized Output Schemas](docs/output_schema.md)
