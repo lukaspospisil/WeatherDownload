@@ -106,6 +106,9 @@ def test_parse_ca_eccc_hourly_feature_collection_extracts_station_and_timestamps
     assert str(parsed['timestamp'].iloc[0]).startswith('2024-10-02 09:00:00')
     assert pd.isna(parsed['TEMP'].iloc[1])
     assert float(parsed['RELATIVE_HUMIDITY'].iloc[0]) == 95.0
+    assert float(parsed['WIND_SPEED'].iloc[0]) == 36.0
+    assert float(parsed['STATION_PRESSURE'].iloc[0]) == 101.96
+    assert float(parsed['PRECIP_AMOUNT'].iloc[0]) == 0.2
 
 
 def test_normalize_ca_eccc_hourly_observations_maps_raw_fields_to_canonical_values_and_keeps_missing() -> None:
@@ -129,3 +132,30 @@ def test_normalize_ca_eccc_hourly_observations_maps_raw_fields_to_canonical_valu
     flag_lookup = normalized.set_index(['element', 'timestamp'])['flag']
     assert pd.isna(flag_lookup[('tas_mean', first_ts)])
     assert flag_lookup[('relative_humidity', second_ts)] == 'E'
+
+
+def test_normalize_ca_eccc_hourly_observations_converts_units_for_wind_speed_and_pressure() -> None:
+    parsed = parse_ca_eccc_hourly_feature_collection(HOURLY_FIXTURE_PATH.read_text(encoding='utf-8'))
+    normalized = normalize_ca_eccc_hourly_observations(
+        parsed,
+        station_ids=['1017101'],
+        raw_elements=['WIND_SPEED', 'STATION_PRESSURE', 'PRECIP_AMOUNT'],
+        start='2024-10-02T09:00:00Z',
+        end='2024-10-02T10:00:00Z',
+    )
+
+    lookup = normalized.set_index(['element', 'timestamp'])['value']
+    first_ts = pd.to_datetime('2024-10-02T09:00:00Z')
+    second_ts = pd.to_datetime('2024-10-02T10:00:00Z')
+
+    # WIND_SPEED is provided by ECCC in km/h and normalized to m/s.
+    assert float(lookup[('wind_speed', first_ts)]) == 10.0
+    assert pd.isna(lookup[('wind_speed', second_ts)])
+
+    # STATION_PRESSURE is provided by ECCC in kPa and normalized to hPa.
+    assert abs(float(lookup[('pressure', first_ts)]) - 1019.6) < 1e-9
+    assert abs(float(lookup[('pressure', second_ts)]) - 1001.2) < 1e-9
+
+    # PRECIP_AMOUNT is provided in mm already.
+    assert float(lookup[('precipitation', first_ts)]) == 0.2
+    assert pd.isna(lookup[('precipitation', second_ts)])

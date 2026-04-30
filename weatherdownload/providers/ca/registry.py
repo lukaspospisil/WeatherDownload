@@ -39,6 +39,9 @@ CA_ECCC_DAILY_CANONICAL_ELEMENTS = {
 CA_ECCC_HOURLY_CANONICAL_ELEMENTS = {
     'tas_mean': ('TEMP',),
     'relative_humidity': ('RELATIVE_HUMIDITY',),
+    'wind_speed': ('WIND_SPEED',),
+    'precipitation': ('PRECIP_AMOUNT',),
+    'pressure': ('STATION_PRESSURE',),
 }
 
 _CA_ECCC_DATASET_SPECS = [
@@ -59,7 +62,7 @@ _CA_ECCC_DATASET_SPECS = [
         label='Environment and Climate Change Canada GeoMet hourly climate observations',
         station_metadata_url=CA_ECCC_STATION_METADATA_URL,
         daily_data_url=CA_ECCC_HOURLY_DATA_URL,
-        supported_elements=('TEMP', 'RELATIVE_HUMIDITY'),
+        supported_elements=('TEMP', 'RELATIVE_HUMIDITY', 'WIND_SPEED', 'PRECIP_AMOUNT', 'STATION_PRESSURE'),
         canonical_elements=CA_ECCC_HOURLY_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,

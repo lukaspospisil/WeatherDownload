@@ -15,7 +15,13 @@
         "TEMP": 9.8,
         "TEMP_FLAG": null,
         "RELATIVE_HUMIDITY": 95,
-        "RELATIVE_HUMIDITY_FLAG": null
+        "RELATIVE_HUMIDITY_FLAG": null,
+        "WIND_SPEED": 36,
+        "WIND_SPEED_FLAG": null,
+        "STATION_PRESSURE": 101.96,
+        "STATION_PRESSURE_FLAG": null,
+        "PRECIP_AMOUNT": 0.2,
+        "PRECIP_AMOUNT_FLAG": null
       }
     },
     {
@@ -32,9 +38,14 @@
         "TEMP": null,
         "TEMP_FLAG": null,
         "RELATIVE_HUMIDITY": 94,
-        "RELATIVE_HUMIDITY_FLAG": "E"
+        "RELATIVE_HUMIDITY_FLAG": "E",
+        "WIND_SPEED": null,
+        "WIND_SPEED_FLAG": null,
+        "STATION_PRESSURE": 100.12,
+        "STATION_PRESSURE_FLAG": null,
+        "PRECIP_AMOUNT": null,
+        "PRECIP_AMOUNT_FLAG": "E"
       }
     }
   ]
 }
-

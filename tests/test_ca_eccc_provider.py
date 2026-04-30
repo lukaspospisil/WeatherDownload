@@ -57,11 +57,11 @@ class CanadaEcccProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             list_supported_elements(country='CA', provider='eccc', resolution='1hour'),
-            ['tas_mean', 'relative_humidity'],
+            ['tas_mean', 'relative_humidity', 'wind_speed', 'precipitation', 'pressure'],
         )
         self.assertEqual(
             list_supported_elements(country='CA', provider='eccc', resolution='1hour', provider_raw=True),
-            ['TEMP', 'RELATIVE_HUMIDITY'],
+            ['TEMP', 'RELATIVE_HUMIDITY', 'WIND_SPEED', 'PRECIP_AMOUNT', 'STATION_PRESSURE'],
         )
 
     def test_read_station_metadata_and_observation_metadata_from_eccc_fixture(self) -> None:
@@ -367,7 +367,7 @@ class CanadaEcccProviderTests(unittest.TestCase):
             station_ids=['1017101'],
             start='2024-10-02T09:00:00Z',
             end='2024-10-02T10:00:00Z',
-            elements=['tas_mean', 'relative_humidity'],
+            elements=['tas_mean', 'relative_humidity', 'wind_speed', 'pressure', 'precipitation'],
         )
 
         with patch('weatherdownload.providers.ca.hourly.requests.get', side_effect=_mock_get) as mock_get:
@@ -375,7 +375,10 @@ class CanadaEcccProviderTests(unittest.TestCase):
 
         self.assertEqual(list(observations.columns), CA_ECCC_NORMALIZED_HOURLY_COLUMNS)
         self.assertEqual(observations['station_id'].unique().tolist(), ['1017101'])
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['relative_humidity', 'tas_mean'])
+        self.assertEqual(
+            sorted(observations['element'].unique().tolist()),
+            ['precipitation', 'pressure', 'relative_humidity', 'tas_mean', 'wind_speed'],
+        )
         self.assertEqual(mock_get.call_count, 2)
 
 

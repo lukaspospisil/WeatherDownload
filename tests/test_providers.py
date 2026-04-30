@@ -85,7 +85,7 @@ class ProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             list_supported_elements(country='CA', provider='eccc', resolution='1hour'),
-            ['tas_mean', 'relative_humidity'],
+            ['tas_mean', 'relative_humidity', 'wind_speed', 'precipitation', 'pressure'],
         )
         self.assertEqual(
             list_supported_elements(country='CA', provider='ghcnd', resolution='daily'),

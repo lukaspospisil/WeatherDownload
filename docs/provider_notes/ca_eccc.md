@@ -32,10 +32,13 @@ Hourly first-slice canonical elements:
 
 - `tas_mean` (`TEMP`)
 - `relative_humidity` (`RELATIVE_HUMIDITY`)
+- `wind_speed` (`WIND_SPEED`, converted from km/h to m/s)
+- `pressure` (`STATION_PRESSURE`, converted from kPa to hPa)
+- `precipitation` (`PRECIP_AMOUNT`, mm)
 
-Hourly exclusions in this pass:
+Hourly exclusions still in this pass:
 
-- `STATION_PRESSURE`, `WIND_SPEED`, `PRECIP_AMOUNT`, and `DEW_POINT_TEMP` are intentionally not mapped yet (units/semantics need additional verification)
+- `DEW_POINT_TEMP` is intentionally not mapped yet, because it would only be useful for derived values like vapour pressure unless a direct canonical mapping is added
 
 ## Current implementation scope
 
@@ -61,6 +64,11 @@ Official GeoMet collections:
 
 - stations: `https://api.weather.gc.ca/collections/climate-stations`
 - daily observations: `https://api.weather.gc.ca/collections/climate-daily`
+- hourly observations: `https://api.weather.gc.ca/collections/climate-hourly`
+
+Official ECCC unit/semantics reference for hourly elements:
+
+- `https://climate.weather.gc.ca/doc/Technical_Documentation.pdf` (hourly wind and pressure units; precipitation amount units)
 
 ## Relationship to `CA / ghcnd / daily`
 

@@ -47,6 +47,9 @@ CA_ECCC_DAILY_RAW_TO_CANONICAL = {
 CA_ECCC_HOURLY_RAW_TO_CANONICAL = {
     'TEMP': 'tas_mean',
     'RELATIVE_HUMIDITY': 'relative_humidity',
+    'WIND_SPEED': 'wind_speed',
+    'STATION_PRESSURE': 'pressure',
+    'PRECIP_AMOUNT': 'precipitation',
 }
 
 
@@ -108,6 +111,12 @@ def parse_ca_eccc_hourly_feature_collection(json_text: str) -> pd.DataFrame:
                 'TEMP_FLAG': _clean_string(properties.get('TEMP_FLAG')) or pd.NA,
                 'RELATIVE_HUMIDITY': _parse_float(properties.get('RELATIVE_HUMIDITY')),
                 'RELATIVE_HUMIDITY_FLAG': _clean_string(properties.get('RELATIVE_HUMIDITY_FLAG')) or pd.NA,
+                'WIND_SPEED': _parse_float(properties.get('WIND_SPEED')),
+                'WIND_SPEED_FLAG': _clean_string(properties.get('WIND_SPEED_FLAG')) or pd.NA,
+                'STATION_PRESSURE': _parse_float(properties.get('STATION_PRESSURE')),
+                'STATION_PRESSURE_FLAG': _clean_string(properties.get('STATION_PRESSURE_FLAG')) or pd.NA,
+                'PRECIP_AMOUNT': _parse_float(properties.get('PRECIP_AMOUNT')),
+                'PRECIP_AMOUNT_FLAG': _clean_string(properties.get('PRECIP_AMOUNT_FLAG')) or pd.NA,
             }
         )
     if not rows:
@@ -221,6 +230,13 @@ def normalize_ca_eccc_hourly_observations(
         if canonical is None or raw_code not in filtered.columns:
             continue
         flag_column = f'{raw_code}_FLAG'
+        values = pd.to_numeric(filtered[raw_code], errors='coerce')
+        if raw_code == 'WIND_SPEED':
+            # ECCC climate-hourly WIND_SPEED is documented in km/h; canonical wind_speed uses m/s.
+            values = values / 3.6
+        elif raw_code == 'STATION_PRESSURE':
+            # ECCC climate-hourly STATION_PRESSURE is documented in kPa; canonical pressure uses hPa.
+            values = values * 10.0
         normalized = pd.DataFrame(
             {
                 'station_id': filtered['station_id'].astype('string'),
@@ -228,7 +244,7 @@ def normalize_ca_eccc_hourly_observations(
                 'element': canonical,
                 'element_raw': raw_code,
                 'timestamp': filtered['timestamp'],
-                'value': pd.to_numeric(filtered[raw_code], errors='coerce'),
+                'value': values,
                 'flag': (
                     filtered[flag_column].astype('string').str.strip().replace({'': pd.NA})
                     if flag_column in filtered.columns
