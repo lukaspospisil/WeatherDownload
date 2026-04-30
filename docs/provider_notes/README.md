@@ -20,6 +20,7 @@ The capability matrix is the authoritative current overview of `country + provid
 - [GeoSphere Austria](at_geosphere.md)
 - [RMI/KMI Belgium](be_rmi.md)
 - [CHMI Czech Republic](cz_chmi.md)
+- [ECCC GeoMet Canada](ca_eccc.md)
 - [MeteoSwiss Switzerland](ch_meteoswiss.md)
 - [DMI Denmark](dk_dmi.md)
 - [Meteo-France France](fr_meteo_france.md)
