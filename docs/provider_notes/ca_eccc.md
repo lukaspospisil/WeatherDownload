@@ -4,7 +4,9 @@
   <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-This note covers the current `CA / eccc / daily` provider registration based on Environment and Climate Change Canada (ECCC) GeoMet climate daily observations.
+This note covers the current `CA / eccc` provider registrations for
+Environment and Climate Change Canada (ECCC) GeoMet climate observations at
+the `daily` and `1hour` resolutions.
 
 ## Provider identifiers
 
@@ -19,16 +21,16 @@ This note covers the current `CA / eccc / daily` provider registration based on 
 
 ## Supported data
 
-First-slice canonical elements:
+Daily canonical elements:
 
 - `tas_mean` (`MEAN_TEMPERATURE`)
 - `tas_max` (`MAX_TEMPERATURE`)
 - `tas_min` (`MIN_TEMPERATURE`)
 - `precipitation` (`TOTAL_PRECIPITATION`)
 
-No other canonical elements are currently advertised on this provider.
+No other daily canonical elements are currently advertised on this provider.
 
-Hourly first-slice canonical elements:
+Hourly canonical elements:
 
 - `tas_mean` (`TEMP`)
 - `relative_humidity` (`RELATIVE_HUMIDITY`)
@@ -36,19 +38,20 @@ Hourly first-slice canonical elements:
 - `pressure` (`STATION_PRESSURE`, converted from kPa to hPa)
 - `precipitation` (`PRECIP_AMOUNT`, mm)
 
-Hourly exclusions still in this pass:
+Hourly exclusions in the current implementation:
 
 - `DEW_POINT_TEMP` is intentionally not mapped yet, because it would only be useful for derived values like vapour pressure unless a direct canonical mapping is added
 
 ## Current implementation scope
 
-This provider is registered and discoverable, and supports live ECCC GeoMet daily and hourly observation downloads:
+This provider is registered and discoverable. It supports live ECCC GeoMet
+daily and hourly observation downloads:
 
 - live GeoMet `climate-daily` fetching with pagination
 - live GeoMet `climate-hourly` fetching with pagination (conservative first slice)
 - local fixture/source_url-backed operation is still supported for tests and offline use
 
-In practice this means:
+In practice:
 
 - station metadata can be loaded from the live GeoMet `climate-stations` collection, or from a local GeoJSON FeatureCollection fixture via `read_station_metadata(country="CA", source_url="...")`
 - daily observations can be downloaded either live (GeoMet API), or from a local fixture when the passed `station_metadata` were created from that fixture (the implementation reuses the fixture path stored in `station_metadata.attrs["source_url"]`)
