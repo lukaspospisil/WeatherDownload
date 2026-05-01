@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Minimal, "official-like" FMI Open Data WFS timevaluepair response fixture.
+  Constructed for parser proof-of-concept testing (no live fetch in CI).
+
+  Intended query shape (example):
+  https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::timevaluepair&fmisid=<ID>&starttime=<ISO>&endtime=<ISO>&timestep=60&parameters=t2m,ws_10min
+-->
+<wfs:FeatureCollection
+  xmlns:wfs="http://www.opengis.net/wfs/2.0"
+  xmlns:gml="http://www.opengis.net/gml/3.2"
+  xmlns:om="http://www.opengis.net/om/2.0"
+  xmlns:sams="http://www.opengis.net/samplingSpatial/2.0"
+  xmlns:wml2="http://www.opengis.net/waterml/2.0"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <!-- t2m (2m air temperature) -->
+  <wfs:member>
+    <om:OM_Observation gml:id="obs-t2m-1">
+      <om:phenomenonTime>
+        <gml:TimePeriod gml:id="tp-t2m-1">
+          <gml:beginPosition>2026-04-30T00:00:00Z</gml:beginPosition>
+          <gml:endPosition>2026-04-30T02:00:00Z</gml:endPosition>
+        </gml:TimePeriod>
+      </om:phenomenonTime>
+      <om:resultTime>
+        <gml:TimeInstant gml:id="rt-t2m-1">
+          <gml:timePosition>2026-04-30T02:00:00Z</gml:timePosition>
+        </gml:TimeInstant>
+      </om:resultTime>
+
+      <om:observedProperty xlink:href="https://opendata.fmi.fi/wfs/observedProperty/t2m" />
+
+      <om:featureOfInterest>
+        <sams:SF_SpatialSamplingFeature gml:id="fmi-station-100971">
+          <gml:identifier codeSpace="http://opendata.fmi.fi/fmisid">100971</gml:identifier>
+          <gml:name>Test Station</gml:name>
+        </sams:SF_SpatialSamplingFeature>
+      </om:featureOfInterest>
+
+      <om:result>
+        <wml2:MeasurementTimeseries gml:id="mts-t2m-1">
+          <wml2:point>
+            <wml2:MeasurementTVP>
+              <wml2:time>2026-04-30T00:00:00Z</wml2:time>
+              <wml2:value uom="degC">5.1</wml2:value>
+            </wml2:MeasurementTVP>
+          </wml2:point>
+          <wml2:point>
+            <wml2:MeasurementTVP>
+              <wml2:time>2026-04-30T01:00:00Z</wml2:time>
+              <wml2:value uom="degC" xsi:nil="true" />
+            </wml2:MeasurementTVP>
+          </wml2:point>
+        </wml2:MeasurementTimeseries>
+      </om:result>
+    </om:OM_Observation>
+  </wfs:member>
+
+  <!-- ws_10min (10-minute mean wind speed) -->
+  <wfs:member>
+    <om:OM_Observation gml:id="obs-ws-1">
+      <om:observedProperty xlink:href="https://opendata.fmi.fi/wfs/observedProperty/ws_10min" />
+      <om:featureOfInterest>
+        <sams:SF_SpatialSamplingFeature gml:id="fmi-station-100971-wind">
+          <gml:identifier codeSpace="http://opendata.fmi.fi/fmisid">100971</gml:identifier>
+          <gml:name>Test Station</gml:name>
+        </sams:SF_SpatialSamplingFeature>
+      </om:featureOfInterest>
+      <om:result>
+        <wml2:MeasurementTimeseries gml:id="mts-ws-1">
+          <wml2:point>
+            <wml2:MeasurementTVP>
+              <wml2:time>2026-04-30T00:00:00Z</wml2:time>
+              <wml2:value uom="m/s">3.2</wml2:value>
+            </wml2:MeasurementTVP>
+          </wml2:point>
+          <wml2:point>
+            <wml2:MeasurementTVP>
+              <wml2:time>2026-04-30T01:00:00Z</wml2:time>
+              <wml2:value uom="m/s">3.4</wml2:value>
+            </wml2:MeasurementTVP>
+          </wml2:point>
+        </wml2:MeasurementTimeseries>
+      </om:result>
+    </om:OM_Observation>
+  </wfs:member>
+</wfs:FeatureCollection>
+
