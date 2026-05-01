@@ -40,13 +40,68 @@ def normalize_fmi_timevaluepair_hourly_observations(
 ) -> pd.DataFrame:
     """
     Parse FMI Open Data WFS timevaluepair XML and normalize to WeatherDownload's
-    subdaily observation schema.
+    subdaily observation schema (FMI hourly slice).
 
     Notes:
     - Units are preserved in `frame.attrs["units_by_element_raw"]` when present
       in the payload (`uom` attributes on values).
     - This is parser-only POC code; it does not perform unit conversions.
     """
+    return _normalize_fmi_timevaluepair_observations(
+        xml_text,
+        raw_to_canonical=FMI_TIMEVALUEPAIR_RAW_TO_CANONICAL,
+        station_ids=station_ids,
+        raw_elements=raw_elements,
+        provider=provider,
+        resolution=resolution,
+    )
+
+
+FMI_DAILY_TIMEVALUEPAIR_RAW_TO_CANONICAL = {
+    # FMI daily `timevaluepair` stored query uses these raw parameter codes.
+    'tday': 'tas_mean',
+    'tmax': 'tas_max',
+    'tmin': 'tas_min',
+    'rrday': 'precipitation',
+    # `snow` is snow depth in cm (per FMI meta). We intentionally do not map it
+    # here yet, since WeatherDownload canonical element unit expectations are not
+    # encoded in the schema and we do not want to silently mix cm/mm.
+}
+
+
+def normalize_fmi_timevaluepair_daily_observations(
+    xml_text: str,
+    *,
+    station_ids: list[str] | None = None,
+    raw_elements: list[str] | None = None,
+    provider: str = 'fmi',
+    resolution: str = 'daily',
+) -> pd.DataFrame:
+    """
+    Parse FMI Open Data WFS daily timevaluepair XML and normalize to
+    WeatherDownload's observation schema.
+
+    This is parser-only support for a potential future `FI/fmi/daily` path.
+    """
+    return _normalize_fmi_timevaluepair_observations(
+        xml_text,
+        raw_to_canonical=FMI_DAILY_TIMEVALUEPAIR_RAW_TO_CANONICAL,
+        station_ids=station_ids,
+        raw_elements=raw_elements,
+        provider=provider,
+        resolution=resolution,
+    )
+
+
+def _normalize_fmi_timevaluepair_observations(
+    xml_text: str,
+    *,
+    raw_to_canonical: dict[str, str],
+    station_ids: list[str] | None = None,
+    raw_elements: list[str] | None = None,
+    provider: str = 'fmi',
+    resolution: str = '1hour',
+) -> pd.DataFrame:
     if not xml_text.strip():
         return pd.DataFrame(columns=FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS)
 
@@ -74,7 +129,7 @@ def normalize_fmi_timevaluepair_hourly_observations(
         if station_filter is not None and station_id and station_id not in station_filter:
             continue
 
-        canonical = FMI_TIMEVALUEPAIR_RAW_TO_CANONICAL.get(raw_element)
+        canonical = raw_to_canonical.get(raw_element)
         if canonical is None:
             # POC is intentionally conservative.
             continue

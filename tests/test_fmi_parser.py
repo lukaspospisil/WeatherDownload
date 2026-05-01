@@ -5,6 +5,7 @@ import pandas as pd
 
 from weatherdownload.providers.fi.fmi_parser import (
     FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS,
+    normalize_fmi_timevaluepair_daily_observations,
     normalize_fmi_timevaluepair_hourly_observations,
 )
 
@@ -12,6 +13,7 @@ from weatherdownload.providers.fi.fmi_parser import (
 SAMPLE_SYNTHETIC_FIXTURE_PATH = Path('tests/data/sample_fmi_timevaluepair.xml')
 SAMPLE_REAL_FIXTURE_PATH = Path('tests/data/sample_fmi_timevaluepair_real.xml')
 SAMPLE_REAL_FMISID_FIXTURE_PATH = Path('tests/data/sample_fmi_timevaluepair_real_fmisid.xml')
+SAMPLE_DAILY_REAL_FIXTURE_PATH = Path('tests/data/sample_fmi_daily_timevaluepair_real.xml')
 
 
 class FmiParserTests(unittest.TestCase):
@@ -78,6 +80,21 @@ class FmiParserTests(unittest.TestCase):
 
     def test_real_fixture_units_may_be_absent(self) -> None:
         frame = normalize_fmi_timevaluepair_hourly_observations(SAMPLE_REAL_FIXTURE_PATH.read_text(encoding='utf-8'))
+        self.assertEqual(frame.attrs.get('units_by_element_raw'), {})
+
+    def test_daily_timevaluepair_real_fixture_parses_and_maps(self) -> None:
+        frame = normalize_fmi_timevaluepair_daily_observations(SAMPLE_DAILY_REAL_FIXTURE_PATH.read_text(encoding='utf-8'))
+        self.assertFalse(frame.empty)
+        self.assertEqual(list(frame.columns), FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS)
+        self.assertTrue(frame['provider'].eq('fmi').all())
+        self.assertTrue(frame['resolution'].eq('daily').all())
+        self.assertEqual(frame['station_id'].unique().tolist(), ['100971'])
+        self.assertEqual(sorted(frame['element_raw'].unique().tolist()), sorted(['tday', 'tmin', 'tmax', 'rrday']))
+        self.assertEqual(
+            sorted(frame['element'].unique().tolist()),
+            sorted(['tas_mean', 'tas_min', 'tas_max', 'precipitation']),
+        )
+        # Daily payload does not include inline `uom` attributes, but meta docs define them.
         self.assertEqual(frame.attrs.get('units_by_element_raw'), {})
 
 
