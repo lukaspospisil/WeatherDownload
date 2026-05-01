@@ -18,6 +18,7 @@ from weatherdownload.providers.fi.fmi_parser import FMI_TIMEVALUEPAIR_NORMALIZED
 
 
 SAMPLE_FMI_XML = Path('tests/data/sample_fmi_timevaluepair_real_fmisid.xml')
+SAMPLE_FMI_STATIONS_XML = Path('tests/data/sample_fmi_stations.xml')
 
 
 class FinlandFmiProviderTests(unittest.TestCase):
@@ -58,9 +59,18 @@ class FinlandFmiProviderTests(unittest.TestCase):
         self.assertEqual(observations['station_id'].unique().tolist(), ['100971'])
         self.assertEqual(observations['element_raw'].unique().tolist(), ['t2m', 'ws_10min'])
         self.assertEqual(observations['element'].unique().tolist(), ['tas_mean', 'wind_speed'])
-        self.assertTrue(pd.api.types.is_datetime64tz_dtype(observations['timestamp']))
+        self.assertTrue(isinstance(observations['timestamp'].dtype, pd.DatetimeTZDtype))
+
+    def test_read_station_metadata_fmi_from_station_fixture(self) -> None:
+        stations = read_station_metadata(country='FI', source_url=str(SAMPLE_FMI_STATIONS_XML))
+        self.assertFalse(stations.empty)
+        self.assertEqual(
+            list(stations.columns),
+            ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
+        )
+        self.assertIn('station_provider_raw_elements_by_path', stations.attrs)
+        self.assertIn(('fmi', '1hour'), stations.attrs['station_provider_raw_elements_by_path'])
 
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -38,7 +38,6 @@ Notes:
 
 ## Not implemented (yet)
 
-- station metadata discovery via `fmi::ef::stations`
+- station metadata discovery via `fmi::ef::stations` (live station listing is implemented; network selection is currently conservative)
 - additional elements beyond the conservative first slice
 - `daily` resolution support
-
