@@ -64,6 +64,8 @@ COUNTRY_SPECS = {
     },
 }
 
+GHCND_ONLY_COUNTRIES = ('IT', 'NO', 'NZ')
+
 
 class DirectPrefixGhcndProviderTests(unittest.TestCase):
     def test_supported_countries_include_new_direct_prefix_ghcnd_countries(self) -> None:
@@ -72,7 +74,7 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
             self.assertIn(country, supported)
 
     def test_provider_capability_metadata_is_explicit_for_new_countries(self) -> None:
-        for country in COUNTRY_SPECS:
+        for country in GHCND_ONLY_COUNTRIES:
             with self.subTest(country=country):
                 provider = get_provider(country)
                 self.assertEqual(provider.supported_country_codes, (country,))
@@ -84,7 +86,7 @@ class DirectPrefixGhcndProviderTests(unittest.TestCase):
                 )
 
     def test_discovery_for_new_countries_returns_ghcnd_daily_without_evap(self) -> None:
-        for country in COUNTRY_SPECS:
+        for country in GHCND_ONLY_COUNTRIES:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])

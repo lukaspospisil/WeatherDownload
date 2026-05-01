@@ -10,7 +10,7 @@ This note documents the current Finnish Meteorological Institute (FMI) Open Data
 
 - country: `FI`
 - provider: `fmi`
-- resolution(s): `1hour`
+- resolution(s): `1hour` (no `daily` support yet)
 
 ## Station identifiers
 
@@ -35,9 +35,12 @@ Notes:
 
 - element requests are converted to raw WFS `parameters=...` values
 - units may not be present inline in the XML payload; when present, they are preserved in parser metadata
+- station metadata discovery currently fetches a conservative subset of stations from the FMI Environmental Monitoring Facility networks `AWS` and `SYNOP`
+- `elevation_m` is not exposed by this station listing path and is currently null in WeatherDownload station metadata tables
 
 ## Not implemented (yet)
 
-- station metadata discovery via `fmi::ef::stations` (live station listing is implemented; network selection is currently conservative)
+- a full-fidelity station discovery strategy beyond the conservative `AWS` + `SYNOP` subset
 - additional elements beyond the conservative first slice
 - `daily` resolution support
+- `FI / ghcnd / daily` remains available separately as the NOAA GHCN-Daily wrapper path
