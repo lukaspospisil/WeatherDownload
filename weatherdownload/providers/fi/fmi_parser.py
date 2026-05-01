@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import datetime
+from urllib.parse import parse_qs, urlparse
 from xml.etree import ElementTree as ET
 
 import pandas as pd
@@ -124,15 +125,23 @@ def _iter_observations(root: ET.Element) -> Iterable[ET.Element]:
 
 
 def _extract_observed_property_code(observation: ET.Element) -> str:
-    # Expected pattern: <om:observedProperty xlink:href=".../t2m"/>
+    # FMI encodes observedProperty as a link. Two common patterns:
+    # 1) .../t2m (path suffix)
+    # 2) ...meta?observableProperty=observation&param=t2m&language=eng (query param)
     for elem in observation.iter():
         if _localname(elem.tag) != 'observedProperty':
             continue
         href = _attr_by_localname(elem, 'href')
         if not href:
             continue
-        last = href.rsplit('/', 1)[-1].strip()
-        return last
+        parsed = urlparse(href)
+        query = parse_qs(parsed.query)
+        param = (query.get('param') or [''])[0].strip()
+        if param:
+            return param
+        last = parsed.path.rsplit('/', 1)[-1].strip()
+        if last:
+            return last
     return ''
 
 
@@ -216,4 +225,3 @@ def _attr_by_localname(elem: ET.Element, local: str) -> str:
         if _localname(key) == local:
             return str(value).strip()
     return ''
-
