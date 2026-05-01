@@ -498,6 +498,37 @@ class ObservationCliTests(unittest.TestCase):
         self.assertIn('0-20000-0-06260', buffer.getvalue())
         self.assertIn('tas_mean', buffer.getvalue())
 
+    def test_hourly_cli_explicit_country_fi_fmi_can_use_mocked_wfs_payload(self) -> None:
+        xml_text = Path('tests/data/sample_fmi_timevaluepair_real_fmisid.xml').read_text(encoding='utf-8')
+
+        class _MockResponse:
+            def __init__(self, text: str) -> None:
+                self.text = text
+                self.status_code = 200
+                self.encoding = 'utf-8'
+
+            def raise_for_status(self) -> None:
+                return None
+
+        buffer = io.StringIO()
+        with patch('weatherdownload.providers.fi.hourly_fmi.requests.get', return_value=_MockResponse(xml_text)):
+            with redirect_stdout(buffer):
+                exit_code = main([
+                    'observations', 'hourly',
+                    '--country', 'FI',
+                    '--provider', 'fmi',
+                    '--station-id', '100971',
+                    '--element', 'tas_mean',
+                    '--element', 'wind_speed',
+                    '--start', '2026-04-30T00:00:00Z',
+                    '--end', '2026-04-30T02:00:00Z',
+                ])
+        self.assertEqual(exit_code, 0)
+        output = buffer.getvalue()
+        self.assertIn('100971', output)
+        self.assertIn('tas_mean', output)
+        self.assertIn('wind_speed', output)
+
     def test_hourly_cli_rejects_mixed_all_history_and_explicit_range(self) -> None:
         stderr = io.StringIO()
         with redirect_stderr(stderr):

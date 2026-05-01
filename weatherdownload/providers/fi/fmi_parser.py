@@ -30,6 +30,8 @@ FMI_TIMEVALUEPAIR_RAW_TO_CANONICAL = {
 def normalize_fmi_timevaluepair_hourly_observations(
     xml_text: str,
     *,
+    station_ids: list[str] | None = None,
+    raw_elements: list[str] | None = None,
     provider: str = 'fmi',
     resolution: str = '1hour',
 ) -> pd.DataFrame:
@@ -54,13 +56,20 @@ def normalize_fmi_timevaluepair_hourly_observations(
     units_by_raw: dict[str, str] = {}
     station_id_candidates: set[str] = set()
 
+    station_filter = {str(value).strip() for value in (station_ids or []) if str(value).strip()} if station_ids else None
+    raw_filter = {str(value).strip() for value in (raw_elements or []) if str(value).strip()} if raw_elements else None
+
     for observation in _iter_observations(root):
         raw_element = _extract_observed_property_code(observation)
         if not raw_element:
             continue
+        if raw_filter is not None and raw_element not in raw_filter:
+            continue
         station_id = _extract_fmisid(observation)
         if station_id:
             station_id_candidates.add(station_id)
+        if station_filter is not None and station_id and station_id not in station_filter:
+            continue
 
         canonical = FMI_TIMEVALUEPAIR_RAW_TO_CANONICAL.get(raw_element)
         if canonical is None:
