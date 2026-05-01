@@ -86,5 +86,73 @@
       </om:result>
     </om:OM_Observation>
   </wfs:member>
-</wfs:FeatureCollection>
 
+  <!-- rh (relative humidity) -->
+  <wfs:member>
+    <om:OM_Observation gml:id="obs-rh-1">
+      <om:observedProperty xlink:href="https://opendata.fmi.fi/wfs/observedProperty/rh" />
+      <om:featureOfInterest>
+        <sams:SF_SpatialSamplingFeature gml:id="fmi-station-100971-rh">
+          <gml:identifier codeSpace="http://opendata.fmi.fi/fmisid">100971</gml:identifier>
+          <gml:name>Test Station</gml:name>
+        </sams:SF_SpatialSamplingFeature>
+      </om:featureOfInterest>
+      <om:result>
+        <wml2:MeasurementTimeseries gml:id="mts-rh-1">
+          <wml2:point>
+            <wml2:MeasurementTVP>
+              <wml2:time>2026-04-30T00:00:00Z</wml2:time>
+              <wml2:value uom="%">55</wml2:value>
+            </wml2:MeasurementTVP>
+          </wml2:point>
+        </wml2:MeasurementTimeseries>
+      </om:result>
+    </om:OM_Observation>
+  </wfs:member>
+
+  <!-- p_sea (pressure at mean sea level) -->
+  <wfs:member>
+    <om:OM_Observation gml:id="obs-psea-1">
+      <om:observedProperty xlink:href="https://opendata.fmi.fi/wfs/observedProperty/p_sea" />
+      <om:featureOfInterest>
+        <sams:SF_SpatialSamplingFeature gml:id="fmi-station-100971-psea">
+          <gml:identifier codeSpace="http://opendata.fmi.fi/fmisid">100971</gml:identifier>
+          <gml:name>Test Station</gml:name>
+        </sams:SF_SpatialSamplingFeature>
+      </om:featureOfInterest>
+      <om:result>
+        <wml2:MeasurementTimeseries gml:id="mts-psea-1">
+          <wml2:point>
+            <wml2:MeasurementTVP>
+              <wml2:time>2026-04-30T00:00:00Z</wml2:time>
+              <wml2:value uom="hPa">1023.3</wml2:value>
+            </wml2:MeasurementTVP>
+          </wml2:point>
+        </wml2:MeasurementTimeseries>
+      </om:result>
+    </om:OM_Observation>
+  </wfs:member>
+
+  <!-- r_1h (1-hour accumulated precipitation) -->
+  <wfs:member>
+    <om:OM_Observation gml:id="obs-r1h-1">
+      <om:observedProperty xlink:href="https://opendata.fmi.fi/wfs/observedProperty/r_1h" />
+      <om:featureOfInterest>
+        <sams:SF_SpatialSamplingFeature gml:id="fmi-station-100971-r1h">
+          <gml:identifier codeSpace="http://opendata.fmi.fi/fmisid">100971</gml:identifier>
+          <gml:name>Test Station</gml:name>
+        </sams:SF_SpatialSamplingFeature>
+      </om:featureOfInterest>
+      <om:result>
+        <wml2:MeasurementTimeseries gml:id="mts-r1h-1">
+          <wml2:point>
+            <wml2:MeasurementTVP>
+              <wml2:time>2026-04-30T00:00:00Z</wml2:time>
+              <wml2:value uom="mm">0.0</wml2:value>
+            </wml2:MeasurementTVP>
+          </wml2:point>
+        </wml2:MeasurementTimeseries>
+      </om:result>
+    </om:OM_Observation>
+  </wfs:member>
+</wfs:FeatureCollection>

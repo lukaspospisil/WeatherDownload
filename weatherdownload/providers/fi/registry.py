@@ -23,6 +23,9 @@ FMI_WEATHER_TIMEVALUEPAIR_STORED_QUERY = 'fmi::observations::weather::timevaluep
 FMI_HOURLY_CANONICAL_ELEMENTS = {
     'tas_mean': ('t2m',),
     'wind_speed': ('ws_10min',),
+    'relative_humidity': ('rh',),
+    'pressure': ('p_sea',),
+    'precipitation': ('r_1h',),
 }
 
 
@@ -46,7 +49,7 @@ _FI_DATASET_SPECS = [
         provider='fmi',
         resolution='1hour',
         label='Finnish Meteorological Institute (FMI) Open Data WFS weather time series (timevaluepair)',
-        supported_elements=('t2m', 'ws_10min'),
+        supported_elements=('t2m', 'ws_10min', 'rh', 'p_sea', 'r_1h'),
         canonical_elements=FMI_HOURLY_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,

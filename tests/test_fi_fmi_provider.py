@@ -33,11 +33,11 @@ class FinlandFmiProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='FI', provider='fmi'), ['1hour'])
         self.assertEqual(
             list_supported_elements(country='FI', provider='fmi', resolution='1hour'),
-            ['tas_mean', 'wind_speed'],
+            ['tas_mean', 'wind_speed', 'relative_humidity', 'pressure', 'precipitation'],
         )
         self.assertEqual(
             list_supported_elements(country='FI', provider='fmi', resolution='1hour', provider_raw=True),
-            ['t2m', 'ws_10min'],
+            ['t2m', 'ws_10min', 'rh', 'p_sea', 'r_1h'],
         )
 
     def test_download_observations_reads_local_fmi_fixture_via_station_metadata_source(self) -> None:
@@ -49,7 +49,7 @@ class FinlandFmiProviderTests(unittest.TestCase):
             station_ids=['100971'],
             start='2026-04-30T00:00:00Z',
             end='2026-04-30T02:00:00Z',
-            elements=['tas_mean', 'wind_speed'],
+            elements=['tas_mean', 'wind_speed', 'relative_humidity', 'pressure', 'precipitation'],
         )
         # Ensure we never hit the network in this test.
         with patch('weatherdownload.providers.fi.hourly_fmi.requests.get', side_effect=AssertionError('unexpected network')):
@@ -57,8 +57,11 @@ class FinlandFmiProviderTests(unittest.TestCase):
 
         self.assertEqual(list(observations.columns), FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS)
         self.assertEqual(observations['station_id'].unique().tolist(), ['100971'])
-        self.assertEqual(observations['element_raw'].unique().tolist(), ['t2m', 'ws_10min'])
-        self.assertEqual(observations['element'].unique().tolist(), ['tas_mean', 'wind_speed'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), sorted(['t2m', 'ws_10min', 'rh', 'p_sea', 'r_1h']))
+        self.assertEqual(
+            sorted(observations['element'].unique().tolist()),
+            sorted(['tas_mean', 'wind_speed', 'relative_humidity', 'pressure', 'precipitation']),
+        )
         self.assertTrue(isinstance(observations['timestamp'].dtype, pd.DatetimeTZDtype))
 
     def test_read_station_metadata_fmi_from_station_fixture(self) -> None:

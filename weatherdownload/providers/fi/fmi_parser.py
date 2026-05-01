@@ -24,6 +24,9 @@ FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS = [
 FMI_TIMEVALUEPAIR_RAW_TO_CANONICAL = {
     't2m': 'tas_mean',
     'ws_10min': 'wind_speed',
+    'rh': 'relative_humidity',
+    'p_sea': 'pressure',
+    'r_1h': 'precipitation',
 }
 
 

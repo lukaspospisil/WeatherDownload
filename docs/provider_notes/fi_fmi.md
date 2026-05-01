@@ -20,7 +20,7 @@ This note documents the current Finnish Meteorological Institute (FMI) Open Data
 
 - WFS base: `https://opendata.fmi.fi/wfs`
 - stored query: `fmi::observations::weather::timevaluepair`
-- parameters (first slice): `t2m`, `ws_10min`
+- parameters (first slice): `t2m`, `ws_10min`, `rh`, `p_sea`, `r_1h`
 
 ## Supported elements (first slice)
 
@@ -30,11 +30,15 @@ Raw-to-canonical mapping:
 | --- | --- |
 | `t2m` | `tas_mean` |
 | `ws_10min` | `wind_speed` |
+| `rh` | `relative_humidity` |
+| `p_sea` | `pressure` |
+| `r_1h` | `precipitation` |
 
 Notes:
 
 - element requests are converted to raw WFS `parameters=...` values
 - units may not be present inline in the XML payload; when present, they are preserved in parser metadata
+- `p_sea` is mean sea-level pressure (MSL), mapped to canonical `pressure` in this conservative pass
 - station metadata discovery currently fetches a conservative subset of stations from the FMI Environmental Monitoring Facility networks `AWS` and `SYNOP`
 - `elevation_m` is not exposed by this station listing path and is currently null in WeatherDownload station metadata tables
 
