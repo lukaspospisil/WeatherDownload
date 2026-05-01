@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .daily_fmi import download_daily_observations_fmi
 from .hourly_fmi import download_hourly_observations_fmi
 from .metadata import (
     read_station_metadata_fmi,
@@ -31,7 +32,9 @@ def _download_national_observations(*args, **kwargs):
     query = args[0] if args else kwargs.get('query')
     if getattr(query, 'provider', None) == 'fmi' and getattr(query, 'resolution', None) == '1hour':
         return download_hourly_observations_fmi(*args, **kwargs)
-    raise NotImplementedError('Finland national provider support currently implements only fmi/1hour.')
+    if getattr(query, 'provider', None) == 'fmi' and getattr(query, 'resolution', None) == 'daily':
+        return download_daily_observations_fmi(*args, **kwargs)
+    raise NotImplementedError('Finland national provider support currently implements only fmi/1hour and fmi/daily.')
 
 
 _read_station_metadata = build_mixed_station_metadata_reader(

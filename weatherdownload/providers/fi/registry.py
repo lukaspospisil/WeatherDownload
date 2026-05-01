@@ -19,6 +19,7 @@ _GHCND_DATASET_SPECS = build_country_dataset_specs(
 
 FMI_WFS_URL = 'https://opendata.fmi.fi/wfs'
 FMI_WEATHER_TIMEVALUEPAIR_STORED_QUERY = 'fmi::observations::weather::timevaluepair'
+FMI_DAILY_WEATHER_TIMEVALUEPAIR_STORED_QUERY = 'fmi::observations::weather::daily::timevaluepair'
 
 FMI_HOURLY_CANONICAL_ELEMENTS = {
     'tas_mean': ('t2m',),
@@ -26,6 +27,13 @@ FMI_HOURLY_CANONICAL_ELEMENTS = {
     'relative_humidity': ('rh',),
     'pressure': ('p_sea',),
     'precipitation': ('r_1h',),
+}
+
+FMI_DAILY_CANONICAL_ELEMENTS = {
+    'tas_mean': ('tday',),
+    'tas_max': ('tmax',),
+    'tas_min': ('tmin',),
+    'precipitation': ('rrday',),
 }
 
 
@@ -45,6 +53,17 @@ class FinlandDatasetSpec:
 
 
 _FI_DATASET_SPECS = [
+    FinlandDatasetSpec(
+        provider='fmi',
+        resolution='daily',
+        label='Finnish Meteorological Institute (FMI) Open Data WFS daily weather observations (timevaluepair)',
+        supported_elements=('tday', 'tmax', 'tmin', 'rrday'),
+        canonical_elements=FMI_DAILY_CANONICAL_ELEMENTS,
+        time_semantics='date',
+        implemented=True,
+        storedquery_id=FMI_DAILY_WEATHER_TIMEVALUEPAIR_STORED_QUERY,
+        timestep_minutes=24 * 60,
+    ),
     FinlandDatasetSpec(
         provider='fmi',
         resolution='1hour',

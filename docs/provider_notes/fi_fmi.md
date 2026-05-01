@@ -10,7 +10,7 @@ This note documents the current Finnish Meteorological Institute (FMI) Open Data
 
 - country: `FI`
 - provider: `fmi`
-- resolution(s): `1hour` (no `daily` support yet)
+- resolution(s): `1hour`, `daily` (daily is a conservative first slice)
 
 ## Station identifiers
 
@@ -19,10 +19,12 @@ This note documents the current Finnish Meteorological Institute (FMI) Open Data
 ## Source
 
 - WFS base: `https://opendata.fmi.fi/wfs`
-- stored query: `fmi::observations::weather::timevaluepair`
-- parameters (first slice): `t2m`, `ws_10min`, `rh`, `p_sea`, `r_1h`
+- stored query (1hour): `fmi::observations::weather::timevaluepair`
+- parameters (1hour first slice): `t2m`, `ws_10min`, `rh`, `p_sea`, `r_1h`
+- stored query (daily): `fmi::observations::weather::daily::timevaluepair`
+- parameters (daily first slice): `tday`, `tmin`, `tmax`, `rrday`
 
-## Supported elements (first slice)
+## Supported elements (1hour first slice)
 
 Raw-to-canonical mapping:
 
@@ -42,9 +44,25 @@ Notes:
 - station metadata discovery currently fetches a conservative subset of stations from the FMI Environmental Monitoring Facility networks `AWS` and `SYNOP`
 - `elevation_m` is not exposed by this station listing path and is currently null in WeatherDownload station metadata tables
 
+## Supported elements (daily first slice)
+
+Raw-to-canonical mapping:
+
+| Raw | Canonical |
+| --- | --- |
+| `tday` | `tas_mean` |
+| `tmin` | `tas_min` |
+| `tmax` | `tas_max` |
+| `rrday` | `precipitation` |
+
+Notes:
+
+- daily timestamps are returned as `00:00Z` instants; the semantics are daily aggregates
+- `snow` is available in FMI daily outputs (unit `cm`) but is intentionally not mapped in WeatherDownload yet
+
 ## Not implemented (yet)
 
 - a full-fidelity station discovery strategy beyond the conservative `AWS` + `SYNOP` subset
 - additional elements beyond the conservative first slice
-- `daily` resolution support
+- additional daily elements beyond `tday/tmin/tmax/rrday` (including `snow`)
 - `FI / ghcnd / daily` remains available separately as the NOAA GHCN-Daily wrapper path

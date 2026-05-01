@@ -111,9 +111,10 @@ def _feature_collection_counts(xml_text: str) -> tuple[int | None, int]:
 def _attach_fmi_station_elements_attrs(stations: pd.DataFrame) -> None:
     if stations.empty:
         return
-    spec = get_dataset_spec('fmi', '1hour')
     stations.attrs.setdefault('station_provider_raw_elements_by_path', {})
-    stations.attrs['station_provider_raw_elements_by_path'][('fmi', '1hour')] = {
-        str(station_id): list(spec.supported_elements)
-        for station_id in stations['station_id'].astype(str).tolist()
-    }
+    for resolution in ('1hour', 'daily'):
+        spec = get_dataset_spec('fmi', resolution)
+        stations.attrs['station_provider_raw_elements_by_path'][('fmi', resolution)] = {
+            str(station_id): list(spec.supported_elements)
+            for station_id in stations['station_id'].astype(str).tolist()
+        }
