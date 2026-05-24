@@ -402,6 +402,70 @@ class DownloadFaoExampleTests(unittest.TestCase):
         for column in ['Ra', 'Rs', 'Rso', 'Rns', 'Rnl', 'Rn']:
             self.assertTrue(pd.isna(derived.loc[0, column]))
 
+    def test_append_fao56_intermediates_missing_latitude_keeps_latitude_dependent_outputs_nan(self) -> None:
+        complete = pd.DataFrame(
+            [
+                {
+                    'date': pd.Timestamp('2024-06-15').date(),
+                    'tas_mean': 20.0,
+                    'tas_max': 25.0,
+                    'tas_min': 15.0,
+                    'wind_speed': 2.0,
+                    'vapour_pressure': 18.0,
+                    'sunshine_duration': 8.0,
+                }
+            ]
+        )
+
+        derived = download_fao.append_fao56_intermediates(complete, latitude=None, elevation=250.0)
+
+        for column in ['Ra', 'N', 'Rs', 'Rso', 'Rns', 'Rnl', 'Rn', 'E_FAO']:
+            self.assertTrue(pd.isna(derived.loc[0, column]))
+
+    def test_append_fao56_intermediates_missing_elevation_keeps_pressure_gamma_and_rso_outputs_nan(self) -> None:
+        complete = pd.DataFrame(
+            [
+                {
+                    'date': pd.Timestamp('2024-06-15').date(),
+                    'tas_mean': 20.0,
+                    'tas_max': 25.0,
+                    'tas_min': 15.0,
+                    'wind_speed': 2.0,
+                    'vapour_pressure': 18.0,
+                    'sunshine_duration': 8.0,
+                }
+            ]
+        )
+
+        derived = download_fao.append_fao56_intermediates(complete, latitude=50.0, elevation=None)
+
+        for column in ['pressure', 'gamma', 'Rso', 'Rnl', 'Rn', 'E_FAO']:
+            self.assertTrue(pd.isna(derived.loc[0, column]))
+        self.assertTrue(pd.notna(derived.loc[0, 'Ra']))
+        self.assertTrue(pd.notna(derived.loc[0, 'N']))
+
+    def test_append_fao56_intermediates_missing_sunshine_duration_keeps_rs_rn_and_eto_nan(self) -> None:
+        complete = pd.DataFrame(
+            [
+                {
+                    'date': pd.Timestamp('2024-06-15').date(),
+                    'tas_mean': 20.0,
+                    'tas_max': 25.0,
+                    'tas_min': 15.0,
+                    'wind_speed': 2.0,
+                    'vapour_pressure': 18.0,
+                    'sunshine_duration': pd.NA,
+                }
+            ]
+        )
+
+        derived = download_fao.append_fao56_intermediates(complete, latitude=50.0, elevation=250.0)
+
+        self.assertTrue(pd.notna(derived.loc[0, 'Ra']))
+        self.assertTrue(pd.notna(derived.loc[0, 'N']))
+        for column in ['Rs', 'Rns', 'Rnl', 'Rn', 'E_FAO']:
+            self.assertTrue(pd.isna(derived.loc[0, column]))
+
     def test_build_data_info_mentions_derived_fao56_only_when_enabled(self) -> None:
         config = download_fao.get_fao_country_config('CZ')
 
@@ -416,6 +480,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertNotIn('derived_fao56', default_info)
         self.assertIn('derived_fao56', enabled_info)
         self.assertEqual(enabled_info['derived_fao56']['fields'][0]['provenance'], 'derived_fao56')
+        self.assertIn('Rn and E_FAO are derived_fao56 outputs', enabled_info['derived_fao56']['notes'][1])
 
     def test_info_sidecar_mentions_derived_fao56_only_when_enabled(self) -> None:
         summaries = [
@@ -459,6 +524,16 @@ class DownloadFaoExampleTests(unittest.TestCase):
             self.assertIn('derived_fao56', enabled_text)
             self.assertIn('Rn [MJ m^-2 day^-1] derived_fao56', enabled_text)
             self.assertIn('E_FAO [mm day^-1] derived_fao56', enabled_text)
+            self.assertIn('Rn and E_FAO are derived_fao56 workflow outputs', enabled_text)
+
+    def test_download_fao_docs_document_compute_fao_intermediates_and_derived_rn(self) -> None:
+        doc_text = Path('docs/download_fao.md').read_text(encoding='utf-8')
+
+        self.assertIn('--compute-fao-intermediates', doc_text)
+        self.assertIn('Rn` is not downloaded from any provider in this workflow; it is derived only in explicit `--compute-fao-intermediates` mode', doc_text)
+        self.assertIn('They are not downloaded provider observations.', doc_text)
+        self.assertIn('| `Rn` | `MJ m^-2 day^-1` | net radiation |', doc_text)
+        self.assertIn('| `E_FAO` | `mm day^-1` | FAO-56 Penman-Monteith reference evapotranspiration |', doc_text)
 
     def test_screen_candidate_stations_deduplicates_meta1_by_station_id(self) -> None:
         config = download_fao.get_fao_country_config('CZ')

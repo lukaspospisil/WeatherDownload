@@ -17,6 +17,12 @@ from weatherdownload import (
     read_station_observation_metadata,
 )
 from weatherdownload.elements import raw_to_canonical_map_for_spec
+from weatherdownload.fao import (
+    FAO56_DERIVED_COLUMNS,
+    FAO56_DERIVED_UNITS,
+    RS_RSO_RATIO_CLAMP,
+    compute_fao56_daily_intermediates,
+)
 from weatherdownload.providers import get_provider, normalize_country_code
 
 FINAL_SERIES_COLUMNS = [
@@ -27,38 +33,6 @@ FINAL_SERIES_COLUMNS = [
     'vapour_pressure',
     'sunshine_duration',
 ]
-FAO56_DERIVED_COLUMNS = [
-    'es',
-    'vpd',
-    'delta',
-    'pressure',
-    'gamma',
-    'Ra',
-    'N',
-    'Rs',
-    'Rso',
-    'Rns',
-    'Rnl',
-    'Rn',
-    'G',
-    'E_FAO',
-]
-FAO56_DERIVED_UNITS = {
-    'es': 'kPa',
-    'vpd': 'kPa',
-    'delta': 'kPa degC^-1',
-    'pressure': 'kPa',
-    'gamma': 'kPa degC^-1',
-    'Ra': 'MJ m^-2 day^-1',
-    'N': 'h day^-1',
-    'Rs': 'MJ m^-2 day^-1',
-    'Rso': 'MJ m^-2 day^-1',
-    'Rns': 'MJ m^-2 day^-1',
-    'Rnl': 'MJ m^-2 day^-1',
-    'Rn': 'MJ m^-2 day^-1',
-    'G': 'MJ m^-2 day^-1',
-    'E_FAO': 'mm day^-1',
-}
 FAO_CANONICAL_ELEMENTS = tuple(FINAL_SERIES_COLUMNS)
 FILL_MISSING_CHOICES = ('none', 'allow-derived', 'allow-hourly-aggregate')
 DERIVED_VAPOUR_PRESSURE_RULE_NAME = 'vapour_pressure_from_tas_mean_and_relative_humidity'
@@ -864,6 +838,11 @@ def build_data_info(
     if compute_fao_intermediates:
         data_info['derived_fao56'] = {
             'status': 'opt_in_enabled',
+            'notes': [
+                'FAO-56 intermediate variables were computed in the workflow layer only.',
+                'Rn and E_FAO are derived_fao56 outputs, not downloaded provider observations.',
+                f'Rnl uses Rs/Rso clamped to [{RS_RSO_RATIO_CLAMP[0]:.1f}, {RS_RSO_RATIO_CLAMP[1]:.1f}] before the FAO-56 longwave term.',
+            ],
             'fields': [{'name': name, 'units': FAO56_DERIVED_UNITS[name], 'provenance': 'derived_fao56'} for name in FAO56_DERIVED_COLUMNS],
         }
         data_info['fill_policy']['compute_fao_intermediates'] = True
@@ -983,6 +962,8 @@ def render_info_sidecar_text(
         lines.append('Warning: No hourly-aggregated or derived values were used in this export.')
     if compute_fao_intermediates:
         lines.extend(['', 'derived_fao56:'])
+        lines.append('Rn and E_FAO are derived_fao56 workflow outputs, not downloaded provider observations.')
+        lines.append(f'Rnl uses Rs/Rso clamped to [{RS_RSO_RATIO_CLAMP[0]:.1f}, {RS_RSO_RATIO_CLAMP[1]:.1f}] before the longwave-radiation term.')
         for name in FAO56_DERIVED_COLUMNS:
             lines.append(f'- {name} [{FAO56_DERIVED_UNITS[name]}] derived_fao56')
     lines.extend(['', 'Field summary:'])
@@ -1363,104 +1344,12 @@ def aggregate_hourly_field_to_daily(hourly_table: pd.DataFrame, canonical_name: 
 
 
 def append_fao56_intermediates(complete: pd.DataFrame, *, latitude: float | None, elevation: float | None) -> pd.DataFrame:
-    if complete.empty:
-        result = complete.copy()
-        for column in FAO56_DERIVED_COLUMNS:
-            result[column] = pd.Series(dtype='float64')
-        return result
-
-    result = complete.copy()
-    tmean = pd.to_numeric(result['tas_mean'], errors='coerce')
-    tmax = pd.to_numeric(result['tas_max'], errors='coerce')
-    tmin = pd.to_numeric(result['tas_min'], errors='coerce')
-    wind_speed = pd.to_numeric(result['wind_speed'], errors='coerce')
-    vapour_pressure_hpa = pd.to_numeric(result['vapour_pressure'], errors='coerce')
-    sunshine_duration = pd.to_numeric(result['sunshine_duration'], errors='coerce')
-    latitude_value = pd.to_numeric(pd.Series([latitude]), errors='coerce').iloc[0]
-    elevation_value = pd.to_numeric(pd.Series([elevation]), errors='coerce').iloc[0]
-
-    dates = pd.to_datetime(result['date'], errors='coerce')
-    day_of_year = dates.dt.dayofyear.astype('float64')
-    latitude_rad = np.deg2rad(latitude_value) if pd.notna(latitude_value) else np.nan
-
-    es_tmax = _saturation_vapour_pressure_kpa(tmax)
-    es_tmin = _saturation_vapour_pressure_kpa(tmin)
-    es = (es_tmax + es_tmin) / 2.0
-    ea = vapour_pressure_hpa / 10.0
-    vpd = es - ea
-    delta = 4098.0 * _saturation_vapour_pressure_kpa(tmean) / np.power(tmean + 237.3, 2)
-    pressure = 101.3 * np.power((293.0 - 0.0065 * elevation_value) / 293.0, 5.26) if pd.notna(elevation_value) else np.nan
-    gamma = 0.000665 * pressure if pd.notna(pressure) else np.nan
-
-    dr = 1.0 + 0.033 * np.cos((2.0 * np.pi / 365.0) * day_of_year)
-    solar_declination = 0.409 * np.sin((2.0 * np.pi / 365.0) * day_of_year - 1.39)
-    sunset_term = -np.tan(latitude_rad) * np.tan(solar_declination) if np.isfinite(latitude_rad) else np.nan
-    sunset_term = np.clip(sunset_term, -1.0, 1.0) if np.isscalar(sunset_term) else np.clip(sunset_term.to_numpy(dtype='float64'), -1.0, 1.0)
-    omega_s = np.arccos(sunset_term)
-    if not np.isfinite(latitude_rad):
-        omega_s = np.full(len(result), np.nan, dtype='float64')
-    Ra = (
-        (24.0 * 60.0 / np.pi)
-        * 0.0820
-        * dr
-        * (omega_s * np.sin(latitude_rad) * np.sin(solar_declination) + np.cos(latitude_rad) * np.cos(solar_declination) * np.sin(omega_s))
+    return compute_fao56_daily_intermediates(
+        complete,
+        latitude=latitude,
+        elevation_m=elevation,
+        vapour_pressure_unit='hPa',
     )
-    N = (24.0 / np.pi) * omega_s
-
-    n_over_N = pd.Series(np.nan, index=result.index, dtype='float64')
-    valid_daylight = (pd.Series(N, index=result.index) > 0.0) & sunshine_duration.notna()
-    n_over_N.loc[valid_daylight] = sunshine_duration.loc[valid_daylight] / pd.Series(N, index=result.index).loc[valid_daylight]
-    Rs = (0.25 + 0.50 * n_over_N) * pd.Series(Ra, index=result.index)
-    Rso = ((0.75 + 2e-5 * elevation_value) * pd.Series(Ra, index=result.index)) if pd.notna(elevation_value) else pd.Series(np.nan, index=result.index, dtype='float64')
-    Rs = Rs.where(Rso.notna())
-    rs_rso_ratio = pd.Series(np.nan, index=result.index, dtype='float64')
-    valid_rso = Rso > 0.0
-    Rs = Rs.clip(lower=0.0)
-    Rs.loc[valid_rso] = np.minimum(Rs.loc[valid_rso], Rso.loc[valid_rso])
-    rs_rso_ratio.loc[valid_rso] = (Rs.loc[valid_rso] / Rso.loc[valid_rso]).clip(lower=0.0, upper=1.0)
-    Rns = 0.77 * Rs
-
-    tmax_k = tmax + 273.16
-    tmin_k = tmin + 273.16
-    ea_nonnegative = ea.clip(lower=0.0)
-    Rnl = (
-        4.903e-9
-        * ((np.power(tmax_k, 4) + np.power(tmin_k, 4)) / 2.0)
-        * (0.34 - 0.14 * np.sqrt(ea_nonnegative))
-        * (1.35 * rs_rso_ratio - 0.35)
-    )
-    Rn = Rns - Rnl
-    G = pd.Series(0.0, index=result.index, dtype='float64')
-
-    eto_denominator = delta + gamma * (1.0 + 0.34 * wind_speed)
-    eto_numerator = 0.408 * delta * (Rn - G) + gamma * (900.0 / (tmean + 273.0)) * wind_speed * vpd
-    E_FAO = pd.Series(np.nan, index=result.index, dtype='float64')
-    valid_eto = eto_denominator.notna() & (eto_denominator != 0.0) & eto_numerator.notna()
-    E_FAO.loc[valid_eto] = eto_numerator.loc[valid_eto] / eto_denominator.loc[valid_eto]
-
-    derived = {
-        'es': es,
-        'vpd': vpd,
-        'delta': delta,
-        'pressure': pd.Series(pressure, index=result.index, dtype='float64'),
-        'gamma': pd.Series(gamma, index=result.index, dtype='float64'),
-        'Ra': pd.Series(Ra, index=result.index, dtype='float64'),
-        'N': pd.Series(N, index=result.index, dtype='float64'),
-        'Rs': Rs,
-        'Rso': Rso,
-        'Rns': Rns,
-        'Rnl': Rnl,
-        'Rn': Rn,
-        'G': G,
-        'E_FAO': E_FAO,
-    }
-    for name in FAO56_DERIVED_COLUMNS:
-        result[name] = pd.to_numeric(derived[name], errors='coerce')
-    return result
-
-
-def _saturation_vapour_pressure_kpa(temperature_c: pd.Series) -> pd.Series:
-    return 0.6108 * np.exp((17.27 * temperature_c) / (temperature_c + 237.3))
 
 
 def select_daily_variable_rows(daily_table: pd.DataFrame, *, canonical_name: str, config: FaoCountryConfig) -> pd.DataFrame:

@@ -96,22 +96,31 @@ Default mode still exports only these six prepared input columns:
 
 With `--compute-fao-intermediates`, each completed station daily series additionally includes:
 
-- `es` [`kPa`]
-- `vpd` [`kPa`]
-- `delta` [`kPa degC^-1`]
-- `pressure` [`kPa`]
-- `gamma` [`kPa degC^-1`]
-- `Ra` [`MJ m^-2 day^-1`]
-- `N` [`h day^-1`]
-- `Rs` [`MJ m^-2 day^-1`]
-- `Rso` [`MJ m^-2 day^-1`]
-- `Rns` [`MJ m^-2 day^-1`]
-- `Rnl` [`MJ m^-2 day^-1`]
-- `Rn` [`MJ m^-2 day^-1`]
-- `G` [`MJ m^-2 day^-1`]
-- `E_FAO` [`mm day^-1`]
+| Column | Units | Meaning |
+| --- | --- | --- |
+| `es` | `kPa` | mean saturation vapour pressure |
+| `vpd` | `kPa` | vapour pressure deficit `es - ea` |
+| `delta` | `kPa degC^-1` | slope of saturation vapour pressure curve |
+| `pressure` | `kPa` | atmospheric pressure estimated from elevation |
+| `gamma` | `kPa degC^-1` | psychrometric constant |
+| `Ra` | `MJ m^-2 day^-1` | extraterrestrial radiation |
+| `N` | `h day^-1` | maximum daylight hours |
+| `Rs` | `MJ m^-2 day^-1` | incoming solar radiation from sunshine duration |
+| `Rso` | `MJ m^-2 day^-1` | clear-sky solar radiation |
+| `Rns` | `MJ m^-2 day^-1` | net shortwave radiation |
+| `Rnl` | `MJ m^-2 day^-1` | net outgoing longwave radiation |
+| `Rn` | `MJ m^-2 day^-1` | net radiation |
+| `G` | `MJ m^-2 day^-1` | daily soil heat flux, fixed to `0` |
+| `E_FAO` | `mm day^-1` | FAO-56 Penman-Monteith reference evapotranspiration |
 
-These columns are not observed provider variables. They are example-layer `derived_fao56` outputs computed from the prepared daily inputs plus station metadata using standard FAO-56 daily equations. If required metadata or inputs are missing, dependent derived values stay null rather than being guessed.
+These columns are not observed provider variables. They are example-layer `derived_fao56` outputs computed from the prepared daily inputs plus station metadata using standard FAO-56 daily equations. `Rn` is derived from the FAO-56 daily radiation equations, and `E_FAO` is derived from the FAO-56 Penman-Monteith equation. They are not downloaded provider observations.
+
+Implementation notes:
+
+- the workflow keeps the prepared six-field bundle unchanged and appends the derived columns only in opt-in mode
+- the FAO-56 equations use actual vapour pressure in `kPa`; the current workflow converts the prepared bundle `vapour_pressure` values to `kPa` internally before deriving FAO-56 terms
+- the longwave-radiation step clamps `Rs / Rso` into the FAO-safe range `[0.0, 1.0]` before it is used in `Rnl`
+- if latitude, elevation, sunshine duration, vapour pressure, temperature inputs, or wind speed are missing, dependent derived outputs stay null instead of causing the workflow to crash
 
 ## Country Mapping Summary
 
@@ -313,7 +322,7 @@ Examples:
 
 The sidecar is the export-level provenance record for the workflow. It records the selected fill policy, whether opt-in hourly aggregation and/or derived values were allowed, field-by-field observed/aggregated/derived/missing counts, the rule used for each field, and an explicit note that the workflow does not compute ET0.
 
-When `--compute-fao-intermediates` is enabled, the sidecar also adds a `derived_fao56` block listing the appended derived columns and units. The existing observed/aggregated/derived/missing summaries for the original six prepared input fields remain unchanged.
+When `--compute-fao-intermediates` is enabled, the sidecar also adds a `derived_fao56` block listing the appended derived columns and units and explicitly stating that `Rn` and `E_FAO` are derived workflow outputs, not downloaded provider observations. The existing observed/aggregated/derived/missing summaries for the original six prepared input fields remain unchanged.
 
 ## What The Example Does
 
