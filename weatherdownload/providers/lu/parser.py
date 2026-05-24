@@ -101,6 +101,8 @@ def normalize_lu_daily_feature_rows(
         properties = feature.get('properties')
         if not isinstance(properties, dict):
             continue
+        if not _is_findel_airport(properties):
+            continue
         observation_date = _coerce_observation_date(properties)
         if observation_date is None:
             continue
@@ -148,6 +150,14 @@ def _station_id_from_properties(properties: dict[str, object]) -> str:
         if station_id:
             return station_id
     return LU_METEOLUX_STATION_ID
+
+
+def _is_findel_airport(properties: dict[str, object]) -> bool:
+    station_name = _clean_optional_string(properties.get('name_descr'))
+    if not station_name:
+        return True
+    normalized = station_name.casefold()
+    return normalized in {'findel airport', 'luxembourg/findel airport'}
 
 
 def _clean_optional_string(value: object) -> str:

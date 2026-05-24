@@ -18,6 +18,12 @@ WeatherDownload uses the structured WFS `GetFeature` JSON path for the daily Fin
 
 According to the dataset metadata, the daily historical record spans 1947-present for this station-focused product.
 
+The current implementation uses the official source type names directly:
+
+- `MF.PointTimeSeriesObservation_Daily_FindelAirport_maxtemperature`
+- `MF.PointTimeSeriesObservation_Daily_FindelAirport_mintemperature`
+- `MF.PointTimeSeriesObservation_Daily_FindelAirport_totalprecipitation`
+
 ## Station scope
 
 The current implementation intentionally supports one official station:
@@ -44,15 +50,16 @@ Raw-to-canonical mapping:
 Notes:
 
 - this first pass is daily only
-- this first pass is observed-only and does not derive extra variables
+- this first pass is observed-only provider data and does not derive extra variables
 - `tas_mean` is intentionally not exposed because it is not part of the current observed daily slice
 - `Rn/net radiation is not downloaded`
 
 ## Temporal semantics
 
 - WeatherDownload returns normalized daily rows keyed by `observation_date`
+- the current WFS JSON response exposes both `day` and `datetime`, with `datetime` currently serialized as `00:00:00Z`
 - the MeteoLux precipitation metadata describe the observational precipitation day as `06:00 UTC` to `06:00 UTC` of the following day
-- this first implementation keeps the provider daily date semantics and does not silently shift dates
+- this implementation preserves the source date exactly and does not silently shift precipitation or temperature dates
 
 ## Limitations
 

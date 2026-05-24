@@ -90,6 +90,128 @@ class LuxembourgProviderTests(unittest.TestCase):
                 self.assertAlmostEqual(float(normalized.iloc[0]['value']), expected_value)
                 self.assertEqual(normalized.iloc[0]['element_raw'], raw_code)
 
+    def test_lu_parser_handles_missing_value_as_nan(self) -> None:
+        payload = parse_lu_feature_collection_json(
+            """
+            {
+              "type": "FeatureCollection",
+              "features": [
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "name_descr": "Findel Airport",
+                    "wigos_id": "0-20000-0-06590",
+                    "day": "2024-06-01",
+                    "maxtemperature": null
+                  }
+                }
+              ]
+            }
+            """
+        )
+        normalized = normalize_lu_daily_feature_rows(
+            payload,
+            raw_code='maxtemperature',
+            provider='meteolux',
+            resolution='daily',
+        )
+        self.assertEqual(len(normalized), 1)
+        self.assertTrue(normalized['value'].isna().iloc[0])
+
+    def test_lu_parser_handles_empty_feature_collection(self) -> None:
+        payload = parse_lu_feature_collection_json('{"type":"FeatureCollection","features":[]}')
+        normalized = normalize_lu_daily_feature_rows(
+            payload,
+            raw_code='maxtemperature',
+            provider='meteolux',
+            resolution='daily',
+        )
+        self.assertTrue(normalized.empty)
+        self.assertEqual(list(normalized.columns), LU_NORMALIZED_DAILY_COLUMNS)
+
+    def test_lu_parser_skips_unexpected_station_name(self) -> None:
+        payload = parse_lu_feature_collection_json(
+            """
+            {
+              "type": "FeatureCollection",
+              "features": [
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "name_descr": "Somewhere Else",
+                    "day": "2024-06-01",
+                    "maxtemperature": 20.0
+                  }
+                }
+              ]
+            }
+            """
+        )
+        normalized = normalize_lu_daily_feature_rows(
+            payload,
+            raw_code='maxtemperature',
+            provider='meteolux',
+            resolution='daily',
+        )
+        self.assertTrue(normalized.empty)
+
+    def test_lu_parser_accepts_missing_unit_field(self) -> None:
+        payload = parse_lu_feature_collection_json(
+            """
+            {
+              "type": "FeatureCollection",
+              "features": [
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "name_descr": "Findel Airport",
+                    "wigos_id": "0-20000-0-06590",
+                    "datetime": "2024-06-01T00:00:00Z",
+                    "mintemperature": 11.0
+                  }
+                }
+              ]
+            }
+            """
+        )
+        normalized = normalize_lu_daily_feature_rows(
+            payload,
+            raw_code='mintemperature',
+            provider='meteolux',
+            resolution='daily',
+        )
+        self.assertEqual(len(normalized), 1)
+        self.assertEqual(str(normalized.iloc[0]['observation_date']), '2024-06-01')
+        self.assertAlmostEqual(float(normalized.iloc[0]['value']), 11.0)
+
+    def test_lu_parser_uses_datetime_when_day_is_missing(self) -> None:
+        payload = parse_lu_feature_collection_json(
+            """
+            {
+              "type": "FeatureCollection",
+              "features": [
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "name_descr": "Findel Airport",
+                    "wigos_id": "0-20000-0-06590",
+                    "datetime": "2024-06-01T00:00:00Z",
+                    "totalprecipitation": 1.2
+                  }
+                }
+              ]
+            }
+            """
+        )
+        normalized = normalize_lu_daily_feature_rows(
+            payload,
+            raw_code='totalprecipitation',
+            provider='meteolux',
+            resolution='daily',
+        )
+        self.assertEqual(str(normalized.iloc[0]['observation_date']), '2024-06-01')
+        self.assertAlmostEqual(float(normalized.iloc[0]['value']), 1.2)
+
     def test_lu_daily_downloader_with_mocked_http_returns_public_schema(self) -> None:
         station_metadata = read_station_metadata(country='LU')
 
@@ -127,6 +249,7 @@ class LuxembourgProviderTests(unittest.TestCase):
         self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_max', 'tas_min'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['maxtemperature', 'mintemperature', 'totalprecipitation'])
         self.assertEqual(observations['station_id'].unique().tolist(), ['0-20000-0-06590'])
+        self.assertTrue(observations['value'].notna().all())
 
     def test_lu_provider_documentation_and_capabilities_are_updated(self) -> None:
         provider_note = Path('docs/provider_notes/lu_meteolux.md').read_text(encoding='utf-8')
