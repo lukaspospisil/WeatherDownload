@@ -18,7 +18,7 @@ Critical boundary:
 
 - it does not compute FAO-56 ET0
 - observed-only mode is the default
-- it does not derive FAO intermediate variables unless you explicitly enable the optional example-layer fill mode
+- it does not derive FAO-56 intermediate variables unless you explicitly enable `--compute-fao-intermediates`
 - it only downloads, normalizes, filters, and packages observed daily meteorological inputs for later downstream FAO workflow use
 - unavailable fields remain null or missing instead of being derived by default
 
@@ -50,11 +50,14 @@ python examples/workflows/download_fao.py --country PL --fill-missing allow-hour
 python examples/workflows/download_fao.py --country NL
 python examples/workflows/download_fao.py --country SE
 python examples/workflows/download_fao.py --country NL --fill-missing allow-derived
+python examples/workflows/download_fao.py --country CZ --compute-fao-intermediates
 ```
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
 
 `--fill-missing` defaults to `none`. Use `--fill-missing allow-derived` or `--fill-missing allow-hourly-aggregate` only when you want the shared example layer to apply its documented opt-in fallback rules.
+
+`--compute-fao-intermediates` defaults to off. When you enable it, the workflow keeps the standard six-field observed/prepared bundle unchanged and appends FAO-56 derived columns to each exported station series in MAT and Parquet outputs.
 
 For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
 
@@ -78,6 +81,37 @@ Important interpretation:
 - these are packaging targets, not a promise that every country directly observes every field in the current provider path
 - if a field is unavailable in the provider path, the shared example keeps it null in the default observed-only mode
 - only the explicit opt-in fill policy may apply a documented fallback rule, and only for fields covered by that rule
+- `Rn` is not downloaded from any provider in this workflow; it is derived only in explicit `--compute-fao-intermediates` mode by FAO-56 equations
+
+## Optional FAO-56 Intermediate Computation
+
+Default mode still exports only these six prepared input columns:
+
+- `tas_mean`
+- `tas_max`
+- `tas_min`
+- `wind_speed`
+- `vapour_pressure`
+- `sunshine_duration`
+
+With `--compute-fao-intermediates`, each completed station daily series additionally includes:
+
+- `es` [`kPa`]
+- `vpd` [`kPa`]
+- `delta` [`kPa degC^-1`]
+- `pressure` [`kPa`]
+- `gamma` [`kPa degC^-1`]
+- `Ra` [`MJ m^-2 day^-1`]
+- `N` [`h day^-1`]
+- `Rs` [`MJ m^-2 day^-1`]
+- `Rso` [`MJ m^-2 day^-1`]
+- `Rns` [`MJ m^-2 day^-1`]
+- `Rnl` [`MJ m^-2 day^-1`]
+- `Rn` [`MJ m^-2 day^-1`]
+- `G` [`MJ m^-2 day^-1`]
+- `E_FAO` [`mm day^-1`]
+
+These columns are not observed provider variables. They are example-layer `derived_fao56` outputs computed from the prepared daily inputs plus station metadata using standard FAO-56 daily equations. If required metadata or inputs are missing, dependent derived values stay null rather than being guessed.
 
 ## Country Mapping Summary
 
@@ -279,6 +313,8 @@ Examples:
 
 The sidecar is the export-level provenance record for the workflow. It records the selected fill policy, whether opt-in hourly aggregation and/or derived values were allowed, field-by-field observed/aggregated/derived/missing counts, the rule used for each field, and an explicit note that the workflow does not compute ET0.
 
+When `--compute-fao-intermediates` is enabled, the sidecar also adds a `derived_fao56` block listing the appended derived columns and units. The existing observed/aggregated/derived/missing summaries for the original six prepared input fields remain unchanged.
+
 ## What The Example Does
 
 1. load station metadata for the selected country
@@ -289,10 +325,11 @@ The sidecar is the export-level provenance record for the workflow. It records t
 6. when explicitly requested by the selected fill policy, cache the documented optional hourly supplement inputs through the shared provider interface
 7. keep only complete observed-input days for the configured required fields, leaving unavailable fields null rather than deriving them by default
 8. apply only the documented opt-in fill rules that match the selected fill policy
-9. package the result into a stable MAT or Parquet bundle shape
-10. write a matching `.info` sidecar that records observed-versus-hourly-aggregated-versus-derived provenance for the export
+9. only when explicitly requested by `--compute-fao-intermediates`, compute FAO-56 intermediate variables and `E_FAO` from the prepared daily inputs plus station metadata
+10. package the result into a stable MAT or Parquet bundle shape
+11. write a matching `.info` sidecar that records observed-versus-hourly-aggregated-versus-derived provenance for the original six fields and, when enabled, the appended `derived_fao56` fields
 
-## What The Example Explicitly Does Not Do
+## What The Example Explicitly Does Not Do In Default Mode
 
 - no ET0 computation
 - no vapour-pressure derivation by default
@@ -304,6 +341,8 @@ The sidecar is the export-level provenance record for the workflow. It records t
 - no hidden meteorological estimation
 - no derivation beyond the explicitly enabled and documented `--fill-missing allow-derived` fallback rule
 - no hidden hourly-to-daily aggregation; `PL` hourly supplementation is available only through the explicit `--fill-missing allow-hourly-aggregate` mode
+
+If you explicitly enable `--compute-fao-intermediates`, the example does compute FAO-56 intermediate radiation, psychrometric, and ET0 terms in the workflow layer only. Those appended columns are derived outputs, not downloaded provider observations.
 
 ## Metadata In `data_info`
 

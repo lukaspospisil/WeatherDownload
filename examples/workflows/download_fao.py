@@ -27,6 +27,38 @@ FINAL_SERIES_COLUMNS = [
     'vapour_pressure',
     'sunshine_duration',
 ]
+FAO56_DERIVED_COLUMNS = [
+    'es',
+    'vpd',
+    'delta',
+    'pressure',
+    'gamma',
+    'Ra',
+    'N',
+    'Rs',
+    'Rso',
+    'Rns',
+    'Rnl',
+    'Rn',
+    'G',
+    'E_FAO',
+]
+FAO56_DERIVED_UNITS = {
+    'es': 'kPa',
+    'vpd': 'kPa',
+    'delta': 'kPa degC^-1',
+    'pressure': 'kPa',
+    'gamma': 'kPa degC^-1',
+    'Ra': 'MJ m^-2 day^-1',
+    'N': 'h day^-1',
+    'Rs': 'MJ m^-2 day^-1',
+    'Rso': 'MJ m^-2 day^-1',
+    'Rns': 'MJ m^-2 day^-1',
+    'Rnl': 'MJ m^-2 day^-1',
+    'Rn': 'MJ m^-2 day^-1',
+    'G': 'MJ m^-2 day^-1',
+    'E_FAO': 'mm day^-1',
+}
 FAO_CANONICAL_ELEMENTS = tuple(FINAL_SERIES_COLUMNS)
 FILL_MISSING_CHOICES = ('none', 'allow-derived', 'allow-hourly-aggregate')
 DERIVED_VAPOUR_PRESSURE_RULE_NAME = 'vapour_pressure_from_tas_mean_and_relative_humidity'
@@ -610,6 +642,13 @@ def main(argv: list[str] | None = None) -> int:
                 reporter.info(f'  Only {len(complete)} complete days, below threshold {args.min_complete_days}.')
                 continue
 
+            if args.compute_fao_intermediates:
+                complete = append_fao56_intermediates(
+                    complete,
+                    latitude=station.latitude,
+                    elevation=station.elevation_m,
+                )
+
             retained_series.append(build_series_record(complete, station_id=station.station_id, full_name=station.full_name, latitude=station.latitude, longitude=station.longitude, elevation=station.elevation_m))
             provenance_tables.append(provenance)
             for field_name, rule in applied_rules.items():
@@ -626,7 +665,13 @@ def main(argv: list[str] | None = None) -> int:
                 'last_complete_date': complete['date'].max().isoformat(),
             })
 
-        data_info = build_data_info(config, station_rows, min_complete_days=args.min_complete_days, fill_missing=args.fill_missing)
+        data_info = build_data_info(
+            config,
+            station_rows,
+            min_complete_days=args.min_complete_days,
+            fill_missing=args.fill_missing,
+            compute_fao_intermediates=args.compute_fao_intermediates,
+        )
         field_summaries = summarize_field_fill_status(
             provenance_tables,
             fill_missing=args.fill_missing,
@@ -643,6 +688,7 @@ def main(argv: list[str] | None = None) -> int:
                 field_summaries=field_summaries,
                 requested_fields=FINAL_SERIES_COLUMNS,
                 bundle_sections=('data_info', 'stations', 'series'),
+                compute_fao_intermediates=args.compute_fao_intermediates,
             )
             exported_targets.append(str(mat_output_path))
         if args.export_format in {'parquet', 'both'}:
@@ -655,6 +701,7 @@ def main(argv: list[str] | None = None) -> int:
                 field_summaries=field_summaries,
                 requested_fields=FINAL_SERIES_COLUMNS,
                 bundle_sections=('data_info.json', 'stations.parquet', 'series.parquet'),
+                compute_fao_intermediates=args.compute_fao_intermediates,
             )
             exported_targets.append(str(parquet_output_dir))
         reporter.essential(f"Exported FAO-prep output to: {', '.join(exported_targets)}")
@@ -678,6 +725,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--station-id', action='append', dest='station_ids', help='Optional canonical station_id filter. Can be provided multiple times.')
     parser.add_argument('--min-complete-days', type=int, default=3650, help='Minimum number of complete observed-input days required per station.')
     parser.add_argument('--fill-missing', choices=FILL_MISSING_CHOICES, default='none', help='Keep missing FAO-oriented inputs empty, or explicitly allow the example layer to apply the documented opt-in fallback rules.')
+    parser.add_argument('--compute-fao-intermediates', action='store_true', help='Explicitly compute FAO-56 intermediate variables and reference evapotranspiration from the prepared daily inputs and station metadata.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
     parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
@@ -794,7 +842,14 @@ def build_observed_provider_element_mapping(canonical_to_raw: dict[str, tuple[st
     return mapping
 
 
-def build_data_info(config: FaoCountryConfig, station_rows: list[dict[str, Any]], *, min_complete_days: int, fill_missing: str = 'none') -> dict[str, Any]:
+def build_data_info(
+    config: FaoCountryConfig,
+    station_rows: list[dict[str, Any]],
+    *,
+    min_complete_days: int,
+    fill_missing: str = 'none',
+    compute_fao_intermediates: bool = False,
+) -> dict[str, Any]:
     data_info = {
         'created_at': pd.Timestamp.now('UTC').isoformat(),
         'dataset_type': config.dataset_type,
@@ -806,6 +861,12 @@ def build_data_info(config: FaoCountryConfig, station_rows: list[dict[str, Any]]
         'num_stations': int(len(station_rows)),
         'fill_policy': {'selected': fill_missing},
     }
+    if compute_fao_intermediates:
+        data_info['derived_fao56'] = {
+            'status': 'opt_in_enabled',
+            'fields': [{'name': name, 'units': FAO56_DERIVED_UNITS[name], 'provenance': 'derived_fao56'} for name in FAO56_DERIVED_COLUMNS],
+        }
+        data_info['fill_policy']['compute_fao_intermediates'] = True
     if config.assumptions:
         data_info['assumptions'] = dict(config.assumptions)
     if fill_missing == 'allow-hourly-aggregate' and config.country == 'PL':
@@ -900,6 +961,7 @@ def render_info_sidecar_text(
     bundle_sections: tuple[str, ...],
     requested_fields: list[str] | tuple[str, ...],
     field_summaries: list[FieldFillSummary],
+    compute_fao_intermediates: bool = False,
 ) -> str:
     lines = [
         'WeatherDownload FAO-oriented input export info',
@@ -913,10 +975,16 @@ def render_info_sidecar_text(
         f'Requested FAO-oriented fields: {", ".join(requested_fields)}',
         'ET0 computation: not performed',
     ]
+    if compute_fao_intermediates:
+        lines[-1] = 'ET0 computation: FAO-56 daily reference evapotranspiration computed in explicit opt-in example mode'
     if any(summary.aggregated_count > 0 or summary.derived_count > 0 for summary in field_summaries):
         lines.append('Warning: This export contains opt-in hourly-aggregated and/or derived values from the example-layer fill policy.')
     else:
         lines.append('Warning: No hourly-aggregated or derived values were used in this export.')
+    if compute_fao_intermediates:
+        lines.extend(['', 'derived_fao56:'])
+        for name in FAO56_DERIVED_COLUMNS:
+            lines.append(f'- {name} [{FAO56_DERIVED_UNITS[name]}] derived_fao56')
     lines.extend(['', 'Field summary:'])
     for summary in field_summaries:
         lines.extend(
@@ -942,6 +1010,7 @@ def write_info_sidecar(
     bundle_sections: tuple[str, ...],
     requested_fields: list[str] | tuple[str, ...],
     field_summaries: list[FieldFillSummary],
+    compute_fao_intermediates: bool = False,
 ) -> Path:
     info_path = resolve_info_sidecar_path(output_path)
     info_path.parent.mkdir(parents=True, exist_ok=True)
@@ -953,6 +1022,7 @@ def write_info_sidecar(
         bundle_sections=bundle_sections,
         requested_fields=requested_fields,
         field_summaries=field_summaries,
+        compute_fao_intermediates=compute_fao_intermediates,
     )
     if info_path.exists():
         existing = info_path.read_text(encoding='utf-8').rstrip()
@@ -1292,6 +1362,107 @@ def aggregate_hourly_field_to_daily(hourly_table: pd.DataFrame, canonical_name: 
     return aggregated.rename(columns={'hourly_mean': f'{canonical_name}__hourly_fill'})[['date', f'{canonical_name}__hourly_fill']]
 
 
+def append_fao56_intermediates(complete: pd.DataFrame, *, latitude: float | None, elevation: float | None) -> pd.DataFrame:
+    if complete.empty:
+        result = complete.copy()
+        for column in FAO56_DERIVED_COLUMNS:
+            result[column] = pd.Series(dtype='float64')
+        return result
+
+    result = complete.copy()
+    tmean = pd.to_numeric(result['tas_mean'], errors='coerce')
+    tmax = pd.to_numeric(result['tas_max'], errors='coerce')
+    tmin = pd.to_numeric(result['tas_min'], errors='coerce')
+    wind_speed = pd.to_numeric(result['wind_speed'], errors='coerce')
+    vapour_pressure_hpa = pd.to_numeric(result['vapour_pressure'], errors='coerce')
+    sunshine_duration = pd.to_numeric(result['sunshine_duration'], errors='coerce')
+    latitude_value = pd.to_numeric(pd.Series([latitude]), errors='coerce').iloc[0]
+    elevation_value = pd.to_numeric(pd.Series([elevation]), errors='coerce').iloc[0]
+
+    dates = pd.to_datetime(result['date'], errors='coerce')
+    day_of_year = dates.dt.dayofyear.astype('float64')
+    latitude_rad = np.deg2rad(latitude_value) if pd.notna(latitude_value) else np.nan
+
+    es_tmax = _saturation_vapour_pressure_kpa(tmax)
+    es_tmin = _saturation_vapour_pressure_kpa(tmin)
+    es = (es_tmax + es_tmin) / 2.0
+    ea = vapour_pressure_hpa / 10.0
+    vpd = es - ea
+    delta = 4098.0 * _saturation_vapour_pressure_kpa(tmean) / np.power(tmean + 237.3, 2)
+    pressure = 101.3 * np.power((293.0 - 0.0065 * elevation_value) / 293.0, 5.26) if pd.notna(elevation_value) else np.nan
+    gamma = 0.000665 * pressure if pd.notna(pressure) else np.nan
+
+    dr = 1.0 + 0.033 * np.cos((2.0 * np.pi / 365.0) * day_of_year)
+    solar_declination = 0.409 * np.sin((2.0 * np.pi / 365.0) * day_of_year - 1.39)
+    sunset_term = -np.tan(latitude_rad) * np.tan(solar_declination) if np.isfinite(latitude_rad) else np.nan
+    sunset_term = np.clip(sunset_term, -1.0, 1.0) if np.isscalar(sunset_term) else np.clip(sunset_term.to_numpy(dtype='float64'), -1.0, 1.0)
+    omega_s = np.arccos(sunset_term)
+    if not np.isfinite(latitude_rad):
+        omega_s = np.full(len(result), np.nan, dtype='float64')
+    Ra = (
+        (24.0 * 60.0 / np.pi)
+        * 0.0820
+        * dr
+        * (omega_s * np.sin(latitude_rad) * np.sin(solar_declination) + np.cos(latitude_rad) * np.cos(solar_declination) * np.sin(omega_s))
+    )
+    N = (24.0 / np.pi) * omega_s
+
+    n_over_N = pd.Series(np.nan, index=result.index, dtype='float64')
+    valid_daylight = (pd.Series(N, index=result.index) > 0.0) & sunshine_duration.notna()
+    n_over_N.loc[valid_daylight] = sunshine_duration.loc[valid_daylight] / pd.Series(N, index=result.index).loc[valid_daylight]
+    Rs = (0.25 + 0.50 * n_over_N) * pd.Series(Ra, index=result.index)
+    Rso = ((0.75 + 2e-5 * elevation_value) * pd.Series(Ra, index=result.index)) if pd.notna(elevation_value) else pd.Series(np.nan, index=result.index, dtype='float64')
+    Rs = Rs.where(Rso.notna())
+    rs_rso_ratio = pd.Series(np.nan, index=result.index, dtype='float64')
+    valid_rso = Rso > 0.0
+    Rs = Rs.clip(lower=0.0)
+    Rs.loc[valid_rso] = np.minimum(Rs.loc[valid_rso], Rso.loc[valid_rso])
+    rs_rso_ratio.loc[valid_rso] = (Rs.loc[valid_rso] / Rso.loc[valid_rso]).clip(lower=0.0, upper=1.0)
+    Rns = 0.77 * Rs
+
+    tmax_k = tmax + 273.16
+    tmin_k = tmin + 273.16
+    ea_nonnegative = ea.clip(lower=0.0)
+    Rnl = (
+        4.903e-9
+        * ((np.power(tmax_k, 4) + np.power(tmin_k, 4)) / 2.0)
+        * (0.34 - 0.14 * np.sqrt(ea_nonnegative))
+        * (1.35 * rs_rso_ratio - 0.35)
+    )
+    Rn = Rns - Rnl
+    G = pd.Series(0.0, index=result.index, dtype='float64')
+
+    eto_denominator = delta + gamma * (1.0 + 0.34 * wind_speed)
+    eto_numerator = 0.408 * delta * (Rn - G) + gamma * (900.0 / (tmean + 273.0)) * wind_speed * vpd
+    E_FAO = pd.Series(np.nan, index=result.index, dtype='float64')
+    valid_eto = eto_denominator.notna() & (eto_denominator != 0.0) & eto_numerator.notna()
+    E_FAO.loc[valid_eto] = eto_numerator.loc[valid_eto] / eto_denominator.loc[valid_eto]
+
+    derived = {
+        'es': es,
+        'vpd': vpd,
+        'delta': delta,
+        'pressure': pd.Series(pressure, index=result.index, dtype='float64'),
+        'gamma': pd.Series(gamma, index=result.index, dtype='float64'),
+        'Ra': pd.Series(Ra, index=result.index, dtype='float64'),
+        'N': pd.Series(N, index=result.index, dtype='float64'),
+        'Rs': Rs,
+        'Rso': Rso,
+        'Rns': Rns,
+        'Rnl': Rnl,
+        'Rn': Rn,
+        'G': G,
+        'E_FAO': E_FAO,
+    }
+    for name in FAO56_DERIVED_COLUMNS:
+        result[name] = pd.to_numeric(derived[name], errors='coerce')
+    return result
+
+
+def _saturation_vapour_pressure_kpa(temperature_c: pd.Series) -> pd.Series:
+    return 0.6108 * np.exp((17.27 * temperature_c) / (temperature_c + 237.3))
+
+
 def select_daily_variable_rows(daily_table: pd.DataFrame, *, canonical_name: str, config: FaoCountryConfig) -> pd.DataFrame:
     filtered = daily_table[daily_table['element'].astype(str) == canonical_name].copy()
     required_time_function = config.time_function_by_canonical.get(canonical_name)
@@ -1306,7 +1477,7 @@ def select_daily_variable_rows(daily_table: pd.DataFrame, *, canonical_name: str
 
 
 def build_series_record(complete: pd.DataFrame, *, station_id: str, full_name: str, latitude: float | None, longitude: float | None, elevation: float | None) -> dict[str, Any]:
-    return {
+    record = {
         'station_id': station_id,
         'full_name': full_name,
         'latitude': latitude,
@@ -1320,6 +1491,10 @@ def build_series_record(complete: pd.DataFrame, *, station_id: str, full_name: s
         'vapour_pressure': pd.to_numeric(complete['vapour_pressure'], errors='coerce').tolist(),
         'sunshine_duration': pd.to_numeric(complete['sunshine_duration'], errors='coerce').tolist(),
     }
+    for column in FAO56_DERIVED_COLUMNS:
+        if column in complete.columns:
+            record[column] = pd.to_numeric(complete[column], errors='coerce').tolist()
+    return record
 
 
 def export_mat_bundle(output_path: Path, *, data_info: dict[str, Any], stations: list[dict[str, Any]], series: list[dict[str, Any]]) -> None:
@@ -1357,28 +1532,30 @@ def build_station_table(rows: list[dict[str, Any]]) -> pd.DataFrame:
 
 
 def build_series_table(series: list[dict[str, Any]]) -> pd.DataFrame:
-    columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'date', *FINAL_SERIES_COLUMNS]
+    extra_columns = [column for column in FAO56_DERIVED_COLUMNS if any(column in item for item in series)]
+    columns = ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'date', *FINAL_SERIES_COLUMNS, *extra_columns]
     records: list[dict[str, Any]] = []
     for item in series:
         dates = item['date']
         num_rows = len(dates)
         for index in range(num_rows):
-            records.append(
-                {
-                    'station_id': item['station_id'],
-                    'full_name': item['full_name'],
-                    'latitude': item['latitude'],
-                    'longitude': item['longitude'],
-                    'elevation_m': item['elevation_m'],
-                    'date': dates[index],
-                    'tas_mean': item['tas_mean'][index],
-                    'tas_max': item['tas_max'][index],
-                    'tas_min': item['tas_min'][index],
-                    'wind_speed': item['wind_speed'][index],
-                    'vapour_pressure': item['vapour_pressure'][index],
-                    'sunshine_duration': item['sunshine_duration'][index],
-                }
-            )
+            record = {
+                'station_id': item['station_id'],
+                'full_name': item['full_name'],
+                'latitude': item['latitude'],
+                'longitude': item['longitude'],
+                'elevation_m': item['elevation_m'],
+                'date': dates[index],
+                'tas_mean': item['tas_mean'][index],
+                'tas_max': item['tas_max'][index],
+                'tas_min': item['tas_min'][index],
+                'wind_speed': item['wind_speed'][index],
+                'vapour_pressure': item['vapour_pressure'][index],
+                'sunshine_duration': item['sunshine_duration'][index],
+            }
+            for column in extra_columns:
+                record[column] = item.get(column, [pd.NA] * num_rows)[index]
+            records.append(record)
     if not records:
         return pd.DataFrame(columns=columns)
     return pd.DataFrame.from_records(records, columns=columns)

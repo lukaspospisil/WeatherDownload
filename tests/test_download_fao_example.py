@@ -45,6 +45,16 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(args.fill_missing, 'allow-derived')
         args = parser.parse_args(['--fill-missing', 'allow-hourly-aggregate'])
         self.assertEqual(args.fill_missing, 'allow-hourly-aggregate')
+
+    def test_build_parser_defaults_compute_fao_intermediates_to_false(self) -> None:
+        parser = download_fao.build_parser()
+        args = parser.parse_args([])
+        self.assertFalse(args.compute_fao_intermediates)
+
+    def test_build_parser_accepts_compute_fao_intermediates_flag(self) -> None:
+        parser = download_fao.build_parser()
+        args = parser.parse_args(['--compute-fao-intermediates'])
+        self.assertTrue(args.compute_fao_intermediates)
     def test_default_mat_output_path_is_country_aware(self) -> None:
         self.assertEqual(
             download_fao.resolve_mat_output_path(None, country='CZ'),
@@ -292,6 +302,163 @@ class DownloadFaoExampleTests(unittest.TestCase):
             self.assertEqual(list(written_series['station_id']), ['0-20000-0-11406', '0-20000-0-11406'])
             self.assertEqual(list(written_series['vapour_pressure']), [7.0, 8.0])
             self.assertFalse(written_series[download_fao.FINAL_SERIES_COLUMNS].isna().any().any())
+
+    def test_build_series_table_default_behavior_has_no_fao_intermediate_columns(self) -> None:
+        series = [
+            {
+                'station_id': '00044',
+                'full_name': 'TEST',
+                'latitude': 54.3,
+                'longitude': 11.0,
+                'elevation_m': 10.0,
+                'date': ['2024-01-01'],
+                'tas_mean': [1.0],
+                'tas_max': [3.0],
+                'tas_min': [-1.0],
+                'wind_speed': [2.5],
+                'vapour_pressure': [7.0],
+                'sunshine_duration': [0.5],
+            }
+        ]
+
+        table = download_fao.build_series_table(series)
+
+        self.assertEqual(
+            list(table.columns),
+            ['station_id', 'full_name', 'latitude', 'longitude', 'elevation_m', 'date', *download_fao.FINAL_SERIES_COLUMNS],
+        )
+        self.assertNotIn('Rn', table.columns)
+        self.assertNotIn('E_FAO', table.columns)
+
+    def test_build_series_table_opt_in_behavior_includes_fao_intermediate_columns(self) -> None:
+        complete = pd.DataFrame(
+            [
+                {
+                    'date': pd.Timestamp('2024-06-15').date(),
+                    'tas_mean': 20.0,
+                    'tas_max': 28.0,
+                    'tas_min': 12.0,
+                    'wind_speed': 2.0,
+                    'vapour_pressure': 15.0,
+                    'sunshine_duration': 10.0,
+                }
+            ]
+        )
+        complete = download_fao.append_fao56_intermediates(complete, latitude=50.0, elevation=250.0)
+        series = [
+            download_fao.build_series_record(
+                complete,
+                station_id='00044',
+                full_name='TEST',
+                latitude=50.0,
+                longitude=14.0,
+                elevation=250.0,
+            )
+        ]
+
+        table = download_fao.build_series_table(series)
+
+        self.assertIn('Rn', table.columns)
+        self.assertIn('E_FAO', table.columns)
+
+    def test_append_fao56_intermediates_produces_finite_positive_values_for_simple_row(self) -> None:
+        complete = pd.DataFrame(
+            [
+                {
+                    'date': pd.Timestamp('2024-06-15').date(),
+                    'tas_mean': 20.0,
+                    'tas_max': 28.0,
+                    'tas_min': 12.0,
+                    'wind_speed': 2.0,
+                    'vapour_pressure': 15.0,
+                    'sunshine_duration': 10.0,
+                }
+            ]
+        )
+
+        derived = download_fao.append_fao56_intermediates(complete, latitude=50.0, elevation=250.0)
+
+        for column in ['Ra', 'Rs', 'Rn', 'E_FAO']:
+            self.assertTrue(pd.notna(derived.loc[0, column]))
+            self.assertGreater(float(derived.loc[0, column]), 0.0)
+
+    def test_append_fao56_intermediates_missing_metadata_or_sunshine_keeps_radiation_columns_nan(self) -> None:
+        complete = pd.DataFrame(
+            [
+                {
+                    'date': pd.Timestamp('2024-06-15').date(),
+                    'tas_mean': 20.0,
+                    'tas_max': 28.0,
+                    'tas_min': 12.0,
+                    'wind_speed': 2.0,
+                    'vapour_pressure': 15.0,
+                    'sunshine_duration': pd.NA,
+                }
+            ]
+        )
+
+        derived = download_fao.append_fao56_intermediates(complete, latitude=None, elevation=None)
+
+        for column in ['Ra', 'Rs', 'Rso', 'Rns', 'Rnl', 'Rn']:
+            self.assertTrue(pd.isna(derived.loc[0, column]))
+
+    def test_build_data_info_mentions_derived_fao56_only_when_enabled(self) -> None:
+        config = download_fao.get_fao_country_config('CZ')
+
+        default_info = download_fao.build_data_info(config, station_rows=[{'station_id': 'TEST1'}], min_complete_days=3650)
+        enabled_info = download_fao.build_data_info(
+            config,
+            station_rows=[{'station_id': 'TEST1'}],
+            min_complete_days=3650,
+            compute_fao_intermediates=True,
+        )
+
+        self.assertNotIn('derived_fao56', default_info)
+        self.assertIn('derived_fao56', enabled_info)
+        self.assertEqual(enabled_info['derived_fao56']['fields'][0]['provenance'], 'derived_fao56')
+
+    def test_info_sidecar_mentions_derived_fao56_only_when_enabled(self) -> None:
+        summaries = [
+            download_fao.FieldFillSummary(
+                field='tas_mean',
+                status='observed-only',
+                rule='Observed daily source values only.',
+                observed_count=1,
+                aggregated_count=0,
+                derived_count=0,
+                missing_count=0,
+            )
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base_path = Path(tmpdir) / 'fao_daily.cz.mat'
+            default_path = download_fao.write_info_sidecar(
+                base_path,
+                country='CZ',
+                export_timestamp='2026-05-24T12:00:00+00:00',
+                fill_missing='none',
+                bundle_sections=('data_info', 'stations', 'series'),
+                requested_fields=download_fao.FINAL_SERIES_COLUMNS,
+                field_summaries=summaries,
+            )
+            default_text = default_path.read_text(encoding='utf-8')
+            self.assertNotIn('derived_fao56', default_text)
+            self.assertNotIn('E_FAO', default_text)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            enabled_path = download_fao.write_info_sidecar(
+                Path(tmpdir) / 'fao_daily.cz.mat',
+                country='CZ',
+                export_timestamp='2026-05-24T12:00:00+00:00',
+                fill_missing='none',
+                bundle_sections=('data_info', 'stations', 'series'),
+                requested_fields=download_fao.FINAL_SERIES_COLUMNS,
+                field_summaries=summaries,
+                compute_fao_intermediates=True,
+            )
+            enabled_text = enabled_path.read_text(encoding='utf-8')
+            self.assertIn('derived_fao56', enabled_text)
+            self.assertIn('Rn [MJ m^-2 day^-1] derived_fao56', enabled_text)
+            self.assertIn('E_FAO [mm day^-1] derived_fao56', enabled_text)
 
     def test_screen_candidate_stations_deduplicates_meta1_by_station_id(self) -> None:
         config = download_fao.get_fao_country_config('CZ')
