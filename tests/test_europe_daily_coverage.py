@@ -139,6 +139,8 @@ class EuropeCoverageTests(unittest.TestCase):
         readme_text = Path('README.md').read_text(encoding='utf-8')
 
         self.assertIn('docs/assets/europe_daily_coverage_map.svg', readme_text)
+        self.assertNotIn('docs/assets/europe_hourly_coverage_map.svg', readme_text)
+        self.assertNotIn('docs/assets/europe_10min_coverage_map.svg', readme_text)
         self.assertIn('This is daily-data coverage, not FAO-readiness coverage', readme_text)
         self.assertIn('it does not imply', readme_text)
         self.assertIn('Legend: dark green = national daily downloader', readme_text)
