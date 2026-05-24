@@ -60,19 +60,38 @@ class EuropeDailyCoverageTests(unittest.TestCase):
         self.assertNotIn('red = attempted, no reliable support yet', svg_text)
         self.assertNotIn('gray = not attempted', svg_text)
 
-    def test_svg_root_uses_balanced_intrinsic_aspect_ratio(self) -> None:
+    def test_svg_root_uses_map_derived_intrinsic_aspect_ratio(self) -> None:
         svg_path = Path('docs/assets/europe_daily_coverage_map.svg')
         root = ET.fromstring(svg_path.read_text(encoding='utf-8'))
 
-        width = float(root.attrib['width'])
-        height = float(root.attrib['height'])
-        self.assertLessEqual(width / height, 1.35)
+        geodata = MODULE.load_geodata()
+        country_geometries = MODULE.build_country_geometries(geodata)
+        rendered_geometries = MODULE._clip_country_geometries(country_geometries)
+        projection_bounds = MODULE._projected_bounds(rendered_geometries)
+        canvas_bounds = MODULE._padded_bounds(
+            projection_bounds,
+            padding_fraction=MODULE.SVG_PADDING_FRACTION,
+        )
+        expected_width, expected_height = MODULE._svg_size_from_bounds(
+            canvas_bounds,
+            width=MODULE.SVG_MAP_WIDTH,
+        )
+
+        self.assertEqual(root.attrib['width'], str(expected_width))
+        self.assertEqual(root.attrib['height'], str(expected_height))
+        self.assertEqual(root.attrib['preserveAspectRatio'], 'xMidYMid meet')
 
         view_box = root.attrib['viewBox'].split()
         self.assertEqual(len(view_box), 4)
-        view_box_width = float(view_box[2])
-        view_box_height = float(view_box[3])
-        self.assertLessEqual(view_box_width / view_box_height, 1.35)
+        self.assertEqual(view_box, ['0', '0', str(expected_width), str(expected_height)])
+
+    def test_svg_contains_only_map_content(self) -> None:
+        svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
+
+        self.assertNotIn('<title', svg_text)
+        self.assertNotIn('<desc', svg_text)
+        self.assertNotIn('<metadata', svg_text)
+        self.assertNotIn('<rect', svg_text)
 
     def test_svg_renders_requested_european_country_set(self) -> None:
         svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
@@ -98,8 +117,8 @@ class EuropeDailyCoverageTests(unittest.TestCase):
 
         xs = coords[0::2]
         ys = coords[1::2]
-        self.assertGreaterEqual((max(xs) - min(xs)) / width, 0.85)
-        self.assertGreaterEqual((max(ys) - min(ys)) / height, 0.75)
+        self.assertGreaterEqual((max(xs) - min(xs)) / width, 0.93)
+        self.assertGreaterEqual((max(ys) - min(ys)) / height, 0.93)
 
     def test_documentation_references_generated_svg_and_non_fao_scope(self) -> None:
         readme_text = Path('README.md').read_text(encoding='utf-8')

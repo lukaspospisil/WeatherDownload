@@ -29,6 +29,8 @@ PROJECTION_CENTER = {
     'lon': 10.0,
     'lat': 54.0,
 }
+SVG_MAP_WIDTH = 900
+SVG_PADDING_FRACTION = 0.03
 EUROPE_COUNTRIES = (
     'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
     'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT',
@@ -138,24 +140,12 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
     country_geometries = build_country_geometries(geodata)
     rendered_geometries = _clip_country_geometries(country_geometries)
 
-    width = 900
-    height = 780
     projection_bounds = _projected_bounds(rendered_geometries)
-    map_left, map_top, map_width, map_height = _fit_map_frame(
-        bounds=projection_bounds,
-        frame_left=42,
-        frame_top=36,
-        frame_width=816,
-        frame_height=708,
-    )
+    canvas_bounds = _padded_bounds(projection_bounds, padding_fraction=SVG_PADDING_FRACTION)
+    width, height = _svg_size_from_bounds(canvas_bounds, width=SVG_MAP_WIDTH)
 
     lines = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="title desc">',
-        '  <title id="title">Daily data coverage in Europe</title>',
-        '  <desc id="desc">WeatherDownload implementation status for daily meteorological observation downloads in Europe. This is not a FAO coverage map.</desc>',
-        '  <metadata>',
-        f'    {json.dumps(summary, sort_keys=True)}',
-        '  </metadata>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Daily data coverage in Europe" style="background-color:#f4f7f8">',
         '  <style>',
         '    .country { stroke: #1f2933; stroke-width: 0.85; fill-rule: evenodd; }',
         f'    .national_daily {{ fill: {STATUS_COLORS["national_daily"]}; }}',
@@ -163,7 +153,6 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
         f'    .attempted_no_reliable_daily {{ fill: {STATUS_COLORS["attempted_no_reliable_daily"]}; }}',
         f'    .not_attempted {{ fill: {STATUS_COLORS["not_attempted"]}; }}',
         '  </style>',
-        f'  <rect x="0" y="0" width="{width}" height="{height}" fill="#f6f8fa"/>',
     ]
 
     for country in EUROPE_COUNTRIES:
@@ -172,11 +161,9 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
             continue
         path_data = _country_path_data(
             polygons,
-            map_left=map_left,
-            map_top=map_top,
-            map_width=map_width,
-            map_height=map_height,
-            projection_bounds=projection_bounds,
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=canvas_bounds,
         )
         if not path_data:
             continue
@@ -184,9 +171,7 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
         providers = ', '.join(summary[country].get('providers', [])) or 'none'
         lines.extend(
             [
-                f'  <path id="country-{country}" class="country {status}" d="{path_data}">',
-                f'    <title>{country}: {status}; providers={providers}</title>',
-                '  </path>',
+                f'  <path id="country-{country}" class="country {status}" data-status="{status}" data-providers="{providers}" d="{path_data}"/>',
             ]
         )
 
@@ -194,22 +179,26 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
     return '\n'.join(lines) + '\n'
 
 
-def _fit_map_frame(
-    *,
-    bounds: dict[str, float],
-    frame_left: int,
-    frame_top: int,
-    frame_width: int,
-    frame_height: int,
-) -> tuple[float, float, float, float]:
+def _padded_bounds(bounds: dict[str, float], *, padding_fraction: float) -> dict[str, float]:
     width_span = bounds['max_x'] - bounds['min_x']
     height_span = bounds['max_y'] - bounds['min_y']
-    scale = min(frame_width / width_span, frame_height / height_span)
-    map_width = width_span * scale
-    map_height = height_span * scale
-    map_left = frame_left + (frame_width - map_width) / 2.0
-    map_top = frame_top + (frame_height - map_height) / 2.0
-    return map_left, map_top, map_width, map_height
+    padding_x = padding_fraction * width_span
+    padding_y = padding_fraction * height_span
+    return {
+        'min_x': bounds['min_x'] - padding_x,
+        'max_x': bounds['max_x'] + padding_x,
+        'min_y': bounds['min_y'] - padding_y,
+        'max_y': bounds['max_y'] + padding_y,
+    }
+
+
+def _svg_size_from_bounds(bounds: dict[str, float], *, width: int) -> tuple[int, int]:
+    width_span = bounds['max_x'] - bounds['min_x']
+    height_span = bounds['max_y'] - bounds['min_y']
+    if width_span <= 0.0 or height_span <= 0.0:
+        raise ValueError('Projected map bounds must have positive width and height.')
+    height = round(width * height_span / width_span)
+    return width, height
 
 
 def _clip_country_geometries(
@@ -263,10 +252,8 @@ def _projected_bounds(
 def _country_path_data(
     polygons: list[list[list[tuple[float, float]]]],
     *,
-    map_left: int,
-    map_top: int,
-    map_width: int,
-    map_height: int,
+    canvas_width: int,
+    canvas_height: int,
     projection_bounds: dict[str, float],
 ) -> str:
     parts: list[str] = []
@@ -276,10 +263,8 @@ def _country_path_data(
                 _project(
                     point[0],
                     point[1],
-                    map_left=map_left,
-                    map_top=map_top,
-                    map_width=map_width,
-                    map_height=map_height,
+                    canvas_width=canvas_width,
+                    canvas_height=canvas_height,
                     projection_bounds=projection_bounds,
                 )
                 for point in ring
@@ -361,17 +346,15 @@ def _project(
     lon: float,
     lat: float,
     *,
-    map_left: int,
-    map_top: int,
-    map_width: int,
-    map_height: int,
+    canvas_width: int,
+    canvas_height: int,
     projection_bounds: dict[str, float],
 ) -> tuple[float, float]:
     projected_x, projected_y = _project_lon_lat(lon, lat)
     x_fraction = (projected_x - projection_bounds['min_x']) / (projection_bounds['max_x'] - projection_bounds['min_x'])
     y_fraction = (projection_bounds['max_y'] - projected_y) / (projection_bounds['max_y'] - projection_bounds['min_y'])
-    x = map_left + x_fraction * map_width
-    y = map_top + y_fraction * map_height
+    x = x_fraction * canvas_width
+    y = y_fraction * canvas_height
     return x, y
 
 
