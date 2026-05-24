@@ -132,17 +132,17 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
     geodata = load_geodata()
     country_geometries = build_country_geometries(geodata)
 
-    width = 980
-    height = 760
+    width = 900
+    height = 780
     map_left, map_top, map_width, map_height = _fit_map_frame(
-        frame_left=36,
-        frame_top=34,
-        frame_width=908,
-        frame_height=692,
+        frame_left=42,
+        frame_top=36,
+        frame_width=816,
+        frame_height=708,
     )
 
     lines = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="title desc">',
         '  <title id="title">Daily data coverage in Europe</title>',
         '  <desc id="desc">WeatherDownload implementation status for daily meteorological observation downloads in Europe. This is not a FAO coverage map.</desc>',
         '  <metadata>',

@@ -2,6 +2,7 @@ import importlib.util
 import json
 import sys
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -58,6 +59,20 @@ class EuropeDailyCoverageTests(unittest.TestCase):
         self.assertNotIn('red = attempted, no reliable support yet', svg_text)
         self.assertNotIn('gray = not attempted', svg_text)
 
+    def test_svg_root_uses_balanced_intrinsic_aspect_ratio(self) -> None:
+        svg_path = Path('docs/assets/europe_daily_coverage_map.svg')
+        root = ET.fromstring(svg_path.read_text(encoding='utf-8'))
+
+        width = float(root.attrib['width'])
+        height = float(root.attrib['height'])
+        self.assertLessEqual(width / height, 1.35)
+
+        view_box = root.attrib['viewBox'].split()
+        self.assertEqual(len(view_box), 4)
+        view_box_width = float(view_box[2])
+        view_box_height = float(view_box[3])
+        self.assertLessEqual(view_box_width / view_box_height, 1.35)
+
     def test_svg_renders_requested_european_country_set(self) -> None:
         svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
 
@@ -73,6 +88,8 @@ class EuropeDailyCoverageTests(unittest.TestCase):
         readme_text = Path('README.md').read_text(encoding='utf-8')
 
         self.assertIn('docs/assets/europe_daily_coverage_map.svg', readme_text)
+        self.assertIn('<img src="docs/assets/europe_daily_coverage_map.svg"', readme_text)
+        self.assertIn('width="900"', readme_text)
         self.assertIn('It is not a FAO-readiness map', readme_text)
         self.assertIn('Dark green - national daily downloader implemented', readme_text)
         self.assertIn('Light green - daily data available via GHCN-Daily', readme_text)

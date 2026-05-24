@@ -62,7 +62,11 @@ For the authoritative current matrix of implemented country/provider/resolution/
 
 ## Daily Data Coverage In Europe
 
-![Daily data coverage in Europe](docs/assets/europe_daily_coverage_map.svg)
+<p align="center">
+  <img src="docs/assets/europe_daily_coverage_map.svg"
+       alt="Daily data coverage in Europe"
+       width="900">
+</p>
 
 The map shows European countries for which WeatherDownload currently implements daily meteorological observation downloads. It is not a FAO-readiness map and does not imply that all variables are available at all stations.
 
