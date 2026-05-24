@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 import sys
 import unittest
 import xml.etree.ElementTree as ET
@@ -83,6 +84,22 @@ class EuropeDailyCoverageTests(unittest.TestCase):
         ]
         for country in expected:
             self.assertIn(f'id="country-{country}"', svg_text)
+
+    def test_country_paths_fill_most_of_canvas(self) -> None:
+        root = ET.fromstring(Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8'))
+        width = float(root.attrib['width'])
+        height = float(root.attrib['height'])
+
+        coords: list[float] = []
+        for path in root.findall('{http://www.w3.org/2000/svg}path'):
+            if not path.attrib.get('id', '').startswith('country-'):
+                continue
+            coords.extend(float(value) for value in re.findall(r'-?\d+(?:\.\d+)?', path.attrib['d']))
+
+        xs = coords[0::2]
+        ys = coords[1::2]
+        self.assertGreaterEqual((max(xs) - min(xs)) / width, 0.85)
+        self.assertGreaterEqual((max(ys) - min(ys)) / height, 0.75)
 
     def test_documentation_references_generated_svg_and_non_fao_scope(self) -> None:
         readme_text = Path('README.md').read_text(encoding='utf-8')

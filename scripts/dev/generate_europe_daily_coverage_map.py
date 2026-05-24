@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,10 @@ VIEW_BBOX = {
     'max_lon': 45.0,
     'min_lat': 34.0,
     'max_lat': 72.0,
+}
+PROJECTION_CENTER = {
+    'lon': 10.0,
+    'lat': 54.0,
 }
 EUROPE_COUNTRIES = (
     'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
@@ -131,10 +136,13 @@ def render_coverage_summary_json(summary: dict[str, dict[str, Any]]) -> str:
 def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
     geodata = load_geodata()
     country_geometries = build_country_geometries(geodata)
+    rendered_geometries = _clip_country_geometries(country_geometries)
 
     width = 900
     height = 780
+    projection_bounds = _projected_bounds(rendered_geometries)
     map_left, map_top, map_width, map_height = _fit_map_frame(
+        bounds=projection_bounds,
         frame_left=42,
         frame_top=36,
         frame_width=816,
@@ -159,10 +167,17 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
     ]
 
     for country in EUROPE_COUNTRIES:
-        polygons = country_geometries.get(country, [])
+        polygons = rendered_geometries.get(country, [])
         if not polygons:
             continue
-        path_data = _country_path_data(polygons, map_left=map_left, map_top=map_top, map_width=map_width, map_height=map_height)
+        path_data = _country_path_data(
+            polygons,
+            map_left=map_left,
+            map_top=map_top,
+            map_width=map_width,
+            map_height=map_height,
+            projection_bounds=projection_bounds,
+        )
         if not path_data:
             continue
         status = summary[country]['status']
@@ -181,19 +196,68 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
 
 def _fit_map_frame(
     *,
+    bounds: dict[str, float],
     frame_left: int,
     frame_top: int,
     frame_width: int,
     frame_height: int,
 ) -> tuple[float, float, float, float]:
-    lon_span = VIEW_BBOX['max_lon'] - VIEW_BBOX['min_lon']
-    lat_span = VIEW_BBOX['max_lat'] - VIEW_BBOX['min_lat']
-    scale = min(frame_width / lon_span, frame_height / lat_span)
-    map_width = lon_span * scale
-    map_height = lat_span * scale
+    width_span = bounds['max_x'] - bounds['min_x']
+    height_span = bounds['max_y'] - bounds['min_y']
+    scale = min(frame_width / width_span, frame_height / height_span)
+    map_width = width_span * scale
+    map_height = height_span * scale
     map_left = frame_left + (frame_width - map_width) / 2.0
     map_top = frame_top + (frame_height - map_height) / 2.0
     return map_left, map_top, map_width, map_height
+
+
+def _clip_country_geometries(
+    country_geometries: dict[str, list[list[list[tuple[float, float]]]]]
+) -> dict[str, list[list[list[tuple[float, float]]]]]:
+    rendered: dict[str, list[list[list[tuple[float, float]]]]] = {}
+    for country, polygons in country_geometries.items():
+        clipped_polygons: list[list[list[tuple[float, float]]]] = []
+        for polygon in polygons:
+            clipped_rings: list[list[tuple[float, float]]] = []
+            for ring in polygon:
+                clipped = _clip_ring_to_bbox(ring)
+                if len(clipped) >= 3:
+                    clipped_rings.append(clipped)
+            if clipped_rings:
+                clipped_polygons.append(clipped_rings)
+        if clipped_polygons:
+            rendered[country] = clipped_polygons
+    return rendered
+
+
+def _projected_bounds(
+    country_geometries: dict[str, list[list[list[tuple[float, float]]]]]
+) -> dict[str, float]:
+    min_x = float('inf')
+    max_x = float('-inf')
+    min_y = float('inf')
+    max_y = float('-inf')
+
+    for polygons in country_geometries.values():
+        for polygon in polygons:
+            for ring in polygon:
+                for lon, lat in ring:
+                    x, y = _project_lon_lat(lon, lat)
+                    min_x = min(min_x, x)
+                    max_x = max(max_x, x)
+                    min_y = min(min_y, y)
+                    max_y = max(max_y, y)
+
+    if not math.isfinite(min_x) or not math.isfinite(min_y):
+        raise ValueError('No projected geometry bounds were computed.')
+
+    return {
+        'min_x': min_x,
+        'max_x': max_x,
+        'min_y': min_y,
+        'max_y': max_y,
+    }
 
 
 def _country_path_data(
@@ -203,14 +267,23 @@ def _country_path_data(
     map_top: int,
     map_width: int,
     map_height: int,
+    projection_bounds: dict[str, float],
 ) -> str:
     parts: list[str] = []
     for polygon in polygons:
         for ring in polygon:
-            clipped = _clip_ring_to_bbox(ring)
-            if len(clipped) < 3:
-                continue
-            projected = [_project(point[0], point[1], map_left=map_left, map_top=map_top, map_width=map_width, map_height=map_height) for point in clipped]
+            projected = [
+                _project(
+                    point[0],
+                    point[1],
+                    map_left=map_left,
+                    map_top=map_top,
+                    map_width=map_width,
+                    map_height=map_height,
+                    projection_bounds=projection_bounds,
+                )
+                for point in ring
+            ]
             if not projected:
                 continue
             start_x, start_y = projected[0]
@@ -292,11 +365,36 @@ def _project(
     map_top: int,
     map_width: int,
     map_height: int,
+    projection_bounds: dict[str, float],
 ) -> tuple[float, float]:
-    lon_fraction = (lon - VIEW_BBOX['min_lon']) / (VIEW_BBOX['max_lon'] - VIEW_BBOX['min_lon'])
-    lat_fraction = (VIEW_BBOX['max_lat'] - lat) / (VIEW_BBOX['max_lat'] - VIEW_BBOX['min_lat'])
-    x = map_left + lon_fraction * map_width
-    y = map_top + lat_fraction * map_height
+    projected_x, projected_y = _project_lon_lat(lon, lat)
+    x_fraction = (projected_x - projection_bounds['min_x']) / (projection_bounds['max_x'] - projection_bounds['min_x'])
+    y_fraction = (projection_bounds['max_y'] - projected_y) / (projection_bounds['max_y'] - projection_bounds['min_y'])
+    x = map_left + x_fraction * map_width
+    y = map_top + y_fraction * map_height
+    return x, y
+
+
+def _project_lon_lat(lon: float, lat: float) -> tuple[float, float]:
+    lon_rad = math.radians(lon)
+    lat_rad = math.radians(lat)
+    lon0 = math.radians(PROJECTION_CENTER['lon'])
+    lat0 = math.radians(PROJECTION_CENTER['lat'])
+
+    sin_lat = math.sin(lat_rad)
+    cos_lat = math.cos(lat_rad)
+    sin_lat0 = math.sin(lat0)
+    cos_lat0 = math.cos(lat0)
+    delta_lon = lon_rad - lon0
+    cos_delta_lon = math.cos(delta_lon)
+
+    denominator = 1.0 + sin_lat0 * sin_lat + cos_lat0 * cos_lat * cos_delta_lon
+    if denominator <= 0.0:
+        denominator = 1e-12
+    k = math.sqrt(2.0 / denominator)
+
+    x = k * cos_lat * math.sin(delta_lon)
+    y = k * (cos_lat0 * sin_lat - sin_lat0 * cos_lat * cos_delta_lon)
     return x, y
 
 
