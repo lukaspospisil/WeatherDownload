@@ -326,8 +326,10 @@
       "status": "not_attempted"
     },
     "LU": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "meteolux"
+      ],
+      "status": "national_daily"
     },
     "LV": {
       "providers": [],

@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name_descr": "Findel Airport",
+        "wigos_id": "0-20000-0-06590",
+        "day": "2024-06-01",
+        "datetime": "2024-06-01T00:00:00Z",
+        "mintemperature": 12.4
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [6.232928668, 49.63265182]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name_descr": "Findel Airport",
+        "wigos_id": "0-20000-0-06590",
+        "day": "2024-06-02",
+        "datetime": "2024-06-02T00:00:00Z",
+        "mintemperature": 13.3
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [6.232928668, 49.63265182]
+      }
+    }
+  ]
+}
