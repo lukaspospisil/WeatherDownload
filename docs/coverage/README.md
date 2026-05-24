@@ -6,10 +6,17 @@ Inputs:
 
 - public WeatherDownload discovery APIs and provider registry metadata
 - manual project-status overrides from `europe_daily_status.yml`
+- vendored Natural Earth Admin-0 country polygons from `geodata/ne_50m_admin_0_countries.geojson`
 
 Outputs:
 
 - `../assets/europe_daily_coverage_map.svg`
 - `europe_daily_coverage.json`
 
-This coverage graphic uses a handcrafted Europe tile map with ISO alpha-2 country labels. No third-party boundary dataset is fetched at runtime, and no vendored external GeoJSON or shapefile is required for generation.
+Boundary data attribution:
+
+- Natural Earth Admin-0 country polygons
+- source file: `docs/coverage/geodata/ne_50m_admin_0_countries.geojson`
+- Natural Earth vector data are public domain
+
+The generator does not fetch geodata at runtime. It reads the vendored Natural Earth file from this directory tree and projects the Europe subset into a deterministic static SVG.

@@ -8,6 +8,7 @@ from weatherdownload import list_providers, list_resolutions, list_supported_cou
 
 
 STATUS_CONFIG_PATH = Path('docs/coverage/europe_daily_status.yml')
+GEODATA_PATH = Path('docs/coverage/geodata/ne_50m_admin_0_countries.geojson')
 OUTPUT_SVG_PATH = Path('docs/assets/europe_daily_coverage_map.svg')
 OUTPUT_JSON_PATH = Path('docs/coverage/europe_daily_coverage.json')
 
@@ -17,60 +18,21 @@ STATUS_COLORS = {
     'attempted_no_reliable_daily': '#c62828',
     'not_attempted': '#b0bec5',
 }
-STATUS_LABELS = {
-    'national_daily': 'national daily downloader',
-    'ghcnd_daily': 'GHCN-Daily',
-    'attempted_no_reliable_daily': 'attempted, no reliable support yet',
-    'not_attempted': 'not attempted',
+VIEW_BBOX = {
+    'min_lon': -25.0,
+    'max_lon': 45.0,
+    'min_lat': 34.0,
+    'max_lat': 72.0,
 }
-EUROPE_TILE_POSITIONS = {
-    'IS': (0, 1),
-    'IE': (1, 3),
-    'GB': (2, 2),
-    'PT': (2, 7),
-    'ES': (3, 7),
-    'AD': (4, 6),
-    'FR': (5, 5),
-    'BE': (6, 4),
-    'NL': (7, 4),
-    'LU': (7, 5),
-    'DE': (8, 4),
-    'DK': (8, 2),
-    'NO': (8, 0),
-    'SE': (9, 1),
-    'FI': (10, 1),
-    'EE': (10, 3),
-    'LV': (10, 4),
-    'LT': (10, 5),
-    'PL': (9, 5),
-    'CZ': (8, 5),
-    'SK': (9, 6),
-    'AT': (8, 6),
-    'CH': (7, 6),
-    'LI': (7, 7),
-    'HU': (10, 6),
-    'SI': (9, 7),
-    'HR': (10, 7),
-    'BA': (10, 8),
-    'RS': (11, 8),
-    'ME': (11, 9),
-    'AL': (12, 9),
-    'MK': (12, 8),
-    'GR': (13, 10),
-    'BG': (12, 7),
-    'RO': (12, 6),
-    'MD': (13, 6),
-    'UA': (13, 5),
-    'BY': (12, 4),
-    'IT': (7, 8),
-    'SM': (7, 9),
-    'VA': (8, 9),
-    'MC': (5, 6),
-    'MT': (8, 10),
-    'CY': (15, 10),
-    'TR': (15, 8),
+EUROPE_COUNTRIES = (
+    'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
+    'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT',
+    'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'SM', 'TR', 'UA', 'VA',
+)
+COUNTRY_NAME_FALLBACKS = {
+    'GB': 'United Kingdom',
+    'VA': 'Vatican',
 }
-EUROPE_COUNTRIES = tuple(EUROPE_TILE_POSITIONS)
 
 
 def load_status_config(path: Path = STATUS_CONFIG_PATH) -> dict[str, Any]:
@@ -121,70 +83,223 @@ def classify_europe_daily_coverage(status_config: dict[str, Any] | None = None) 
     return summary
 
 
+def load_geodata(path: Path = GEODATA_PATH) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding='utf-8'))
+
+
+def build_country_geometries(geojson: dict[str, Any]) -> dict[str, list[list[list[tuple[float, float]]]]]:
+    geometries: dict[str, list[list[list[tuple[float, float]]]]] = {}
+    for feature in geojson.get('features', []):
+        properties = feature.get('properties', {})
+        iso_a2 = str(properties.get('ISO_A2', '')).strip()
+        if iso_a2 not in EUROPE_COUNTRIES:
+            name = str(properties.get('NAME', '')).strip()
+            for country_code, fallback_name in COUNTRY_NAME_FALLBACKS.items():
+                if name == fallback_name and country_code in EUROPE_COUNTRIES:
+                    iso_a2 = country_code
+                    break
+        if iso_a2 not in EUROPE_COUNTRIES:
+            continue
+
+        geometry = feature.get('geometry', {})
+        geometry_type = geometry.get('type')
+        coordinates = geometry.get('coordinates', [])
+        polygons: list[list[list[tuple[float, float]]]] = []
+        if geometry_type == 'Polygon':
+            polygons = [_convert_polygon(coordinates)]
+        elif geometry_type == 'MultiPolygon':
+            polygons = [_convert_polygon(polygon) for polygon in coordinates]
+        if polygons:
+            geometries.setdefault(iso_a2, []).extend(polygons)
+    return geometries
+
+
+def _convert_polygon(coordinates: list[Any]) -> list[list[tuple[float, float]]]:
+    rings: list[list[tuple[float, float]]] = []
+    for ring in coordinates:
+        rings.append([(float(point[0]), float(point[1])) for point in ring])
+    return rings
+
+
 def render_coverage_summary_json(summary: dict[str, dict[str, Any]]) -> str:
     return json.dumps(summary, indent=2, sort_keys=True) + '\n'
 
 
 def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
-    cell_width = 56
-    cell_height = 42
-    margin_x = 28
-    margin_y = 80
-    legend_top = 630
-    width = 980
-    height = 790
+    geodata = load_geodata()
+    country_geometries = build_country_geometries(geodata)
+
+    width = 1080
+    height = 820
+    map_left = 34
+    map_top = 88
+    map_width = 760
+    map_height = 640
+    legend_left = 830
+    legend_top = 150
 
     lines = [
-        '<svg xmlns="http://www.w3.org/2000/svg" width="980" height="790" viewBox="0 0 980 790" role="img" aria-labelledby="title desc">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
         '  <title id="title">Daily data coverage in Europe</title>',
-        '  <desc id="desc">WeatherDownload Europe-only daily meteorological observation coverage map by implementation status.</desc>',
+        '  <desc id="desc">WeatherDownload implementation status for daily meteorological observation downloads in Europe. This is not a FAO coverage map.</desc>',
         '  <metadata>',
         f'    {json.dumps(summary, sort_keys=True)}',
         '  </metadata>',
         '  <style>',
-        '    .title { font: 700 28px Arial, sans-serif; fill: #102027; }',
+        '    .title { font: 700 30px Arial, sans-serif; fill: #102027; }',
         '    .subtitle { font: 400 14px Arial, sans-serif; fill: #37474f; }',
-        '    .country-label { font: 700 13px Arial, sans-serif; fill: #102027; text-anchor: middle; dominant-baseline: middle; }',
-        '    .legend-label { font: 400 14px Arial, sans-serif; fill: #102027; dominant-baseline: middle; }',
         '    .legend-title { font: 700 16px Arial, sans-serif; fill: #102027; }',
-        '    .country rect { stroke: #455a64; stroke-width: 1; rx: 7; ry: 7; }',
-        f'    .national_daily rect {{ fill: {STATUS_COLORS["national_daily"]}; }}',
-        f'    .ghcnd_daily rect {{ fill: {STATUS_COLORS["ghcnd_daily"]}; }}',
-        f'    .attempted_no_reliable_daily rect {{ fill: {STATUS_COLORS["attempted_no_reliable_daily"]}; }}',
-        f'    .not_attempted rect {{ fill: {STATUS_COLORS["not_attempted"]}; }}',
+        '    .legend-label { font: 400 14px Arial, sans-serif; fill: #102027; dominant-baseline: middle; }',
+        '    .note { font: 400 12px Arial, sans-serif; fill: #455a64; }',
+        '    .country { stroke: #ffffff; stroke-width: 0.9; fill-rule: evenodd; }',
+        f'    .national_daily {{ fill: {STATUS_COLORS["national_daily"]}; }}',
+        f'    .ghcnd_daily {{ fill: {STATUS_COLORS["ghcnd_daily"]}; }}',
+        f'    .attempted_no_reliable_daily {{ fill: {STATUS_COLORS["attempted_no_reliable_daily"]}; }}',
+        f'    .not_attempted {{ fill: {STATUS_COLORS["not_attempted"]}; }}',
         '  </style>',
-        '  <rect x="0" y="0" width="980" height="790" fill="#f7fafc"/>',
-        '  <text class="title" x="28" y="40">Daily data coverage in Europe</text>',
-        '  <text class="subtitle" x="28" y="63">WeatherDownload implementation status for daily meteorological observation downloads</text>',
+        f'  <rect x="0" y="0" width="{width}" height="{height}" fill="#f7fafc"/>',
+        f'  <rect x="{map_left - 10}" y="{map_top - 10}" width="{map_width + 20}" height="{map_height + 20}" rx="18" ry="18" fill="#edf3f6" stroke="#d7e3e8"/>',
+        '  <text class="title" x="34" y="42">Daily data coverage in Europe</text>',
+        '  <text class="subtitle" x="34" y="66">WeatherDownload implementation status for daily meteorological observation downloads</text>',
     ]
 
     for country in EUROPE_COUNTRIES:
-        x, y = EUROPE_TILE_POSITIONS[country]
-        left = margin_x + x * cell_width
-        top = margin_y + y * cell_height
+        polygons = country_geometries.get(country, [])
+        if not polygons:
+            continue
+        path_data = _country_path_data(polygons, map_left=map_left, map_top=map_top, map_width=map_width, map_height=map_height)
+        if not path_data:
+            continue
         status = summary[country]['status']
         providers = ', '.join(summary[country].get('providers', [])) or 'none'
         lines.extend(
             [
-                f'  <g id="country-{country}" class="country {status}">',
+                f'  <path id="country-{country}" class="country {status}" d="{path_data}">',
                 f'    <title>{country}: {status}; providers={providers}</title>',
-                f'    <rect x="{left}" y="{top}" width="48" height="34"/>',
-                f'    <text class="country-label" x="{left + 24}" y="{top + 17}">{country}</text>',
-                '  </g>',
+                '  </path>',
             ]
         )
 
     lines.extend(
         [
-            '  <text class="legend-title" x="28" y="655">Legend</text>',
-            _render_legend_row(28, legend_top, 'national_daily', 'dark green = national daily downloader'),
-            _render_legend_row(28, legend_top + 34, 'ghcnd_daily', 'light green = GHCN-Daily'),
-            _render_legend_row(28, legend_top + 68, 'attempted_no_reliable_daily', 'red = attempted, no reliable support yet'),
-            _render_legend_row(28, legend_top + 102, 'not_attempted', 'gray = not attempted'),
+            f'  <text class="legend-title" x="{legend_left}" y="{legend_top}">Legend</text>',
+            _render_legend_row(legend_left, legend_top + 22, 'national_daily', 'dark green = national daily downloader'),
+            _render_legend_row(legend_left, legend_top + 60, 'ghcnd_daily', 'light green = GHCN-Daily'),
+            _render_legend_row(legend_left, legend_top + 98, 'attempted_no_reliable_daily', 'red = attempted, no reliable support yet'),
+            _render_legend_row(legend_left, legend_top + 136, 'not_attempted', 'gray = not attempted'),
+            f'  <text class="legend-title" x="{legend_left}" y="{legend_top + 228}">Notes</text>',
+            f'  <text class="note" x="{legend_left}" y="{legend_top + 252}">Classification is based on the public discovery API</text>',
+            f'  <text class="note" x="{legend_left}" y="{legend_top + 270}">plus documented project-status overrides.</text>',
+            f'  <text class="note" x="{legend_left}" y="{legend_top + 304}">This is daily-data coverage, not FAO coverage.</text>',
+            f'  <text class="note" x="{legend_left}" y="{legend_top + 322}">Some supported non-European countries are intentionally omitted.</text>',
+            '</svg>',
         ]
     )
-    lines.append('</svg>')
     return '\n'.join(lines) + '\n'
+
+
+def _country_path_data(
+    polygons: list[list[list[tuple[float, float]]]],
+    *,
+    map_left: int,
+    map_top: int,
+    map_width: int,
+    map_height: int,
+) -> str:
+    parts: list[str] = []
+    for polygon in polygons:
+        for ring in polygon:
+            clipped = _clip_ring_to_bbox(ring)
+            if len(clipped) < 3:
+                continue
+            projected = [_project(point[0], point[1], map_left=map_left, map_top=map_top, map_width=map_width, map_height=map_height) for point in clipped]
+            if not projected:
+                continue
+            start_x, start_y = projected[0]
+            commands = [f'M {start_x:.2f} {start_y:.2f}']
+            for x, y in projected[1:]:
+                commands.append(f'L {x:.2f} {y:.2f}')
+            commands.append('Z')
+            parts.append(' '.join(commands))
+    return ' '.join(parts)
+
+
+def _clip_ring_to_bbox(ring: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    if len(ring) < 3:
+        return []
+    points = ring[:-1] if ring[0] == ring[-1] else ring[:]
+    clipped = points
+    for edge_name in ('left', 'right', 'bottom', 'top'):
+        clipped = _clip_polygon_against_edge(clipped, edge_name)
+        if not clipped:
+            return []
+    if clipped and clipped[0] != clipped[-1]:
+        clipped.append(clipped[0])
+    return clipped
+
+
+def _clip_polygon_against_edge(points: list[tuple[float, float]], edge_name: str) -> list[tuple[float, float]]:
+    if not points:
+        return []
+    output: list[tuple[float, float]] = []
+    previous = points[-1]
+    previous_inside = _point_inside(previous, edge_name)
+    for current in points:
+        current_inside = _point_inside(current, edge_name)
+        if current_inside:
+            if not previous_inside:
+                output.append(_intersection(previous, current, edge_name))
+            output.append(current)
+        elif previous_inside:
+            output.append(_intersection(previous, current, edge_name))
+        previous = current
+        previous_inside = current_inside
+    return output
+
+
+def _point_inside(point: tuple[float, float], edge_name: str) -> bool:
+    lon, lat = point
+    if edge_name == 'left':
+        return lon >= VIEW_BBOX['min_lon']
+    if edge_name == 'right':
+        return lon <= VIEW_BBOX['max_lon']
+    if edge_name == 'bottom':
+        return lat >= VIEW_BBOX['min_lat']
+    if edge_name == 'top':
+        return lat <= VIEW_BBOX['max_lat']
+    raise ValueError(f'Unsupported edge: {edge_name}')
+
+
+def _intersection(start: tuple[float, float], end: tuple[float, float], edge_name: str) -> tuple[float, float]:
+    x1, y1 = start
+    x2, y2 = end
+    if edge_name in {'left', 'right'}:
+        x_edge = VIEW_BBOX['min_lon'] if edge_name == 'left' else VIEW_BBOX['max_lon']
+        if x2 == x1:
+            return (x_edge, y1)
+        ratio = (x_edge - x1) / (x2 - x1)
+        return (x_edge, y1 + ratio * (y2 - y1))
+    y_edge = VIEW_BBOX['min_lat'] if edge_name == 'bottom' else VIEW_BBOX['max_lat']
+    if y2 == y1:
+        return (x1, y_edge)
+    ratio = (y_edge - y1) / (y2 - y1)
+    return (x1 + ratio * (x2 - x1), y_edge)
+
+
+def _project(
+    lon: float,
+    lat: float,
+    *,
+    map_left: int,
+    map_top: int,
+    map_width: int,
+    map_height: int,
+) -> tuple[float, float]:
+    lon_fraction = (lon - VIEW_BBOX['min_lon']) / (VIEW_BBOX['max_lon'] - VIEW_BBOX['min_lon'])
+    lat_fraction = (VIEW_BBOX['max_lat'] - lat) / (VIEW_BBOX['max_lat'] - VIEW_BBOX['min_lat'])
+    x = map_left + lon_fraction * map_width
+    y = map_top + lat_fraction * map_height
+    return x, y
 
 
 def _render_legend_row(x: int, y: int, status: str, label: str) -> str:
