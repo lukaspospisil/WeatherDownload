@@ -30,7 +30,9 @@ EUROPE_COUNTRIES = (
     'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'SM', 'TR', 'UA', 'VA',
 )
 COUNTRY_NAME_FALLBACKS = {
+    'FR': 'France',
     'GB': 'United Kingdom',
+    'NO': 'Norway',
     'VA': 'Vatican',
 }
 
@@ -94,8 +96,9 @@ def build_country_geometries(geojson: dict[str, Any]) -> dict[str, list[list[lis
         iso_a2 = str(properties.get('ISO_A2', '')).strip()
         if iso_a2 not in EUROPE_COUNTRIES:
             name = str(properties.get('NAME', '')).strip()
+            admin = str(properties.get('ADMIN', '')).strip()
             for country_code, fallback_name in COUNTRY_NAME_FALLBACKS.items():
-                if name == fallback_name and country_code in EUROPE_COUNTRIES:
+                if (name == fallback_name or admin == fallback_name) and country_code in EUROPE_COUNTRIES:
                     iso_a2 = country_code
                     break
         if iso_a2 not in EUROPE_COUNTRIES:
@@ -130,13 +133,11 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
     country_geometries = build_country_geometries(geodata)
 
     width = 1080
-    height = 820
-    map_left = 34
-    map_top = 88
-    map_width = 760
-    map_height = 640
-    legend_left = 830
-    legend_top = 150
+    height = 620
+    map_left = 20
+    map_top = 22
+    map_width = 1040
+    map_height = 565
 
     lines = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
@@ -146,21 +147,13 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
         f'    {json.dumps(summary, sort_keys=True)}',
         '  </metadata>',
         '  <style>',
-        '    .title { font: 700 30px Arial, sans-serif; fill: #102027; }',
-        '    .subtitle { font: 400 14px Arial, sans-serif; fill: #37474f; }',
-        '    .legend-title { font: 700 16px Arial, sans-serif; fill: #102027; }',
-        '    .legend-label { font: 400 14px Arial, sans-serif; fill: #102027; dominant-baseline: middle; }',
-        '    .note { font: 400 12px Arial, sans-serif; fill: #455a64; }',
-        '    .country { stroke: #ffffff; stroke-width: 0.9; fill-rule: evenodd; }',
+        '    .country { stroke: #1f2933; stroke-width: 0.85; fill-rule: evenodd; }',
         f'    .national_daily {{ fill: {STATUS_COLORS["national_daily"]}; }}',
         f'    .ghcnd_daily {{ fill: {STATUS_COLORS["ghcnd_daily"]}; }}',
         f'    .attempted_no_reliable_daily {{ fill: {STATUS_COLORS["attempted_no_reliable_daily"]}; }}',
         f'    .not_attempted {{ fill: {STATUS_COLORS["not_attempted"]}; }}',
         '  </style>',
-        f'  <rect x="0" y="0" width="{width}" height="{height}" fill="#f7fafc"/>',
-        f'  <rect x="{map_left - 10}" y="{map_top - 10}" width="{map_width + 20}" height="{map_height + 20}" rx="18" ry="18" fill="#edf3f6" stroke="#d7e3e8"/>',
-        '  <text class="title" x="34" y="42">Daily data coverage in Europe</text>',
-        '  <text class="subtitle" x="34" y="66">WeatherDownload implementation status for daily meteorological observation downloads</text>',
+        f'  <rect x="0" y="0" width="{width}" height="{height}" fill="#f6f8fa"/>',
     ]
 
     for country in EUROPE_COUNTRIES:
@@ -180,21 +173,7 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
             ]
         )
 
-    lines.extend(
-        [
-            f'  <text class="legend-title" x="{legend_left}" y="{legend_top}">Legend</text>',
-            _render_legend_row(legend_left, legend_top + 22, 'national_daily', 'dark green = national daily downloader'),
-            _render_legend_row(legend_left, legend_top + 60, 'ghcnd_daily', 'light green = GHCN-Daily'),
-            _render_legend_row(legend_left, legend_top + 98, 'attempted_no_reliable_daily', 'red = attempted, no reliable support yet'),
-            _render_legend_row(legend_left, legend_top + 136, 'not_attempted', 'gray = not attempted'),
-            f'  <text class="legend-title" x="{legend_left}" y="{legend_top + 228}">Notes</text>',
-            f'  <text class="note" x="{legend_left}" y="{legend_top + 252}">Classification is based on the public discovery API</text>',
-            f'  <text class="note" x="{legend_left}" y="{legend_top + 270}">plus documented project-status overrides.</text>',
-            f'  <text class="note" x="{legend_left}" y="{legend_top + 304}">This is daily-data coverage, not FAO coverage.</text>',
-            f'  <text class="note" x="{legend_left}" y="{legend_top + 322}">Some supported non-European countries are intentionally omitted.</text>',
-            '</svg>',
-        ]
-    )
+    lines.append('</svg>')
     return '\n'.join(lines) + '\n'
 
 
@@ -300,15 +279,6 @@ def _project(
     x = map_left + lon_fraction * map_width
     y = map_top + lat_fraction * map_height
     return x, y
-
-
-def _render_legend_row(x: int, y: int, status: str, label: str) -> str:
-    return (
-        f'  <g class="legend {status}">'
-        f'<rect x="{x}" y="{y}" width="24" height="18" fill="{STATUS_COLORS[status]}" stroke="#455a64" stroke-width="1"/>'
-        f'<text class="legend-label" x="{x + 36}" y="{y + 10}">{label}</text>'
-        f'</g>'
-    )
 
 
 def write_europe_daily_coverage_assets(

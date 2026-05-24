@@ -46,23 +46,36 @@ class EuropeDailyCoverageTests(unittest.TestCase):
         self.assertEqual(svg_path.read_text(encoding='utf-8'), expected_svg)
         self.assertEqual(json_path.read_text(encoding='utf-8'), expected_json)
 
-    def test_svg_contains_legend_and_category_metadata(self) -> None:
+    def test_svg_contains_category_metadata_without_in_image_legend(self) -> None:
         svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
 
-        self.assertIn('dark green = national daily downloader', svg_text)
-        self.assertIn('light green = GHCN-Daily', svg_text)
-        self.assertIn('red = attempted, no reliable support yet', svg_text)
-        self.assertIn('gray = not attempted', svg_text)
         self.assertIn('national_daily', svg_text)
         self.assertIn('ghcnd_daily', svg_text)
         self.assertIn('attempted_no_reliable_daily', svg_text)
         self.assertIn('not_attempted', svg_text)
+        self.assertNotIn('dark green = national daily downloader', svg_text)
+        self.assertNotIn('light green = GHCN-Daily', svg_text)
+        self.assertNotIn('red = attempted, no reliable support yet', svg_text)
+        self.assertNotIn('gray = not attempted', svg_text)
+
+    def test_svg_renders_requested_european_country_set(self) -> None:
+        svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
+
+        expected = [
+            'IS', 'IE', 'GB', 'PT', 'ES', 'FR', 'BE', 'NL', 'LU', 'DE', 'DK', 'NO', 'SE', 'FI',
+            'EE', 'LV', 'LT', 'PL', 'CZ', 'SK', 'AT', 'CH', 'IT', 'SI', 'HR', 'HU', 'RO', 'BG',
+            'GR', 'BA', 'RS', 'ME', 'AL', 'MK', 'MD', 'UA', 'BY', 'TR',
+        ]
+        for country in expected:
+            self.assertIn(f'id="country-{country}"', svg_text)
 
     def test_documentation_references_generated_svg_and_non_fao_scope(self) -> None:
         readme_text = Path('README.md').read_text(encoding='utf-8')
 
         self.assertIn('docs/assets/europe_daily_coverage_map.svg', readme_text)
         self.assertIn('It is not a FAO-readiness map', readme_text)
+        self.assertIn('Dark green - national daily downloader implemented', readme_text)
+        self.assertIn('Light green - daily data available via GHCN-Daily', readme_text)
         self.assertIn('Some non-European countries may also be supported', readme_text)
 
     def test_generated_json_contains_documented_sk_override_note(self) -> None:
