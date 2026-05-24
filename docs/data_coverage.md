@@ -1,0 +1,45 @@
+# Data coverage
+
+These maps show WeatherDownload implementation status for European meteorological observation downloads.
+
+- They are not FAO-readiness maps.
+- They do not imply that all variables are available at all stations.
+- They reflect WeatherDownload implementation status, not general public data availability in each country.
+- Some non-European countries may also be supported, but are not shown here.
+
+## Daily data coverage in Europe
+
+<p align="center">
+  <img src="assets/europe_daily_coverage_map.svg"
+       alt="Daily data coverage in Europe"
+       width="900">
+</p>
+
+- Dark green - national daily downloader implemented
+- Light green - daily data available via GHCN-Daily
+- Red - attempted, but no reliable daily support yet
+- Gray - not attempted yet
+
+## Hourly data coverage in Europe
+
+<p align="center">
+  <img src="assets/europe_hourly_coverage_map.svg"
+       alt="Hourly data coverage in Europe"
+       width="900">
+</p>
+
+- Dark green - national hourly downloader implemented
+- Red - attempted, but no reliable hourly support yet
+- Gray - not attempted yet
+
+## 10-minute data coverage in Europe
+
+<p align="center">
+  <img src="assets/europe_10min_coverage_map.svg"
+       alt="10-minute data coverage in Europe"
+       width="900">
+</p>
+
+- Dark green - national 10-minute downloader implemented
+- Red - attempted, but no reliable 10-minute support yet
+- Gray - not attempted yet

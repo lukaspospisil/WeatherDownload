@@ -1,0 +1,15 @@
+{
+  "daily": {
+    "attempted_no_reliable": {
+      "SK": {
+        "note": "Investigated and partially implemented, but no reliable daily downloader is currently documented as stable support."
+      }
+    }
+  },
+  "hourly": {
+    "attempted_no_reliable": {}
+  },
+  "10min": {
+    "attempted_no_reliable": {}
+  }
+}

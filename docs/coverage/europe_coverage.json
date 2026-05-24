@@ -1,0 +1,630 @@
+{
+  "10min": {
+    "AD": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "AL": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "AT": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_10min"
+    },
+    "BA": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "BE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_10min"
+    },
+    "BG": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "BY": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "CH": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_10min"
+    },
+    "CY": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "CZ": {
+      "providers": [
+        "historical",
+        "historical_csv",
+        "now",
+        "recent"
+      ],
+      "status": "national_10min"
+    },
+    "DE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_10min"
+    },
+    "DK": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_10min"
+    },
+    "EE": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "ES": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "FI": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "FR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "GB": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "GR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "HR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "HU": {
+      "providers": [
+        "historical",
+        "historical_wind"
+      ],
+      "status": "national_10min"
+    },
+    "IE": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "IS": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "IT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LI": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LU": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LV": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MC": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MD": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "ME": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MK": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "NL": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_10min"
+    },
+    "NO": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "PL": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "PT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "RO": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "RS": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SE": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SI": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SK": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SM": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "TR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "UA": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "VA": {
+      "providers": [],
+      "status": "not_attempted"
+    }
+  },
+  "daily": {
+    "AD": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "AL": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "AT": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "BA": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "BE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "BG": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "BY": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "CH": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "CY": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "CZ": {
+      "providers": [
+        "historical",
+        "historical_csv",
+        "now",
+        "recent"
+      ],
+      "status": "national_daily"
+    },
+    "DE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "DK": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "EE": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "ES": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "FI": {
+      "providers": [
+        "fmi"
+      ],
+      "status": "national_daily"
+    },
+    "FR": {
+      "providers": [
+        "meteo_france"
+      ],
+      "status": "national_daily"
+    },
+    "GB": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "GR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "HR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "HU": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "IE": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "IS": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "IT": {
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
+    },
+    "LI": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LU": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LV": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MC": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MD": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "ME": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MK": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "NL": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "NO": {
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
+    },
+    "PL": {
+      "providers": [
+        "historical",
+        "historical_klimat"
+      ],
+      "status": "national_daily"
+    },
+    "PT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "RO": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "RS": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_daily"
+    },
+    "SI": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SK": {
+      "note": "Investigated and partially implemented, but no reliable daily downloader is currently documented as stable support.",
+      "project_status_override": true,
+      "providers": [
+        "ghcnd",
+        "recent"
+      ],
+      "status": "attempted_no_reliable_daily"
+    },
+    "SM": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "TR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "UA": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "VA": {
+      "providers": [],
+      "status": "not_attempted"
+    }
+  },
+  "hourly": {
+    "AD": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "AL": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "AT": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "BA": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "BE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "BG": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "BY": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "CH": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "CY": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "CZ": {
+      "providers": [
+        "historical",
+        "historical_csv",
+        "now",
+        "recent"
+      ],
+      "status": "national_hourly"
+    },
+    "DE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "DK": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "EE": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "ES": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "FI": {
+      "providers": [
+        "fmi"
+      ],
+      "status": "national_hourly"
+    },
+    "FR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "GB": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "GR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "HR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "HU": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "IE": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "IS": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "IT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LI": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LU": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "LV": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MC": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MD": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "ME": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MK": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "MT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "NL": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "NO": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "PL": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "PT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "RO": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "RS": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SE": {
+      "providers": [
+        "historical"
+      ],
+      "status": "national_hourly"
+    },
+    "SI": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SK": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "SM": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "TR": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "UA": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "VA": {
+      "providers": [],
+      "status": "not_attempted"
+    }
+  }
+}

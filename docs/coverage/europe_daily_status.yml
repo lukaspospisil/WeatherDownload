@@ -1,7 +1,0 @@
-{
-  "attempted_no_reliable_daily": {
-    "SK": {
-      "note": "Investigated and partially implemented, but no reliable daily downloader is currently documented as stable support."
-    }
-  }
-}
