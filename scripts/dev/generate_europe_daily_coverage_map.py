@@ -132,12 +132,14 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
     geodata = load_geodata()
     country_geometries = build_country_geometries(geodata)
 
-    width = 1080
-    height = 620
-    map_left = 20
-    map_top = 22
-    map_width = 1040
-    map_height = 565
+    width = 980
+    height = 760
+    map_left, map_top, map_width, map_height = _fit_map_frame(
+        frame_left=36,
+        frame_top=34,
+        frame_width=908,
+        frame_height=692,
+    )
 
     lines = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
@@ -175,6 +177,23 @@ def render_europe_daily_coverage_svg(summary: dict[str, dict[str, Any]]) -> str:
 
     lines.append('</svg>')
     return '\n'.join(lines) + '\n'
+
+
+def _fit_map_frame(
+    *,
+    frame_left: int,
+    frame_top: int,
+    frame_width: int,
+    frame_height: int,
+) -> tuple[float, float, float, float]:
+    lon_span = VIEW_BBOX['max_lon'] - VIEW_BBOX['min_lon']
+    lat_span = VIEW_BBOX['max_lat'] - VIEW_BBOX['min_lat']
+    scale = min(frame_width / lon_span, frame_height / lat_span)
+    map_width = lon_span * scale
+    map_height = lat_span * scale
+    map_left = frame_left + (frame_width - map_width) / 2.0
+    map_top = frame_top + (frame_height - map_height) / 2.0
+    return map_left, map_top, map_width, map_height
 
 
 def _country_path_data(
