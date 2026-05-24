@@ -60,6 +60,19 @@ Conceptual model:
 
 For the authoritative current matrix of implemented country/provider/resolution/element paths, see [Supported Capabilities](docs/supported_capabilities.md).
 
+## Daily Data Coverage In Europe
+
+![Daily data coverage in Europe](docs/assets/europe_daily_coverage_map.svg)
+
+The map shows European countries for which WeatherDownload currently implements daily meteorological observation downloads. It is not a FAO-readiness map and does not imply that all variables are available at all stations.
+
+- Dark green — national daily downloader implemented
+- Light green — daily data available via GHCN-Daily
+- Red — attempted, but no reliable daily support yet
+- Gray — not attempted yet
+
+Some non-European countries may also be supported, but they are not shown because this map focuses on Europe.
+
 ## Documentation
 
 - conceptual provider model and terminology: [Provider Model](docs/providers.md)

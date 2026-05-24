@@ -1,0 +1,252 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="790" viewBox="0 0 980 790" role="img" aria-labelledby="title desc">
+  <title id="title">Daily data coverage in Europe</title>
+  <desc id="desc">WeatherDownload Europe-only daily meteorological observation coverage map by implementation status.</desc>
+  <metadata>
+    {"AD": {"providers": [], "status": "not_attempted"}, "AL": {"providers": [], "status": "not_attempted"}, "AT": {"providers": ["historical"], "status": "national_daily"}, "BA": {"providers": [], "status": "not_attempted"}, "BE": {"providers": ["historical"], "status": "national_daily"}, "BG": {"providers": [], "status": "not_attempted"}, "BY": {"providers": [], "status": "not_attempted"}, "CH": {"providers": ["historical"], "status": "national_daily"}, "CY": {"providers": [], "status": "not_attempted"}, "CZ": {"providers": ["historical", "historical_csv", "now", "recent"], "status": "national_daily"}, "DE": {"providers": ["historical"], "status": "national_daily"}, "DK": {"providers": ["historical"], "status": "national_daily"}, "EE": {"providers": [], "status": "not_attempted"}, "ES": {"providers": [], "status": "not_attempted"}, "FI": {"providers": ["fmi"], "status": "national_daily"}, "FR": {"providers": ["meteo_france"], "status": "national_daily"}, "GB": {"providers": [], "status": "not_attempted"}, "GR": {"providers": [], "status": "not_attempted"}, "HR": {"providers": [], "status": "not_attempted"}, "HU": {"providers": ["historical"], "status": "national_daily"}, "IE": {"providers": [], "status": "not_attempted"}, "IS": {"providers": [], "status": "not_attempted"}, "IT": {"providers": ["ghcnd"], "status": "ghcnd_daily"}, "LI": {"providers": [], "status": "not_attempted"}, "LT": {"providers": [], "status": "not_attempted"}, "LU": {"providers": [], "status": "not_attempted"}, "LV": {"providers": [], "status": "not_attempted"}, "MC": {"providers": [], "status": "not_attempted"}, "MD": {"providers": [], "status": "not_attempted"}, "ME": {"providers": [], "status": "not_attempted"}, "MK": {"providers": [], "status": "not_attempted"}, "MT": {"providers": [], "status": "not_attempted"}, "NL": {"providers": ["historical"], "status": "national_daily"}, "NO": {"providers": ["ghcnd"], "status": "ghcnd_daily"}, "PL": {"providers": ["historical", "historical_klimat"], "status": "national_daily"}, "PT": {"providers": [], "status": "not_attempted"}, "RO": {"providers": [], "status": "not_attempted"}, "RS": {"providers": [], "status": "not_attempted"}, "SE": {"providers": ["historical"], "status": "national_daily"}, "SI": {"providers": [], "status": "not_attempted"}, "SK": {"note": "Investigated and partially implemented, but no reliable daily downloader is currently documented as stable support.", "project_status_override": true, "providers": ["ghcnd", "recent"], "status": "attempted_no_reliable_daily"}, "SM": {"providers": [], "status": "not_attempted"}, "TR": {"providers": [], "status": "not_attempted"}, "UA": {"providers": [], "status": "not_attempted"}, "VA": {"providers": [], "status": "not_attempted"}}
+  </metadata>
+  <style>
+    .title { font: 700 28px Arial, sans-serif; fill: #102027; }
+    .subtitle { font: 400 14px Arial, sans-serif; fill: #37474f; }
+    .country-label { font: 700 13px Arial, sans-serif; fill: #102027; text-anchor: middle; dominant-baseline: middle; }
+    .legend-label { font: 400 14px Arial, sans-serif; fill: #102027; dominant-baseline: middle; }
+    .legend-title { font: 700 16px Arial, sans-serif; fill: #102027; }
+    .country rect { stroke: #455a64; stroke-width: 1; rx: 7; ry: 7; }
+    .national_daily rect { fill: #1b5e20; }
+    .ghcnd_daily rect { fill: #8bc34a; }
+    .attempted_no_reliable_daily rect { fill: #c62828; }
+    .not_attempted rect { fill: #b0bec5; }
+  </style>
+  <rect x="0" y="0" width="980" height="790" fill="#f7fafc"/>
+  <text class="title" x="28" y="40">Daily data coverage in Europe</text>
+  <text class="subtitle" x="28" y="63">WeatherDownload implementation status for daily meteorological observation downloads</text>
+  <g id="country-IS" class="country not_attempted">
+    <title>IS: not_attempted; providers=none</title>
+    <rect x="28" y="122" width="48" height="34"/>
+    <text class="country-label" x="52" y="139">IS</text>
+  </g>
+  <g id="country-IE" class="country not_attempted">
+    <title>IE: not_attempted; providers=none</title>
+    <rect x="84" y="206" width="48" height="34"/>
+    <text class="country-label" x="108" y="223">IE</text>
+  </g>
+  <g id="country-GB" class="country not_attempted">
+    <title>GB: not_attempted; providers=none</title>
+    <rect x="140" y="164" width="48" height="34"/>
+    <text class="country-label" x="164" y="181">GB</text>
+  </g>
+  <g id="country-PT" class="country not_attempted">
+    <title>PT: not_attempted; providers=none</title>
+    <rect x="140" y="374" width="48" height="34"/>
+    <text class="country-label" x="164" y="391">PT</text>
+  </g>
+  <g id="country-ES" class="country not_attempted">
+    <title>ES: not_attempted; providers=none</title>
+    <rect x="196" y="374" width="48" height="34"/>
+    <text class="country-label" x="220" y="391">ES</text>
+  </g>
+  <g id="country-AD" class="country not_attempted">
+    <title>AD: not_attempted; providers=none</title>
+    <rect x="252" y="332" width="48" height="34"/>
+    <text class="country-label" x="276" y="349">AD</text>
+  </g>
+  <g id="country-FR" class="country national_daily">
+    <title>FR: national_daily; providers=meteo_france</title>
+    <rect x="308" y="290" width="48" height="34"/>
+    <text class="country-label" x="332" y="307">FR</text>
+  </g>
+  <g id="country-BE" class="country national_daily">
+    <title>BE: national_daily; providers=historical</title>
+    <rect x="364" y="248" width="48" height="34"/>
+    <text class="country-label" x="388" y="265">BE</text>
+  </g>
+  <g id="country-NL" class="country national_daily">
+    <title>NL: national_daily; providers=historical</title>
+    <rect x="420" y="248" width="48" height="34"/>
+    <text class="country-label" x="444" y="265">NL</text>
+  </g>
+  <g id="country-LU" class="country not_attempted">
+    <title>LU: not_attempted; providers=none</title>
+    <rect x="420" y="290" width="48" height="34"/>
+    <text class="country-label" x="444" y="307">LU</text>
+  </g>
+  <g id="country-DE" class="country national_daily">
+    <title>DE: national_daily; providers=historical</title>
+    <rect x="476" y="248" width="48" height="34"/>
+    <text class="country-label" x="500" y="265">DE</text>
+  </g>
+  <g id="country-DK" class="country national_daily">
+    <title>DK: national_daily; providers=historical</title>
+    <rect x="476" y="164" width="48" height="34"/>
+    <text class="country-label" x="500" y="181">DK</text>
+  </g>
+  <g id="country-NO" class="country ghcnd_daily">
+    <title>NO: ghcnd_daily; providers=ghcnd</title>
+    <rect x="476" y="80" width="48" height="34"/>
+    <text class="country-label" x="500" y="97">NO</text>
+  </g>
+  <g id="country-SE" class="country national_daily">
+    <title>SE: national_daily; providers=historical</title>
+    <rect x="532" y="122" width="48" height="34"/>
+    <text class="country-label" x="556" y="139">SE</text>
+  </g>
+  <g id="country-FI" class="country national_daily">
+    <title>FI: national_daily; providers=fmi</title>
+    <rect x="588" y="122" width="48" height="34"/>
+    <text class="country-label" x="612" y="139">FI</text>
+  </g>
+  <g id="country-EE" class="country not_attempted">
+    <title>EE: not_attempted; providers=none</title>
+    <rect x="588" y="206" width="48" height="34"/>
+    <text class="country-label" x="612" y="223">EE</text>
+  </g>
+  <g id="country-LV" class="country not_attempted">
+    <title>LV: not_attempted; providers=none</title>
+    <rect x="588" y="248" width="48" height="34"/>
+    <text class="country-label" x="612" y="265">LV</text>
+  </g>
+  <g id="country-LT" class="country not_attempted">
+    <title>LT: not_attempted; providers=none</title>
+    <rect x="588" y="290" width="48" height="34"/>
+    <text class="country-label" x="612" y="307">LT</text>
+  </g>
+  <g id="country-PL" class="country national_daily">
+    <title>PL: national_daily; providers=historical, historical_klimat</title>
+    <rect x="532" y="290" width="48" height="34"/>
+    <text class="country-label" x="556" y="307">PL</text>
+  </g>
+  <g id="country-CZ" class="country national_daily">
+    <title>CZ: national_daily; providers=historical, historical_csv, now, recent</title>
+    <rect x="476" y="290" width="48" height="34"/>
+    <text class="country-label" x="500" y="307">CZ</text>
+  </g>
+  <g id="country-SK" class="country attempted_no_reliable_daily">
+    <title>SK: attempted_no_reliable_daily; providers=ghcnd, recent</title>
+    <rect x="532" y="332" width="48" height="34"/>
+    <text class="country-label" x="556" y="349">SK</text>
+  </g>
+  <g id="country-AT" class="country national_daily">
+    <title>AT: national_daily; providers=historical</title>
+    <rect x="476" y="332" width="48" height="34"/>
+    <text class="country-label" x="500" y="349">AT</text>
+  </g>
+  <g id="country-CH" class="country national_daily">
+    <title>CH: national_daily; providers=historical</title>
+    <rect x="420" y="332" width="48" height="34"/>
+    <text class="country-label" x="444" y="349">CH</text>
+  </g>
+  <g id="country-LI" class="country not_attempted">
+    <title>LI: not_attempted; providers=none</title>
+    <rect x="420" y="374" width="48" height="34"/>
+    <text class="country-label" x="444" y="391">LI</text>
+  </g>
+  <g id="country-HU" class="country national_daily">
+    <title>HU: national_daily; providers=historical</title>
+    <rect x="588" y="332" width="48" height="34"/>
+    <text class="country-label" x="612" y="349">HU</text>
+  </g>
+  <g id="country-SI" class="country not_attempted">
+    <title>SI: not_attempted; providers=none</title>
+    <rect x="532" y="374" width="48" height="34"/>
+    <text class="country-label" x="556" y="391">SI</text>
+  </g>
+  <g id="country-HR" class="country not_attempted">
+    <title>HR: not_attempted; providers=none</title>
+    <rect x="588" y="374" width="48" height="34"/>
+    <text class="country-label" x="612" y="391">HR</text>
+  </g>
+  <g id="country-BA" class="country not_attempted">
+    <title>BA: not_attempted; providers=none</title>
+    <rect x="588" y="416" width="48" height="34"/>
+    <text class="country-label" x="612" y="433">BA</text>
+  </g>
+  <g id="country-RS" class="country not_attempted">
+    <title>RS: not_attempted; providers=none</title>
+    <rect x="644" y="416" width="48" height="34"/>
+    <text class="country-label" x="668" y="433">RS</text>
+  </g>
+  <g id="country-ME" class="country not_attempted">
+    <title>ME: not_attempted; providers=none</title>
+    <rect x="644" y="458" width="48" height="34"/>
+    <text class="country-label" x="668" y="475">ME</text>
+  </g>
+  <g id="country-AL" class="country not_attempted">
+    <title>AL: not_attempted; providers=none</title>
+    <rect x="700" y="458" width="48" height="34"/>
+    <text class="country-label" x="724" y="475">AL</text>
+  </g>
+  <g id="country-MK" class="country not_attempted">
+    <title>MK: not_attempted; providers=none</title>
+    <rect x="700" y="416" width="48" height="34"/>
+    <text class="country-label" x="724" y="433">MK</text>
+  </g>
+  <g id="country-GR" class="country not_attempted">
+    <title>GR: not_attempted; providers=none</title>
+    <rect x="756" y="500" width="48" height="34"/>
+    <text class="country-label" x="780" y="517">GR</text>
+  </g>
+  <g id="country-BG" class="country not_attempted">
+    <title>BG: not_attempted; providers=none</title>
+    <rect x="700" y="374" width="48" height="34"/>
+    <text class="country-label" x="724" y="391">BG</text>
+  </g>
+  <g id="country-RO" class="country not_attempted">
+    <title>RO: not_attempted; providers=none</title>
+    <rect x="700" y="332" width="48" height="34"/>
+    <text class="country-label" x="724" y="349">RO</text>
+  </g>
+  <g id="country-MD" class="country not_attempted">
+    <title>MD: not_attempted; providers=none</title>
+    <rect x="756" y="332" width="48" height="34"/>
+    <text class="country-label" x="780" y="349">MD</text>
+  </g>
+  <g id="country-UA" class="country not_attempted">
+    <title>UA: not_attempted; providers=none</title>
+    <rect x="756" y="290" width="48" height="34"/>
+    <text class="country-label" x="780" y="307">UA</text>
+  </g>
+  <g id="country-BY" class="country not_attempted">
+    <title>BY: not_attempted; providers=none</title>
+    <rect x="700" y="248" width="48" height="34"/>
+    <text class="country-label" x="724" y="265">BY</text>
+  </g>
+  <g id="country-IT" class="country ghcnd_daily">
+    <title>IT: ghcnd_daily; providers=ghcnd</title>
+    <rect x="420" y="416" width="48" height="34"/>
+    <text class="country-label" x="444" y="433">IT</text>
+  </g>
+  <g id="country-SM" class="country not_attempted">
+    <title>SM: not_attempted; providers=none</title>
+    <rect x="420" y="458" width="48" height="34"/>
+    <text class="country-label" x="444" y="475">SM</text>
+  </g>
+  <g id="country-VA" class="country not_attempted">
+    <title>VA: not_attempted; providers=none</title>
+    <rect x="476" y="458" width="48" height="34"/>
+    <text class="country-label" x="500" y="475">VA</text>
+  </g>
+  <g id="country-MC" class="country not_attempted">
+    <title>MC: not_attempted; providers=none</title>
+    <rect x="308" y="332" width="48" height="34"/>
+    <text class="country-label" x="332" y="349">MC</text>
+  </g>
+  <g id="country-MT" class="country not_attempted">
+    <title>MT: not_attempted; providers=none</title>
+    <rect x="476" y="500" width="48" height="34"/>
+    <text class="country-label" x="500" y="517">MT</text>
+  </g>
+  <g id="country-CY" class="country not_attempted">
+    <title>CY: not_attempted; providers=none</title>
+    <rect x="868" y="500" width="48" height="34"/>
+    <text class="country-label" x="892" y="517">CY</text>
+  </g>
+  <g id="country-TR" class="country not_attempted">
+    <title>TR: not_attempted; providers=none</title>
+    <rect x="868" y="416" width="48" height="34"/>
+    <text class="country-label" x="892" y="433">TR</text>
+  </g>
+  <text class="legend-title" x="28" y="655">Legend</text>
+  <g class="legend national_daily"><rect x="28" y="630" width="24" height="18" fill="#1b5e20" stroke="#455a64" stroke-width="1"/><text class="legend-label" x="64" y="640">dark green = national daily downloader</text></g>
+  <g class="legend ghcnd_daily"><rect x="28" y="664" width="24" height="18" fill="#8bc34a" stroke="#455a64" stroke-width="1"/><text class="legend-label" x="64" y="674">light green = GHCN-Daily</text></g>
+  <g class="legend attempted_no_reliable_daily"><rect x="28" y="698" width="24" height="18" fill="#c62828" stroke="#455a64" stroke-width="1"/><text class="legend-label" x="64" y="708">red = attempted, no reliable support yet</text></g>
+  <g class="legend not_attempted"><rect x="28" y="732" width="24" height="18" fill="#b0bec5" stroke="#455a64" stroke-width="1"/><text class="legend-label" x="64" y="742">gray = not attempted</text></g>
+</svg>
