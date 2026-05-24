@@ -135,11 +135,15 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('They reflect WeatherDownload implementation status, not general public data availability in each country.', doc_text)
         self.assertIn('Some non-European countries may also be supported, but are not shown here.', doc_text)
 
-    def test_readme_links_to_data_coverage_page(self) -> None:
+    def test_readme_shows_daily_map_and_links_to_data_coverage_page(self) -> None:
         readme_text = Path('README.md').read_text(encoding='utf-8')
 
+        self.assertIn('docs/assets/europe_daily_coverage_map.svg', readme_text)
+        self.assertIn('This is daily-data coverage, not FAO-readiness coverage', readme_text)
+        self.assertIn('it does not imply', readme_text)
+        self.assertIn('Legend: dark green = national daily downloader', readme_text)
         self.assertIn('European data coverage maps: [Data Coverage](docs/data_coverage.md)', readme_text)
-        self.assertNotIn('docs/assets/europe_daily_coverage_map.svg', readme_text)
+        self.assertIn('[Data Coverage](docs/data_coverage.md)', readme_text)
 
     def test_generated_json_contains_documented_sk_override_note(self) -> None:
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
