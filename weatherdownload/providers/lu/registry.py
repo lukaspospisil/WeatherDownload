@@ -21,6 +21,7 @@ LU_METEOLUX_DATASET_PAGE_URL = (
     'https://data.public.lu/en/datasets/'
     'inspire-annex-iii-meteorological-geographical-features-pointtimeseriesobservation-daily-weather-measurements-at-luxembourg-findel-airport/'
 )
+LU_METEOLUX_DAILY_CSV_URL = 'https://data.public.lu/en/datasets/r/a67bd8c0-b036-4761-b161-bdab272302e5'
 LU_METEOLUX_STATION_ID = '0-20000-0-06590'
 LU_METEOLUX_STATION_NAME = 'Luxembourg/Findel Airport'
 LU_METEOLUX_STATION_LATITUDE = 49.63265182
@@ -31,6 +32,7 @@ LU_DAILY_CANONICAL_ELEMENTS = {
     'tas_max': ('maxtemperature',),
     'tas_min': ('mintemperature',),
     'precipitation': ('totalprecipitation',),
+    'sunshine_duration': ('DINS',),
 }
 
 LU_DAILY_PARAMETER_METADATA = {
@@ -39,12 +41,14 @@ LU_DAILY_PARAMETER_METADATA = {
         'description': 'Official MeteoLux Findel daily maximum air temperature at 2 m in degrees Celsius.',
         'unit': 'degC',
         'layer_name': 'MF.PointTimeSeriesObservation_Daily_FindelAirport_maxtemperature',
+        'source_kind': 'wfs',
     },
     'mintemperature': {
         'name': 'Daily minimum air temperature',
         'description': 'Official MeteoLux Findel daily minimum air temperature at 2 m in degrees Celsius.',
         'unit': 'degC',
         'layer_name': 'MF.PointTimeSeriesObservation_Daily_FindelAirport_mintemperature',
+        'source_kind': 'wfs',
     },
     'totalprecipitation': {
         'name': 'Daily precipitation amount',
@@ -54,6 +58,17 @@ LU_DAILY_PARAMETER_METADATA = {
         ),
         'unit': 'mm',
         'layer_name': 'MF.PointTimeSeriesObservation_Daily_FindelAirport_totalprecipitation',
+        'source_kind': 'wfs',
+    },
+    'DINS': {
+        'name': 'Daily sunshine duration',
+        'description': (
+            'Official MeteoLux Findel daily sunshine duration from the MeteoLux daily CSV resource. '
+            'The source labels DINS in hours and describes it as daily sunshine duration by observer.'
+        ),
+        'unit': 'hours',
+        'csv_column': 'DINS',
+        'source_kind': 'csv',
     },
 }
 
@@ -61,10 +76,10 @@ _LU_DATASET_SPECS = [
     LuxembourgDatasetSpec(
         provider='meteolux',
         resolution='daily',
-        label='MeteoLux INSPIRE WFS daily weather measurements at Luxembourg Findel Airport',
+        label='MeteoLux daily Findel observations from INSPIRE WFS plus official MeteoLux daily CSV sunshine duration',
         station_metadata_url=LU_METEOLUX_DATASET_PAGE_URL,
         data_url=LU_METEOLUX_WFS_URL,
-        supported_elements=('maxtemperature', 'mintemperature', 'totalprecipitation'),
+        supported_elements=('maxtemperature', 'mintemperature', 'totalprecipitation', 'DINS'),
         time_semantics='date',
         canonical_elements=LU_DAILY_CANONICAL_ELEMENTS,
         implemented=True,

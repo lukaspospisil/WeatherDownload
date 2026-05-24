@@ -12,13 +12,20 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
-from weatherdownload.providers.lu.daily import LU_METEOLUX_WFS_URL
-from weatherdownload.providers.lu.parser import LU_NORMALIZED_DAILY_COLUMNS, normalize_lu_daily_feature_rows, parse_lu_feature_collection_json
+from weatherdownload.providers.lu.daily import LU_METEOLUX_DAILY_CSV_URL, LU_METEOLUX_WFS_URL
+from weatherdownload.providers.lu.parser import (
+    LU_NORMALIZED_DAILY_COLUMNS,
+    normalize_lu_daily_csv_rows,
+    normalize_lu_daily_feature_rows,
+    parse_lu_daily_csv_text,
+    parse_lu_feature_collection_json,
+)
 
 
 SAMPLE_MAX_TEXT = Path('tests/data/sample_lu_meteolux_maxtemperature.json').read_text(encoding='utf-8')
 SAMPLE_MIN_TEXT = Path('tests/data/sample_lu_meteolux_mintemperature.json').read_text(encoding='utf-8')
 SAMPLE_PRECIP_TEXT = Path('tests/data/sample_lu_meteolux_totalprecipitation.json').read_text(encoding='utf-8')
+SAMPLE_DAILY_CSV_TEXT = Path('tests/data/sample_lu_meteolux_daily_csv.csv').read_text(encoding='utf-8')
 
 
 class _MockResponse:
@@ -39,12 +46,16 @@ class LuxembourgProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='LU', provider='meteolux'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='LU', provider='meteolux', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_max', 'tas_min', 'precipitation', 'sunshine_duration'],
         )
         self.assertEqual(
             list_supported_elements(country='LU', provider='meteolux', resolution='daily', provider_raw=True),
-            ['maxtemperature', 'mintemperature', 'totalprecipitation'],
+            ['maxtemperature', 'mintemperature', 'totalprecipitation', 'DINS'],
         )
+        self.assertNotIn('tas_mean', list_supported_elements(country='LU', provider='meteolux', resolution='daily'))
+        self.assertNotIn('wind_speed', list_supported_elements(country='LU', provider='meteolux', resolution='daily'))
+        self.assertNotIn('vapour_pressure', list_supported_elements(country='LU', provider='meteolux', resolution='daily'))
+        self.assertNotIn('open_water_evaporation', list_supported_elements(country='LU', provider='meteolux', resolution='daily'))
 
     def test_lu_station_metadata_contains_findel_airport(self) -> None:
         stations = read_station_metadata(country='LU')
@@ -65,7 +76,7 @@ class LuxembourgProviderTests(unittest.TestCase):
             list(metadata.columns),
             ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'],
         )
-        self.assertEqual(sorted(metadata['element'].tolist()), ['maxtemperature', 'mintemperature', 'totalprecipitation'])
+        self.assertEqual(sorted(metadata['element'].tolist()), ['DINS', 'maxtemperature', 'mintemperature', 'totalprecipitation'])
         self.assertTrue(metadata['description'].str.contains('Findel', case=False).any())
         self.assertTrue(metadata['description'].str.contains('06:00 UTC', case=False).any())
 
@@ -212,10 +223,50 @@ class LuxembourgProviderTests(unittest.TestCase):
         self.assertEqual(str(normalized.iloc[0]['observation_date']), '2024-06-01')
         self.assertAlmostEqual(float(normalized.iloc[0]['value']), 1.2)
 
+    def test_lu_daily_csv_parser_maps_dins_to_sunshine_duration_rows(self) -> None:
+        parsed = parse_lu_daily_csv_text(SAMPLE_DAILY_CSV_TEXT)
+        self.assertIn('DINS', parsed.columns)
+        normalized = normalize_lu_daily_csv_rows(
+            parsed,
+            raw_code='DINS',
+            provider='meteolux',
+            resolution='daily',
+        )
+        self.assertEqual(list(normalized.columns), LU_NORMALIZED_DAILY_COLUMNS)
+        self.assertEqual(str(normalized.iloc[0]['observation_date']), '2024-06-01')
+        self.assertEqual(normalized.iloc[0]['element_raw'], 'DINS')
+        self.assertAlmostEqual(float(normalized.iloc[0]['value']), 10.2)
+        self.assertTrue(normalized['value'].isna().iloc[1])
+
+    def test_lu_daily_csv_parser_accepts_sep_header_and_comma_decimals(self) -> None:
+        csv_text = "sep=;\nDATE;DINS (Hours)\n01.05.2025;10,2\n02.05.2025;\n"
+        parsed = parse_lu_daily_csv_text(csv_text)
+        normalized = normalize_lu_daily_csv_rows(
+            parsed,
+            raw_code='DINS',
+            provider='meteolux',
+            resolution='daily',
+        )
+        self.assertAlmostEqual(float(normalized.iloc[0]['value']), 10.2)
+        self.assertTrue(normalized['value'].isna().iloc[1])
+
+    def test_lu_daily_csv_parser_fails_when_dins_column_is_missing(self) -> None:
+        parsed = parse_lu_daily_csv_text("DATE,DXT (degC)\n01.05.2025,25.5\n")
+        with self.assertRaises(ValueError):
+            normalize_lu_daily_csv_rows(
+                parsed,
+                raw_code='DINS',
+                provider='meteolux',
+                resolution='daily',
+            )
+
     def test_lu_daily_downloader_with_mocked_http_returns_public_schema(self) -> None:
         station_metadata = read_station_metadata(country='LU')
 
         def fake_get(url, params=None, timeout=60):
+            if url == LU_METEOLUX_DAILY_CSV_URL:
+                self.assertIsNone(params)
+                return _MockResponse(SAMPLE_DAILY_CSV_TEXT)
             self.assertEqual(url, LU_METEOLUX_WFS_URL)
             self.assertEqual(params['SERVICE'], 'WFS')
             self.assertEqual(params['VERSION'], '2.0.0')
@@ -240,16 +291,16 @@ class LuxembourgProviderTests(unittest.TestCase):
             station_ids=['0-20000-0-06590'],
             start_date='2024-06-01',
             end_date='2024-06-02',
-            elements=['tas_max', 'tas_min', 'precipitation'],
+            elements=['tas_max', 'tas_min', 'precipitation', 'sunshine_duration'],
         )
         with patch('weatherdownload.providers.lu.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='LU', station_metadata=station_metadata)
 
         self.assertEqual(list(observations.columns), LU_NORMALIZED_DAILY_COLUMNS)
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_max', 'tas_min'])
-        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['maxtemperature', 'mintemperature', 'totalprecipitation'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'sunshine_duration', 'tas_max', 'tas_min'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['DINS', 'maxtemperature', 'mintemperature', 'totalprecipitation'])
         self.assertEqual(observations['station_id'].unique().tolist(), ['0-20000-0-06590'])
-        self.assertTrue(observations['value'].notna().all())
+        self.assertEqual(observations[observations['element'] == 'sunshine_duration']['observation_date'].astype(str).tolist(), ['2024-06-01', '2024-06-02'])
 
     def test_lu_provider_documentation_and_capabilities_are_updated(self) -> None:
         provider_note = Path('docs/provider_notes/lu_meteolux.md').read_text(encoding='utf-8')
@@ -259,7 +310,9 @@ class LuxembourgProviderTests(unittest.TestCase):
         self.assertIn('Findel Airport', provider_note)
         self.assertIn('not FAO-ready', provider_note)
         self.assertIn('Rn/net radiation is not downloaded', provider_note)
-        self.assertIn('| `LU` | `meteolux` | `daily` | `tas_max`, `tas_min`, `precipitation` |'.replace('`', ''), capabilities.replace('`', ''))
+        self.assertIn('sunshine_duration', provider_note)
+        self.assertIn('daily CSV', provider_note)
+        self.assertIn('| `LU` | `meteolux` | `daily` | `tas_max`, `tas_min`, `precipitation`, `sunshine_duration` |'.replace('`', ''), capabilities.replace('`', ''))
 
 
 if __name__ == '__main__':

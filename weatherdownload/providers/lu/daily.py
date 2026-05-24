@@ -6,8 +6,15 @@ import pandas as pd
 import requests
 
 from .metadata import read_station_metadata_lu
-from .parser import LU_NORMALIZED_DAILY_COLUMNS, normalize_lu_daily_feature_rows, normalize_lu_station_id, parse_lu_feature_collection_json
-from .registry import LU_DAILY_PARAMETER_METADATA, LU_METEOLUX_WFS_URL
+from .parser import (
+    LU_NORMALIZED_DAILY_COLUMNS,
+    normalize_lu_daily_feature_rows,
+    normalize_lu_daily_csv_rows,
+    normalize_lu_station_id,
+    parse_lu_daily_csv_text,
+    parse_lu_feature_collection_json,
+)
+from .registry import LU_DAILY_PARAMETER_METADATA, LU_METEOLUX_DAILY_CSV_URL, LU_METEOLUX_WFS_URL
 from ...elements import canonicalize_element_series
 from ...errors import EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from ...queries import ObservationQuery
@@ -34,18 +41,13 @@ def download_daily_observations_lu(
     for station_id in query.station_ids:
         normalized_station_id = normalize_lu_station_id(station_id)
         for raw_code in query.elements:
-            payload = _download_daily_payload(
+            normalized = _download_and_normalize_daily_element(
+                query=query,
                 station_id=normalized_station_id,
                 raw_code=raw_code,
                 request_start=request_start,
                 request_end=request_end,
                 timeout=timeout,
-            )
-            normalized = normalize_lu_daily_observations(
-                payload,
-                query=query,
-                raw_code=raw_code,
-                station_id=normalized_station_id,
                 station_metadata=metadata_table,
             )
             if not normalized.empty:
@@ -68,6 +70,42 @@ def normalize_lu_daily_observations(
 ) -> pd.DataFrame:
     frame = normalize_lu_daily_feature_rows(
         payload,
+        raw_code=raw_code,
+        provider=query.provider,
+        resolution=query.resolution,
+    )
+    if frame.empty:
+        return frame
+    frame = frame[frame['station_id'].astype(str) == station_id].copy()
+    if frame.empty:
+        return pd.DataFrame(columns=LU_NORMALIZED_DAILY_COLUMNS)
+    frame = frame[
+        (frame['observation_date'] >= query.start_date) & (frame['observation_date'] <= query.end_date)
+    ].copy()
+    if frame.empty:
+        return pd.DataFrame(columns=LU_NORMALIZED_DAILY_COLUMNS)
+
+    element_columns = canonicalize_element_series(pd.Series(frame['element_raw']), query)
+    frame['element'] = element_columns['element']
+    frame['element_raw'] = element_columns['element_raw']
+
+    if station_metadata is not None and not station_metadata.empty:
+        metadata_lookup = station_metadata.loc[:, ['station_id', 'gh_id']].drop_duplicates(subset=['station_id'])
+        frame = frame.drop(columns=['gh_id']).merge(metadata_lookup, on='station_id', how='left')
+
+    return frame.loc[:, LU_NORMALIZED_DAILY_COLUMNS].reset_index(drop=True)
+
+
+def normalize_lu_daily_csv_observations(
+    csv_text: str,
+    *,
+    query: ObservationQuery,
+    raw_code: str,
+    station_id: str,
+    station_metadata: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    frame = normalize_lu_daily_csv_rows(
+        parse_lu_daily_csv_text(csv_text),
         raw_code=raw_code,
         provider=query.provider,
         resolution=query.resolution,
@@ -128,6 +166,45 @@ def _download_daily_payload(
     response.raise_for_status()
     response.encoding = 'utf-8'
     return parse_lu_feature_collection_json(response.text)
+
+
+def _download_and_normalize_daily_element(
+    *,
+    query: ObservationQuery,
+    station_id: str,
+    raw_code: str,
+    request_start: date,
+    request_end: date,
+    timeout: int,
+    station_metadata: pd.DataFrame | None,
+) -> pd.DataFrame:
+    source_kind = LU_DAILY_PARAMETER_METADATA[raw_code]['source_kind']
+    if source_kind == 'csv':
+        response = requests.get(LU_METEOLUX_DAILY_CSV_URL, timeout=timeout)
+        response.raise_for_status()
+        response.encoding = 'utf-8'
+        return normalize_lu_daily_csv_observations(
+            response.text,
+            query=query,
+            raw_code=raw_code,
+            station_id=station_id,
+            station_metadata=station_metadata,
+        )
+
+    payload = _download_daily_payload(
+        station_id=station_id,
+        raw_code=raw_code,
+        request_start=request_start,
+        request_end=request_end,
+        timeout=timeout,
+    )
+    return normalize_lu_daily_observations(
+        payload,
+        query=query,
+        raw_code=raw_code,
+        station_id=station_id,
+        station_metadata=station_metadata,
+    )
 
 
 def _build_cql_filter(*, request_start: date, request_end: date) -> str:

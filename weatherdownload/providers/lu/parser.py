@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from io import StringIO
 from typing import Any
 
 import pandas as pd
@@ -8,8 +9,8 @@ import pandas as pd
 from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
 from .registry import (
     LU_DAILY_PARAMETER_METADATA,
-    LU_METEOLUX_STATION_ELEVATION_M,
     LU_METEOLUX_STATION_ID,
+    LU_METEOLUX_STATION_ELEVATION_M,
     LU_METEOLUX_STATION_LATITUDE,
     LU_METEOLUX_STATION_LONGITUDE,
     LU_METEOLUX_STATION_NAME,
@@ -129,6 +130,63 @@ def normalize_lu_daily_feature_rows(
     return frame
 
 
+def parse_lu_daily_csv_text(csv_text: str) -> pd.DataFrame:
+    normalized_text = csv_text.lstrip('\ufeff').replace('\r\n', '\n')
+    lines = [line for line in normalized_text.split('\n') if line.strip()]
+    if not lines:
+        raise ValueError('MeteoLux daily CSV response is empty.')
+    if lines[0].lower().startswith('sep='):
+        lines = lines[1:]
+    if not lines:
+        raise ValueError('MeteoLux daily CSV response has no header row.')
+
+    header_line = lines[0]
+    delimiter = ';' if header_line.count(';') > header_line.count(',') else ','
+    frame = pd.read_csv(StringIO('\n'.join(lines)), sep=delimiter, dtype='string')
+    frame.columns = [_normalize_csv_header(column) for column in frame.columns]
+    return frame
+
+
+def normalize_lu_daily_csv_rows(
+    frame: pd.DataFrame,
+    *,
+    raw_code: str,
+    provider: str,
+    resolution: str,
+) -> pd.DataFrame:
+    required_columns = {'DATE', raw_code}
+    missing_columns = sorted(required_columns - set(frame.columns))
+    if missing_columns:
+        raise ValueError(f'MeteoLux daily CSV is missing required columns: {missing_columns}')
+
+    rows: list[dict[str, object]] = []
+    for record in frame.to_dict(orient='records'):
+        observation_date = _coerce_csv_observation_date(record.get('DATE'))
+        if observation_date is None:
+            continue
+        rows.append(
+            {
+                'station_id': LU_METEOLUX_STATION_ID,
+                'gh_id': pd.NA,
+                'element': raw_code,
+                'element_raw': raw_code,
+                'observation_date': observation_date,
+                'time_function': pd.NA,
+                'value': _parse_csv_numeric(record.get(raw_code)),
+                'flag': pd.NA,
+                'quality': pd.Series([pd.NA], dtype='Int64').iloc[0],
+                'provider': provider,
+                'resolution': resolution,
+            }
+        )
+
+    normalized = pd.DataFrame.from_records(rows, columns=LU_NORMALIZED_DAILY_COLUMNS)
+    if normalized.empty:
+        return normalized
+    normalized['quality'] = pd.Series(normalized['quality'], dtype='Int64')
+    return normalized.sort_values(['station_id', 'observation_date', 'element_raw']).reset_index(drop=True)
+
+
 def _coerce_observation_date(properties: dict[str, object]) -> object | None:
     day_value = properties.get('day')
     if day_value not in (None, ''):
@@ -136,6 +194,18 @@ def _coerce_observation_date(properties: dict[str, object]) -> object | None:
         if not pd.isna(day):
             return day.date()
     timestamp = pd.to_datetime(properties.get('datetime'), utc=True, errors='coerce')
+    if pd.isna(timestamp):
+        return None
+    return timestamp.date()
+
+
+def _coerce_csv_observation_date(value: object) -> object | None:
+    cleaned = _clean_optional_string(value)
+    if not cleaned:
+        return None
+    timestamp = pd.to_datetime(cleaned, format='%d.%m.%Y', errors='coerce')
+    if pd.isna(timestamp):
+        timestamp = pd.to_datetime(cleaned, errors='coerce')
     if pd.isna(timestamp):
         return None
     return timestamp.date()
@@ -164,3 +234,20 @@ def _clean_optional_string(value: object) -> str:
     if value is None or pd.isna(value):
         return ''
     return str(value).strip()
+
+
+def _normalize_csv_header(value: object) -> str:
+    header = _clean_optional_string(value)
+    if not header:
+        return header
+    if ' (' in header:
+        header = header.split(' (', 1)[0].strip()
+    return header
+
+
+def _parse_csv_numeric(value: object):
+    cleaned = _clean_optional_string(value)
+    if not cleaned:
+        return pd.NA
+    normalized = cleaned.replace(',', '.')
+    return pd.to_numeric(pd.Series([normalized]), errors='coerce').iloc[0]

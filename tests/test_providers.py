@@ -140,7 +140,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='LU', provider='meteolux'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='LU', provider='meteolux', resolution='daily'),
-            ['tas_max', 'tas_min', 'precipitation'],
+            ['tas_max', 'tas_min', 'precipitation', 'sunshine_duration'],
         )
 
     def test_discovery_country_cz_includes_chmi_and_ghcnd_daily_without_evap_on_ghcnd(self) -> None:
