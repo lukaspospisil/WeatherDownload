@@ -1,0 +1,97 @@
+{
+  "provider": "meteireann",
+  "resolution": "daily",
+  "station_details_url": "https://clidata.met.ie/cli/climate_data/webdata/StationDetails.csv",
+  "daily_csv_url_template": "https://clidata.met.ie/cli/climate_data/webdata/dly{station_id}.csv",
+  "required_raw_columns": [
+    "date",
+    "maxtp",
+    "mintp",
+    "rain",
+    "wdsp",
+    "sun"
+  ],
+  "audited_station_count": 8,
+  "stations": [
+    {
+      "station_id": "518",
+      "gh_id": null,
+      "begin_date": "1937-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Shannon Airport",
+      "longitude": -8.91806,
+      "latitude": 52.69028,
+      "elevation_m": 15.0
+    },
+    {
+      "station_id": "532",
+      "gh_id": null,
+      "begin_date": "1939-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Dublin Airport",
+      "longitude": -6.24083,
+      "latitude": 53.42778,
+      "elevation_m": 71.0
+    },
+    {
+      "station_id": "1575",
+      "gh_id": null,
+      "begin_date": "2009-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Malin Head",
+      "longitude": -7.33917,
+      "latitude": 55.37194,
+      "elevation_m": 20.0
+    },
+    {
+      "station_id": "2275",
+      "gh_id": null,
+      "begin_date": "2010-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Valentia Observatory",
+      "longitude": -10.24083,
+      "latitude": 51.93833,
+      "elevation_m": 24.0
+    },
+    {
+      "station_id": "2375",
+      "gh_id": null,
+      "begin_date": "2012-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Belmullet",
+      "longitude": -10.00694,
+      "latitude": 54.2275,
+      "elevation_m": 9.0
+    },
+    {
+      "station_id": "3723",
+      "gh_id": null,
+      "begin_date": "1944-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Casement",
+      "longitude": -6.43889,
+      "latitude": 53.30556,
+      "elevation_m": 91.0
+    },
+    {
+      "station_id": "3904",
+      "gh_id": null,
+      "begin_date": "1961-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Cork Airport",
+      "longitude": -8.48611,
+      "latitude": 51.84722,
+      "elevation_m": 155.0
+    },
+    {
+      "station_id": "4935",
+      "gh_id": null,
+      "begin_date": "1986-01-01T00:00Z",
+      "end_date": "",
+      "full_name": "Knock Airport",
+      "longitude": -8.81722,
+      "latitude": 53.90611,
+      "elevation_m": 201.0
+    }
+  ]
+}

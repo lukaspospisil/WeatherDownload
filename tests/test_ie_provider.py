@@ -18,12 +18,17 @@ from weatherdownload.providers.ie.daily import IE_METEIREANN_DAILY_CSV_URL_TEMPL
 from weatherdownload.providers.ie.parser import (
     IE_NORMALIZED_DAILY_COLUMNS,
     KNOT_TO_M_S,
+    load_ie_audited_stations,
     normalize_ie_daily_rows,
+    normalize_ie_station_metadata,
+    parse_ie_station_details_csv,
     parse_ie_daily_csv_text,
 )
 
 
 SAMPLE_DAILY_TEXT = Path('tests/data/sample_ie_meteireann_dly532.csv').read_text(encoding='utf-8')
+SAMPLE_CORK_TEXT = SAMPLE_DAILY_TEXT.replace('Dublin Airport', 'Cork Airport', 1).replace('532', '3904')
+SAMPLE_STATION_DETAILS_TEXT = Path('tests/data/sample_ie_station_details.csv').read_text(encoding='utf-8')
 
 
 class _MockResponse:
@@ -61,11 +66,29 @@ class IrelandProviderTests(unittest.TestCase):
             list(stations.columns),
             ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
         )
+        self.assertGreater(len(stations), 6)
         dublin = stations[stations['station_id'] == '532'].iloc[0]
         self.assertEqual(dublin['full_name'], 'Dublin Airport')
         self.assertAlmostEqual(float(dublin['latitude']), 53.42778)
         self.assertAlmostEqual(float(dublin['longitude']), -6.24083)
         self.assertAlmostEqual(float(dublin['elevation_m']), 71.0)
+        self.assertIn('3904', stations['station_id'].tolist())
+
+    def test_ie_station_details_parser_keeps_multiple_verified_stations(self) -> None:
+        parsed = parse_ie_station_details_csv(SAMPLE_STATION_DETAILS_TEXT)
+        stations = normalize_ie_station_metadata(parsed)
+        self.assertEqual(stations['station_id'].tolist(), ['1575', '2275', '2375', '3723', '3904', '4935', '518', '532'])
+        self.assertEqual(stations[stations['station_id'] == '3904'].iloc[0]['full_name'], 'Cork Airport')
+        self.assertEqual(stations[stations['station_id'] == '518'].iloc[0]['full_name'], 'Shannon Airport')
+        self.assertEqual(stations[stations['station_id'] == '532'].iloc[0]['begin_date'], '1939-01-01T00:00Z')
+
+    def test_ie_audited_station_list_is_used_and_has_more_than_six_stations(self) -> None:
+        audited = load_ie_audited_stations()
+        self.assertGreater(len(audited), 6)
+        self.assertIn('532', audited['station_id'].tolist())
+        self.assertTrue(audited['full_name'].notna().all())
+        self.assertTrue(audited['latitude'].notna().all())
+        self.assertTrue(audited['longitude'].notna().all())
 
     def test_ie_station_observation_metadata_lists_daily_raw_elements(self) -> None:
         metadata = read_station_observation_metadata(country='IE')
@@ -73,7 +96,7 @@ class IrelandProviderTests(unittest.TestCase):
             list(metadata.columns),
             ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'],
         )
-        self.assertEqual(sorted(metadata['element'].tolist()), ['maxtp', 'mintp', 'rain', 'sun', 'wdsp'])
+        self.assertEqual(sorted(metadata[metadata['station_id'] == '532']['element'].tolist()), ['maxtp', 'mintp', 'rain', 'sun', 'wdsp'])
         self.assertTrue(metadata['description'].str.contains('Met Eireann', case=False).any())
         self.assertTrue(metadata['schedule'].str.contains('00 UTC', case=False).any())
 
@@ -148,33 +171,56 @@ class IrelandProviderTests(unittest.TestCase):
 
     def test_ie_daily_downloader_with_mocked_http_returns_public_schema(self) -> None:
         def fake_get(url, timeout=60):
-            self.assertEqual(url, IE_METEIREANN_DAILY_CSV_URL_TEMPLATE.format(station_id='532'))
-            return _MockResponse(SAMPLE_DAILY_TEXT)
+            if url == IE_METEIREANN_DAILY_CSV_URL_TEMPLATE.format(station_id='532'):
+                return _MockResponse(SAMPLE_DAILY_TEXT)
+            if url == IE_METEIREANN_DAILY_CSV_URL_TEMPLATE.format(station_id='3904'):
+                return _MockResponse(SAMPLE_CORK_TEXT)
+            raise AssertionError(f'unexpected url: {url}')
 
         query = ObservationQuery(
             country='IE',
             provider='meteireann',
             resolution='daily',
-            station_ids=['532'],
+            station_ids=['532', '3904'],
             start_date='2024-01-01',
             end_date='2024-01-02',
-            elements=['tas_max', 'tas_min', 'precipitation', 'wind_speed', 'sunshine_duration'],
+            elements=['tas_max'],
         )
         with patch('weatherdownload.providers.ie.daily.requests.get', side_effect=fake_get):
-            observations = download_observations(query, country='IE')
+            observations = download_observations(query, country='IE', station_metadata=read_station_metadata(country='IE', source_url='tests/data/sample_ie_station_details.csv'))
 
         self.assertEqual(list(observations.columns), IE_NORMALIZED_DAILY_COLUMNS)
-        self.assertEqual(
-            sorted(observations['element'].unique().tolist()),
-            ['precipitation', 'sunshine_duration', 'tas_max', 'tas_min', 'wind_speed'],
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['tas_max'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['maxtp'])
+        self.assertEqual(sorted(observations['station_id'].unique().tolist()), ['3904', '532'])
+        self.assertEqual(observations['observation_date'].astype(str).tolist().count('2024-01-01'), 2)
+        self.assertEqual(observations['observation_date'].astype(str).tolist().count('2024-01-02'), 2)
+
+    def test_ie_daily_csv_url_construction_uses_requested_station_id(self) -> None:
+        requested_urls: list[str] = []
+
+        def fake_get(url, timeout=60):
+            requested_urls.append(url)
+            if url.endswith('dly532.csv'):
+                return _MockResponse(SAMPLE_DAILY_TEXT)
+            if url.endswith('dly3904.csv'):
+                return _MockResponse(SAMPLE_CORK_TEXT)
+            raise AssertionError(f'unexpected url: {url}')
+
+        query = ObservationQuery(
+            country='IE',
+            provider='meteireann',
+            resolution='daily',
+            station_ids=['532', '3904'],
+            start_date='2024-01-01',
+            end_date='2024-01-01',
+            elements=['precipitation'],
         )
-        self.assertEqual(
-            sorted(observations['element_raw'].unique().tolist()),
-            ['maxtp', 'mintp', 'rain', 'sun', 'wdsp'],
-        )
-        self.assertEqual(observations['station_id'].unique().tolist(), ['532'])
-        self.assertEqual(observations['observation_date'].astype(str).tolist().count('2024-01-01'), 5)
-        self.assertEqual(observations['observation_date'].astype(str).tolist().count('2024-01-02'), 5)
+        with patch('weatherdownload.providers.ie.daily.requests.get', side_effect=fake_get):
+            download_observations(query, country='IE', station_metadata=read_station_metadata(country='IE', source_url='tests/data/sample_ie_station_details.csv'))
+
+        self.assertIn(IE_METEIREANN_DAILY_CSV_URL_TEMPLATE.format(station_id='532'), requested_urls)
+        self.assertIn(IE_METEIREANN_DAILY_CSV_URL_TEMPLATE.format(station_id='3904'), requested_urls)
 
     def test_ie_provider_documentation_and_capabilities_are_updated(self) -> None:
         provider_note = Path('docs/provider_notes/ie_meteireann.md').read_text(encoding='utf-8')
@@ -183,6 +229,9 @@ class IrelandProviderTests(unittest.TestCase):
         self.assertIn('Met Eireann Ireland', provider_note)
         self.assertIn('Dublin Airport', provider_note)
         self.assertIn('dly532.csv', provider_note)
+        self.assertIn('multi-station', provider_note)
+        self.assertIn('station ids are Met Eireann daily station numbers', provider_note)
+        self.assertIn('audited validated daily station set', provider_note)
         self.assertIn('wdsp', provider_note)
         self.assertIn('knots', provider_note)
         self.assertIn('not FAO-ready', provider_note)

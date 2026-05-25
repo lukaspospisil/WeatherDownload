@@ -7,7 +7,7 @@ from .metadata import read_station_metadata_ie
 from .parser import IE_NORMALIZED_DAILY_COLUMNS, normalize_ie_daily_rows, parse_ie_daily_csv_text
 from .registry import IE_METEIREANN_DAILY_CSV_URL_TEMPLATE
 from ...elements import canonicalize_element_series
-from ...errors import EmptyResultError, StationNotFoundError, UnsupportedQueryError
+from ...errors import DownloadError, EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from ...queries import ObservationQuery
 
 
@@ -63,7 +63,16 @@ def download_daily_observations_ie(
 
 
 def _download_station_csv(*, station_id: str, timeout: int):
-    response = requests.get(IE_METEIREANN_DAILY_CSV_URL_TEMPLATE.format(station_id=station_id), timeout=timeout)
-    response.raise_for_status()
+    url = IE_METEIREANN_DAILY_CSV_URL_TEMPLATE.format(station_id=station_id)
+    response = requests.get(url, timeout=timeout)
+    if response.status_code == 404:
+        raise StationNotFoundError(f'No Met Eireann daily CSV data found for station_id: {station_id}')
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        raise DownloadError(f'Failed to download Met Eireann daily CSV for station_id {station_id}: {exc}') from exc
     response.encoding = 'utf-8'
-    return parse_ie_daily_csv_text(response.text)
+    try:
+        return parse_ie_daily_csv_text(response.text)
+    except ValueError as exc:
+        raise EmptyResultError(f'Met Eireann daily CSV for station_id {station_id} is empty or invalid: {exc}') from exc

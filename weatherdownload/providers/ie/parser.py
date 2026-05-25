@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 import csv
+import json
 from dataclasses import dataclass
 from io import StringIO
+from pathlib import Path
 
 import pandas as pd
 
 from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
 from .registry import (
+    IE_AUDITED_DAILY_STATIONS_PATH,
     IE_DAILY_PARAMETER_METADATA,
-    IE_METEIREANN_STATION_ELEVATION_M,
-    IE_METEIREANN_STATION_ID,
-    IE_METEIREANN_STATION_LATITUDE,
-    IE_METEIREANN_STATION_LONGITUDE,
-    IE_METEIREANN_STATION_NAME,
 )
 
 
@@ -30,22 +28,58 @@ class ParsedIrelandDailyCsv:
     table: pd.DataFrame
 
 
-def normalize_ie_station_metadata() -> pd.DataFrame:
-    return pd.DataFrame.from_records(
-        [
+def parse_ie_station_details_csv(csv_text: str) -> pd.DataFrame:
+    reader = csv.DictReader(StringIO(csv_text.lstrip('\ufeff')))
+    rows: list[dict[str, object]] = []
+    for record in reader:
+        station_id = _clean_string(record.get('station name'))
+        full_name = _clean_string(record.get('name'))
+        if not station_id or not full_name:
+            continue
+        rows.append(
             {
-                'station_id': IE_METEIREANN_STATION_ID,
+                'station_id': station_id,
                 'gh_id': pd.NA,
-                'begin_date': '',
-                'end_date': '',
-                'full_name': IE_METEIREANN_STATION_NAME,
-                'longitude': IE_METEIREANN_STATION_LONGITUDE,
-                'latitude': IE_METEIREANN_STATION_LATITUDE,
-                'elevation_m': IE_METEIREANN_STATION_ELEVATION_M,
+                'begin_date': _year_to_begin_date(record.get('open year')),
+                'end_date': _year_to_end_date(record.get('close year')),
+                'full_name': _title_name(full_name),
+                'longitude': _parse_float(record.get('longitude')),
+                'latitude': _parse_float(record.get('latitude')),
+                'elevation_m': _parse_float(record.get('height(m)')),
             }
-        ],
-        columns=STATION_METADATA_COLUMNS,
-    )
+        )
+    frame = pd.DataFrame.from_records(rows, columns=STATION_METADATA_COLUMNS)
+    if frame.empty:
+        return frame
+    frame['station_id'] = frame['station_id'].astype('string').str.strip()
+    return frame.drop_duplicates(subset=['station_id'], keep='first').sort_values('station_id').reset_index(drop=True)
+
+
+def normalize_ie_station_metadata(frame: pd.DataFrame) -> pd.DataFrame:
+    audited_station_ids = set(load_ie_audited_station_ids())
+    if frame.empty:
+        return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
+    filtered = frame[frame['station_id'].isin(audited_station_ids)].copy()
+    if filtered.empty:
+        return pd.DataFrame(columns=STATION_METADATA_COLUMNS)
+    return filtered.sort_values('station_id').reset_index(drop=True)
+
+
+def load_ie_audited_stations(path: Path = IE_AUDITED_DAILY_STATIONS_PATH) -> pd.DataFrame:
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    stations = payload.get('stations', [])
+    frame = pd.DataFrame.from_records(stations, columns=STATION_METADATA_COLUMNS)
+    if frame.empty:
+        return frame
+    frame['station_id'] = frame['station_id'].astype('string').str.strip()
+    return frame.sort_values('station_id').reset_index(drop=True)
+
+
+def load_ie_audited_station_ids(path: Path = IE_AUDITED_DAILY_STATIONS_PATH) -> list[str]:
+    frame = load_ie_audited_stations(path)
+    if frame.empty:
+        return []
+    return frame['station_id'].astype(str).tolist()
 
 
 def normalize_ie_observation_metadata(stations: pd.DataFrame, spec: object) -> pd.DataFrame:
@@ -207,3 +241,37 @@ def _clean_string(value: object) -> str:
     if value is None or pd.isna(value):
         return ''
     return str(value).strip()
+
+
+def _parse_float(value: object) -> float | None:
+    cleaned = _clean_string(value)
+    if not cleaned or cleaned == '(null)':
+        return None
+    normalized = cleaned.replace(',', '.')
+    parsed = pd.to_numeric(pd.Series([normalized]), errors='coerce').iloc[0]
+    if pd.isna(parsed):
+        return None
+    return float(parsed)
+
+
+def _year_to_begin_date(value: object) -> str:
+    cleaned = _clean_string(value)
+    if not cleaned or cleaned == '(null)':
+        return ''
+    if not cleaned.isdigit():
+        return ''
+    return f'{cleaned}-01-01T00:00Z'
+
+
+def _year_to_end_date(value: object) -> str:
+    cleaned = _clean_string(value)
+    if not cleaned or cleaned == '(null)':
+        return ''
+    if not cleaned.isdigit():
+        return ''
+    return f'{cleaned}-12-31T23:59Z'
+
+
+def _title_name(value: str) -> str:
+    lowered = value.strip().lower()
+    return ' '.join(part.capitalize() for part in lowered.split())

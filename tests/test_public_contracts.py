@@ -58,6 +58,7 @@ SAMPLE_HU_TENMIN_HISTORICAL_INDEX_HTML = Path('tests/data/sample_hu_tenmin_histo
 SAMPLE_HU_TENMIN_HISTORICAL_CSV = Path('tests/data/sample_hu_tenmin_hist_13704.csv').read_text(encoding='utf-8')
 SAMPLE_HU_TENMIN_RECENT_CSV = Path('tests/data/sample_hu_tenmin_recent_13704.csv').read_text(encoding='utf-8')
 SAMPLE_IE_DAILY_TEXT = Path('tests/data/sample_ie_meteireann_dly532.csv').read_text(encoding='utf-8')
+SAMPLE_IE_STATION_DETAILS_PATH = Path('tests/data/sample_ie_station_details.csv')
 SAMPLE_SE_FIXTURE_DIR = Path('tests/data/smhi_se')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -156,7 +157,7 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'HU':
         return read_station_metadata(country='HU', source_url=str(SAMPLE_HU_STATIONS_PATH))
     if country == 'IE':
-        return read_station_metadata(country='IE')
+        return read_station_metadata(country='IE', source_url=str(SAMPLE_IE_STATION_DETAILS_PATH))
     if country == 'NL':
         return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_STATIONS_PATH))
     if country == 'PL':
@@ -557,7 +558,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'FI': ['FI000000001', 'FI000000002'],
         'FR': ['07005001', '13055001'],
         'HU': ['13704', '13704', '13711'],
-        'IE': ['532'],
+        'IE': ['1575', '2275', '2375', '3723', '3904', '4935', '518', '532'],
         'IT': ['IT000000001', 'IT000000002'],
         'MX': ['MX000000001', 'MX000000002'],
         'NL': ['0-20000-0-06260', '0-20000-0-06310'],

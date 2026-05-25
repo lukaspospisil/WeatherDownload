@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -21,12 +22,8 @@ IE_METEIREANN_HISTORICAL_DATA_PAGE_URL = 'https://www.met.ie/climate/available-d
 IE_METEIREANN_STATION_DETAILS_URL = 'https://clidata.met.ie/cli/climate_data/webdata/StationDetails.csv'
 IE_METEIREANN_DAILY_CSV_URL_TEMPLATE = 'https://clidata.met.ie/cli/climate_data/webdata/dly{station_id}.csv'
 IE_METEIREANN_KEY_DAILY_URL = 'https://opendata2.met.ie/opendata2/docs/KeyDaily.txt'
-
-IE_METEIREANN_STATION_ID = '532'
-IE_METEIREANN_STATION_NAME = 'Dublin Airport'
-IE_METEIREANN_STATION_LATITUDE = 53.42778
-IE_METEIREANN_STATION_LONGITUDE = -6.24083
-IE_METEIREANN_STATION_ELEVATION_M = 71.0
+IE_AUDITED_DAILY_STATIONS_PATH = Path(__file__).with_name('daily_stations.json')
+IE_AUDIT_REQUIRED_RAW_COLUMNS = ('date', 'maxtp', 'mintp', 'rain', 'wdsp', 'sun')
 
 IE_DAILY_CANONICAL_ELEMENTS = {
     'tas_max': ('maxtp',),
@@ -69,7 +66,7 @@ _IE_DATASET_SPECS = [
     IrelandDatasetSpec(
         provider='meteireann',
         resolution='daily',
-        label='Met Eireann official daily station CSV observations (initial conservative Dublin Airport slice)',
+        label='Met Eireann official daily station CSV observations (station-metadata-driven conservative verified daily subset)',
         station_metadata_url=IE_METEIREANN_STATION_DETAILS_URL,
         data_url=IE_METEIREANN_DAILY_CSV_URL_TEMPLATE,
         supported_elements=('maxtp', 'mintp', 'rain', 'wdsp', 'sun'),
