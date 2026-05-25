@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 
 
@@ -23,6 +24,7 @@ IE_METEIREANN_STATION_DETAILS_URL = 'https://clidata.met.ie/cli/climate_data/web
 IE_METEIREANN_DAILY_CSV_URL_TEMPLATE = 'https://clidata.met.ie/cli/climate_data/webdata/dly{station_id}.csv'
 IE_METEIREANN_KEY_DAILY_URL = 'https://opendata2.met.ie/opendata2/docs/KeyDaily.txt'
 IE_AUDITED_DAILY_STATIONS_PATH = Path(__file__).with_name('daily_stations.json')
+IE_AUDITED_DAILY_STATIONS_RESOURCE = 'daily_stations.json'
 IE_AUDIT_REQUIRED_RAW_COLUMNS = ('date', 'maxtp', 'mintp', 'rain', 'wdsp', 'sun')
 
 IE_DAILY_CANONICAL_ELEMENTS = {
@@ -92,3 +94,7 @@ def get_dataset_spec(provider: str, resolution: str) -> IrelandDatasetSpec:
         if spec.provider == normalized_provider and spec.resolution == normalized_resolution:
             return spec
     raise ValueError(f'Unsupported Ireland dataset combination: {provider}/{resolution}')
+
+
+def read_audited_daily_stations_text() -> str:
+    return files('weatherdownload.providers.ie').joinpath(IE_AUDITED_DAILY_STATIONS_RESOURCE).read_text(encoding='utf-8')

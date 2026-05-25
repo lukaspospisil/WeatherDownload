@@ -38,3 +38,6 @@ Repository = "https://github.com/lukaspospisil/WeatherDownload"
 
 [tool.setuptools.packages.find]
 include = ["weatherdownload*"]
+
+[tool.setuptools.package-data]
+"weatherdownload.providers.ie" = ["daily_stations.json"]

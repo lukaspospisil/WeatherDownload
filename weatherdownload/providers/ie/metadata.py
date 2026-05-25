@@ -10,12 +10,12 @@ from .parser import (
     normalize_ie_station_metadata,
     parse_ie_station_details_csv,
 )
-from .registry import IE_AUDITED_DAILY_STATIONS_PATH, IE_METEIREANN_STATION_DETAILS_URL, get_dataset_spec
+from .registry import IE_METEIREANN_STATION_DETAILS_URL, get_dataset_spec
 
 
 def read_station_metadata_ie(source_url: str | None = None, timeout: int = 60):
     if source_url is None:
-        return load_ie_audited_stations(IE_AUDITED_DAILY_STATIONS_PATH)
+        return load_ie_audited_stations()
     source = source_url or IE_METEIREANN_STATION_DETAILS_URL
     local_path = Path(source)
     if local_path.exists():

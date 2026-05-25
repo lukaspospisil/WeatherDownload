@@ -10,8 +10,8 @@ import pandas as pd
 
 from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
 from .registry import (
-    IE_AUDITED_DAILY_STATIONS_PATH,
     IE_DAILY_PARAMETER_METADATA,
+    read_audited_daily_stations_text,
 )
 
 
@@ -65,8 +65,11 @@ def normalize_ie_station_metadata(frame: pd.DataFrame) -> pd.DataFrame:
     return filtered.sort_values('station_id').reset_index(drop=True)
 
 
-def load_ie_audited_stations(path: Path = IE_AUDITED_DAILY_STATIONS_PATH) -> pd.DataFrame:
-    payload = json.loads(path.read_text(encoding='utf-8'))
+def load_ie_audited_stations(path: Path | None = None) -> pd.DataFrame:
+    if path is None:
+        payload = json.loads(read_audited_daily_stations_text())
+    else:
+        payload = json.loads(path.read_text(encoding='utf-8'))
     stations = payload.get('stations', [])
     frame = pd.DataFrame.from_records(stations, columns=STATION_METADATA_COLUMNS)
     if frame.empty:
@@ -75,7 +78,7 @@ def load_ie_audited_stations(path: Path = IE_AUDITED_DAILY_STATIONS_PATH) -> pd.
     return frame.sort_values('station_id').reset_index(drop=True)
 
 
-def load_ie_audited_station_ids(path: Path = IE_AUDITED_DAILY_STATIONS_PATH) -> list[str]:
+def load_ie_audited_station_ids(path: Path | None = None) -> list[str]:
     frame = load_ie_audited_stations(path)
     if frame.empty:
         return []

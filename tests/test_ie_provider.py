@@ -1,4 +1,5 @@
 import unittest
+from importlib.resources import files
 from pathlib import Path
 from unittest.mock import patch
 
@@ -43,6 +44,11 @@ class _MockResponse:
 
 
 class IrelandProviderTests(unittest.TestCase):
+    def test_ie_audited_station_json_is_packaged_as_resource(self) -> None:
+        resource = files('weatherdownload.providers.ie').joinpath('daily_stations.json')
+        self.assertTrue(resource.is_file())
+        self.assertIn('"audited_station_count"', resource.read_text(encoding='utf-8'))
+
     def test_registry_discovery_includes_ie_daily_elements(self) -> None:
         self.assertIn('IE', list_supported_countries())
         self.assertEqual(list_providers(country='IE'), ['meteireann'])
