@@ -110,7 +110,7 @@ This is intentional. The workflow treats the filtered long table as a strict pre
 
 ## FAO-56 Computation
 
-Reusable FAO-56 equations live in [weatherdownload/fao.py](/d:/PYTHON/WeatherDownload/weatherdownload/fao.py:1).
+Reusable FAO-56 equations live in [weatherdownload/fao.py](../weatherdownload/fao.py).
 
 The workflow computes FAO-56 daily reference evapotranspiration from the wide table with:
 
