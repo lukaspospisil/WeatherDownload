@@ -104,14 +104,55 @@ class EuropeCoverageTests(unittest.TestCase):
             self.assertNotIn('<metadata', svg_text)
             self.assertNotIn('<rect', svg_text)
 
+    def test_projected_view_bbox_is_axis_aligned_rectangle(self) -> None:
+        projection_bounds = MODULE._projected_view_bounds()
+        width, height = MODULE._svg_size_from_bounds(
+            projection_bounds,
+            width=MODULE.SVG_MAP_WIDTH,
+        )
+
+        bottom_left = MODULE._project(
+            MODULE.VIEW_BBOX['min_lon'],
+            MODULE.VIEW_BBOX['min_lat'],
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=projection_bounds,
+        )
+        top_left = MODULE._project(
+            MODULE.VIEW_BBOX['min_lon'],
+            MODULE.VIEW_BBOX['max_lat'],
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=projection_bounds,
+        )
+        bottom_right = MODULE._project(
+            MODULE.VIEW_BBOX['max_lon'],
+            MODULE.VIEW_BBOX['min_lat'],
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=projection_bounds,
+        )
+        top_right = MODULE._project(
+            MODULE.VIEW_BBOX['max_lon'],
+            MODULE.VIEW_BBOX['max_lat'],
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=projection_bounds,
+        )
+
+        self.assertAlmostEqual(top_left[0], bottom_left[0], places=6)
+        self.assertAlmostEqual(top_right[0], bottom_right[0], places=6)
+        self.assertAlmostEqual(top_left[1], top_right[1], places=6)
+        self.assertAlmostEqual(bottom_left[1], bottom_right[1], places=6)
+        self.assertAlmostEqual(top_left[0], 0.0, places=6)
+        self.assertAlmostEqual(top_left[1], 0.0, places=6)
+        self.assertAlmostEqual(bottom_right[0], float(width), places=6)
+        self.assertAlmostEqual(bottom_right[1], float(height), places=6)
+
     def test_svg_files_use_map_derived_size_and_fill_canvas(self) -> None:
         projection_bounds = MODULE._projected_view_bounds()
-        canvas_bounds = MODULE._padded_bounds(
-            projection_bounds,
-            padding_fraction=MODULE.SVG_PADDING_FRACTION,
-        )
         expected_width, expected_height = MODULE._svg_size_from_bounds(
-            canvas_bounds,
+            projection_bounds,
             width=MODULE.SVG_MAP_WIDTH,
         )
         geodata = MODULE.load_geodata()
@@ -121,7 +162,7 @@ class EuropeCoverageTests(unittest.TestCase):
             [polygon for polygons in rendered_geometries.values() for polygon in polygons],
             canvas_width=expected_width,
             canvas_height=expected_height,
-            projection_bounds=canvas_bounds,
+            projection_bounds=projection_bounds,
         )
         expected_coords = [float(value) for value in re.findall(r'-?\d+(?:\.\d+)?', expected_path_data)]
         expected_xs = expected_coords[0::2]
@@ -176,10 +217,7 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertNotIn('.context-country { fill: #e7ecef; }', svg_text)
 
     def test_country_border_path_data_excludes_view_boundary_segments(self) -> None:
-        projection_bounds = MODULE._padded_bounds(
-            MODULE._projected_view_bounds(),
-            padding_fraction=MODULE.SVG_PADDING_FRACTION,
-        )
+        projection_bounds = MODULE._projected_view_bounds()
         width, height = MODULE._svg_size_from_bounds(
             projection_bounds,
             width=MODULE.SVG_MAP_WIDTH,
@@ -222,10 +260,7 @@ class EuropeCoverageTests(unittest.TestCase):
         geodata = MODULE.load_geodata()
         country_geometries = MODULE.build_country_geometries(geodata)
         rendered_geometries = MODULE._clip_country_geometries(country_geometries)
-        projection_bounds = MODULE._padded_bounds(
-            MODULE._projected_view_bounds(),
-            padding_fraction=MODULE.SVG_PADDING_FRACTION,
-        )
+        projection_bounds = MODULE._projected_view_bounds()
         width, height = MODULE._svg_size_from_bounds(
             projection_bounds,
             width=MODULE.SVG_MAP_WIDTH,
@@ -246,16 +281,27 @@ class EuropeCoverageTests(unittest.TestCase):
                         )
                         self.assertNotIn(segment, _path_segments(border_path_data))
 
+    def test_daily_svg_border_paths_do_not_draw_viewport_rectangle_edges(self) -> None:
+        root = ET.fromstring(Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8'))
+        width = float(root.attrib['width'])
+        height = float(root.attrib['height'])
+
+        for path in root.findall('{http://www.w3.org/2000/svg}path'):
+            if path.attrib.get('class') != 'country-border':
+                continue
+            for start, end in _path_segments(path.attrib['d']):
+                self.assertFalse(_same_svg_coordinate(start[0], 0.0) and _same_svg_coordinate(end[0], 0.0))
+                self.assertFalse(_same_svg_coordinate(start[0], width) and _same_svg_coordinate(end[0], width))
+                self.assertFalse(_same_svg_coordinate(start[1], 0.0) and _same_svg_coordinate(end[1], 0.0))
+                self.assertFalse(_same_svg_coordinate(start[1], height) and _same_svg_coordinate(end[1], height))
+
     def test_daily_svg_uses_clipped_fill_and_separate_border_rendering(self) -> None:
         summary = MODULE.classify_europe_coverage()
         svg_text = MODULE.render_europe_coverage_svg('daily', summary['daily'])
         geodata = MODULE.load_geodata()
         country_geometries = MODULE.build_country_geometries(geodata)
         rendered_geometries = MODULE._clip_country_geometries(country_geometries)
-        projection_bounds = MODULE._padded_bounds(
-            MODULE._projected_view_bounds(),
-            padding_fraction=MODULE.SVG_PADDING_FRACTION,
-        )
+        projection_bounds = MODULE._projected_view_bounds()
         width, height = MODULE._svg_size_from_bounds(
             projection_bounds,
             width=MODULE.SVG_MAP_WIDTH,
@@ -349,6 +395,10 @@ def _projected_segment(
         (round(projected_start[0], 2), round(projected_start[1], 2)),
         (round(projected_end[0], 2), round(projected_end[1], 2)),
     )
+
+
+def _same_svg_coordinate(value: float, boundary: float) -> bool:
+    return abs(value - boundary) <= 0.01
 
 
 if __name__ == '__main__':

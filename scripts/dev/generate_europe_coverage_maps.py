@@ -33,10 +33,6 @@ VIEW_BBOX = {
     'min_lat': 34.0,
     'max_lat': 72.0,
 }
-PROJECTION_CENTER = {
-    'lon': 10.0,
-    'lat': 54.0,
-}
 SVG_MAP_WIDTH = 900
 SVG_PADDING_FRACTION = 0.03
 COVERAGE_COUNTRIES = (
@@ -213,8 +209,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     country_geometries = build_country_geometries(geodata)
     rendered_geometries = _clip_country_geometries(country_geometries)
 
-    projection_bounds = _projected_view_bounds()
-    canvas_bounds = _padded_bounds(projection_bounds, padding_fraction=SVG_PADDING_FRACTION)
+    canvas_bounds = _projected_view_bounds()
     width, height = _svg_size_from_bounds(canvas_bounds, width=SVG_MAP_WIDTH)
     used_statuses = sorted({country_info['status'] for country_info in summary.values()})
     context_countries = sorted(country for country in rendered_geometries if country not in COVERAGE_COUNTRIES)
@@ -397,37 +392,22 @@ def _projected_bounds(
     }
 
 
-def _projected_view_bounds(samples_per_edge: int = 64) -> dict[str, float]:
-    if samples_per_edge < 2:
-        raise ValueError('samples_per_edge must be at least 2.')
-
-    min_x = float('inf')
-    max_x = float('-inf')
-    min_y = float('inf')
-    max_y = float('-inf')
-
-    def _include_point(lon: float, lat: float) -> None:
-        nonlocal min_x, max_x, min_y, max_y
-        x, y = _project_lon_lat(lon, lat)
-        min_x = min(min_x, x)
-        max_x = max(max_x, x)
-        min_y = min(min_y, y)
-        max_y = max(max_y, y)
-
-    for index in range(samples_per_edge):
-        fraction = index / (samples_per_edge - 1)
-        lon = VIEW_BBOX['min_lon'] + fraction * (VIEW_BBOX['max_lon'] - VIEW_BBOX['min_lon'])
-        lat = VIEW_BBOX['min_lat'] + fraction * (VIEW_BBOX['max_lat'] - VIEW_BBOX['min_lat'])
-        _include_point(lon, VIEW_BBOX['min_lat'])
-        _include_point(lon, VIEW_BBOX['max_lat'])
-        _include_point(VIEW_BBOX['min_lon'], lat)
-        _include_point(VIEW_BBOX['max_lon'], lat)
+def _projected_view_bounds() -> dict[str, float]:
+    corners = [
+        (VIEW_BBOX['min_lon'], VIEW_BBOX['min_lat']),
+        (VIEW_BBOX['min_lon'], VIEW_BBOX['max_lat']),
+        (VIEW_BBOX['max_lon'], VIEW_BBOX['min_lat']),
+        (VIEW_BBOX['max_lon'], VIEW_BBOX['max_lat']),
+    ]
+    projected = [_project_lon_lat(lon, lat) for lon, lat in corners]
+    xs = [x for x, _ in projected]
+    ys = [y for _, y in projected]
 
     return {
-        'min_x': min_x,
-        'max_x': max_x,
-        'min_y': min_y,
-        'max_y': max_y,
+        'min_x': min(xs),
+        'max_x': max(xs),
+        'min_y': min(ys),
+        'max_y': max(ys),
     }
 
 
@@ -610,24 +590,11 @@ def _project(
 
 def _project_lon_lat(lon: float, lat: float) -> tuple[float, float]:
     lon_rad = math.radians(lon)
-    lat_rad = math.radians(lat)
-    lon0 = math.radians(PROJECTION_CENTER['lon'])
-    lat0 = math.radians(PROJECTION_CENTER['lat'])
-
-    sin_lat = math.sin(lat_rad)
-    cos_lat = math.cos(lat_rad)
-    sin_lat0 = math.sin(lat0)
-    cos_lat0 = math.cos(lat0)
-    delta_lon = lon_rad - lon0
-    cos_delta_lon = math.cos(delta_lon)
-
-    denominator = 1.0 + sin_lat0 * sin_lat + cos_lat0 * cos_lat * cos_delta_lon
-    if denominator <= 0.0:
-        denominator = 1e-12
-    k = math.sqrt(2.0 / denominator)
-
-    x = k * cos_lat * math.sin(delta_lon)
-    y = k * (cos_lat0 * sin_lat - sin_lat0 * cos_lat * cos_delta_lon)
+    max_mercator_lat = 85.05112878
+    clipped_lat = min(max(lat, -max_mercator_lat), max_mercator_lat)
+    lat_rad = math.radians(clipped_lat)
+    x = lon_rad
+    y = math.log(math.tan(math.pi / 4.0 + lat_rad / 2.0))
     return x, y
 
 
