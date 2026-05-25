@@ -25,7 +25,7 @@ Credentials:
 - WeatherDownload sends the key as the `api_key` HTTP header
 - live downloads follow the standard AEMET two-step pattern: the first API call returns metadata plus a temporary `datos` URL, and the downloader then fetches that `datos` URL for the actual JSON payload
 
-Observed elements in the current pass:
+Observed daily elements:
 
 - `tas_mean` from raw `tmed`
 - `tas_max` from raw `tmax`
@@ -48,11 +48,11 @@ Units and normalization:
 
 Caveats:
 
-- hourly and 10-minute support are intentionally not implemented in this first pass
+- hourly and 10-minute support are intentionally not implemented
 - `hrMax`, `hrMin`, `horaHrMax`, and `horaHrMin` are visible in AEMET daily examples but are not mapped in this slice
-- observed `vapour_pressure` is not exposed
+- `vapour_pressure` is intentionally not exposed as an observed provider element
 - the provider is still not provider-level FAO-ready because `vapour_pressure` is not an observed provider field
-- the shared FAO workflow example supports `ES / aemet / daily` only through the existing explicit `fill_missing='allow-derived'` workflow-layer fallback for `vapour_pressure` from observed `tas_mean` plus observed `relative_humidity`
 - in default `fill_missing='none'` mode, `vapour_pressure` stays missing
+- in explicit `fill_missing='allow-derived'` mode, the shared FAO workflow derives `vapour_pressure` from observed `tas_mean` plus observed `relative_humidity`
 - that compatibility is workflow-level only; derived `vapour_pressure` remains `derived_opt_in` provenance rather than observed provider data
 - station inventory metadata does not currently provide clean coverage dates, so `all_history=True` is not implemented

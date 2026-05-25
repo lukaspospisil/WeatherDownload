@@ -65,7 +65,13 @@ python examples/workflows/download_fao.py --country CZ --compute-fao-intermediat
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
 
-For `ES`, the current shared workflow uses the fixed `aemet` daily provider path selected by `--country ES`; there is no separate `--provider` flag on this example CLI.
+For `ES`, use:
+
+```powershell
+python examples/workflows/download_fao.py --country ES --fill-missing allow-derived
+```
+
+The current shared workflow uses the fixed `aemet` daily provider path selected by `--country ES`; there is no separate `--provider` flag on this example CLI.
 
 `--fill-missing` defaults to `none`. Use `--fill-missing allow-derived` or `--fill-missing allow-hourly-aggregate` only when you want the shared example layer to apply its documented opt-in fallback rules.
 
