@@ -31,7 +31,7 @@ Observed elements in the current pass:
 - `tas_max` from raw `tmax`
 - `tas_min` from raw `tmin`
 - `precipitation` from raw `prec`
-- `wind_speed` from raw `velmedia`
+- `wind_speed` from raw `velmedia`, converted from km/h to canonical m/s
 - `relative_humidity` from raw `hrMedia`
 - `sunshine_duration` from raw `sol`
 
@@ -52,6 +52,7 @@ Caveats:
 - `hrMax`, `hrMin`, `horaHrMax`, and `horaHrMin` are visible in AEMET daily examples but are not mapped in this slice
 - observed `vapour_pressure` is not exposed
 - the provider is still not provider-level FAO-ready because `vapour_pressure` is not an observed provider field
-- the shared FAO workflow example now supports `ES / aemet / daily` only through the existing explicit `--fill-missing allow-derived` workflow-layer fallback for `vapour_pressure` from observed `tas_mean` plus observed `relative_humidity`
+- the shared FAO workflow example supports `ES / aemet / daily` only through the existing explicit `fill_missing='allow-derived'` workflow-layer fallback for `vapour_pressure` from observed `tas_mean` plus observed `relative_humidity`
+- in default `fill_missing='none'` mode, `vapour_pressure` stays missing
 - that compatibility is workflow-level only; derived `vapour_pressure` remains `derived_opt_in` provenance rather than observed provider data
 - station inventory metadata does not currently provide clean coverage dates, so `all_history=True` is not implemented

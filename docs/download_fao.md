@@ -65,6 +65,8 @@ python examples/workflows/download_fao.py --country CZ --compute-fao-intermediat
 
 `--country` uses ISO 3166-1 alpha-2 codes and defaults to `CZ`.
 
+For `ES`, the current shared workflow uses the fixed `aemet` daily provider path selected by `--country ES`; there is no separate `--provider` flag on this example CLI.
+
 `--fill-missing` defaults to `none`. Use `--fill-missing allow-derived` or `--fill-missing allow-hourly-aggregate` only when you want the shared example layer to apply its documented opt-in fallback rules.
 
 `--compute-fao-intermediates` defaults to off. When you enable it, the workflow keeps the standard six-field observed/prepared bundle unchanged and appends FAO-56 derived columns to each exported station series in MAT and Parquet outputs.
@@ -197,16 +199,14 @@ Observed inputs used from the `ES / aemet / daily` provider path:
 - `tas_mean` via `tmed`
 - `tas_max` via `tmax`
 - `tas_min` via `tmin`
+- `precipitation` via `prec`
 - `wind_speed` via `velmedia`
-- `sunshine_duration` via `sol`
-
-Observed helper input available in this provider path:
-
 - `relative_humidity` via `hrMedia`
+- `sunshine_duration` via `sol`
 
 Unavailable as an observed provider field in the current shared path:
 
-- observed `vapour_pressure` stays null in default mode
+- observed `vapour_pressure` stays null in default `fill_missing='none'` mode
 
 Optional shared fallback in `--fill-missing allow-derived` mode:
 
@@ -214,7 +214,7 @@ Optional shared fallback in `--fill-missing allow-derived` mode:
 - this is workflow-level `--fill-missing allow-derived` fallback rule compatibility only, not observed provider support
 - the filled `vapour_pressure` values are marked as `derived_opt_in` in workflow provenance outputs, not observed provider data
 
-The ES branch uses only the existing `ES / aemet / daily` provider through the unified public interface. It does not add observed `vapour_pressure`, does not add hourly or 10-minute support, and does not move derivation logic into the provider.
+The ES branch uses only the existing `ES / aemet / daily` provider through the unified public interface. It requires an AEMET OpenData API key via `WEATHERDOWNLOAD_AEMET_API_KEY` or `AEMET_API_KEY`. It does not add observed `vapour_pressure`, does not add hourly or 10-minute support, and does not move derivation logic into the provider.
 
 Practical interpretation:
 
