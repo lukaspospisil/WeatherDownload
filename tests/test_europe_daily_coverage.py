@@ -194,9 +194,10 @@ class EuropeCoverageTests(unittest.TestCase):
             'EE', 'LV', 'LT', 'PL', 'CZ', 'SK', 'AT', 'CH', 'IT', 'SI', 'HR', 'HU', 'RO', 'BG',
             'GR', 'BA', 'RS', 'ME', 'AL', 'MK', 'MD', 'UA', 'BY', 'TR',
         ]
-        svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
-        for country in expected:
-            self.assertIn(f'id="country-{country}"', svg_text)
+        for svg_path in MODULE.OUTPUT_SVG_PATHS.values():
+            svg_text = svg_path.read_text(encoding='utf-8')
+            for country in expected:
+                self.assertIn(f'id="country-{country}"', svg_text)
 
     def test_daily_svg_renders_context_land_separately_from_coverage_status(self) -> None:
         svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
@@ -215,6 +216,48 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertNotIn('id="context-country-RU" class="country national_daily"', svg_text)
         self.assertNotIn('id="context-country-RU" data-status=', svg_text)
         self.assertNotIn('.context-country { fill: #e7ecef; }', svg_text)
+
+    def test_hourly_and_tenmin_svg_match_daily_map_layout(self) -> None:
+        daily_root = ET.fromstring(Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8'))
+        daily_paths = _svg_paths_by_id(daily_root)
+        daily_viewbox = daily_root.attrib['viewBox']
+        daily_width = daily_root.attrib['width']
+        daily_height = daily_root.attrib['height']
+
+        shared_ids = [
+            'context-country-RU',
+            'context-country-border-RU',
+            'country-CZ',
+            'country-DE',
+            'country-FR',
+            'country-IE',
+            'country-IT',
+            'country-SK',
+            'country-border-CZ',
+            'country-border-DE',
+            'country-border-FR',
+            'country-border-IE',
+            'country-border-IT',
+            'country-border-SK',
+        ]
+
+        for resolution_name in ('hourly', '10min'):
+            root = ET.fromstring(MODULE.OUTPUT_SVG_PATHS[resolution_name].read_text(encoding='utf-8'))
+            paths = _svg_paths_by_id(root)
+
+            self.assertEqual(root.attrib['width'], daily_width)
+            self.assertEqual(root.attrib['height'], daily_height)
+            self.assertEqual(root.attrib['viewBox'], daily_viewbox)
+            self.assertEqual(root.attrib['preserveAspectRatio'], daily_root.attrib['preserveAspectRatio'])
+
+            for path_id in shared_ids:
+                self.assertIn(path_id, paths)
+                self.assertEqual(paths[path_id].attrib['d'], daily_paths[path_id].attrib['d'])
+
+            self.assertIn('context-country-RU', paths)
+            self.assertTrue(any(context_id in paths for context_id in ('context-country-MA', 'context-country-DZ', 'context-country-TN', 'context-country-LY', 'context-country-EG')))
+            self.assertEqual(paths['context-country-RU'].attrib['class'], 'country context-country')
+            self.assertNotIn('data-status', paths['context-country-RU'].attrib)
 
     def test_country_border_path_data_excludes_view_boundary_segments(self) -> None:
         projection_bounds = MODULE._projected_view_bounds()
@@ -282,18 +325,19 @@ class EuropeCoverageTests(unittest.TestCase):
                         self.assertNotIn(segment, _path_segments(border_path_data))
 
     def test_daily_svg_border_paths_do_not_draw_viewport_rectangle_edges(self) -> None:
-        root = ET.fromstring(Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8'))
-        width = float(root.attrib['width'])
-        height = float(root.attrib['height'])
+        for svg_path in MODULE.OUTPUT_SVG_PATHS.values():
+            root = ET.fromstring(svg_path.read_text(encoding='utf-8'))
+            width = float(root.attrib['width'])
+            height = float(root.attrib['height'])
 
-        for path in root.findall('{http://www.w3.org/2000/svg}path'):
-            if path.attrib.get('class') != 'country-border':
-                continue
-            for start, end in _path_segments(path.attrib['d']):
-                self.assertFalse(_same_svg_coordinate(start[0], 0.0) and _same_svg_coordinate(end[0], 0.0))
-                self.assertFalse(_same_svg_coordinate(start[0], width) and _same_svg_coordinate(end[0], width))
-                self.assertFalse(_same_svg_coordinate(start[1], 0.0) and _same_svg_coordinate(end[1], 0.0))
-                self.assertFalse(_same_svg_coordinate(start[1], height) and _same_svg_coordinate(end[1], height))
+            for path in root.findall('{http://www.w3.org/2000/svg}path'):
+                if path.attrib.get('class') != 'country-border':
+                    continue
+                for start, end in _path_segments(path.attrib['d']):
+                    self.assertFalse(_same_svg_coordinate(start[0], 0.0) and _same_svg_coordinate(end[0], 0.0))
+                    self.assertFalse(_same_svg_coordinate(start[0], width) and _same_svg_coordinate(end[0], width))
+                    self.assertFalse(_same_svg_coordinate(start[1], 0.0) and _same_svg_coordinate(end[1], 0.0))
+                    self.assertFalse(_same_svg_coordinate(start[1], height) and _same_svg_coordinate(end[1], height))
 
     def test_daily_svg_uses_clipped_fill_and_separate_border_rendering(self) -> None:
         summary = MODULE.classify_europe_coverage()
@@ -368,6 +412,15 @@ def _path_segments(path_data: str) -> set[tuple[tuple[float, float], tuple[float
             segments.add((previous, point))
         previous = point
     return segments
+
+
+def _svg_paths_by_id(root: ET.Element) -> dict[str, ET.Element]:
+    paths: dict[str, ET.Element] = {}
+    for path in root.findall('{http://www.w3.org/2000/svg}path'):
+        path_id = path.attrib.get('id')
+        if path_id:
+            paths[path_id] = path
+    return paths
 
 
 def _projected_segment(
