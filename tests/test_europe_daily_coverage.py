@@ -116,7 +116,7 @@ class EuropeCoverageTests(unittest.TestCase):
         )
         geodata = MODULE.load_geodata()
         country_geometries = MODULE.build_country_geometries(geodata)
-        rendered_geometries = MODULE._filter_country_geometries_to_view(country_geometries)
+        rendered_geometries = MODULE._clip_country_geometries(country_geometries)
         expected_path_data = MODULE._country_path_data(
             [polygon for polygons in rendered_geometries.values() for polygon in polygons],
             canvas_width=expected_width,
@@ -136,6 +136,8 @@ class EuropeCoverageTests(unittest.TestCase):
 
             coords: list[float] = []
             for path in root.findall('{http://www.w3.org/2000/svg}path'):
+                if path.attrib.get('class') == 'country-border':
+                    continue
                 coords.extend(float(value) for value in re.findall(r'-?\d+(?:\.\d+)?', path.attrib['d']))
 
             xs = coords[0::2]
@@ -162,20 +164,94 @@ class EuropeCoverageTests(unittest.TestCase):
             self.assertIn(f'id="country-{country}"', svg_text)
 
         self.assertIn('class="country context-country"', svg_text)
+        self.assertIn('.country { stroke: none; fill-rule: evenodd; }', svg_text)
+        self.assertIn('.country-border { fill: none; stroke: #1f2933;', svg_text)
         self.assertIn(f'.context-country {{ fill: {MODULE.CONTEXT_LAND_FILL}; }}', svg_text)
         self.assertIn('id="context-country-RU"', svg_text)
+        self.assertIn('id="context-country-border-RU"', svg_text)
         self.assertRegex(svg_text, r'id="context-country-(MA|DZ|TN|LY|EG)"')
         self.assertNotRegex(svg_text, r'id="context-country-[A-Z]{2}" class="country context-country [^"]+"')
         self.assertNotIn('id="context-country-RU" class="country national_daily"', svg_text)
         self.assertNotIn('id="context-country-RU" data-status=', svg_text)
         self.assertNotIn('.context-country { fill: #e7ecef; }', svg_text)
 
-    def test_daily_svg_uses_unclipped_geometry_rendering(self) -> None:
+    def test_country_border_path_data_excludes_view_boundary_segments(self) -> None:
+        projection_bounds = MODULE._padded_bounds(
+            MODULE._projected_view_bounds(),
+            padding_fraction=MODULE.SVG_PADDING_FRACTION,
+        )
+        width, height = MODULE._svg_size_from_bounds(
+            projection_bounds,
+            width=MODULE.SVG_MAP_WIDTH,
+        )
+        clipped_polygon = [[
+            (MODULE.VIEW_BBOX['min_lon'], MODULE.VIEW_BBOX['min_lat']),
+            (MODULE.VIEW_BBOX['max_lon'], MODULE.VIEW_BBOX['min_lat']),
+            (MODULE.VIEW_BBOX['max_lon'], 50.0),
+            (0.0, 50.0),
+            (MODULE.VIEW_BBOX['min_lon'], 50.0),
+            (MODULE.VIEW_BBOX['min_lon'], MODULE.VIEW_BBOX['min_lat']),
+        ]]
+
+        path_data = MODULE._country_border_path_data(
+            [clipped_polygon],
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=projection_bounds,
+        )
+        path_segments = _path_segments(path_data)
+
+        excluded_segments = [
+            (clipped_polygon[0][0], clipped_polygon[0][1]),
+            (clipped_polygon[0][1], clipped_polygon[0][2]),
+            (clipped_polygon[0][4], clipped_polygon[0][5]),
+        ]
+        included_segments = [
+            (clipped_polygon[0][2], clipped_polygon[0][3]),
+            (clipped_polygon[0][3], clipped_polygon[0][4]),
+        ]
+
+        for start, end in excluded_segments:
+            self.assertTrue(MODULE._segment_on_view_boundary(start, end))
+            self.assertNotIn(_projected_segment(start, end, width, height, projection_bounds), path_segments)
+        for start, end in included_segments:
+            self.assertFalse(MODULE._segment_on_view_boundary(start, end))
+            self.assertIn(_projected_segment(start, end, width, height, projection_bounds), path_segments)
+
+    def test_generated_svg_border_paths_do_not_stroke_view_boundaries(self) -> None:
+        geodata = MODULE.load_geodata()
+        country_geometries = MODULE.build_country_geometries(geodata)
+        rendered_geometries = MODULE._clip_country_geometries(country_geometries)
+        projection_bounds = MODULE._padded_bounds(
+            MODULE._projected_view_bounds(),
+            padding_fraction=MODULE.SVG_PADDING_FRACTION,
+        )
+        width, height = MODULE._svg_size_from_bounds(
+            projection_bounds,
+            width=MODULE.SVG_MAP_WIDTH,
+        )
+
+        for polygons in rendered_geometries.values():
+            for polygon in polygons:
+                for ring in polygon:
+                    for start, end in zip(ring, ring[1:]):
+                        if not MODULE._segment_on_view_boundary(start, end):
+                            continue
+                        segment = _projected_segment(start, end, width, height, projection_bounds)
+                        border_path_data = MODULE._country_border_path_data(
+                            [polygon],
+                            canvas_width=width,
+                            canvas_height=height,
+                            projection_bounds=projection_bounds,
+                        )
+                        self.assertNotIn(segment, _path_segments(border_path_data))
+
+    def test_daily_svg_uses_clipped_fill_and_separate_border_rendering(self) -> None:
         summary = MODULE.classify_europe_coverage()
         svg_text = MODULE.render_europe_coverage_svg('daily', summary['daily'])
         geodata = MODULE.load_geodata()
         country_geometries = MODULE.build_country_geometries(geodata)
-        rendered_geometries = MODULE._filter_country_geometries_to_view(country_geometries)
+        rendered_geometries = MODULE._clip_country_geometries(country_geometries)
         projection_bounds = MODULE._padded_bounds(
             MODULE._projected_view_bounds(),
             padding_fraction=MODULE.SVG_PADDING_FRACTION,
@@ -191,7 +267,14 @@ class EuropeCoverageTests(unittest.TestCase):
             canvas_height=height,
             projection_bounds=projection_bounds,
         )
+        ru_border_path = MODULE._country_border_path_data(
+            rendered_geometries['RU'],
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=projection_bounds,
+        )
         self.assertIn(f'id="context-country-RU" class="country context-country" d="{ru_path}"', svg_text)
+        self.assertIn(f'id="context-country-border-RU" class="country-border" d="{ru_border_path}"', svg_text)
 
     def test_data_coverage_documentation_references_all_maps_and_non_fao_scope(self) -> None:
         doc_text = Path('docs/data_coverage.md').read_text(encoding='utf-8')
@@ -224,6 +307,48 @@ class EuropeCoverageTests(unittest.TestCase):
 
         self.assertEqual(summary['daily']['SK']['status'], 'attempted_no_reliable_daily')
         self.assertIn('no reliable daily downloader', summary['daily']['SK']['note'])
+
+
+def _path_segments(path_data: str) -> set[tuple[tuple[float, float], tuple[float, float]]]:
+    tokens = re.findall(r'([ML]) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)', path_data)
+    segments: set[tuple[tuple[float, float], tuple[float, float]]] = set()
+    previous: tuple[float, float] | None = None
+    for command, x_text, y_text in tokens:
+        point = (float(x_text), float(y_text))
+        if command == 'M':
+            previous = point
+            continue
+        if previous is not None:
+            segments.add((previous, point))
+        previous = point
+    return segments
+
+
+def _projected_segment(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    width: int,
+    height: int,
+    projection_bounds: dict[str, float],
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    projected_start = MODULE._project(
+        start[0],
+        start[1],
+        canvas_width=width,
+        canvas_height=height,
+        projection_bounds=projection_bounds,
+    )
+    projected_end = MODULE._project(
+        end[0],
+        end[1],
+        canvas_width=width,
+        canvas_height=height,
+        projection_bounds=projection_bounds,
+    )
+    return (
+        (round(projected_start[0], 2), round(projected_start[1], 2)),
+        (round(projected_end[0], 2), round(projected_end[1], 2)),
+    )
 
 
 if __name__ == '__main__':

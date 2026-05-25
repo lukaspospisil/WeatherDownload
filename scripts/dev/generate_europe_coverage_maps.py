@@ -211,7 +211,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     resolution_spec = RESOLUTION_SPECS[resolution_name]
     geodata = load_geodata()
     country_geometries = build_country_geometries(geodata)
-    rendered_geometries = _filter_country_geometries_to_view(country_geometries)
+    rendered_geometries = _clip_country_geometries(country_geometries)
 
     projection_bounds = _projected_view_bounds()
     canvas_bounds = _padded_bounds(projection_bounds, padding_fraction=SVG_PADDING_FRACTION)
@@ -222,7 +222,8 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     lines = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="{resolution_spec["aria_label"]}" style="background-color:#f4f7f8">',
         '  <style>',
-        '    .country { stroke: #1f2933; stroke-width: 0.85; fill-rule: evenodd; }',
+        '    .country { stroke: none; fill-rule: evenodd; }',
+        '    .country-border { fill: none; stroke: #1f2933; stroke-width: 0.85; stroke-linejoin: round; stroke-linecap: round; }',
         f'    .context-country {{ fill: {CONTEXT_LAND_FILL}; }}',
     ]
     for status_name in used_statuses:
@@ -243,6 +244,19 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
             continue
         lines.append(f'  <path id="context-country-{country}" class="country context-country" d="{path_data}"/>')
 
+    for country in context_countries:
+        polygons = rendered_geometries.get(country, [])
+        if not polygons:
+            continue
+        path_data = _country_border_path_data(
+            polygons,
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=canvas_bounds,
+        )
+        if path_data:
+            lines.append(f'  <path id="context-country-border-{country}" class="country-border" d="{path_data}"/>')
+
     for country in COVERAGE_COUNTRIES:
         polygons = rendered_geometries.get(country, [])
         if not polygons:
@@ -260,6 +274,19 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         lines.append(
             f'  <path id="country-{country}" class="country {status}" data-status="{status}" data-providers="{providers}" d="{path_data}"/>'
         )
+
+    for country in COVERAGE_COUNTRIES:
+        polygons = rendered_geometries.get(country, [])
+        if not polygons:
+            continue
+        path_data = _country_border_path_data(
+            polygons,
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=canvas_bounds,
+        )
+        if path_data:
+            lines.append(f'  <path id="country-border-{country}" class="country-border" d="{path_data}"/>')
 
     lines.append('</svg>')
     return '\n'.join(lines) + '\n'
@@ -433,6 +460,74 @@ def _country_path_data(
             commands.append('Z')
             parts.append(' '.join(commands))
     return ' '.join(parts)
+
+
+def _country_border_path_data(
+    polygons: list[list[list[tuple[float, float]]]],
+    *,
+    canvas_width: int,
+    canvas_height: int,
+    projection_bounds: dict[str, float],
+) -> str:
+    parts: list[str] = []
+    for polygon in polygons:
+        for ring in polygon:
+            if len(ring) < 2:
+                continue
+            commands: list[str] = []
+            segment_open = False
+            for start, end in zip(ring, ring[1:]):
+                if _segment_on_view_boundary(start, end):
+                    segment_open = False
+                    continue
+                start_x, start_y = _project(
+                    start[0],
+                    start[1],
+                    canvas_width=canvas_width,
+                    canvas_height=canvas_height,
+                    projection_bounds=projection_bounds,
+                )
+                end_x, end_y = _project(
+                    end[0],
+                    end[1],
+                    canvas_width=canvas_width,
+                    canvas_height=canvas_height,
+                    projection_bounds=projection_bounds,
+                )
+                if not segment_open:
+                    commands.append(f'M {start_x:.2f} {start_y:.2f}')
+                    segment_open = True
+                commands.append(f'L {end_x:.2f} {end_y:.2f}')
+            if commands:
+                parts.append(' '.join(commands))
+    return ' '.join(parts)
+
+
+def _segment_on_view_boundary(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    *,
+    tolerance: float = 1e-9,
+) -> bool:
+    start_lon, start_lat = start
+    end_lon, end_lat = end
+    return (
+        _same_coordinate(start_lon, VIEW_BBOX['min_lon'], tolerance)
+        and _same_coordinate(end_lon, VIEW_BBOX['min_lon'], tolerance)
+    ) or (
+        _same_coordinate(start_lon, VIEW_BBOX['max_lon'], tolerance)
+        and _same_coordinate(end_lon, VIEW_BBOX['max_lon'], tolerance)
+    ) or (
+        _same_coordinate(start_lat, VIEW_BBOX['min_lat'], tolerance)
+        and _same_coordinate(end_lat, VIEW_BBOX['min_lat'], tolerance)
+    ) or (
+        _same_coordinate(start_lat, VIEW_BBOX['max_lat'], tolerance)
+        and _same_coordinate(end_lat, VIEW_BBOX['max_lat'], tolerance)
+    )
+
+
+def _same_coordinate(value: float, boundary: float, tolerance: float) -> bool:
+    return abs(value - boundary) <= tolerance
 
 
 def _clip_ring_to_bbox(ring: list[tuple[float, float]]) -> list[tuple[float, float]]:
