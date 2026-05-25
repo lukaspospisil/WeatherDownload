@@ -183,6 +183,100 @@ class FilterCzDailyTimeFunctionsTests(unittest.TestCase):
 
             self.assertEqual(result.to_dict(orient="records"), filtered_rows.to_dict(orient="records"))
 
+    def test_analysis_ready_table_keeps_only_overlap_rows(self) -> None:
+        wide_with_fao = pd.DataFrame(
+            [
+                {
+                    "station_id": "A",
+                    "date": "2024-01-01",
+                    "tas_mean": 1.0,
+                    "tas_max": 2.0,
+                    "tas_min": 0.0,
+                    "wind_speed": 3.0,
+                    "vapour_pressure": 8.0,
+                    "sunshine_duration": 1.0,
+                    "open_water_evaporation": 0.5,
+                    "E_FAO": 0.7,
+                    "vpd_raw_kpa": 0.1,
+                    "vpd_kpa": 0.1,
+                    "ea_kpa": 0.8,
+                    "es_kpa": 0.9,
+                    "Rs_MJ_m2_day": 5.0,
+                    "Rn_MJ_m2_day": 3.0,
+                    "u2_m_s": 2.0,
+                },
+                {
+                    "station_id": "A",
+                    "date": "2024-01-02",
+                    "tas_mean": 1.0,
+                    "tas_max": 2.0,
+                    "tas_min": 0.0,
+                    "wind_speed": 3.0,
+                    "vapour_pressure": 8.0,
+                    "sunshine_duration": 1.0,
+                    "open_water_evaporation": pd.NA,
+                    "E_FAO": 0.7,
+                },
+            ]
+        )
+
+        result = WORKFLOW.build_analysis_ready_table(wide_with_fao, analysis_start_date=None)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result.loc[0, "date"], "2024-01-01")
+        self.assertEqual(result.loc[0, "open_water_evaporation"], 0.5)
+
+    def test_summary_overlap_counts_are_correct(self) -> None:
+        wide_with_fao = pd.DataFrame(
+            [
+                {
+                    "station_id": "A",
+                    "date": "2024-01-01",
+                    "tas_mean": 1.0,
+                    "tas_max": 2.0,
+                    "tas_min": 0.0,
+                    "wind_speed": 3.0,
+                    "vapour_pressure": 8.0,
+                    "sunshine_duration": 1.0,
+                    "open_water_evaporation": 0.5,
+                    "E_FAO": 0.7,
+                },
+                {
+                    "station_id": "A",
+                    "date": "2024-01-02",
+                    "tas_mean": 1.0,
+                    "tas_max": 2.0,
+                    "tas_min": 0.0,
+                    "wind_speed": 3.0,
+                    "vapour_pressure": 8.0,
+                    "sunshine_duration": 1.0,
+                    "open_water_evaporation": pd.NA,
+                    "E_FAO": 0.7,
+                },
+                {
+                    "station_id": "A",
+                    "date": "2024-01-03",
+                    "tas_mean": 1.0,
+                    "tas_max": 2.0,
+                    "tas_min": 0.0,
+                    "wind_speed": 3.0,
+                    "vapour_pressure": 8.0,
+                    "sunshine_duration": 1.0,
+                    "open_water_evaporation": 0.4,
+                    "E_FAO": pd.NA,
+                },
+            ]
+        )
+
+        summary = WORKFLOW.build_summary_table(wide_with_fao)
+
+        self.assertEqual(int(summary.loc[0, "n_open_water_evaporation_rows"]), 2)
+        self.assertEqual(int(summary.loc[0, "n_e_fao_rows"]), 2)
+        self.assertEqual(int(summary.loc[0, "n_overlap_e_fao_open_water_rows"]), 1)
+        self.assertEqual(int(summary.loc[0, "n_rows_analysis_ready"]), 1)
+        self.assertEqual(summary.loc[0, "first_analysis_ready_date"], "2024-01-01")
+        self.assertEqual(summary.loc[0, "last_analysis_ready_date"], "2024-01-01")
+
 
 if __name__ == "__main__":
     unittest.main()

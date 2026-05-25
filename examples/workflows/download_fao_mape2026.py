@@ -122,7 +122,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--end-date", default=None, help="Optional YYYY-MM-DD end date.")
     parser.add_argument("--force-refresh", action="store_true", help="Redownload station observations even if a matching cache file exists.")
     parser.add_argument("--debug-duplicates", action="store_true", help="Print detailed duplicate diagnostics before CZ time_function filtering.")
+    parser.add_argument("--no-full-csv", action="store_true", help="Skip the large full reproducibility CSV files while still writing Parquet and analysis-ready CSV.")
     parser.add_argument("--no-parquet", action="store_true", help="Skip Parquet exports.")
+    parser.add_argument("--analysis-start-date", default=None, help="Optional YYYY-MM-DD lower bound applied only to the analysis-ready output.")
     parser.add_argument(
         "--min-complete-days",
         type=int,
@@ -195,7 +197,21 @@ def main(argv: list[str] | None = None) -> int:
         use_observed_pressure=False,
     )
     fao_output_rows = int(wide_with_fao["E_FAO"].notna().sum()) if "E_FAO" in wide_with_fao.columns else 0
+    negative_e_fao_raw_rows = int(wide_with_fao["E_FAO_raw"].lt(0).sum()) if "E_FAO_raw" in wide_with_fao.columns else 0
+    min_e_fao_raw = wide_with_fao["E_FAO_raw"].min(skipna=True) if "E_FAO_raw" in wide_with_fao.columns else None
+    min_e_fao = wide_with_fao["E_FAO"].min(skipna=True) if "E_FAO" in wide_with_fao.columns else None
     print(f"Computed non-missing E_FAO for {fao_output_rows} row(s).")
+    print(f"Negative E_FAO_raw rows clipped to zero: {negative_e_fao_raw_rows}")
+    print(f"Minimum E_FAO_raw: {min_e_fao_raw if min_e_fao_raw == min_e_fao_raw else 'n/a'}")
+    print(f"Minimum E_FAO: {min_e_fao if min_e_fao == min_e_fao else 'n/a'}")
+    analysis_ready = build_analysis_ready_table(wide_with_fao, analysis_start_date=args.analysis_start_date)
+    overlap_stats = summarize_overlap_stats(wide_with_fao)
+    print(f"Non-missing open_water_evaporation rows: {overlap_stats['n_open_water_evaporation_rows']}")
+    print(f"Overlap rows with both E_FAO and open_water_evaporation: {overlap_stats['n_overlap_e_fao_open_water_rows']}")
+    print(
+        "Overlap date range: "
+        f"{overlap_stats['first_overlap_date'] or 'n/a'} to {overlap_stats['last_overlap_date'] or 'n/a'}"
+    )
     print(f"FAO computation finished in {format_elapsed(time.perf_counter() - fao_started_at)}.")
 
     print("Building station-level summary...")
@@ -208,14 +224,17 @@ def main(argv: list[str] | None = None) -> int:
     output_dir = args.output_dir
     wide_csv_path = output_dir / "fao_mape2026_daily_wide.csv"
     wide_with_fao_csv_path = output_dir / "fao_mape2026_daily_wide_with_fao.csv"
+    analysis_ready_csv_path = output_dir / "fao_mape2026_analysis_ready.csv"
     wide_parquet_path = output_dir / "fao_mape2026_daily_wide.parquet"
     wide_with_fao_parquet_path = output_dir / "fao_mape2026_daily_wide_with_fao.parquet"
+    analysis_ready_parquet_path = output_dir / "fao_mape2026_analysis_ready.parquet"
     stations_csv_path = output_dir / "fao_mape2026_stations.csv"
     stations_parquet_path = output_dir / "fao_mape2026_stations.parquet"
     summary_csv_path = output_dir / "fao_mape2026_summary.csv"
 
     wide = strip_table_attrs(wide)
     wide_with_fao = strip_table_attrs(wide_with_fao)
+    analysis_ready = strip_table_attrs(analysis_ready)
     summary = strip_table_attrs(summary)
     selected_stations = strip_table_attrs(selected_stations)
 
@@ -223,8 +242,12 @@ def main(argv: list[str] | None = None) -> int:
     csv_started_at = time.perf_counter()
     from weatherdownload import export_table
 
-    export_table(wide, wide_csv_path, format="csv")
-    export_table(wide_with_fao, wide_with_fao_csv_path, format="csv")
+    if args.no_full_csv:
+        print("Skipping full reproducibility CSV files because --no-full-csv was used.")
+    else:
+        export_table(wide, wide_csv_path, format="csv")
+        export_table(wide_with_fao, wide_with_fao_csv_path, format="csv")
+    export_table(analysis_ready, analysis_ready_csv_path, format="csv")
     export_table(summary, summary_csv_path, format="csv")
     export_table(selected_stations, stations_csv_path, format="csv")
     print(f"CSV export finished in {format_elapsed(time.perf_counter() - csv_started_at)}.")
@@ -236,11 +259,13 @@ def main(argv: list[str] | None = None) -> int:
         parquet_started_at = time.perf_counter()
         export_optional_parquet(wide, wide_parquet_path, label="wide daily table")
         export_optional_parquet(wide_with_fao, wide_with_fao_parquet_path, label="wide daily table with FAO")
+        export_optional_parquet(analysis_ready, analysis_ready_parquet_path, label="analysis-ready table")
         export_optional_parquet(selected_stations, stations_parquet_path, label="station metadata")
         print(f"Parquet export finished in {format_elapsed(time.perf_counter() - parquet_started_at)}.")
 
     print(f"Wide daily CSV: {wide_csv_path}")
     print(f"Wide daily CSV with FAO: {wide_with_fao_csv_path}")
+    print(f"Analysis-ready CSV: {analysis_ready_csv_path}")
     print(f"Station metadata CSV: {stations_csv_path}")
     print(f"Summary CSV: {summary_csv_path}")
     print(
@@ -557,15 +582,34 @@ def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
         "n_complete_fao_rows",
         "n_complete_extended_rows",
         "n_complete_fao_output_rows",
+        "n_rows_analysis_ready",
+        "first_analysis_ready_date",
+        "last_analysis_ready_date",
+        "n_open_water_evaporation_rows",
+        "n_e_fao_rows",
+        "n_overlap_e_fao_open_water_rows",
+        "n_negative_E_FAO_raw_rows",
+        "min_E_FAO_raw",
+        "min_E_FAO",
     ]
     if wide.empty:
         return pd.DataFrame(columns=summary_columns)
 
     prepared = wide.copy()
+    for column in EXTENDED_REQUIRED_COLUMNS:
+        if column not in prepared.columns:
+            prepared[column] = pd.NA
+    if "E_FAO_raw" not in prepared.columns:
+        prepared["E_FAO_raw"] = pd.NA
     prepared["date"] = pd.to_datetime(prepared["date"], errors="coerce")
     prepared["complete_fao_row"] = prepared.loc[:, list(FAO_REQUIRED_COLUMNS)].notna().all(axis=1)
     prepared["complete_extended_row"] = prepared.loc[:, list(EXTENDED_REQUIRED_COLUMNS)].notna().all(axis=1)
     prepared["complete_fao_output_row"] = prepared["E_FAO"].notna() if "E_FAO" in prepared.columns else False
+    prepared["open_water_evaporation_row"] = prepared["open_water_evaporation"].notna() if "open_water_evaporation" in prepared.columns else False
+    prepared["overlap_e_fao_open_water_row"] = prepared["complete_fao_output_row"] & prepared["open_water_evaporation_row"]
+    prepared["analysis_ready_row"] = analysis_ready_mask(prepared)
+    prepared["analysis_ready_date"] = prepared["date"].where(prepared["analysis_ready_row"])
+    prepared["negative_e_fao_raw_row"] = prepared["E_FAO_raw"].lt(0) if "E_FAO_raw" in prepared.columns else False
 
     summary = (
         prepared.groupby("station_id", as_index=False)
@@ -576,11 +620,110 @@ def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
             n_complete_fao_rows=("complete_fao_row", "sum"),
             n_complete_extended_rows=("complete_extended_row", "sum"),
             n_complete_fao_output_rows=("complete_fao_output_row", "sum"),
+            n_rows_analysis_ready=("analysis_ready_row", "sum"),
+            first_analysis_ready_date=("analysis_ready_date", "min"),
+            last_analysis_ready_date=("analysis_ready_date", "max"),
+            n_open_water_evaporation_rows=("open_water_evaporation_row", "sum"),
+            n_e_fao_rows=("complete_fao_output_row", "sum"),
+            n_overlap_e_fao_open_water_rows=("overlap_e_fao_open_water_row", "sum"),
+            n_negative_E_FAO_raw_rows=("negative_e_fao_raw_row", "sum"),
+            min_E_FAO_raw=("E_FAO_raw", "min"),
+            min_E_FAO=("E_FAO", "min"),
         )
     )
     summary["first_date"] = summary["first_date"].dt.strftime("%Y-%m-%d")
     summary["last_date"] = summary["last_date"].dt.strftime("%Y-%m-%d")
+    summary["first_analysis_ready_date"] = summary["first_analysis_ready_date"].dt.strftime("%Y-%m-%d")
+    summary["last_analysis_ready_date"] = summary["last_analysis_ready_date"].dt.strftime("%Y-%m-%d")
     return summary.loc[:, summary_columns].sort_values("station_id").reset_index(drop=True)
+
+
+def analysis_ready_mask(wide_with_fao: pd.DataFrame) -> pd.Series:
+    required_columns = [
+        "E_FAO",
+        "open_water_evaporation",
+        "tas_mean",
+        "tas_max",
+        "tas_min",
+        "wind_speed",
+        "vapour_pressure",
+        "sunshine_duration",
+    ]
+    return wide_with_fao.loc[:, required_columns].notna().all(axis=1)
+
+
+def build_analysis_ready_table(wide_with_fao: pd.DataFrame, *, analysis_start_date: str | None) -> pd.DataFrame:
+    import pandas as pd
+
+    if wide_with_fao.empty:
+        return pd.DataFrame(columns=analysis_ready_columns())
+
+    prepared = wide_with_fao.copy()
+    prepared["date"] = pd.to_datetime(prepared["date"], errors="coerce")
+    mask = analysis_ready_mask(prepared)
+    if analysis_start_date is not None:
+        start_ts = pd.to_datetime(analysis_start_date, errors="coerce")
+        mask = mask & prepared["date"].ge(start_ts)
+    filtered = prepared.loc[mask, :].copy()
+    filtered["date"] = filtered["date"].dt.strftime("%Y-%m-%d")
+    for column in analysis_ready_columns():
+        if column not in filtered.columns:
+            filtered[column] = pd.NA
+    return filtered.loc[:, analysis_ready_columns()].sort_values(["station_id", "date"]).reset_index(drop=True)
+
+
+def analysis_ready_columns() -> list[str]:
+    return [
+        "station_id",
+        "date",
+        "tas_mean",
+        "tas_max",
+        "tas_min",
+        "wind_speed",
+        "vapour_pressure",
+        "sunshine_duration",
+        "pressure_observed",
+        "relative_humidity",
+        "open_water_evaporation",
+        "E_FAO_raw",
+        "E_FAO",
+        "vpd_raw_kpa",
+        "vpd_kpa",
+        "ea_kpa",
+        "es_kpa",
+        "Rs_MJ_m2_day",
+        "Rn_MJ_m2_day",
+        "u2_m_s",
+    ]
+
+
+def summarize_overlap_stats(wide_with_fao: pd.DataFrame) -> dict[str, object]:
+    import pandas as pd
+
+    if wide_with_fao.empty:
+        return {
+            "n_open_water_evaporation_rows": 0,
+            "n_e_fao_rows": 0,
+            "n_overlap_e_fao_open_water_rows": 0,
+            "first_overlap_date": None,
+            "last_overlap_date": None,
+        }
+
+    prepared = wide_with_fao.copy()
+    prepared["date"] = pd.to_datetime(prepared["date"], errors="coerce")
+    open_water_mask = prepared["open_water_evaporation"].notna() if "open_water_evaporation" in prepared.columns else pd.Series(False, index=prepared.index)
+    e_fao_mask = prepared["E_FAO"].notna() if "E_FAO" in prepared.columns else pd.Series(False, index=prepared.index)
+    overlap_mask = open_water_mask & e_fao_mask
+    overlap_dates = prepared.loc[overlap_mask, "date"]
+    first_overlap = overlap_dates.min()
+    last_overlap = overlap_dates.max()
+    return {
+        "n_open_water_evaporation_rows": int(open_water_mask.sum()),
+        "n_e_fao_rows": int(e_fao_mask.sum()),
+        "n_overlap_e_fao_open_water_rows": int(overlap_mask.sum()),
+        "first_overlap_date": first_overlap.strftime("%Y-%m-%d") if pd.notna(first_overlap) else None,
+        "last_overlap_date": last_overlap.strftime("%Y-%m-%d") if pd.notna(last_overlap) else None,
+    }
 
 
 def ensure_expected_wide_columns(wide: pd.DataFrame) -> pd.DataFrame:

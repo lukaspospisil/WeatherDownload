@@ -21,6 +21,7 @@ FAO56_DERIVED_COLUMNS = [
     "Rnl",
     "Rn",
     "G",
+    "E_FAO_raw",
     "E_FAO",
 ]
 FAO56_DERIVED_UNITS = {
@@ -37,6 +38,7 @@ FAO56_DERIVED_UNITS = {
     "Rnl": "MJ m^-2 day^-1",
     "Rn": "MJ m^-2 day^-1",
     "G": "MJ m^-2 day^-1",
+    "E_FAO_raw": "mm day^-1",
     "E_FAO": "mm day^-1",
 }
 RS_RSO_RATIO_CLAMP = (0.0, 1.0)
@@ -226,7 +228,7 @@ def compute_fao56_daily_from_wide(
     u2_m_s = wind_speed_2m(wind_speed_z_m_s, measurement_height_m=wind_measurement_height_m)
 
     soil_heat_flux_mj_m2_day = pd.Series(0.0, index=merged.index, dtype="float64")
-    e_fao = pd.Series(
+    e_fao_raw = pd.Series(
         fao56_pm_et0_daily(
             delta_kpa_per_c=delta_kpa_per_c,
             net_radiation_mj_m2_day=rn_mj_m2_day,
@@ -239,6 +241,7 @@ def compute_fao56_daily_from_wide(
         index=merged.index,
         dtype="float64",
     )
+    e_fao = e_fao_raw.clip(lower=0.0)
 
     computed = result.copy()
     computed["doy"] = doy
@@ -257,6 +260,7 @@ def compute_fao56_daily_from_wide(
     computed["Rnl_MJ_m2_day"] = rnl_mj_m2_day
     computed["Rn_MJ_m2_day"] = pd.Series(rn_mj_m2_day, index=merged.index, dtype="float64")
     computed["u2_m_s"] = pd.Series(u2_m_s, index=merged.index, dtype="float64")
+    computed["E_FAO_raw"] = e_fao_raw
     computed["E_FAO"] = e_fao
     return computed
 
@@ -313,6 +317,7 @@ def compute_fao56_daily_intermediates(
     result["Rnl"] = computed["Rnl_MJ_m2_day"]
     result["Rn"] = computed["Rn_MJ_m2_day"]
     result["G"] = 0.0
+    result["E_FAO_raw"] = computed["E_FAO_raw"]
     result["E_FAO"] = computed["E_FAO"]
     return result
 
@@ -349,6 +354,7 @@ def _fao_daily_output_columns() -> list[str]:
         "Rnl_MJ_m2_day",
         "Rn_MJ_m2_day",
         "u2_m_s",
+        "E_FAO_raw",
         "E_FAO",
     ]
 

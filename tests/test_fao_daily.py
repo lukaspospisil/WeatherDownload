@@ -55,8 +55,10 @@ def test_compute_fao56_daily_from_wide_computes_e_fao_for_complete_row() -> None
     result = compute_fao56_daily_from_wide(daily_wide, stations)
 
     assert "E_FAO" in result.columns
+    assert "E_FAO_raw" in result.columns
     assert pd.notna(result.loc[0, "E_FAO"])
     assert float(result.loc[0, "E_FAO"]) > 0.0
+    assert result.loc[0, "E_FAO_raw"] == pytest.approx(result.loc[0, "E_FAO"])
     assert result.loc[0, "vpd_raw_kpa"] == pytest.approx(result.loc[0, "vpd_kpa"])
     assert pd.notna(result.loc[0, "u2_m_s"])
     assert float(result.loc[0, "u2_m_s"]) < 2.5
@@ -94,6 +96,37 @@ def test_compute_fao56_daily_from_wide_clips_negative_vpd_for_fao() -> None:
     assert result.loc[0, "vpd_kpa"] == 0.0
 
 
+def test_compute_fao56_daily_from_wide_clips_negative_e_fao_to_zero() -> None:
+    daily_wide = pd.DataFrame(
+        [
+            {
+                "station_id": "A",
+                "date": "2024-12-15",
+                "tas_mean": 0.0,
+                "tas_max": 0.0,
+                "tas_min": 0.0,
+                "wind_speed": 0.1,
+                "vapour_pressure": 8.0,
+                "sunshine_duration": 0.0,
+            }
+        ]
+    )
+    stations = pd.DataFrame(
+        [
+            {
+                "station_id": "A",
+                "latitude": 60.0,
+                "elevation_m": 250.0,
+            }
+        ]
+    )
+
+    result = compute_fao56_daily_from_wide(daily_wide, stations)
+
+    assert float(result.loc[0, "E_FAO_raw"]) < 0.0
+    assert result.loc[0, "E_FAO"] == 0.0
+
+
 def test_compute_fao56_daily_from_wide_keeps_missing_inputs_as_nan_outputs() -> None:
     daily_wide = pd.DataFrame(
         [
@@ -121,4 +154,5 @@ def test_compute_fao56_daily_from_wide_keeps_missing_inputs_as_nan_outputs() -> 
 
     result = compute_fao56_daily_from_wide(daily_wide, stations)
 
+    assert pd.isna(result.loc[0, "E_FAO_raw"])
     assert pd.isna(result.loc[0, "E_FAO"])
