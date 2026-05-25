@@ -73,10 +73,12 @@ status in Europe.
 </p>
 
 This is daily-data coverage, not FAO-readiness coverage, and it does not imply
-that all variables are available at all stations.
+that all variables are available at all stations. Neutral land outside the
+European coverage set is shown only as geographic context.
 
 Legend: dark green = national daily downloader, light green = GHCN-Daily,
-red = attempted but no reliable daily support yet, gray = not attempted yet.
+red = attempted but no reliable daily support yet, gray = not attempted yet,
+very light gray = context land outside the coverage classification.
 
 For daily, hourly, and 10-minute coverage maps, see
 [Data Coverage](docs/data_coverage.md).

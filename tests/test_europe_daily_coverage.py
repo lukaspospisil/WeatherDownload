@@ -61,6 +61,15 @@ class EuropeCoverageTests(unittest.TestCase):
 
         self.assertEqual(set(summary.keys()), {'daily', 'hourly', '10min'})
 
+    def test_generated_json_contains_only_coverage_countries(self) -> None:
+        summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
+
+        expected_countries = set(MODULE.COVERAGE_COUNTRIES)
+        context_only_examples = {'RU', 'MA', 'DZ', 'TN', 'LY', 'EG'}
+        for resolution_name in ('daily', 'hourly', '10min'):
+            self.assertEqual(set(summary[resolution_name].keys()), expected_countries)
+            self.assertTrue(context_only_examples.isdisjoint(summary[resolution_name].keys()))
+
     def test_daily_distinguishes_national_and_ghcnd_support(self) -> None:
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
 
@@ -87,10 +96,7 @@ class EuropeCoverageTests(unittest.TestCase):
             self.assertNotIn('<rect', svg_text)
 
     def test_svg_files_use_map_derived_size_and_fill_canvas(self) -> None:
-        geodata = MODULE.load_geodata()
-        country_geometries = MODULE.build_country_geometries(geodata)
-        rendered_geometries = MODULE._clip_country_geometries(country_geometries)
-        projection_bounds = MODULE._projected_bounds(rendered_geometries)
+        projection_bounds = MODULE._projected_view_bounds()
         canvas_bounds = MODULE._padded_bounds(
             projection_bounds,
             padding_fraction=MODULE.SVG_PADDING_FRACTION,
@@ -99,6 +105,18 @@ class EuropeCoverageTests(unittest.TestCase):
             canvas_bounds,
             width=MODULE.SVG_MAP_WIDTH,
         )
+        geodata = MODULE.load_geodata()
+        country_geometries = MODULE.build_country_geometries(geodata)
+        rendered_geometries = MODULE._clip_country_geometries(country_geometries)
+        expected_path_data = MODULE._country_path_data(
+            [polygon for polygons in rendered_geometries.values() for polygon in polygons],
+            canvas_width=expected_width,
+            canvas_height=expected_height,
+            projection_bounds=canvas_bounds,
+        )
+        expected_coords = [float(value) for value in re.findall(r'-?\d+(?:\.\d+)?', expected_path_data)]
+        expected_xs = expected_coords[0::2]
+        expected_ys = expected_coords[1::2]
 
         for svg_path in MODULE.OUTPUT_SVG_PATHS.values():
             root = ET.fromstring(svg_path.read_text(encoding='utf-8'))
@@ -109,16 +127,14 @@ class EuropeCoverageTests(unittest.TestCase):
 
             coords: list[float] = []
             for path in root.findall('{http://www.w3.org/2000/svg}path'):
-                if not path.attrib.get('id', '').startswith('country-'):
-                    continue
                 coords.extend(float(value) for value in re.findall(r'-?\d+(?:\.\d+)?', path.attrib['d']))
 
             xs = coords[0::2]
             ys = coords[1::2]
-            width = float(root.attrib['width'])
-            height = float(root.attrib['height'])
-            self.assertGreaterEqual((max(xs) - min(xs)) / width, 0.93)
-            self.assertGreaterEqual((max(ys) - min(ys)) / height, 0.93)
+            self.assertAlmostEqual(min(xs), min(expected_xs), places=2)
+            self.assertAlmostEqual(max(xs), max(expected_xs), places=2)
+            self.assertAlmostEqual(min(ys), min(expected_ys), places=2)
+            self.assertAlmostEqual(max(ys), max(expected_ys), places=2)
 
     def test_svg_renders_requested_european_country_set(self) -> None:
         expected = [
@@ -130,6 +146,20 @@ class EuropeCoverageTests(unittest.TestCase):
         for country in expected:
             self.assertIn(f'id="country-{country}"', svg_text)
 
+    def test_daily_svg_renders_context_land_separately_from_coverage_status(self) -> None:
+        svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
+
+        for country in ('CZ', 'DE', 'FR', 'IE', 'IT', 'SK'):
+            self.assertIn(f'id="country-{country}"', svg_text)
+
+        self.assertIn('class="country context-country"', svg_text)
+        self.assertIn(f'.context-country {{ fill: {MODULE.CONTEXT_LAND_FILL}; }}', svg_text)
+        self.assertIn('id="context-country-RU"', svg_text)
+        self.assertRegex(svg_text, r'id="context-country-(MA|DZ|TN|LY|EG)"')
+        self.assertNotRegex(svg_text, r'id="context-country-[A-Z]{2}" class="country context-country [^"]+"')
+        self.assertNotIn('id="context-country-RU" class="country national_daily"', svg_text)
+        self.assertNotIn('id="context-country-RU" data-status=', svg_text)
+
     def test_data_coverage_documentation_references_all_maps_and_non_fao_scope(self) -> None:
         doc_text = Path('docs/data_coverage.md').read_text(encoding='utf-8')
 
@@ -139,7 +169,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('They are not FAO-readiness maps.', doc_text)
         self.assertIn('They do not imply that all variables are available at all stations.', doc_text)
         self.assertIn('They reflect WeatherDownload implementation status, not general public data availability in each country.', doc_text)
-        self.assertIn('Some non-European countries may also be supported, but are not shown here.', doc_text)
+        self.assertIn('shown only as neutral geographic context', doc_text)
+        self.assertIn('not part of the coverage classification', doc_text)
 
     def test_readme_shows_daily_map_and_links_to_data_coverage_page(self) -> None:
         readme_text = Path('README.md').read_text(encoding='utf-8')
@@ -149,7 +180,9 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertNotIn('docs/assets/europe_10min_coverage_map.svg', readme_text)
         self.assertIn('This is daily-data coverage, not FAO-readiness coverage', readme_text)
         self.assertIn('it does not imply', readme_text)
+        self.assertIn('shown only as geographic context', readme_text)
         self.assertIn('Legend: dark green = national daily downloader', readme_text)
+        self.assertIn('very light gray = context land outside the coverage classification', readme_text)
         self.assertIn('European data coverage maps: [Data Coverage](docs/data_coverage.md)', readme_text)
         self.assertIn('[Data Coverage](docs/data_coverage.md)', readme_text)
 

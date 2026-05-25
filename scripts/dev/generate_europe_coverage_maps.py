@@ -39,17 +39,19 @@ PROJECTION_CENTER = {
 }
 SVG_MAP_WIDTH = 900
 SVG_PADDING_FRACTION = 0.03
-EUROPE_COUNTRIES = (
+COVERAGE_COUNTRIES = (
     'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
     'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT',
     'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'SM', 'TR', 'UA', 'VA',
 )
+EUROPE_COUNTRIES = COVERAGE_COUNTRIES
 COUNTRY_NAME_FALLBACKS = {
     'FR': 'France',
     'GB': 'United Kingdom',
     'NO': 'Norway',
     'VA': 'Vatican',
 }
+CONTEXT_LAND_FILL = '#e7ecef'
 RESOLUTION_SPECS = {
     'daily': {
         'discovery_resolutions': ('daily',),
@@ -95,7 +97,7 @@ def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dic
     for resolution_name, spec in RESOLUTION_SPECS.items():
         attempted = config.get(resolution_name, {}).get(spec['attempted_config_key'], {})
         resolution_summary: dict[str, dict[str, Any]] = {}
-        for country in EUROPE_COUNTRIES:
+        for country in COVERAGE_COUNTRIES:
             providers = _providers_for_resolution(
                 country=country,
                 supported_countries=supported_countries,
@@ -154,19 +156,18 @@ def load_geodata(path: Path = GEODATA_PATH) -> dict[str, Any]:
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def build_country_geometries(geojson: dict[str, Any]) -> dict[str, list[list[list[tuple[float, float]]]]]:
+def build_country_geometries(
+    geojson: dict[str, Any],
+    *,
+    country_codes: set[str] | None = None,
+) -> dict[str, list[list[list[tuple[float, float]]]]]:
     geometries: dict[str, list[list[list[tuple[float, float]]]]] = {}
     for feature in geojson.get('features', []):
         properties = feature.get('properties', {})
-        iso_a2 = str(properties.get('ISO_A2', '')).strip()
-        if iso_a2 not in EUROPE_COUNTRIES:
-            name = str(properties.get('NAME', '')).strip()
-            admin = str(properties.get('ADMIN', '')).strip()
-            for country_code, fallback_name in COUNTRY_NAME_FALLBACKS.items():
-                if (name == fallback_name or admin == fallback_name) and country_code in EUROPE_COUNTRIES:
-                    iso_a2 = country_code
-                    break
-        if iso_a2 not in EUROPE_COUNTRIES:
+        iso_a2 = _resolve_country_code(properties)
+        if not iso_a2:
+            continue
+        if country_codes is not None and iso_a2 not in country_codes:
             continue
 
         geometry = feature.get('geometry', {})
@@ -180,6 +181,19 @@ def build_country_geometries(geojson: dict[str, Any]) -> dict[str, list[list[lis
         if polygons:
             geometries.setdefault(iso_a2, []).extend(polygons)
     return geometries
+
+
+def _resolve_country_code(properties: dict[str, Any]) -> str:
+    iso_a2 = str(properties.get('ISO_A2', '')).strip()
+    if iso_a2 and iso_a2 != '-99':
+        return iso_a2
+
+    name = str(properties.get('NAME', '')).strip()
+    admin = str(properties.get('ADMIN', '')).strip()
+    for country_code, fallback_name in COUNTRY_NAME_FALLBACKS.items():
+        if name == fallback_name or admin == fallback_name:
+            return country_code
+    return ''
 
 
 def _convert_polygon(coordinates: list[Any]) -> list[list[tuple[float, float]]]:
@@ -199,21 +213,37 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     country_geometries = build_country_geometries(geodata)
     rendered_geometries = _clip_country_geometries(country_geometries)
 
-    projection_bounds = _projected_bounds(rendered_geometries)
+    projection_bounds = _projected_view_bounds()
     canvas_bounds = _padded_bounds(projection_bounds, padding_fraction=SVG_PADDING_FRACTION)
     width, height = _svg_size_from_bounds(canvas_bounds, width=SVG_MAP_WIDTH)
     used_statuses = sorted({country_info['status'] for country_info in summary.values()})
+    context_countries = sorted(country for country in rendered_geometries if country not in COVERAGE_COUNTRIES)
 
     lines = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="{resolution_spec["aria_label"]}" style="background-color:#f4f7f8">',
         '  <style>',
         '    .country { stroke: #1f2933; stroke-width: 0.85; fill-rule: evenodd; }',
+        f'    .context-country {{ fill: {CONTEXT_LAND_FILL}; }}',
     ]
     for status_name in used_statuses:
         lines.append(f'    .{status_name} {{ fill: {STATUS_COLORS[status_name]}; }}')
     lines.append('  </style>')
 
-    for country in EUROPE_COUNTRIES:
+    for country in context_countries:
+        polygons = rendered_geometries.get(country, [])
+        if not polygons:
+            continue
+        path_data = _country_path_data(
+            polygons,
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=canvas_bounds,
+        )
+        if not path_data:
+            continue
+        lines.append(f'  <path id="context-country-{country}" class="country context-country" d="{path_data}"/>')
+
+    for country in COVERAGE_COUNTRIES:
         polygons = rendered_geometries.get(country, [])
         if not polygons:
             continue
@@ -296,6 +326,40 @@ def _projected_bounds(
 
     if not math.isfinite(min_x) or not math.isfinite(min_y):
         raise ValueError('No projected geometry bounds were computed.')
+
+    return {
+        'min_x': min_x,
+        'max_x': max_x,
+        'min_y': min_y,
+        'max_y': max_y,
+    }
+
+
+def _projected_view_bounds(samples_per_edge: int = 64) -> dict[str, float]:
+    if samples_per_edge < 2:
+        raise ValueError('samples_per_edge must be at least 2.')
+
+    min_x = float('inf')
+    max_x = float('-inf')
+    min_y = float('inf')
+    max_y = float('-inf')
+
+    def _include_point(lon: float, lat: float) -> None:
+        nonlocal min_x, max_x, min_y, max_y
+        x, y = _project_lon_lat(lon, lat)
+        min_x = min(min_x, x)
+        max_x = max(max_x, x)
+        min_y = min(min_y, y)
+        max_y = max(max_y, y)
+
+    for index in range(samples_per_edge):
+        fraction = index / (samples_per_edge - 1)
+        lon = VIEW_BBOX['min_lon'] + fraction * (VIEW_BBOX['max_lon'] - VIEW_BBOX['min_lon'])
+        lat = VIEW_BBOX['min_lat'] + fraction * (VIEW_BBOX['max_lat'] - VIEW_BBOX['min_lat'])
+        _include_point(lon, VIEW_BBOX['min_lat'])
+        _include_point(lon, VIEW_BBOX['max_lat'])
+        _include_point(VIEW_BBOX['min_lon'], lat)
+        _include_point(VIEW_BBOX['max_lon'], lat)
 
     return {
         'min_x': min_x,
