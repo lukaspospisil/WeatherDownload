@@ -1169,7 +1169,7 @@ def screen_candidate_stations(meta1: pd.DataFrame, meta2: pd.DataFrame, *, confi
     overlap = estimate_station_overlap_days(relevant)
     screened = supported.merge(overlap, on='station_id', how='left')
     screened['overlap_days_estimate'] = screened['overlap_days_estimate'].fillna(0).astype(int)
-    if config.country == 'ES':
+    if _uses_missing_coverage_fallback(config):
         screened.loc[
             screened['has_required_elements'] & screened['overlap_days_estimate'].eq(0),
             'overlap_days_estimate',
@@ -1263,7 +1263,7 @@ def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config
 
 
 def _build_daily_cache_query(*, station_id: str, config: FaoCountryConfig) -> ObservationQuery:
-    if config.country == 'ES':
+    if _requires_explicit_daily_cache_window(config):
         end_date = pd.Timestamp.today().date()
         return ObservationQuery(
             country=config.country,
@@ -1282,6 +1282,14 @@ def _build_daily_cache_query(*, station_id: str, config: FaoCountryConfig) -> Ob
         all_history=True,
         elements=list(config.query_elements),
     )
+
+
+def _uses_missing_coverage_fallback(config: FaoCountryConfig) -> bool:
+    return config.country == 'ES' and config.provider == 'aemet' and config.resolution == 'daily'
+
+
+def _requires_explicit_daily_cache_window(config: FaoCountryConfig) -> bool:
+    return config.country == 'ES' and config.provider == 'aemet' and config.resolution == 'daily'
 
 
 def ensure_hourly_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, stats: CacheStats) -> StationCacheResult:

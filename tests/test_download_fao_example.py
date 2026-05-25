@@ -610,6 +610,30 @@ class DownloadFaoExampleTests(unittest.TestCase):
 
         self.assertEqual(list(candidates['station_id']), ['3195'])
 
+    def test_screen_candidate_stations_does_not_apply_es_missing_coverage_fallback_to_other_countries(self) -> None:
+        config = download_fao.get_fao_country_config('HU')
+        meta1 = pd.DataFrame([
+            {
+                'station_id': '13704',
+                'full_name': 'Budapest',
+                'latitude': 47.5,
+                'longitude': 19.0,
+                'elevation_m': 120.0,
+            },
+        ])
+        meta2 = pd.DataFrame([
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '13704', 'element': 't', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '13704', 'element': 'tx', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '13704', 'element': 'tn', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '13704', 'element': 'fs', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '13704', 'element': 'f', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '13704', 'element': 'u', 'begin_date': '', 'end_date': ''},
+        ])
+
+        candidates = download_fao.screen_candidate_stations(meta1, meta2, config=config, min_complete_days=3650)
+
+        self.assertTrue(candidates.empty)
+
     def test_load_station_metadata_with_cache_build_mode_requires_cached_file(self) -> None:
         reporter = download_fao.ProgressReporter(silent=True)
         stats = download_fao.CacheStats()
@@ -754,6 +778,49 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(query.provider, 'aemet')
         self.assertIsNotNone(query.start_date)
         self.assertIsNotNone(query.end_date)
+
+    def test_ensure_daily_observations_cached_uses_all_history_outside_es(self) -> None:
+        station_id = '13704'
+        config = download_fao.get_fao_country_config('HU')
+        captured_queries: list[ObservationQuery] = []
+        sample = pd.DataFrame([
+            {
+                'station_id': station_id,
+                'gh_id': pd.NA,
+                'element': 'tas_mean',
+                'element_raw': 't',
+                'observation_date': '2024-03-01',
+                'time_function': pd.NA,
+                'value': 10.5,
+                'flag': pd.NA,
+                'quality': pd.NA,
+                'provider': 'historical',
+                'resolution': 'daily',
+            }
+        ])
+
+        def _fake_download(query, timeout, country):
+            captured_queries.append(query)
+            return sample
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats = download_fao.CacheStats()
+            with patch.object(download_fao, 'download_observations', side_effect=_fake_download):
+                result = download_fao.ensure_daily_observations_cached(
+                    station_id,
+                    cache_dir=Path(tmpdir),
+                    config=config,
+                    mode='full',
+                    timeout=60,
+                    stats=stats,
+                )
+
+        self.assertTrue(result.available)
+        self.assertEqual(len(captured_queries), 1)
+        query = captured_queries[0]
+        self.assertTrue(query.all_history)
+        self.assertIsNone(query.start_date)
+        self.assertIsNone(query.end_date)
 
     def test_silent_mode_suppresses_nonessential_progress(self) -> None:
         reporter = download_fao.ProgressReporter(silent=True)

@@ -21,6 +21,8 @@ def download_daily_observations_es(
         raise UnsupportedQueryError('The AEMET Spain daily downloader requires at least one element.')
     if query.all_history:
         raise NotImplementedError('AEMET Spain daily all_history mode is not implemented because station coverage dates are not available in the inventory metadata.')
+    if query.start_date is None or query.end_date is None:
+        raise UnsupportedQueryError('The AEMET Spain daily downloader requires explicit start_date and end_date values.')
 
     api_key = resolve_aemet_api_key()
     metadata_table = station_metadata if station_metadata is not None else read_station_metadata_es(timeout=timeout)
@@ -45,6 +47,11 @@ def normalize_daily_observations_es(payload: pd.DataFrame, query: ObservationQue
     if payload.empty:
         return pd.DataFrame(columns=ES_NORMALIZED_DAILY_COLUMNS)
 
+    requested_elements = []
+    for raw_code in query.elements or []:
+        element_columns = canonicalize_element_series(pd.Series([raw_code]), query).iloc[0]
+        requested_elements.append((raw_code, element_columns['element'], element_columns['element_raw']))
+
     rows: list[dict[str, object]] = []
     for record in payload.to_dict(orient='records'):
         station_id = str(record.get('indicativo', '')).strip().upper()
@@ -57,14 +64,13 @@ def normalize_daily_observations_es(payload: pd.DataFrame, query: ObservationQue
             continue
         if query.end_date is not None and observation_date > query.end_date:
             continue
-        for raw_code in query.elements or []:
-            element_columns = canonicalize_element_series(pd.Series([raw_code]), query)
+        for raw_code, canonical_element, element_raw in requested_elements:
             rows.append(
                 {
                     'station_id': station_id,
                     'gh_id': pd.NA,
-                    'element': element_columns.iloc[0]['element'],
-                    'element_raw': element_columns.iloc[0]['element_raw'],
+                    'element': canonical_element,
+                    'element_raw': element_raw,
                     'observation_date': observation_date,
                     'time_function': pd.NA,
                     'value': parse_aemet_numeric(raw_code, record.get(raw_code)),

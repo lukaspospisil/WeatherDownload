@@ -23,6 +23,7 @@ Credentials:
   - `WEATHERDOWNLOAD_AEMET_API_KEY`
   - `AEMET_API_KEY`
 - WeatherDownload sends the key as the `api_key` HTTP header
+- live downloads follow the standard AEMET two-step pattern: the first API call returns metadata plus a temporary `datos` URL, and the downloader then fetches that `datos` URL for the actual JSON payload
 
 Observed elements in the current pass:
 
@@ -43,6 +44,7 @@ Units and normalization:
 - `velmedia`: treated as km/h and converted to canonical m/s by dividing by `3.6`
 - AEMET decimal strings use commas and are normalized to decimal points
 - trace precipitation `prec="Ip"` is mapped to `0.0 mm` as a below-measurable-threshold trace
+- malformed station coordinates are treated as missing during normalization instead of crashing station metadata parsing
 
 Caveats:
 

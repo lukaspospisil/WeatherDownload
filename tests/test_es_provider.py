@@ -21,6 +21,7 @@ from weatherdownload.providers.es.parser import (
     parse_aemet_daily_data_json,
     parse_aemet_numeric,
 )
+from weatherdownload.providers.es.daily import download_daily_observations_es
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_es_aemet_stations.json')
 SAMPLE_DAILY_TEXT = Path('tests/data/sample_es_aemet_daily.json').read_text(encoding='utf-8')
@@ -97,11 +98,16 @@ class EsProviderTests(unittest.TestCase):
     def test_aemet_parser_helpers_cover_coordinates_and_numeric_rules(self) -> None:
         self.assertAlmostEqual(parse_aemet_coordinate('402452N'), 40.414444, places=5)
         self.assertAlmostEqual(parse_aemet_coordinate('034101W'), -3.683611, places=5)
+        self.assertAlmostEqual(parse_aemet_coordinate('025309E'), 2.885833, places=5)
+        self.assertAlmostEqual(parse_aemet_coordinate('123456S'), -12.582222, places=5)
+        self.assertIsNone(parse_aemet_coordinate('invalid'))
         self.assertEqual(parse_aemet_numeric('prec', 'Ip'), 0.0)
         self.assertAlmostEqual(parse_aemet_numeric('tmed', '7,7'), 7.7, places=6)
+        self.assertAlmostEqual(parse_aemet_numeric('tmin', '-1,2'), -1.2, places=6)
         self.assertAlmostEqual(parse_aemet_numeric('velmedia', '7,2'), 2.0, places=6)
         self.assertAlmostEqual(parse_aemet_numeric('hrMedia', '63,5'), 63.5, places=6)
         self.assertTrue(pd.isna(parse_aemet_numeric('hrMedia', '')))
+        self.assertTrue(pd.isna(parse_aemet_numeric('tmed', None)))
 
     def test_es_daily_download_normalizes_output_from_fixtures(self) -> None:
         station_metadata = read_station_metadata(country='ES', source_url=str(SAMPLE_STATIONS_PATH))
@@ -198,6 +204,23 @@ class EsProviderTests(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaisesRegex(ValueError, r'AEMET OpenData API key is required'):
                 download_observations(query, country='ES', station_metadata=station_metadata)
+
+    def test_es_provider_requires_explicit_date_range(self) -> None:
+        station_metadata = read_station_metadata(country='ES', source_url=str(SAMPLE_STATIONS_PATH))
+        query = ObservationQuery(
+            country='ES',
+            provider='aemet',
+            resolution='daily',
+            station_ids=['3195'],
+            start_date='2024-03-01',
+            end_date='2024-03-02',
+            elements=['tas_mean'],
+        )
+        query.start_date = None
+        query.end_date = None
+        with patch.dict(os.environ, {'WEATHERDOWNLOAD_AEMET_API_KEY': 'test-key'}, clear=False):
+            with self.assertRaisesRegex(ValueError, r'explicit start_date and end_date'):
+                download_daily_observations_es(query, station_metadata=station_metadata)
 
     def test_fixture_metadata_parsing_does_not_require_api_key(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
