@@ -8,6 +8,7 @@ from .cz import PROVIDER as CHMI_PROVIDER
 from .dk import PROVIDER as DK_PROVIDER
 from .de import PROVIDER as DWD_PROVIDER
 from .at import PROVIDER as GEOSPHERE_PROVIDER
+from .es import PROVIDER as ES_PROVIDER
 from .fi import PROVIDER as FI_GHCND_PROVIDER
 from .fr import PROVIDER as FR_GHCND_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
@@ -31,6 +32,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'CZ': CHMI_PROVIDER,
     'DE': DWD_PROVIDER,
     'DK': DK_PROVIDER,
+    'ES': ES_PROVIDER,
     'FI': FI_GHCND_PROVIDER,
     'FR': FR_GHCND_PROVIDER,
     'HU': HU_PROVIDER,

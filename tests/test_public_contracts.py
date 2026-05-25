@@ -59,6 +59,8 @@ SAMPLE_HU_TENMIN_HISTORICAL_CSV = Path('tests/data/sample_hu_tenmin_hist_13704.c
 SAMPLE_HU_TENMIN_RECENT_CSV = Path('tests/data/sample_hu_tenmin_recent_13704.csv').read_text(encoding='utf-8')
 SAMPLE_IE_DAILY_TEXT = Path('tests/data/sample_ie_meteireann_dly532.csv').read_text(encoding='utf-8')
 SAMPLE_IE_STATION_DETAILS_PATH = Path('tests/data/sample_ie_station_details.csv')
+SAMPLE_ES_DAILY_TEXT = Path('tests/data/sample_es_aemet_daily.json').read_text(encoding='utf-8')
+SAMPLE_ES_STATIONS_PATH = Path('tests/data/sample_es_aemet_stations.json')
 SAMPLE_SE_FIXTURE_DIR = Path('tests/data/smhi_se')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -154,6 +156,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
             return read_station_metadata(country='DE')
     if country == 'DK':
         return read_station_metadata(country='DK', source_url=str(SAMPLE_DK_STATIONS_PATH))
+    if country == 'ES':
+        return read_station_metadata(country='ES', source_url=str(SAMPLE_ES_STATIONS_PATH))
     if country == 'HU':
         return read_station_metadata(country='HU', source_url=str(SAMPLE_HU_STATIONS_PATH))
     if country == 'IE':
@@ -251,6 +255,12 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.providers.dk.daily.requests.get', side_effect=fake_get):
             return download_observations(query, country='DK', station_metadata=station_metadata)
+    if country == 'ES':
+        station_metadata = _read_station_metadata_fixture('ES')
+        query = ObservationQuery(country='ES', provider='aemet', resolution='daily', station_ids=['3195'], start_date='2024-03-01', end_date='2024-03-02', elements=['tas_mean', 'precipitation'])
+        with patch.dict('os.environ', {'WEATHERDOWNLOAD_AEMET_API_KEY': 'test-key'}, clear=False):
+            with patch('weatherdownload.providers.es.daily.download_aemet_dataset_text', return_value=SAMPLE_ES_DAILY_TEXT):
+                return download_observations(query, country='ES', station_metadata=station_metadata)
     if country == 'HU':
         station_metadata = _read_station_metadata_fixture('HU')
         query = ObservationQuery(country='HU', provider='historical', resolution='daily', station_ids=['13704'], start_date='2025-07-28', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
@@ -555,6 +565,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'CZ': ['0-20000-0-11406', '0-20000-0-11414'],
         'DE': ['00003', '00044', 'GM000000001', 'GM000000002'],
         'DK': ['06030', '06180'],
+        'ES': ['0076', '3195'],
         'FI': ['FI000000001', 'FI000000002'],
         'FR': ['07005001', '13055001'],
         'HU': ['13704', '13704', '13711'],
@@ -570,7 +581,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'US': ['USC00000001', 'USC00000002', 'USC00000003'],
     }
 
-    for country in ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'FI', 'FR', 'HU', 'IE', 'IT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US']:
+    for country in ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'HU', 'IE', 'IT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         actual_station_ids = stations['station_id'].tolist()
@@ -583,9 +594,9 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AT': 'historical', 'BE': 'historical', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'FI': 'ghcnd', 'FR': 'meteo_france', 'HU': 'historical', 'IE': 'meteireann', 'IT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'SE': 'historical', 'SK': 'recent', 'US': 'ghcnd'}
+    expected_providers = {'AT': 'historical', 'BE': 'historical', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'HU': 'historical', 'IE': 'meteireann', 'IT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'SE': 'historical', 'SK': 'recent', 'US': 'ghcnd'}
 
-    for country in ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'FI', 'FR', 'HU', 'IE', 'IT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US']:
+    for country in ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'HU', 'IE', 'IT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -594,7 +605,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         assert observations['provider'].eq(expected_providers[country]).all()
         assert observations['resolution'].eq('daily').all()
 
-        if country in {'AT', 'BE', 'CA', 'CH', 'DE', 'DK', 'FI', 'FR', 'HU', 'IE', 'IT', 'MX', 'NL', 'NO', 'NZ', 'SE', 'SK', 'US'}:
+        if country in {'AT', 'BE', 'CA', 'CH', 'DE', 'DK', 'ES', 'FI', 'FR', 'HU', 'IE', 'IT', 'MX', 'NL', 'NO', 'NZ', 'SE', 'SK', 'US'}:
             assert observations['gh_id'].isna().all()
         elif country == 'PL':
             assert observations['gh_id'].notna().all()

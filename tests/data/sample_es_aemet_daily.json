@@ -1,0 +1,27 @@
+[
+  {
+    "fecha": "2024-03-01",
+    "indicativo": "3195",
+    "nombre": "MADRID, RETIRO",
+    "provincia": "MADRID",
+    "altitud": "667",
+    "tmed": "10,5",
+    "prec": "0,4",
+    "tmin": "4,0",
+    "tmax": "17,0",
+    "velmedia": "7,2",
+    "sol": "8,5"
+  },
+  {
+    "fecha": "2024-03-02",
+    "indicativo": "3195",
+    "nombre": "MADRID, RETIRO",
+    "provincia": "MADRID",
+    "altitud": "667",
+    "tmed": "11,0",
+    "prec": "Ip",
+    "tmin": "5,0",
+    "tmax": "16,5",
+    "velmedia": "3,6"
+  }
+]

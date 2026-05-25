@@ -1,0 +1,20 @@
+[
+  {
+    "indicativo": "3195",
+    "nombre": "MADRID, RETIRO",
+    "provincia": "MADRID",
+    "altitud": "667",
+    "latitud": "402452N",
+    "longitud": "034101W",
+    "indsinop": "08221"
+  },
+  {
+    "indicativo": "0076",
+    "nombre": "BARCELONA AEROPUERTO",
+    "provincia": "BARCELONA",
+    "altitud": "4",
+    "latitud": "412342N",
+    "longitud": "020412E",
+    "indsinop": "08181"
+  }
+]
