@@ -217,6 +217,31 @@ Optional shared fallback in `--fill-missing allow-derived` mode:
 
 The HU branch uses only the existing HungaroMet provider through the unified public interface. No new derivation rule is added, no ET0 computation is added, and no derivation logic is moved into the provider.
 
+### LU
+
+Observed inputs used from the separate `LU / asta / daily` provider path:
+
+- `tas_mean` via `avg_ta200`
+- `tas_max` via `max_ta200max`
+- `tas_min` via `min_ta200min`
+- `wind_speed` via `avg_wv200`
+- `sunshine_duration` via `sum_ssd`
+
+Observed helper input available in this provider path:
+
+- `relative_humidity` via `avg_rh200`
+
+Unavailable as an observed provider field in the current shared path:
+
+- observed `vapour_pressure` stays null in default mode
+
+Optional shared fallback in `--fill-missing allow-derived` mode:
+
+- `vapour_pressure` may be filled from observed daily `tas_mean` plus observed daily `relative_humidity` through the existing shared example-layer fallback rule
+- this is workflow-level `--fill-missing allow-derived` fallback rule compatibility only, not observed provider support
+
+The LU branch uses only the separate `LU / asta / daily` provider through the unified public interface. It does not merge or reinterpret the distinct `LU / meteolux / daily` Findel-only provider, does not add observed `vapour_pressure`, and does not move derivation logic into the provider.
+
 ### PL
 
 Observed inputs used:
@@ -394,6 +419,14 @@ For `HU`, that assumptions block explicitly states that:
 - observed `vapour_pressure` is unavailable in the current provider path and remains null in default mode
 - observed Hungary daily `relative_humidity` may support only the existing opt-in shared `--fill-missing allow-derived` fallback rule for `vapour_pressure`
 - the example does not derive radiation or other meteorological variables
+
+For `LU`, that assumptions block explicitly states that:
+
+- the branch packages observed ASTA daily inputs only by default
+- the branch uses only the separate `LU / asta / daily` provider path and does not merge MeteoLux Findel values into this workflow slice
+- observed `vapour_pressure` is unavailable in the current provider path and remains null in default mode
+- observed Luxembourg ASTA daily `relative_humidity` may support only the existing opt-in shared `--fill-missing allow-derived` fallback rule for `vapour_pressure`
+- the example does not derive radiation or other meteorological variables unless you explicitly enable `--compute-fao-intermediates`
 
 For `NL`, that assumptions block explicitly states that:
 

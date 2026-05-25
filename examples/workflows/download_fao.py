@@ -105,6 +105,13 @@ NL_REQUIRED_OBSERVED_ELEMENTS = (
     'wind_speed',
     'sunshine_duration',
 )
+LU_REQUIRED_OBSERVED_ELEMENTS = (
+    'tas_mean',
+    'tas_max',
+    'tas_min',
+    'wind_speed',
+    'sunshine_duration',
+)
 SE_REQUIRED_OBSERVED_ELEMENTS = (
     'tas_mean',
     'tas_max',
@@ -356,6 +363,44 @@ NL_PROVIDER_ELEMENT_MAPPING = {
         'notes': 'Not directly available from the current Netherlands daily provider path. The shared workflow leaves this field empty instead of deriving it.',
     },
     'sunshine_duration': {'raw_codes': ['SQ'], 'selection_rule': None, 'status': 'observed'},
+}
+LU_ASSUMPTIONS = {
+    'observed_inputs_only': (
+        'The Luxembourg ASTA branch packages only source-backed daily observations from the official ASTA WFS provider path. '
+        'The shared workflow does not compute FAO-56 ET0 or derive any meteorological variables by default.'
+    ),
+    'provider_boundary': (
+        'This branch uses only the separate `LU / asta / daily` provider slice. '
+        'It does not reinterpret or merge values from the distinct `LU / meteolux / daily` Findel-only path.'
+    ),
+    'vapour_pressure_availability': (
+        'Observed daily vapour_pressure is not exposed by the current ASTA daily provider slice used here. '
+        'The shared workflow therefore keeps vapour_pressure empty in default mode.'
+    ),
+    'relative_humidity_helper': (
+        'Observed ASTA daily relative_humidity is available and may be used only by the existing shared '
+        'allow-derived fallback rule for vapour_pressure. No LU-specific derivation logic is added.'
+    ),
+    'sunshine_duration_boundary': (
+        'The ASTA branch exports observed measured sunshine_duration from the official `sum_ssd` layer only. '
+        'It does not expose the separate calculated sunshine layer in this workflow path.'
+    ),
+}
+LU_PROVIDER_ELEMENT_MAPPING = {
+    'tas_mean': {'raw_codes': ['avg_ta200'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['max_ta200max'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['min_ta200min'], 'selection_rule': None, 'status': 'observed'},
+    'wind_speed': {'raw_codes': ['avg_wv200'], 'selection_rule': None, 'status': 'observed'},
+    'vapour_pressure': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': (
+            'Not directly available from the current Luxembourg ASTA daily provider path. '
+            'The shared workflow keeps this field empty unless the explicit allow-derived fill mode is enabled.'
+        ),
+    },
+    'sunshine_duration': {'raw_codes': ['sum_ssd'], 'selection_rule': None, 'status': 'observed'},
 }
 SE_ASSUMPTIONS = {
     'observed_inputs_only': (
@@ -715,9 +760,14 @@ def fill_policy_uses_hourly_aggregate(fill_missing: str) -> bool:
 
 def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -> FaoCountryConfig:
     normalized_country = normalize_country_code(country)
+    daily_provider_name = 'historical'
+    if normalized_country == 'CZ':
+        daily_provider_name = 'historical_csv'
+    elif normalized_country == 'LU':
+        daily_provider_name = 'asta'
     try:
         provider = get_provider(normalized_country)
-        daily_spec = provider.get_dataset_spec('historical_csv' if normalized_country == 'CZ' else 'historical', 'daily')
+        daily_spec = provider.get_dataset_spec(daily_provider_name, 'daily')
     except Exception as exc:
         raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.') from exc
     if fill_missing not in FILL_MISSING_CHOICES:
@@ -739,12 +789,14 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         query_elements = PL_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'NL':
         query_elements = NL_REQUIRED_OBSERVED_ELEMENTS
+    elif normalized_country == 'LU':
+        query_elements = LU_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'SE':
         query_elements = SE_REQUIRED_OBSERVED_ELEMENTS
     else:
         query_elements = FAO_CANONICAL_ELEMENTS
     query_elements = tuple(query_elements)
-    if fill_missing == 'allow-derived' and normalized_country in {'AT', 'BE', 'CH', 'DK', 'HU', 'NL'}:
+    if fill_missing == 'allow-derived' and normalized_country in {'AT', 'BE', 'CH', 'DK', 'HU', 'NL', 'LU'}:
         query_elements = tuple(dict.fromkeys([*query_elements, 'relative_humidity']))
 
     selected_canonical_to_raw: dict[str, tuple[str, ...]] = {}
@@ -804,6 +856,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         return FaoCountryConfig('PL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, PL_REQUIRED_OBSERVED_ELEMENTS, query_elements, provider_mapping, assumptions, dataset_type, source, 'historical' if hourly_query_elements else None, '1hour' if hourly_query_elements else None, hourly_query_elements)
     if normalized_country == 'NL':
         return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
+    if normalized_country == 'LU':
+        return FaoCountryConfig('LU', 'asta', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, LU_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(LU_PROVIDER_ELEMENT_MAPPING), dict(LU_ASSUMPTIONS), 'Luxembourg ASTA observed daily input bundle prepared for later FAO workflow packaging', 'Official Luxembourg ASTA INSPIRE WFS daily station observations')
     if normalized_country == 'SE':
         return FaoCountryConfig('SE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, SE_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(SE_PROVIDER_ELEMENT_MAPPING), dict(SE_ASSUMPTIONS), 'SMHI Sweden observed daily input bundle prepared for later FAO workflow packaging', 'SMHI Meteorological Observations corrected-archive daily station observations')
     raise ValueError(f'FAO preparation example is not implemented for country {normalized_country}.')
