@@ -51,7 +51,7 @@ COUNTRY_NAME_FALLBACKS = {
     'NO': 'Norway',
     'VA': 'Vatican',
 }
-CONTEXT_LAND_FILL = '#e7ecef'
+CONTEXT_LAND_FILL = '#d6dee4'
 RESOLUTION_SPECS = {
     'daily': {
         'discovery_resolutions': ('daily',),
@@ -211,7 +211,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     resolution_spec = RESOLUTION_SPECS[resolution_name]
     geodata = load_geodata()
     country_geometries = build_country_geometries(geodata)
-    rendered_geometries = _clip_country_geometries(country_geometries)
+    rendered_geometries = _filter_country_geometries_to_view(country_geometries)
 
     projection_bounds = _projected_view_bounds()
     canvas_bounds = _padded_bounds(projection_bounds, padding_fraction=SVG_PADDING_FRACTION)
@@ -304,6 +304,41 @@ def _clip_country_geometries(
         if clipped_polygons:
             rendered[country] = clipped_polygons
     return rendered
+
+
+def _filter_country_geometries_to_view(
+    country_geometries: dict[str, list[list[list[tuple[float, float]]]]]
+) -> dict[str, list[list[list[tuple[float, float]]]]]:
+    rendered: dict[str, list[list[list[tuple[float, float]]]]] = {}
+    for country, polygons in country_geometries.items():
+        if _country_intersects_view(polygons):
+            rendered[country] = polygons
+    return rendered
+
+
+def _country_intersects_view(polygons: list[list[list[tuple[float, float]]]]) -> bool:
+    min_lon = float('inf')
+    max_lon = float('-inf')
+    min_lat = float('inf')
+    max_lat = float('-inf')
+
+    for polygon in polygons:
+        for ring in polygon:
+            for lon, lat in ring:
+                min_lon = min(min_lon, lon)
+                max_lon = max(max_lon, lon)
+                min_lat = min(min_lat, lat)
+                max_lat = max(max_lat, lat)
+
+    if not math.isfinite(min_lon) or not math.isfinite(min_lat):
+        return False
+
+    return not (
+        max_lon < VIEW_BBOX['min_lon']
+        or min_lon > VIEW_BBOX['max_lon']
+        or max_lat < VIEW_BBOX['min_lat']
+        or min_lat > VIEW_BBOX['max_lat']
+    )
 
 
 def _projected_bounds(

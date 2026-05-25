@@ -70,6 +70,15 @@ class EuropeCoverageTests(unittest.TestCase):
             self.assertEqual(set(summary[resolution_name].keys()), expected_countries)
             self.assertTrue(context_only_examples.isdisjoint(summary[resolution_name].keys()))
 
+    def test_view_filter_keeps_context_countries_without_clipping(self) -> None:
+        geodata = MODULE.load_geodata()
+        country_geometries = MODULE.build_country_geometries(geodata)
+        filtered_geometries = MODULE._filter_country_geometries_to_view(country_geometries)
+
+        self.assertIn('RU', filtered_geometries)
+        self.assertTrue(any(code in filtered_geometries for code in ('MA', 'DZ', 'TN', 'LY', 'EG')))
+        self.assertEqual(filtered_geometries['RU'], country_geometries['RU'])
+
     def test_daily_distinguishes_national_and_ghcnd_support(self) -> None:
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
 
@@ -107,7 +116,7 @@ class EuropeCoverageTests(unittest.TestCase):
         )
         geodata = MODULE.load_geodata()
         country_geometries = MODULE.build_country_geometries(geodata)
-        rendered_geometries = MODULE._clip_country_geometries(country_geometries)
+        rendered_geometries = MODULE._filter_country_geometries_to_view(country_geometries)
         expected_path_data = MODULE._country_path_data(
             [polygon for polygons in rendered_geometries.values() for polygon in polygons],
             canvas_width=expected_width,
@@ -159,6 +168,30 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertNotRegex(svg_text, r'id="context-country-[A-Z]{2}" class="country context-country [^"]+"')
         self.assertNotIn('id="context-country-RU" class="country national_daily"', svg_text)
         self.assertNotIn('id="context-country-RU" data-status=', svg_text)
+        self.assertNotIn('.context-country { fill: #e7ecef; }', svg_text)
+
+    def test_daily_svg_uses_unclipped_geometry_rendering(self) -> None:
+        summary = MODULE.classify_europe_coverage()
+        svg_text = MODULE.render_europe_coverage_svg('daily', summary['daily'])
+        geodata = MODULE.load_geodata()
+        country_geometries = MODULE.build_country_geometries(geodata)
+        rendered_geometries = MODULE._filter_country_geometries_to_view(country_geometries)
+        projection_bounds = MODULE._padded_bounds(
+            MODULE._projected_view_bounds(),
+            padding_fraction=MODULE.SVG_PADDING_FRACTION,
+        )
+        width, height = MODULE._svg_size_from_bounds(
+            projection_bounds,
+            width=MODULE.SVG_MAP_WIDTH,
+        )
+
+        ru_path = MODULE._country_path_data(
+            rendered_geometries['RU'],
+            canvas_width=width,
+            canvas_height=height,
+            projection_bounds=projection_bounds,
+        )
+        self.assertIn(f'id="context-country-RU" class="country context-country" d="{ru_path}"', svg_text)
 
     def test_data_coverage_documentation_references_all_maps_and_non_fao_scope(self) -> None:
         doc_text = Path('docs/data_coverage.md').read_text(encoding='utf-8')
