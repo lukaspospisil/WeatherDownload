@@ -26,6 +26,7 @@ The capability matrix is the authoritative current overview of `country + provid
 - [FMI Finland](fi_fmi.md)
 - [Meteo-France France](fr_meteo_france.md)
 - [HungaroMet Hungary](hu_hungaromet.md)
+- [Met Eireann Ireland](ie_meteireann.md)
 - [MeteoLux Luxembourg](lu_meteolux.md)
 - [ASTA Luxembourg](lu_asta.md)
 - [Luxembourg Historical Research Note](lu_meteolux_research.md)

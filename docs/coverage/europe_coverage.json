@@ -304,8 +304,10 @@
       "status": "national_daily"
     },
     "IE": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "meteireann"
+      ],
+      "status": "national_daily"
     },
     "IS": {
       "providers": [],

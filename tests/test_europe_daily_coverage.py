@@ -27,6 +27,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('historical_csv', summary['daily']['CZ']['providers'])
         self.assertEqual(summary['daily']['FR']['status'], 'national_daily')
         self.assertIn('meteo_france', summary['daily']['FR']['providers'])
+        self.assertEqual(summary['daily']['IE']['status'], 'national_daily')
+        self.assertIn('meteireann', summary['daily']['IE']['providers'])
         self.assertEqual(summary['daily']['LU']['status'], 'national_daily')
         self.assertIn('meteolux', summary['daily']['LU']['providers'])
         self.assertEqual(summary['daily']['IT']['status'], 'ghcnd_daily')
@@ -63,6 +65,7 @@ class EuropeCoverageTests(unittest.TestCase):
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
 
         self.assertEqual(summary['daily']['CZ']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['IE']['status'], 'national_daily')
         self.assertEqual(summary['daily']['LU']['status'], 'national_daily')
         self.assertEqual(summary['daily']['IT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['IT']['providers'], ['ghcnd'])

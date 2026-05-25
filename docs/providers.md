@@ -64,7 +64,7 @@ WeatherDownload currently uses two broad provider families:
 
 These use country-specific public source contracts and naming:
 
-- `AT`, `BE`, `CH`, `CZ`, `DE`, `DK`, `FR`, `HU`, `LU`, `NL`, `PL`, `SE`, `SK`
+- `AT`, `BE`, `CH`, `CZ`, `DE`, `DK`, `FR`, `HU`, `IE`, `LU`, `NL`, `PL`, `SE`, `SK`
 
 Country-specific details such as raw codes, URLs, units, QC fields, and source caveats live in the provider notes linked below.
 
