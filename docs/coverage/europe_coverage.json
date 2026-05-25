@@ -327,6 +327,7 @@
     },
     "LU": {
       "providers": [
+        "asta",
         "meteolux"
       ],
       "status": "national_daily"

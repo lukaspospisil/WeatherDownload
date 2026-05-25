@@ -136,7 +136,12 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_country_lu_includes_meteolux_daily(self) -> None:
-        self.assertEqual(list_providers(country='LU'), ['meteolux'])
+        self.assertEqual(list_providers(country='LU'), ['asta', 'meteolux'])
+        self.assertEqual(list_resolutions(country='LU', provider='asta'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='LU', provider='asta', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min'],
+        )
         self.assertEqual(list_resolutions(country='LU', provider='meteolux'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='LU', provider='meteolux', resolution='daily'),

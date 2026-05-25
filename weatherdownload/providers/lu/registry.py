@@ -22,6 +22,14 @@ LU_METEOLUX_DATASET_PAGE_URL = (
     'inspire-annex-iii-meteorological-geographical-features-pointtimeseriesobservation-daily-weather-measurements-at-luxembourg-findel-airport/'
 )
 LU_METEOLUX_DAILY_CSV_URL = 'https://data.public.lu/en/datasets/r/a67bd8c0-b036-4761-b161-bdab272302e5'
+LU_ASTA_DATASET_PAGE_URL = (
+    'https://data.public.lu/en/datasets/'
+    'inspire-annex-iii-meteorological-geographical-features-pointtimeseriesobservation-daily-weather-measurements-of-asta-1/'
+)
+LU_ASTA_STATION_METADATA_URL = (
+    'https://data.public.lu/en/datasets/'
+    'inspire-annex-iii-meteorological-geographical-features-spatial-sampling-features-location-of-weather-stations-managed-by-asta/'
+)
 LU_METEOLUX_STATION_ID = '0-20000-0-06590'
 LU_METEOLUX_STATION_NAME = 'Luxembourg/Findel Airport'
 LU_METEOLUX_STATION_LATITUDE = 49.63265182
@@ -33,6 +41,11 @@ LU_DAILY_CANONICAL_ELEMENTS = {
     'tas_min': ('mintemperature',),
     'precipitation': ('totalprecipitation',),
     'sunshine_duration': ('DINS',),
+}
+LU_ASTA_DAILY_CANONICAL_ELEMENTS = {
+    'tas_mean': ('avg_ta200',),
+    'tas_max': ('max_ta200max',),
+    'tas_min': ('min_ta200min',),
 }
 
 LU_DAILY_PARAMETER_METADATA = {
@@ -71,6 +84,32 @@ LU_DAILY_PARAMETER_METADATA = {
         'source_kind': 'csv',
     },
 }
+LU_ASTA_DAILY_PARAMETER_METADATA = {
+    'avg_ta200': {
+        'name': 'Daily mean air temperature at 2 m',
+        'description': (
+            'Official ASTA daily average air temperature at 2 m from the Luxembourg agrometeorological station network. '
+            'This conservative first slice exposes only the clearly identified 2 m temperature layers.'
+        ),
+        'unit': 'degC',
+        'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_avg_ta200',
+        'source_kind': 'wfs',
+    },
+    'max_ta200max': {
+        'name': 'Daily maximum air temperature at 2 m',
+        'description': 'Official ASTA daily maximum air temperature at 2 m from the Luxembourg agrometeorological station network.',
+        'unit': 'degC',
+        'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_max_ta200max',
+        'source_kind': 'wfs',
+    },
+    'min_ta200min': {
+        'name': 'Daily minimum air temperature at 2 m',
+        'description': 'Official ASTA daily minimum air temperature at 2 m from the Luxembourg agrometeorological station network.',
+        'unit': 'degC',
+        'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_min_ta200min',
+        'source_kind': 'wfs',
+    },
+}
 
 _LU_DATASET_SPECS = [
     LuxembourgDatasetSpec(
@@ -82,6 +121,17 @@ _LU_DATASET_SPECS = [
         supported_elements=('maxtemperature', 'mintemperature', 'totalprecipitation', 'DINS'),
         time_semantics='date',
         canonical_elements=LU_DAILY_CANONICAL_ELEMENTS,
+        implemented=True,
+    ),
+    LuxembourgDatasetSpec(
+        provider='asta',
+        resolution='daily',
+        label='ASTA daily weather measurements from the Luxembourg agrometeorological station network',
+        station_metadata_url=LU_ASTA_STATION_METADATA_URL,
+        data_url=LU_METEOLUX_WFS_URL,
+        supported_elements=('avg_ta200', 'max_ta200max', 'min_ta200min'),
+        time_semantics='date',
+        canonical_elements=LU_ASTA_DAILY_CANONICAL_ELEMENTS,
         implemented=True,
     ),
 ]

@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "gml_identifier": "http://catalog.inspire.geoportail.lu/geonetwork/dataset/00b35d13-111e-45c7-bc65-556b61d17c7e/AGM_022",
+        "height": 416,
+        "inspireid_identifier_localid": "AGM_022",
+        "latitude": 49.85891,
+        "longitude": 5.84868,
+        "name_descr": "Arsdorf",
+        "sampledfeature_xlink_href": "Arsdorf at a height of 416m"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [5.84868, 49.85891, 416]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "gml_identifier": "http://catalog.inspire.geoportail.lu/geonetwork/dataset/00b35d13-111e-45c7-bc65-556b61d17c7e/AGM_012",
+        "height": 209,
+        "inspireid_identifier_localid": "AGM_012",
+        "latitude": 49.6802,
+        "longitude": 6.4411,
+        "name_descr": "Grevenmacher",
+        "sampledfeature_xlink_href": "Grevenmacher at a height of 209m"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [6.4411, 49.6802, 209]
+      }
+    }
+  ]
+}

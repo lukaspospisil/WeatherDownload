@@ -68,6 +68,11 @@ These use country-specific public source contracts and naming:
 
 Country-specific details such as raw codes, URLs, units, QC fields, and source caveats live in the provider notes linked below.
 
+Example of a country with multiple national source paths:
+
+- `LU` currently exposes separate national `meteolux / daily` and `asta / daily` providers
+- they stay separate because the Findel MeteoLux slice and the ASTA station network use different station ids, source contracts, and extension paths
+
 ### Shared GHCN-Daily Wrappers
 
 These are thin country wrappers around the shared implementation in `weatherdownload/providers/ghcnd/`:

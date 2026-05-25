@@ -8,6 +8,7 @@ import pandas as pd
 
 from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
 from .registry import (
+    LU_ASTA_DAILY_PARAMETER_METADATA,
     LU_DAILY_PARAMETER_METADATA,
     LU_METEOLUX_STATION_ID,
     LU_METEOLUX_STATION_ELEVATION_M,
@@ -54,6 +55,40 @@ def normalize_lu_station_metadata() -> pd.DataFrame:
     )
 
 
+def normalize_asta_station_metadata(payload: dict[str, object]) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for feature in payload.get('features', []):
+        if not isinstance(feature, dict):
+            continue
+        properties = feature.get('properties')
+        geometry = feature.get('geometry')
+        if not isinstance(properties, dict):
+            continue
+        station_id = _clean_optional_string(properties.get('inspireid_identifier_localid'))
+        station_name = _clean_optional_string(properties.get('name_descr'))
+        if not station_id or not station_name:
+            continue
+        longitude, latitude, elevation = _extract_asta_station_geometry(geometry)
+        if elevation is None:
+            elevation = _parse_float(properties.get('height'))
+        rows.append(
+            {
+                'station_id': station_id,
+                'gh_id': pd.NA,
+                'begin_date': '',
+                'end_date': '',
+                'full_name': station_name,
+                'longitude': longitude if longitude is not None else _parse_float(properties.get('longitude')),
+                'latitude': latitude if latitude is not None else _parse_float(properties.get('latitude')),
+                'elevation_m': elevation,
+            }
+        )
+    frame = pd.DataFrame.from_records(rows, columns=STATION_METADATA_COLUMNS)
+    if frame.empty:
+        return frame
+    return frame.sort_values(['station_id']).drop_duplicates(subset=['station_id']).reset_index(drop=True)
+
+
 def normalize_lu_observation_metadata(stations: pd.DataFrame, spec: Any) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for station in stations.itertuples(index=False):
@@ -67,6 +102,27 @@ def normalize_lu_observation_metadata(stations: pd.DataFrame, spec: Any) -> pd.D
                     'end_date': station.end_date,
                     'element': raw_code,
                     'schedule': 'P1D MeteoLux INSPIRE WFS',
+                    'name': metadata['name'],
+                    'description': metadata['description'],
+                    'height': pd.NA,
+                }
+            )
+    return pd.DataFrame.from_records(rows, columns=STATION_OBSERVATION_METADATA_COLUMNS)
+
+
+def normalize_asta_observation_metadata(stations: pd.DataFrame, spec: Any) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for station in stations.itertuples(index=False):
+        for raw_code in spec.supported_elements:
+            metadata = LU_ASTA_DAILY_PARAMETER_METADATA[raw_code]
+            rows.append(
+                {
+                    'obs_type': 'HISTORICAL_DAILY',
+                    'station_id': station.station_id,
+                    'begin_date': station.begin_date,
+                    'end_date': station.end_date,
+                    'element': raw_code,
+                    'schedule': 'P1D ASTA INSPIRE WFS',
                     'name': metadata['name'],
                     'description': metadata['description'],
                     'height': pd.NA,
@@ -128,6 +184,49 @@ def normalize_lu_daily_feature_rows(
     frame['quality'] = pd.Series(frame['quality'], dtype='Int64')
     frame = frame.sort_values(['station_id', 'observation_date', 'element_raw']).reset_index(drop=True)
     return frame
+
+
+def normalize_asta_daily_feature_rows(
+    payload: dict[str, object],
+    *,
+    raw_code: str,
+    provider: str,
+    resolution: str,
+) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for feature in payload.get('features', []):
+        if not isinstance(feature, dict):
+            continue
+        properties = feature.get('properties')
+        if not isinstance(properties, dict):
+            continue
+        observation_date = _coerce_observation_date(properties)
+        if observation_date is None:
+            continue
+        station_id = _extract_asta_station_id(properties)
+        station_name = _clean_optional_string(properties.get('name_descr'))
+        if not station_id or not station_name:
+            continue
+        rows.append(
+            {
+                'station_id': station_id,
+                'gh_id': pd.NA,
+                'element': raw_code,
+                'element_raw': raw_code,
+                'observation_date': observation_date,
+                'time_function': pd.NA,
+                'value': pd.to_numeric(pd.Series([properties.get(raw_code)]), errors='coerce').iloc[0],
+                'flag': pd.NA,
+                'quality': pd.Series([pd.NA], dtype='Int64').iloc[0],
+                'provider': provider,
+                'resolution': resolution,
+            }
+        )
+    frame = pd.DataFrame.from_records(rows, columns=LU_NORMALIZED_DAILY_COLUMNS)
+    if frame.empty:
+        return frame
+    frame['quality'] = pd.Series(frame['quality'], dtype='Int64')
+    return frame.sort_values(['station_id', 'observation_date', 'element_raw']).reset_index(drop=True)
 
 
 def parse_lu_daily_csv_text(csv_text: str) -> pd.DataFrame:
@@ -251,3 +350,41 @@ def _parse_csv_numeric(value: object):
         return pd.NA
     normalized = cleaned.replace(',', '.')
     return pd.to_numeric(pd.Series([normalized]), errors='coerce').iloc[0]
+
+
+def _extract_asta_station_id(properties: dict[str, object]) -> str:
+    for key in ('inspireid_identifier_localid',):
+        station_id = _clean_optional_string(properties.get(key))
+        if station_id:
+            return station_id
+    for key in ('featureofinterest_xlink_href', 'gml_identifier'):
+        value = _clean_optional_string(properties.get(key))
+        if not value:
+            continue
+        if key == 'gml_identifier':
+            parts = value.split('_')
+            candidate = '_'.join(parts[:2]) if len(parts) >= 2 else value
+        else:
+            candidate = value.rsplit('/', 1)[-1]
+        if candidate.startswith('AGM_'):
+            return candidate
+    return ''
+
+
+def _extract_asta_station_geometry(geometry: object) -> tuple[float | None, float | None, float | None]:
+    if not isinstance(geometry, dict):
+        return None, None, None
+    coordinates = geometry.get('coordinates')
+    if not isinstance(coordinates, list) or len(coordinates) < 2:
+        return None, None, None
+    longitude = _parse_float(coordinates[0])
+    latitude = _parse_float(coordinates[1])
+    elevation = _parse_float(coordinates[2]) if len(coordinates) >= 3 else None
+    return longitude, latitude, elevation
+
+
+def _parse_float(value: object) -> float | None:
+    cleaned = _clean_optional_string(value)
+    if not cleaned:
+        return None
+    return float(cleaned)

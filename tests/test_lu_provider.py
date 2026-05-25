@@ -26,6 +26,7 @@ SAMPLE_MAX_TEXT = Path('tests/data/sample_lu_meteolux_maxtemperature.json').read
 SAMPLE_MIN_TEXT = Path('tests/data/sample_lu_meteolux_mintemperature.json').read_text(encoding='utf-8')
 SAMPLE_PRECIP_TEXT = Path('tests/data/sample_lu_meteolux_totalprecipitation.json').read_text(encoding='utf-8')
 SAMPLE_DAILY_CSV_TEXT = Path('tests/data/sample_lu_meteolux_daily_csv.csv').read_text(encoding='utf-8')
+SAMPLE_ASTA_STATION_TEXT = Path('tests/data/sample_lu_asta_station_metadata.json').read_text(encoding='utf-8')
 
 
 class _MockResponse:
@@ -42,7 +43,7 @@ class _MockResponse:
 class LuxembourgProviderTests(unittest.TestCase):
     def test_registry_discovery_includes_lu_daily_elements(self) -> None:
         self.assertIn('LU', list_supported_countries())
-        self.assertEqual(list_providers(country='LU'), ['meteolux'])
+        self.assertEqual(list_providers(country='LU'), ['asta', 'meteolux'])
         self.assertEqual(list_resolutions(country='LU', provider='meteolux'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='LU', provider='meteolux', resolution='daily'),
@@ -58,25 +59,39 @@ class LuxembourgProviderTests(unittest.TestCase):
         self.assertNotIn('open_water_evaporation', list_supported_elements(country='LU', provider='meteolux', resolution='daily'))
 
     def test_lu_station_metadata_contains_findel_airport(self) -> None:
-        stations = read_station_metadata(country='LU')
+        def fake_get(url, params=None, timeout=60):
+            self.assertEqual(url, LU_METEOLUX_WFS_URL)
+            if params['TYPENAMES'] == 'MF.SpatialSamplingFeature_ASTA':
+                return _MockResponse(SAMPLE_ASTA_STATION_TEXT)
+            raise AssertionError(f'unexpected params: {params}')
+
+        with patch('weatherdownload.providers.lu.metadata.requests.get', side_effect=fake_get):
+            stations = read_station_metadata(country='LU')
         self.assertEqual(
             list(stations.columns),
             ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
         )
-        self.assertEqual(stations['station_id'].tolist(), ['0-20000-0-06590'])
-        first = stations.iloc[0]
-        self.assertEqual(first['full_name'], 'Luxembourg/Findel Airport')
-        self.assertAlmostEqual(float(first['latitude']), 49.63265182)
-        self.assertAlmostEqual(float(first['longitude']), 6.232928668)
-        self.assertAlmostEqual(float(first['elevation_m']), 376.1)
+        findel = stations[stations['station_id'] == '0-20000-0-06590'].iloc[0]
+        self.assertEqual(findel['full_name'], 'Luxembourg/Findel Airport')
+        self.assertAlmostEqual(float(findel['latitude']), 49.63265182)
+        self.assertAlmostEqual(float(findel['longitude']), 6.232928668)
+        self.assertAlmostEqual(float(findel['elevation_m']), 376.1)
 
     def test_lu_station_observation_metadata_lists_daily_raw_elements(self) -> None:
-        metadata = read_station_observation_metadata(country='LU')
+        def fake_get(url, params=None, timeout=60):
+            self.assertEqual(url, LU_METEOLUX_WFS_URL)
+            if params['TYPENAMES'] == 'MF.SpatialSamplingFeature_ASTA':
+                return _MockResponse(SAMPLE_ASTA_STATION_TEXT)
+            raise AssertionError(f'unexpected params: {params}')
+
+        with patch('weatherdownload.providers.lu.metadata.requests.get', side_effect=fake_get):
+            metadata = read_station_observation_metadata(country='LU')
         self.assertEqual(
             list(metadata.columns),
             ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'],
         )
-        self.assertEqual(sorted(metadata['element'].tolist()), ['DINS', 'maxtemperature', 'mintemperature', 'totalprecipitation'])
+        meteolux_metadata = metadata[metadata['station_id'] == '0-20000-0-06590'].reset_index(drop=True)
+        self.assertEqual(sorted(meteolux_metadata['element'].tolist()), ['DINS', 'maxtemperature', 'mintemperature', 'totalprecipitation'])
         self.assertTrue(metadata['description'].str.contains('Findel', case=False).any())
         self.assertTrue(metadata['description'].str.contains('06:00 UTC', case=False).any())
 
