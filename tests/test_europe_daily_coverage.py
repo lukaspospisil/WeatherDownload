@@ -199,7 +199,7 @@ class EuropeCoverageTests(unittest.TestCase):
             for country in expected:
                 self.assertIn(f'id="country-{country}"', svg_text)
 
-    def test_daily_svg_renders_context_land_separately_from_coverage_status(self) -> None:
+    def test_generated_svg_renders_context_land_separately_from_coverage_status(self) -> None:
         svg_text = Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8')
 
         for country in ('CZ', 'DE', 'FR', 'IE', 'IT', 'SK'):
@@ -324,7 +324,7 @@ class EuropeCoverageTests(unittest.TestCase):
                         )
                         self.assertNotIn(segment, _path_segments(border_path_data))
 
-    def test_daily_svg_border_paths_do_not_draw_viewport_rectangle_edges(self) -> None:
+    def test_generated_svg_border_paths_do_not_draw_viewport_rectangle_edges(self) -> None:
         for svg_path in MODULE.OUTPUT_SVG_PATHS.values():
             root = ET.fromstring(svg_path.read_text(encoding='utf-8'))
             _, _, width, height = (float(value) for value in root.attrib['viewBox'].split())

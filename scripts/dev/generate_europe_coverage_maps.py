@@ -42,8 +42,6 @@ SVG_MAP_WIDTH = 900
 # geographic viewport, coverage semantics, country selection, or colors.
 Y_STRETCH = 1.2
 
-SVG_PADDING_FRACTION = 0.03
-
 COVERAGE_COUNTRIES = (
     'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
     'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT',
@@ -331,22 +329,6 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     lines.append('</svg>')
     return '\n'.join(lines) + '\n'
 
-
-def _padded_bounds(bounds: dict[str, float], *, padding_fraction: float) -> dict[str, float]:
-    width_span = bounds['max_x'] - bounds['min_x']
-    height_span = bounds['max_y'] - bounds['min_y']
-
-    padding_x = padding_fraction * width_span
-    padding_y = padding_fraction * height_span
-
-    return {
-        'min_x': bounds['min_x'] - padding_x,
-        'max_x': bounds['max_x'] + padding_x,
-        'min_y': bounds['min_y'] - padding_y,
-        'max_y': bounds['max_y'] + padding_y,
-    }
-
-
 def _svg_size_from_bounds(bounds: dict[str, float], *, width: int) -> tuple[int, int]:
     width_span = bounds['max_x'] - bounds['min_x']
     height_span = bounds['max_y'] - bounds['min_y']
@@ -386,6 +368,8 @@ def _clip_country_geometries(
 def _filter_country_geometries_to_view(
     country_geometries: dict[str, list[list[list[tuple[float, float]]]]]
 ) -> dict[str, list[list[list[tuple[float, float]]]]]:
+    # Retained for tests that verify raw bbox intersection behavior separately
+    # from the clipped render output.
     rendered: dict[str, list[list[list[tuple[float, float]]]]] = {}
 
     for country, polygons in country_geometries.items():
@@ -418,36 +402,6 @@ def _country_intersects_view(polygons: list[list[list[tuple[float, float]]]]) ->
         or max_lat < VIEW_BBOX['min_lat']
         or min_lat > VIEW_BBOX['max_lat']
     )
-
-
-def _projected_bounds(
-    country_geometries: dict[str, list[list[list[tuple[float, float]]]]]
-) -> dict[str, float]:
-    min_x = float('inf')
-    max_x = float('-inf')
-    min_y = float('inf')
-    max_y = float('-inf')
-
-    for polygons in country_geometries.values():
-        for polygon in polygons:
-            for ring in polygon:
-                for lon, lat in ring:
-                    x, y = _project_lon_lat(lon, lat)
-                    min_x = min(min_x, x)
-                    max_x = max(max_x, x)
-                    min_y = min(min_y, y)
-                    max_y = max(max_y, y)
-
-    if not math.isfinite(min_x) or not math.isfinite(min_y):
-        raise ValueError('No projected geometry bounds were computed.')
-
-    return {
-        'min_x': min_x,
-        'max_x': max_x,
-        'min_y': min_y,
-        'max_y': max_y,
-    }
-
 
 def _projected_view_bounds() -> dict[str, float]:
     corners = [
