@@ -28,8 +28,8 @@ STATUS_COLORS = {
     'not_attempted': '#b0bec5',
 }
 VIEW_BBOX = {
-    'min_lon': -25.0,
-    'max_lon': 45.0,
+    'min_lon': -18.0,
+    'max_lon': 42.0,
     'min_lat': 34.0,
     'max_lat': 72.0,
 }
