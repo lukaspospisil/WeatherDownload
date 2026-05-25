@@ -18,7 +18,7 @@ from weatherdownload import (
 )
 
 COUNTRY = 'CZ'
-PROVIDER = 'historical_csv'
+DATASET_SCOPE = 'historical_csv'
 RESOLUTION = 'daily'
 REQUIRED_ELEMENTS = (
     'tas_mean',
@@ -91,7 +91,7 @@ def discover_matching_stations(
     if metadata_projector is None:
         matches = find_stations_with_elements(
             country=COUNTRY,
-            provider=PROVIDER,
+            provider=DATASET_SCOPE,
             resolution=RESOLUTION,
             elements=REQUIRED_ELEMENTS,
             stations=inspected,
@@ -161,7 +161,7 @@ def download_candidate_observations(
 ) -> pd.DataFrame:
     query = ObservationQuery(
         country=COUNTRY,
-        provider=PROVIDER,
+        dataset_scope=DATASET_SCOPE,
         resolution=RESOLUTION,
         station_ids=candidate_station_ids,
         start_date=start_date,
@@ -171,12 +171,12 @@ def download_candidate_observations(
     observations = download_observations(query, country=COUNTRY, station_metadata=station_metadata)
     prepared = _filter_cz_daily_selection(observations.copy())
     prepared.insert(0, 'country', COUNTRY)
-    prepared.insert(1, 'provider', PROVIDER)
+    prepared.insert(1, 'dataset_scope', DATASET_SCOPE)
     prepared.insert(6, 'date', prepared['observation_date'])
     prepared.insert(9, 'unit', prepared['element'].map(ELEMENT_UNITS).astype('string'))
     ordered_columns = [
         'country',
-        'provider',
+        'dataset_scope',
         'station_id',
         'gh_id',
         'element',

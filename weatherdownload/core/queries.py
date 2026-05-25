@@ -16,6 +16,7 @@ class ObservationQuery:
     """Public observation query."""
 
     provider: str = ''
+    dataset_scope: str = ''
     resolution: str = ''
     station_ids: list[str] = field(default_factory=list)
     start: datetime | str | None = None
@@ -39,12 +40,37 @@ def normalize_provider_name(provider: str | None) -> str:
     return normalized_provider
 
 
+def normalize_provider_scope(
+    provider: str | None = None,
+    dataset_scope: str | None = None,
+) -> str:
+    normalized_provider = _normalize_optional_provider(provider, field_name='provider')
+    normalized_dataset_scope = _normalize_optional_provider(dataset_scope, field_name='dataset_scope')
+
+    if normalized_provider is None and normalized_dataset_scope is None:
+        raise QueryValidationError('provider is required.')
+    if (
+        normalized_provider is not None
+        and normalized_dataset_scope is not None
+        and normalized_provider != normalized_dataset_scope
+    ):
+        raise QueryValidationError(
+            f"Conflicting provider selectors: provider='{normalized_provider}' "
+            f"does not match dataset_scope='{normalized_dataset_scope}'."
+        )
+    return normalized_provider or normalized_dataset_scope or ''
+
+
 def validate_observation_query(query: ObservationQuery) -> ObservationQuery:
     """Validate and normalize an observation query in place."""
 
     from ..providers import get_provider, normalize_country_code
 
-    query.provider = normalize_provider_name(getattr(query, 'provider', None))
+    query.provider = normalize_provider_scope(
+        getattr(query, 'provider', None),
+        getattr(query, 'dataset_scope', None),
+    )
+    query.dataset_scope = query.provider
     if not query.resolution:
         raise QueryValidationError('resolution is required.')
 

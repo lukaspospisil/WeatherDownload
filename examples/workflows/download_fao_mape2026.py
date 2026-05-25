@@ -3,22 +3,33 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import pandas as pd
-
-from weatherdownload import (
-    ObservationQuery,
-    download_observations,
-    export_table,
-    read_station_metadata,
-)
-from weatherdownload.utils import observations_to_wide
-
 COUNTRY = "CZ"
-PROVIDER = "historical_csv"
+DATASET_SCOPE = "historical_csv"
 RESOLUTION = "daily"
 DEFAULT_OUTPUT_DIR = Path("outputs/mape2026")
 DEFAULT_MAPE2026_STATION_IDS = (
-    "0-20000-0-11406",
+    "0-20000-0-11406",  # Cheb
+    "0-20000-0-11423",  # Primda
+    "0-20000-0-11438",  # Tusimice
+    "0-20000-0-11450",  # Plzen Mikulka
+    "0-20000-0-11487",  # Kocelovice
+    "0-20000-0-11502",  # Usti nad Labem Kockov
+    "0-20000-0-11509",  # Doksany
+    "0-20000-0-11519",  # Praha Karlov
+    "0-20000-0-11520",  # Praha Libus
+    "0-20000-0-11603",  # Liberec
+    "0-20000-0-11628",  # Kosetice Kresin Kramolin
+    "0-20000-0-11636",  # Kostelni Myslova
+    "0-20000-0-11643",  # Pec pod Snezkou
+    "0-20000-0-11659",  # Pribyslav Hriste
+    "0-20000-0-11679",  # Usti nad Orlici
+    "0-20000-0-11683",  # Svratouch
+    "0-20000-0-11693",  # Dukovany
+    "0-20000-0-11698",  # Kucharovice
+    "0-20000-0-11710",  # Luka
+    "0-20000-0-11723",  # Brno Turany
+    "0-20000-0-11766",  # Cervena
+    "0-20000-0-11774",  # Holesov
 )
 DAILY_ELEMENTS = (
     "tas_mean",
@@ -92,8 +103,11 @@ def main(argv: list[str] | None = None) -> int:
         station_file=args.station_file,
     )
     print(f"Selected {len(selected_station_ids)} station(s) for MAPE 2026.")
+    print("Station IDs: " + ", ".join(selected_station_ids))
 
     print("Reading station metadata...")
+    from weatherdownload import read_station_metadata
+
     station_metadata = read_station_metadata(country=COUNTRY)
     selected_stations = select_station_metadata(station_metadata, selected_station_ids)
     print(f"Loaded metadata for {len(selected_stations)} selected station(s).")
@@ -108,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Downloaded {len(observations)} normalized long observation row(s).")
 
     print("Converting observations to wide daily format...")
+    from weatherdownload.utils import observations_to_wide
+
     wide = observations_to_wide(
         observations,
         rename_elements={"pressure": "pressure_observed"},
@@ -165,6 +181,8 @@ def resolve_selected_station_ids(
 
 
 def read_station_ids_from_file(path: Path) -> list[str]:
+    import pandas as pd
+
     if not path.exists():
         raise ValueError(f"Station file does not exist: {path}")
     if path.suffix.lower() == ".csv":
@@ -206,9 +224,11 @@ def download_selected_observations(
     start_date: str | None,
     end_date: str | None,
 ) -> pd.DataFrame:
+    from weatherdownload import ObservationQuery, download_observations
+
     query_kwargs: dict[str, object] = {
         "country": COUNTRY,
-        "provider": PROVIDER,
+        "dataset_scope": DATASET_SCOPE,
         "resolution": RESOLUTION,
         "station_ids": station_ids,
         "elements": list(DAILY_ELEMENTS),
@@ -228,6 +248,8 @@ def download_selected_observations(
 
 
 def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
+    import pandas as pd
+
     summary_columns = [
         "station_id",
         "first_date",
@@ -260,6 +282,8 @@ def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
 
 
 def ensure_expected_wide_columns(wide: pd.DataFrame) -> pd.DataFrame:
+    import pandas as pd
+
     expected_columns = [
         "station_id",
         "date",
@@ -281,6 +305,8 @@ def ensure_expected_wide_columns(wide: pd.DataFrame) -> pd.DataFrame:
 
 
 def export_optional_parquet(table: pd.DataFrame, output_path: Path, *, label: str) -> None:
+    from weatherdownload import export_table
+
     try:
         export_table(table, output_path, format="parquet")
     except RuntimeError as exc:

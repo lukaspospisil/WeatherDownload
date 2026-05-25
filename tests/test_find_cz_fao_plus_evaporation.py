@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-MODULE_PATH = Path('utils/find_cz_fao_plus_evaporation.py')
+MODULE_PATH = Path('scripts/dev/find_cz_fao_plus_evaporation.py')
 SPEC = importlib.util.spec_from_file_location('find_cz_fao_plus_evaporation', MODULE_PATH)
 script = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = script
