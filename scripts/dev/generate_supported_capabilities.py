@@ -105,7 +105,7 @@ NOTES: dict[tuple[str, str, str], str] = {
     ('DK', 'historical', '1hour'): 'Single public hourly provider for DK.',
     ('DK', 'historical', '10min'): 'Meteorological Observation API path for 10-minute data.',
     ('DK', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix DA; inventory-driven station elements; no EVAP/open_water_evaporation.',
-    ('ES', 'aemet', 'daily'): 'Requires AEMET OpenData API key; observed-only daily slice; velmedia is converted from km/h to canonical m/s; trace precipitation `Ip` is mapped to 0.0 mm; not FAO-ready in the first pass.',
+    ('ES', 'aemet', 'daily'): 'Requires AEMET OpenData API key; observed-only daily slice; velmedia is converted from km/h to canonical m/s; hrMedia is mapped to canonical relative_humidity in percent; trace precipitation `Ip` is mapped to 0.0 mm; observed vapour_pressure is still unavailable, so this does not make the provider provider-level FAO-ready.',
     ('FI', 'fmi', 'daily'): 'Conservative first slice via WFS daily timevaluepair; station_id is FMI fmisid; station metadata is a conservative AWS+SYNOP subset; elevation_m is currently null; FMI daily snow is unit cm and is intentionally not mapped yet.',
     ('FI', 'fmi', '1hour'): 'Conservative first slice via WFS timevaluepair; station_id is FMI fmisid; station metadata is a conservative AWS+SYNOP subset; elevation_m is currently null; p_sea (MSL pressure) is mapped to canonical pressure; units may be absent inline in the XML payload.',
     ('FI', 'ghcnd', 'daily'): 'Thin shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation.',

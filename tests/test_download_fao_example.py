@@ -77,6 +77,10 @@ class DownloadFaoExampleTests(unittest.TestCase):
             Path('outputs/fao_daily.dk.mat'),
         )
         self.assertEqual(
+            download_fao.resolve_mat_output_path(None, country='ES'),
+            Path('outputs/fao_daily.es.mat'),
+        )
+        self.assertEqual(
             download_fao.resolve_mat_output_path(None, country='HU'),
             Path('outputs/fao_daily.hu.mat'),
         )
@@ -113,6 +117,10 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(
             download_fao.resolve_parquet_output_dir(None, country='DK'),
             Path('outputs/fao_daily.dk'),
+        )
+        self.assertEqual(
+            download_fao.resolve_parquet_output_dir(None, country='ES'),
+            Path('outputs/fao_daily.es'),
         )
         self.assertEqual(
             download_fao.resolve_parquet_output_dir(None, country='HU'),
@@ -537,6 +545,9 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertIn('### LU', doc_text)
         self.assertIn('`LU / asta / daily`', doc_text)
         self.assertIn('workflow-level `--fill-missing allow-derived` fallback rule', doc_text)
+        self.assertIn('### ES', doc_text)
+        self.assertIn('`ES / aemet / daily`', doc_text)
+        self.assertIn('derived_opt_in', doc_text)
 
     def test_screen_candidate_stations_deduplicates_meta1_by_station_id(self) -> None:
         config = download_fao.get_fao_country_config('CZ')
@@ -574,6 +585,30 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(list(candidates['station_id']), ['0-20000-0-11406'])
         self.assertEqual(list(candidates['full_name']), ['Cheb primary'])
         self.assertEqual(len(candidates), 1)
+
+    def test_screen_candidate_stations_es_uses_missing_coverage_fallback_when_required_elements_exist(self) -> None:
+        config = download_fao.get_fao_country_config('ES')
+        meta1 = pd.DataFrame([
+            {
+                'station_id': '3195',
+                'full_name': 'Madrid',
+                'latitude': 40.41,
+                'longitude': -3.68,
+                'elevation_m': 667.0,
+            },
+        ])
+        meta2 = pd.DataFrame([
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '3195', 'element': 'tmed', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '3195', 'element': 'tmax', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '3195', 'element': 'tmin', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '3195', 'element': 'velmedia', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '3195', 'element': 'sol', 'begin_date': '', 'end_date': ''},
+            {'obs_type': 'HISTORICAL_DAILY', 'station_id': '3195', 'element': 'hrMedia', 'begin_date': '', 'end_date': ''},
+        ])
+
+        candidates = download_fao.screen_candidate_stations(meta1, meta2, config=config, min_complete_days=3650)
+
+        self.assertEqual(list(candidates['station_id']), ['3195'])
 
     def test_load_station_metadata_with_cache_build_mode_requires_cached_file(self) -> None:
         reporter = download_fao.ProgressReporter(silent=True)
@@ -676,6 +711,50 @@ class DownloadFaoExampleTests(unittest.TestCase):
             self.assertEqual(stats.reused, 1)
             self.assertEqual(stats.downloaded, 0)
 
+    def test_ensure_daily_observations_cached_uses_explicit_date_range_for_es(self) -> None:
+        station_id = '3195'
+        config = download_fao.get_fao_country_config('ES', fill_missing='allow-derived')
+        captured_queries: list[ObservationQuery] = []
+        sample = pd.DataFrame([
+            {
+                'station_id': station_id,
+                'gh_id': pd.NA,
+                'element': 'tas_mean',
+                'element_raw': 'tmed',
+                'observation_date': '2024-03-01',
+                'time_function': pd.NA,
+                'value': 10.5,
+                'flag': pd.NA,
+                'quality': pd.NA,
+                'provider': 'aemet',
+                'resolution': 'daily',
+            }
+        ])
+
+        def _fake_download(query, timeout, country):
+            captured_queries.append(query)
+            return sample
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats = download_fao.CacheStats()
+            with patch.object(download_fao, 'download_observations', side_effect=_fake_download):
+                result = download_fao.ensure_daily_observations_cached(
+                    station_id,
+                    cache_dir=Path(tmpdir),
+                    config=config,
+                    mode='full',
+                    timeout=60,
+                    stats=stats,
+                )
+
+        self.assertTrue(result.available)
+        self.assertEqual(len(captured_queries), 1)
+        query = captured_queries[0]
+        self.assertFalse(query.all_history)
+        self.assertEqual(query.provider, 'aemet')
+        self.assertIsNotNone(query.start_date)
+        self.assertIsNotNone(query.end_date)
+
     def test_silent_mode_suppresses_nonessential_progress(self) -> None:
         reporter = download_fao.ProgressReporter(silent=True)
         buffer = io.StringIO()
@@ -690,6 +769,22 @@ class DownloadFaoExampleTests(unittest.TestCase):
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['TG'], 'tas_mean')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
+
+    def test_get_fao_country_config_returns_es_mapping(self) -> None:
+        config = download_fao.get_fao_country_config('ES')
+        self.assertEqual(config.country, 'ES')
+        self.assertEqual(config.provider, 'aemet')
+        self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
+        self.assertEqual(config.raw_to_canonical['TMED'], 'tas_mean')
+        self.assertEqual(config.raw_to_canonical['SOL'], 'sunshine_duration')
+        self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
+
+    def test_get_fao_country_config_allow_derived_adds_relative_humidity_helper_for_es(self) -> None:
+        config = download_fao.get_fao_country_config('ES', fill_missing='allow-derived')
+        self.assertEqual(
+            config.query_elements,
+            ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration', 'relative_humidity'),
+        )
 
     def test_get_fao_country_config_allow_derived_adds_relative_humidity_helper_for_nl(self) -> None:
         config = download_fao.get_fao_country_config('NL', fill_missing='allow-derived')
@@ -879,6 +974,51 @@ class DownloadFaoExampleTests(unittest.TestCase):
         )
 
         self.assertEqual(list(complete['date'].astype(str)), ['2024-01-01'])
+        self.assertGreater(float(complete.loc[0, 'vapour_pressure']), 0.0)
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived_opt_in')
+        self.assertEqual(
+            applied_rules['vapour_pressure'],
+            download_fao.DERIVED_VAPOUR_PRESSURE_RULE_DESCRIPTION,
+        )
+
+    def test_prepare_complete_station_series_handles_es_without_deriving_vapour_pressure_by_default(self) -> None:
+        config = download_fao.get_fao_country_config('ES')
+        daily_table = pd.DataFrame([
+            {'station_id': '3195', 'element': 'tas_mean', 'element_raw': 'tmed', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '10.5'},
+            {'station_id': '3195', 'element': 'tas_max', 'element_raw': 'tmax', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '17.0'},
+            {'station_id': '3195', 'element': 'tas_min', 'element_raw': 'tmin', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '4.0'},
+            {'station_id': '3195', 'element': 'wind_speed', 'element_raw': 'velmedia', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '2.0'},
+            {'station_id': '3195', 'element': 'sunshine_duration', 'element_raw': 'sol', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '8.5'},
+        ])
+
+        complete, provenance, applied_rules = download_fao.prepare_complete_station_series_with_provenance(
+            daily_table,
+            config=config,
+            fill_missing='none',
+        )
+
+        self.assertEqual(list(complete['date'].astype(str)), ['2024-03-01'])
+        self.assertTrue(complete['vapour_pressure'].isna().all())
+        self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'missing')
+        self.assertIsNone(applied_rules['vapour_pressure'])
+
+    def test_prepare_complete_station_series_can_derive_vapour_pressure_for_es_when_enabled(self) -> None:
+        config = download_fao.get_fao_country_config('ES', fill_missing='allow-derived')
+        daily_table = pd.DataFrame([
+            {'station_id': '3195', 'element': 'tas_mean', 'element_raw': 'tmed', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '10.5'},
+            {'station_id': '3195', 'element': 'tas_max', 'element_raw': 'tmax', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '17.0'},
+            {'station_id': '3195', 'element': 'tas_min', 'element_raw': 'tmin', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '4.0'},
+            {'station_id': '3195', 'element': 'wind_speed', 'element_raw': 'velmedia', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '2.0'},
+            {'station_id': '3195', 'element': 'sunshine_duration', 'element_raw': 'sol', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '8.5'},
+            {'station_id': '3195', 'element': 'relative_humidity', 'element_raw': 'hrMedia', 'observation_date': '2024-03-01', 'time_function': pd.NA, 'value': '63.5'},
+        ])
+
+        complete, provenance, applied_rules = download_fao.prepare_complete_station_series_with_provenance(
+            daily_table,
+            config=config,
+            fill_missing='allow-derived',
+        )
+
         self.assertGreater(float(complete.loc[0, 'vapour_pressure']), 0.0)
         self.assertEqual(provenance.loc[0, 'vapour_pressure'], 'derived_opt_in')
         self.assertEqual(
@@ -1148,6 +1288,17 @@ class DownloadFaoExampleTests(unittest.TestCase):
         info = download_fao.build_data_info(config, station_rows=[{'station_id': '13704'}], min_complete_days=3650)
 
         self.assertEqual(info['country'], 'HU')
+        self.assertIn('assumptions', info)
+        self.assertEqual(info['provider_element_mapping']['vapour_pressure']['status'], 'unavailable')
+        self.assertIn('observed_inputs_only', info['assumptions'])
+        self.assertIn('vapour_pressure_availability', info['assumptions'])
+        self.assertIn('relative_humidity_helper', info['assumptions'])
+
+    def test_build_data_info_includes_es_limitations(self) -> None:
+        config = download_fao.get_fao_country_config('ES')
+        info = download_fao.build_data_info(config, station_rows=[{'station_id': '3195'}], min_complete_days=3650)
+
+        self.assertEqual(info['country'], 'ES')
         self.assertIn('assumptions', info)
         self.assertEqual(info['provider_element_mapping']['vapour_pressure']['status'], 'unavailable')
         self.assertIn('observed_inputs_only', info['assumptions'])

@@ -92,6 +92,13 @@ HU_REQUIRED_OBSERVED_ELEMENTS = (
     'wind_speed',
     'sunshine_duration',
 )
+ES_REQUIRED_OBSERVED_ELEMENTS = (
+    'tas_mean',
+    'tas_max',
+    'tas_min',
+    'wind_speed',
+    'sunshine_duration',
+)
 PL_REQUIRED_OBSERVED_ELEMENTS = (
     'tas_mean',
     'tas_max',
@@ -276,6 +283,44 @@ HU_PROVIDER_ELEMENT_MAPPING = {
         ),
     },
     'sunshine_duration': {'raw_codes': ['f'], 'selection_rule': None, 'status': 'observed'},
+}
+ES_ASSUMPTIONS = {
+    'observed_inputs_only': (
+        'The Spain branch packages only source-backed daily observations from the AEMET provider. '
+        'The shared workflow does not compute FAO-56 ET0 or derive any meteorological variables by default.'
+    ),
+    'vapour_pressure_availability': (
+        'Observed daily vapour_pressure is not exposed by the current AEMET daily provider path used here. '
+        'The shared workflow therefore keeps vapour_pressure empty in default mode.'
+    ),
+    'relative_humidity_helper': (
+        'Observed AEMET daily relative_humidity is available through raw hrMedia and may be used only by the existing shared '
+        'allow-derived fallback rule for vapour_pressure. No ES-specific derivation logic is added.'
+    ),
+    'provider_boundary': (
+        'This branch uses only the existing `ES / aemet / daily` provider slice. '
+        'It does not add observed vapour_pressure, does not introduce hourly or 10-minute inputs, and does not move derivation logic into the provider.'
+    ),
+    'coverage_metadata_limit': (
+        'The current AEMET station inventory and observation-metadata slice do not publish clean begin/end coverage dates in the normalized metadata used by this example. '
+        'The workflow therefore uses a conservative ES-specific candidate-screening fallback and an explicit long-range daily request when it needs to build cache files.'
+    ),
+}
+ES_PROVIDER_ELEMENT_MAPPING = {
+    'tas_mean': {'raw_codes': ['tmed'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['tmax'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['tmin'], 'selection_rule': None, 'status': 'observed'},
+    'wind_speed': {'raw_codes': ['velmedia'], 'selection_rule': None, 'status': 'observed'},
+    'vapour_pressure': {
+        'raw_codes': [],
+        'selection_rule': None,
+        'status': 'unavailable',
+        'notes': (
+            'Not directly available from the current Spain AEMET daily provider path. '
+            'The shared workflow keeps this field empty unless the explicit allow-derived fill mode is enabled.'
+        ),
+    },
+    'sunshine_duration': {'raw_codes': ['sol'], 'selection_rule': None, 'status': 'observed'},
 }
 PL_ASSUMPTIONS = {
     'observed_inputs_only': (
@@ -763,6 +808,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
     daily_provider_name = 'historical'
     if normalized_country == 'CZ':
         daily_provider_name = 'historical_csv'
+    elif normalized_country == 'ES':
+        daily_provider_name = 'aemet'
     elif normalized_country == 'LU':
         daily_provider_name = 'asta'
     try:
@@ -785,6 +832,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         query_elements = DK_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'HU':
         query_elements = HU_REQUIRED_OBSERVED_ELEMENTS
+    elif normalized_country == 'ES':
+        query_elements = ES_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'PL':
         query_elements = PL_REQUIRED_OBSERVED_ELEMENTS
     elif normalized_country == 'NL':
@@ -796,7 +845,7 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
     else:
         query_elements = FAO_CANONICAL_ELEMENTS
     query_elements = tuple(query_elements)
-    if fill_missing == 'allow-derived' and normalized_country in {'AT', 'BE', 'CH', 'DK', 'HU', 'NL', 'LU'}:
+    if fill_missing == 'allow-derived' and normalized_country in {'AT', 'BE', 'CH', 'DK', 'ES', 'HU', 'NL', 'LU'}:
         query_elements = tuple(dict.fromkeys([*query_elements, 'relative_humidity']))
 
     selected_canonical_to_raw: dict[str, tuple[str, ...]] = {}
@@ -824,6 +873,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         return FaoCountryConfig('DK', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
     if normalized_country == 'HU':
         return FaoCountryConfig('HU', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, HU_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(HU_PROVIDER_ELEMENT_MAPPING), dict(HU_ASSUMPTIONS), 'HungaroMet Hungary observed daily input bundle prepared for later FAO workflow packaging', 'HungaroMet open data daily station observations from odp.met.hu')
+    if normalized_country == 'ES':
+        return FaoCountryConfig('ES', 'aemet', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, ES_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(ES_PROVIDER_ELEMENT_MAPPING), dict(ES_ASSUMPTIONS), 'AEMET Spain observed daily input bundle prepared for later FAO workflow packaging', 'AEMET OpenData daily climatological station observations')
     if normalized_country == 'PL':
         provider_mapping = dict(PL_PROVIDER_ELEMENT_MAPPING)
         assumptions = dict(PL_ASSUMPTIONS)
@@ -1118,6 +1169,11 @@ def screen_candidate_stations(meta1: pd.DataFrame, meta2: pd.DataFrame, *, confi
     overlap = estimate_station_overlap_days(relevant)
     screened = supported.merge(overlap, on='station_id', how='left')
     screened['overlap_days_estimate'] = screened['overlap_days_estimate'].fillna(0).astype(int)
+    if config.country == 'ES':
+        screened.loc[
+            screened['has_required_elements'] & screened['overlap_days_estimate'].eq(0),
+            'overlap_days_estimate',
+        ] = int(min_complete_days)
     candidate_ids = screened[screened['has_required_elements'] & (screened['overlap_days_estimate'] >= min_complete_days)]['station_id']
     candidate_rows = meta1[meta1['station_id'].isin(candidate_ids)].copy()
     return deduplicate_candidate_stations(candidate_rows)
@@ -1189,14 +1245,7 @@ def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config
         stats.add_file_status('missing')
         return result
     try:
-        query = ObservationQuery(
-            country=config.country,
-            provider=config.provider,
-            resolution=config.resolution,
-            station_ids=[station_id],
-            all_history=True,
-            elements=list(config.query_elements),
-        )
+        query = _build_daily_cache_query(station_id=station_id, config=config)
         observations = download_observations(query, timeout=timeout, country=config.country)
     except Exception:
         result.add_status('failed')
@@ -1211,6 +1260,28 @@ def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config
     result.add_status('downloaded')
     stats.add_file_status('downloaded')
     return result
+
+
+def _build_daily_cache_query(*, station_id: str, config: FaoCountryConfig) -> ObservationQuery:
+    if config.country == 'ES':
+        end_date = pd.Timestamp.today().date()
+        return ObservationQuery(
+            country=config.country,
+            provider=config.provider,
+            resolution=config.resolution,
+            station_ids=[station_id],
+            start_date='1900-01-01',
+            end_date=end_date,
+            elements=list(config.query_elements),
+        )
+    return ObservationQuery(
+        country=config.country,
+        provider=config.provider,
+        resolution=config.resolution,
+        station_ids=[station_id],
+        all_history=True,
+        elements=list(config.query_elements),
+    )
 
 
 def ensure_hourly_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, stats: CacheStats) -> StationCacheResult:

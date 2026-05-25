@@ -34,6 +34,7 @@ Currently supported in the shared workflow:
 - `BE`
 - `CH`
 - `DK`
+- `ES`
 - `HU`
 - `PL`
 - `LU`
@@ -49,6 +50,8 @@ python examples/workflows/download_fao.py --country AT
 python examples/workflows/download_fao.py --country BE
 python examples/workflows/download_fao.py --country CH
 python examples/workflows/download_fao.py --country DK
+python examples/workflows/download_fao.py --country ES
+python examples/workflows/download_fao.py --country ES --fill-missing allow-derived
 python examples/workflows/download_fao.py --country HU
 python examples/workflows/download_fao.py --country PL
 python examples/workflows/download_fao.py --country PL --fill-missing allow-hourly-aggregate
@@ -67,6 +70,8 @@ python examples/workflows/download_fao.py --country CZ --compute-fao-intermediat
 `--compute-fao-intermediates` defaults to off. When you enable it, the workflow keeps the standard six-field observed/prepared bundle unchanged and appends FAO-56 derived columns to each exported station series in MAT and Parquet outputs.
 
 For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
+
+For `ES`, set `WEATHERDOWNLOAD_AEMET_API_KEY` or `AEMET_API_KEY` first.
 
 For `CH`, `HU`, and `PL`, no extra API key is required for the current provider slices.
 
@@ -184,6 +189,37 @@ Unavailable in the current shared path:
 - `vapour_pressure` stays null
 
 The DK branch uses only the existing Denmark daily provider through the unified public interface. Denmark daily values come from the official DMI Climate Data `stationValue` path, and the workflow remains Denmark-only in this pass without broadening to Greenland or Faroe Islands support.
+
+### ES
+
+Observed inputs used from the `ES / aemet / daily` provider path:
+
+- `tas_mean` via `tmed`
+- `tas_max` via `tmax`
+- `tas_min` via `tmin`
+- `wind_speed` via `velmedia`
+- `sunshine_duration` via `sol`
+
+Observed helper input available in this provider path:
+
+- `relative_humidity` via `hrMedia`
+
+Unavailable as an observed provider field in the current shared path:
+
+- observed `vapour_pressure` stays null in default mode
+
+Optional shared fallback in `--fill-missing allow-derived` mode:
+
+- `vapour_pressure` may be filled from observed daily `tas_mean` plus observed daily `relative_humidity` through the existing shared example-layer fallback rule
+- this is workflow-level `--fill-missing allow-derived` fallback rule compatibility only, not observed provider support
+- the filled `vapour_pressure` values are marked as `derived_opt_in` in workflow provenance outputs, not observed provider data
+
+The ES branch uses only the existing `ES / aemet / daily` provider through the unified public interface. It does not add observed `vapour_pressure`, does not add hourly or 10-minute support, and does not move derivation logic into the provider.
+
+Practical interpretation:
+
+- `ES / aemet / daily` is usable by the FAO preparation workflow only when you explicitly enable `--fill-missing allow-derived`
+- that compatibility is workflow-level only and does not make the Spain AEMET provider slice provider-level observed FAO-ready
 
 ### CH
 
@@ -434,6 +470,13 @@ For `HU`, that assumptions block explicitly states that:
 - observed Hungary daily `relative_humidity` may support only the existing opt-in shared `--fill-missing allow-derived` fallback rule for `vapour_pressure`
 - the example does not derive radiation or other meteorological variables
 
+For `ES`, that assumptions block explicitly states that:
+
+- the branch packages observed AEMET daily inputs only by default
+- observed `vapour_pressure` is unavailable in the current provider path and remains null in default mode
+- observed Spain AEMET daily `relative_humidity` may support only the existing opt-in shared `--fill-missing allow-derived` fallback rule for `vapour_pressure`
+- the example does not derive radiation or other meteorological variables
+
 For `LU`, that assumptions block explicitly states that:
 
 - the branch packages observed ASTA daily inputs only by default
@@ -467,6 +510,7 @@ The cache is country-scoped under the base cache directory, for example:
   BE/
   CH/
   DK/
+  ES/
   HU/
   PL/
   LU/
@@ -490,6 +534,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `BE` MAT: `outputs/fao_daily.be.mat`
 - `CH` MAT: `outputs/fao_daily.ch.mat`
 - `DK` MAT: `outputs/fao_daily.dk.mat`
+- `ES` MAT: `outputs/fao_daily.es.mat`
 - `HU` MAT: `outputs/fao_daily.hu.mat`
 - `PL` MAT: `outputs/fao_daily.pl.mat`
 - `LU` MAT: `outputs/fao_daily.lu.mat`
@@ -501,6 +546,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `BE` Parquet bundle: `outputs/fao_daily.be`
 - `CH` Parquet bundle: `outputs/fao_daily.ch`
 - `DK` Parquet bundle: `outputs/fao_daily.dk`
+- `ES` Parquet bundle: `outputs/fao_daily.es`
 - `HU` Parquet bundle: `outputs/fao_daily.hu`
 - `PL` Parquet bundle: `outputs/fao_daily.pl`
 - `LU` Parquet bundle: `outputs/fao_daily.lu`

@@ -28,6 +28,7 @@ AEMET_DAILY_CANONICAL_ELEMENTS = {
     'tas_min': ('tmin',),
     'precipitation': ('prec',),
     'wind_speed': ('velmedia',),
+    'relative_humidity': ('hrMedia',),
     'sunshine_duration': ('sol',),
 }
 
@@ -58,6 +59,11 @@ AEMET_DAILY_PARAMETER_METADATA = {
         'unit': 'm/s',
         'source_unit': 'km/h',
     },
+    'hrMedia': {
+        'name': 'Daily mean relative humidity',
+        'description': 'Official AEMET daily mean relative humidity in percent.',
+        'unit': '%',
+    },
     'sol': {
         'name': 'Daily sunshine duration',
         'description': 'Official AEMET daily sunshine duration in hours.',
@@ -72,7 +78,7 @@ _ES_DATASET_SPECS = [
         label='AEMET OpenData daily climatological observations',
         station_metadata_url=f'{AEMET_OPEN_DATA_BASE_URL}{AEMET_STATION_INVENTORY_ENDPOINT}',
         data_url=f'{AEMET_OPEN_DATA_BASE_URL}{AEMET_DAILY_ENDPOINT_TEMPLATE}',
-        supported_elements=('tmed', 'tmax', 'tmin', 'prec', 'velmedia', 'sol'),
+        supported_elements=('tmed', 'tmax', 'tmin', 'prec', 'velmedia', 'hrMedia', 'sol'),
         time_semantics='date',
         canonical_elements=AEMET_DAILY_CANONICAL_ELEMENTS,
         implemented=True,
