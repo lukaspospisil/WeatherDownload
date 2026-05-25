@@ -270,8 +270,10 @@
       "status": "not_attempted"
     },
     "ES": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "aemet"
+      ],
+      "status": "national_daily"
     },
     "FI": {
       "providers": [
