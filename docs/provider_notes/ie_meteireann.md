@@ -38,6 +38,11 @@ The runtime station list is an audited validated daily station set checked again
 - `wdsp`
 - `sun`
 
+The audit trail for that checked-in station set is:
+
+- [`weatherdownload/providers/ie/daily_stations.json`](../../weatherdownload/providers/ie/daily_stations.json)
+- [`scripts/dev/audit_ie_meteireann_daily_stations.py`](../../scripts/dev/audit_ie_meteireann_daily_stations.py)
+
 Currently exposed verified daily stations include:
 
 - `518` `Shannon Airport`
@@ -51,7 +56,7 @@ Currently exposed verified daily stations include:
 
 Dublin Airport remains `station_id="532"`.
 
-Met Eireann publishes a broader station metadata table, but WeatherDownload currently keeps the public daily contract to a conservative verified subset whose daily CSV path, raw columns, and metadata semantics have been checked together. Stations that currently lack required raw columns such as `sun` are intentionally not exposed in this provider slice even if they appear in `StationDetails.csv`.
+Met Eireann publishes a broader station metadata table, but WeatherDownload currently keeps the public daily contract to a conservative verified subset whose daily CSV path, raw columns, and metadata semantics have been checked together. Many official candidate station ids were rejected or postponed during the audit because required current raw columns such as `sun` or `wdsp` were missing, so those stations are intentionally not exposed in this provider slice even if they appear in `StationDetails.csv`.
 
 ## Supported Observed Elements
 
