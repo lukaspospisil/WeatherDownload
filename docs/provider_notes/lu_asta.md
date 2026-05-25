@@ -2,6 +2,10 @@
 
 This note documents the current ASTA provider slice implemented in WeatherDownload.
 
+Provider identifier:
+
+- `LU / asta / daily`
+
 ## Provider identifiers
 
 - country: `LU`
@@ -86,7 +90,7 @@ The ASTA daily source appears to contain additional daily variables, but some ar
 - daily only
 - observed-only
 - no derived values are introduced
-- not FAO-ready: the current ASTA slice now covers `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `relative_humidity`, and `sunshine_duration`, but it still does not directly expose `vapour_pressure`
+- not FAO-ready as an observed provider slice: the current ASTA slice now covers `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `relative_humidity`, and `sunshine_duration`, but it still does not directly expose observed `vapour_pressure`
 - no hourly ASTA support in this pass
 - no AGE support in this pass
 - no 10-minute Luxembourg support is introduced here

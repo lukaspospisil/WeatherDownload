@@ -28,7 +28,7 @@ The capability matrix is the authoritative current overview of `country + provid
 - [HungaroMet Hungary](hu_hungaromet.md)
 - [MeteoLux Luxembourg](lu_meteolux.md)
 - [ASTA Luxembourg](lu_asta.md)
-- [Luxembourg Research Note](lu_meteolux_research.md)
+- [Luxembourg Historical Research Note](lu_meteolux_research.md)
 - [KNMI Netherlands](nl_knmi.md)
 - [IMGW-PIB Poland](pl_imgw.md)
 - [SMHI Sweden](se_smhi.md)

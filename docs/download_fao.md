@@ -32,6 +32,7 @@ Currently supported in the shared workflow:
 - `DK`
 - `HU`
 - `PL`
+- `LU`
 - `NL`
 - `SE`
 
@@ -47,6 +48,8 @@ python examples/workflows/download_fao.py --country DK
 python examples/workflows/download_fao.py --country HU
 python examples/workflows/download_fao.py --country PL
 python examples/workflows/download_fao.py --country PL --fill-missing allow-hourly-aggregate
+python examples/workflows/download_fao.py --country LU
+python examples/workflows/download_fao.py --country LU --fill-missing allow-derived
 python examples/workflows/download_fao.py --country NL
 python examples/workflows/download_fao.py --country SE
 python examples/workflows/download_fao.py --country NL --fill-missing allow-derived
@@ -239,8 +242,14 @@ Optional shared fallback in `--fill-missing allow-derived` mode:
 
 - `vapour_pressure` may be filled from observed daily `tas_mean` plus observed daily `relative_humidity` through the existing shared example-layer fallback rule
 - this is workflow-level `--fill-missing allow-derived` fallback rule compatibility only, not observed provider support
+- the filled `vapour_pressure` values are marked as `derived_opt_in` in workflow provenance outputs, not observed provider data
 
 The LU branch uses only the separate `LU / asta / daily` provider through the unified public interface. It does not merge or reinterpret the distinct `LU / meteolux / daily` Findel-only provider, does not add observed `vapour_pressure`, and does not move derivation logic into the provider.
+
+Practical interpretation:
+
+- `LU / asta / daily` is usable by the FAO preparation workflow only when you explicitly enable `--fill-missing allow-derived`
+- that compatibility is workflow-level only and does not make the Luxembourg ASTA provider slice provider-level observed FAO-ready
 
 ### PL
 
@@ -319,6 +328,7 @@ Optional behavior:
 - derivation is opt-in and stays in the shared example layer only, never in providers
 - the current explicit fallback rule is limited to `vapour_pressure`
 - `vapour_pressure` may be derived from observed daily `tas_mean` plus observed daily `relative_humidity` using the Magnus saturation-vapour-pressure formula in hPa
+- when that fallback is used, the resulting `vapour_pressure` values are marked as `derived_opt_in` in workflow provenance outputs rather than observed provider data
 - if the helper observations needed for that rule are unavailable, the field stays missing and the sidecar file records that outcome
 
 - `--fill-missing allow-hourly-aggregate`
@@ -455,6 +465,7 @@ The cache is country-scoped under the base cache directory, for example:
   DK/
   HU/
   PL/
+  LU/
   NL/
   SE/
 ```
@@ -477,6 +488,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `DK` MAT: `outputs/fao_daily.dk.mat`
 - `HU` MAT: `outputs/fao_daily.hu.mat`
 - `PL` MAT: `outputs/fao_daily.pl.mat`
+- `LU` MAT: `outputs/fao_daily.lu.mat`
 - `NL` MAT: `outputs/fao_daily.nl.mat`
 - `SE` MAT: `outputs/fao_daily.se.mat`
 - `CZ` Parquet bundle: `outputs/fao_daily.cz`
@@ -487,6 +499,7 @@ Default country-aware output names when you do not pass explicit paths:
 - `DK` Parquet bundle: `outputs/fao_daily.dk`
 - `HU` Parquet bundle: `outputs/fao_daily.hu`
 - `PL` Parquet bundle: `outputs/fao_daily.pl`
+- `LU` Parquet bundle: `outputs/fao_daily.lu`
 - `NL` Parquet bundle: `outputs/fao_daily.nl`
 - `SE` Parquet bundle: `outputs/fao_daily.se`
 

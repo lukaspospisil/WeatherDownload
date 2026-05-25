@@ -2,6 +2,10 @@
 
 This note documents the initial Luxembourg provider slice implemented in WeatherDownload.
 
+Provider identifier:
+
+- `LU / meteolux / daily`
+
 ## Provider identifiers
 
 - country: `LU`
@@ -59,12 +63,13 @@ Raw-to-canonical mapping:
 
 Notes:
 
+- this provider is Findel-only
 - this first pass is daily only
 - this first pass is observed-only provider data and does not derive extra variables
 - `tas_max`, `tas_min`, and `precipitation` come from the official MeteoLux INSPIRE WFS layers
-- `sunshine_duration` comes from the official MeteoLux daily CSV resource
+- `sunshine_duration` comes from the official MeteoLux daily CSV resource as raw `DINS` in hours
 - `tas_mean` is intentionally not exposed because it is not part of the current observed daily slice
-- `Rn/net radiation is not downloaded`
+- Rn/net radiation is not downloaded by this provider; FAO radiation terms and intermediates are workflow-derived only when explicitly requested elsewhere
 
 ## Temporal semantics
 

@@ -1,19 +1,42 @@
 # Luxembourg Data Source Investigation
 
-This note records a research pass for possible Luxembourg extensions beyond the current WeatherDownload slice:
+This is a historical research note. It records the investigation that led to the current Luxembourg provider slices and keeps pointers for possible future extensions.
+
+This note records a research pass for Luxembourg extensions beyond the first Luxembourg implementation that existed at the time:
 
 - country: `LU`
 - provider: `meteolux`
 - resolution: `daily`
 - station: `Luxembourg/Findel Airport`
 - station_id: `0-20000-0-06590`
-- observed elements: `tas_max`, `tas_min`, `precipitation`
+- observed elements at that time: `tas_max`, `tas_min`, `precipitation`
 
-The current implementation is conservative, observed-only, daily-only, and not FAO-ready.
+That earlier MeteoLux-only implementation was conservative, observed-only, daily-only, and not FAO-ready.
 
 ## Current implemented support
 
-WeatherDownload currently uses the official MeteoLux INSPIRE WFS daily Findel Airport layers:
+WeatherDownload has since moved beyond the initial slice that motivated this note.
+
+Current Luxembourg support now includes:
+
+- `LU / meteolux / daily`
+- `LU / asta / daily`
+
+Current MeteoLux support:
+
+- station: `Luxembourg/Findel Airport`
+- station_id: `0-20000-0-06590`
+- observed elements: `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`
+- `tas_max`, `tas_min`, and `precipitation` come from the official MeteoLux INSPIRE WFS daily Findel Airport layers
+- `sunshine_duration` comes from the official MeteoLux daily CSV `DINS` column in hours
+
+Current ASTA support:
+
+- multi-station network with stable ids such as `AGM_022`
+- observed elements: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration`
+- source family: official ASTA INSPIRE WFS daily observations plus official ASTA station metadata
+
+The original implemented MeteoLux layers documented during this research pass were:
 
 - `MF.PointTimeSeriesObservation_Daily_FindelAirport_maxtemperature`
 - `MF.PointTimeSeriesObservation_Daily_FindelAirport_mintemperature`
@@ -113,9 +136,9 @@ Recommendation:
 
 Comments:
 
-- this is the clearest immediate extension of the current provider
-- it would add `sunshine_duration` for Findel without introducing derived values
-- it would not make Luxembourg FAO-ready by itself because `tas_mean`, `wind_speed`, and `vapour_pressure` would still be missing
+- this turned out to be the clearest immediate extension of the initial provider
+- it is now implemented in WeatherDownload as observed `sunshine_duration` from the official MeteoLux CSV
+- it still did not make the MeteoLux slice FAO-ready by itself because `tas_mean`, `wind_speed`, and `vapour_pressure` remain unavailable there
 
 ### 2. MeteoLux monthly climatological products
 
@@ -324,18 +347,23 @@ Implementation difficulty:
 
 - medium
 
-Recommendation:
+Recommendation at the time:
 
 - `implement` for a conservative subset later
 
 Comments:
 
-- ASTA is the strongest candidate for broader Luxembourg support
+- ASTA was the strongest candidate for broader Luxembourg support
 - it offers many stations, daily and hourly data, and variables that are much closer to FAO-readiness than the current MeteoLux Findel slice
 - the main caution is semantic review:
 - variable names are provider-specific
 - units need explicit confirmation
 - hourly timezone handling must be designed carefully
+
+Outcome:
+
+- a conservative ASTA daily provider is now implemented in WeatherDownload
+- hourly ASTA is still future work
 
 ### 5. AGE INSPIRE WFS weather station network
 
@@ -445,7 +473,7 @@ Implementation difficulty:
 
 ## Findings
 
-### Implementable now
+### Implementable now at the time
 
 - extend Luxembourg support with the official MeteoLux daily CSV so Findel can add observed `sunshine_duration`
 - add a separate ASTA provider later for multi-station Luxembourg daily and hourly observations after a careful variable/unit review
@@ -516,13 +544,13 @@ That does not prove such data do not exist institutionally, only that no clean p
 
 Luxembourg could move closer to FAO-readiness from official observed data, but not from the current MeteoLux Findel WFS slice alone.
 
-Current MeteoLux Findel support:
+Current MeteoLux Findel support at the time:
 
 - `tas_max`
 - `tas_min`
 - `precipitation`
 
-Likely immediate extension from official MeteoLux CSV:
+Likely immediate extension from official MeteoLux CSV at the time:
 
 - `sunshine_duration`
 
@@ -532,7 +560,7 @@ Still missing for a conservative FAO-ready daily bundle:
 - `wind_speed`
 - `vapour_pressure` or a clearly mappable equivalent
 
-ASTA is the most promising official source for a future FAO-oriented Luxembourg path because it appears to expose:
+ASTA was the most promising official source for a future FAO-oriented Luxembourg path because it appeared to expose:
 
 - temperature
 - precipitation
@@ -544,9 +572,9 @@ ASTA is the most promising official source for a future FAO-oriented Luxembourg 
 
 But that should be a separate implementation decision, not a silent extension of the current MeteoLux Findel slice.
 
-## Recommended Next Implementation Step
+## Historical Recommended Next Implementation Step
 
-One clear next step stands out:
+At the time of this research pass, one clear next step stood out:
 
 - extend the existing `LU / meteolux / daily` provider with observed `sunshine_duration` from the official MeteoLux daily CSV resource
 
@@ -559,6 +587,13 @@ Why this is the best next step:
 - low implementation risk
 - improves the current Luxembourg slice without changing its conservative character
 
-After that, the next substantial Luxembourg project should probably be:
+That next step has since been completed. After that, the next substantial Luxembourg project was:
 
 - a separate `ASTA` provider with a conservative subset of daily observations first, and hourly only after timezone semantics and units are verified in code and tests
+
+That ASTA daily provider is now implemented. Remaining possible extensions from this note are:
+
+- ASTA hourly WFS after timestamp-policy review
+- AGE daily and hourly WFS as a separate Luxembourg provider family
+- pressure review if ASTA `avg_press` semantics become clear enough for a conservative mapping
+- continued monitoring for any official structured Luxembourg `10min` source, which was not found in this investigation
