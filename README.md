@@ -88,5 +88,6 @@ For daily, hourly, and 10-minute coverage maps, see
 - European data coverage maps: [Data Coverage](docs/data_coverage.md)
 - provider-specific source notes: [Provider Notes](docs/provider_notes/README.md)
 - practical usage examples: [Examples And Workflows](docs/examples.md)
+- MAPE 2026 CZ FAO comparison workflow: [MAPE 2026 CZ FAO Workflow](docs/download_fao_mape2026.md)
 - normalized station and observation schemas: [Normalized Output Schemas](docs/output_schema.md)
 

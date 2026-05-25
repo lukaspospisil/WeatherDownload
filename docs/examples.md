@@ -18,6 +18,7 @@ This page helps you find the example scripts quickly.
 - Daily downloads: [`examples/basic/download_daily.py`](../examples/basic/download_daily.py)
 - Subdaily downloads: [`examples/basic/download_hourly.py`](../examples/basic/download_hourly.py) and [`examples/basic/download_tenmin.py`](../examples/basic/download_tenmin.py)
 - FAO-oriented daily input bundle: [`examples/workflows/download_fao.py`](../examples/workflows/download_fao.py) and [FAO-Oriented Daily Input Packaging Workflow](download_fao.md)
+- MAPE 2026 CZ FAO comparison workflow: [`examples/workflows/download_fao_mape2026.py`](../examples/workflows/download_fao_mape2026.py) and [MAPE 2026 CZ FAO Workflow](download_fao_mape2026.md)
 - Generated current capability overview: [Supported Capabilities](supported_capabilities.md)
 - Provider model and country-specific caveats: [Provider Model](providers.md)
 - Source-specific provider notes: [Provider Notes](provider_notes/README.md)
@@ -448,6 +449,14 @@ Important boundary:
 - every shared FAO export writes a matching human-readable `.info` sidecar that records the selected fill policy and field-level observed/derived/missing counts
 
 Detailed workflow behavior, fill policies, and sidecar provenance are documented in [FAO-Oriented Daily Input Packaging Workflow](download_fao.md).
+
+### `examples/workflows/download_fao_mape2026.py`
+
+This is a Czech project-specific workflow rather than a generic all-country FAO example.
+
+It prepares the fixed MAPE 2026 station set for comparing computed FAO-56 reference evapotranspiration against measured open-water evaporation.
+
+Detailed workflow behavior, outputs, station set, CZ duplicate filtering, and analysis-ready exports are documented in [MAPE 2026 CZ FAO Workflow](download_fao_mape2026.md).
 
 ## Recommended Reading Order
 

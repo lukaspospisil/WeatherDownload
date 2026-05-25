@@ -14,6 +14,10 @@
 - Source-specific provider notes: [Provider Notes](provider_notes/README.md)
 - Shared normalized station and observation columns: [Normalized Output Schemas](output_schema.md)
 
+## MAPE 2026 CZ Workflow
+
+For the separate Czech project-specific workflow that prepares the fixed MAPE 2026 station set, filters CZ daily `time_function` ambiguity, computes FAO-56 daily reference evapotranspiration, and exports analysis-ready open-water-evaporation comparison tables, see [MAPE 2026 CZ FAO Workflow](download_fao_mape2026.md).
+
 Critical boundary:
 
 - it does not compute FAO-56 ET0
