@@ -2,35 +2,66 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import re
+import time
 
 COUNTRY = "CZ"
 DATASET_SCOPE = "historical_csv"
 RESOLUTION = "daily"
 DEFAULT_OUTPUT_DIR = Path("outputs/mape2026")
+DEFAULT_CACHE_DIR = Path("outputs/mape2026_cache")
+DEFAULT_MAPE2026_STATIONS = {
+    "0-20000-0-11438": "Tušimice",
+    "0-20000-0-11502": "Ústí nad Labem Kočkov",
+    "0-20000-0-11509": "Doksany",
+    "0-20000-0-11520": "Praha Libuš",
+    "0-20000-0-11450": "Plzeň Mikulka",
+    "0-20000-0-11406": "Cheb",
+    "0-20000-0-11603": "Liberec",
+    "0-20000-0-11423": "Přimda",
+    "0-20000-0-11487": "Kocelovice Nový Dvůr",
+    "0-20000-0-11628": "Košetice",
+    "0-20000-0-11643": "Pec pod Sněžkou",
+    "0-20000-0-11659": "Přibyslav Keřkov",
+    "0-20000-0-11683": "Svratouch",
+    "0-20000-0-11636": "Kostelní Myslová",
+    "0-20000-0-11679": "Ústí nad Orlicí",
+    "0-20000-0-11693": "Dukovany",
+    "0-20000-0-11698": "Kuchařovice",
+    "0-20000-0-11710": "Luká",
+    "0-20000-0-11723": "Brno Černovice",
+    "0-203-0-20201031001": "Nové Heřminovy",
+    "0-20000-0-11766": "Červená",
+    "0-20000-0-11774": "Holešov",
+    "0-203-0-11790": "Ostrava Poruba",
+}
 DEFAULT_MAPE2026_STATION_IDS = (
-    "0-20000-0-11406",  # Cheb
-    "0-20000-0-11423",  # Primda
-    "0-20000-0-11438",  # Tusimice
-    "0-20000-0-11450",  # Plzen Mikulka
-    "0-20000-0-11487",  # Kocelovice
-    "0-20000-0-11502",  # Usti nad Labem Kockov
-    "0-20000-0-11509",  # Doksany
-    "0-20000-0-11519",  # Praha Karlov
-    "0-20000-0-11520",  # Praha Libus
-    "0-20000-0-11603",  # Liberec
-    "0-20000-0-11628",  # Kosetice Kresin Kramolin
-    "0-20000-0-11636",  # Kostelni Myslova
-    "0-20000-0-11643",  # Pec pod Snezkou
-    "0-20000-0-11659",  # Pribyslav Hriste
-    "0-20000-0-11679",  # Usti nad Orlici
-    "0-20000-0-11683",  # Svratouch
-    "0-20000-0-11693",  # Dukovany
-    "0-20000-0-11698",  # Kucharovice
-    "0-20000-0-11710",  # Luka
-    "0-20000-0-11723",  # Brno Turany
-    "0-20000-0-11766",  # Cervena
-    "0-20000-0-11774",  # Holesov
+    "0-20000-0-11438",        # Tušimice
+    "0-20000-0-11502",        # Ústí nad Labem Kočkov
+    "0-20000-0-11509",        # Doksany
+    "0-20000-0-11520",        # Praha Libuš
+    "0-20000-0-11450",        # Plzeň Mikulka
+    "0-20000-0-11406",        # Cheb
+    "0-20000-0-11603",        # Liberec
+    "0-20000-0-11423",        # Přimda
+    "0-20000-0-11487",        # Kocelovice Nový Dvůr
+    "0-20000-0-11628",        # Košetice
+    "0-20000-0-11643",        # Pec pod Sněžkou
+    "0-20000-0-11659",        # Přibyslav Keřkov
+    "0-20000-0-11683",        # Svratouch
+    "0-20000-0-11636",        # Kostelní Myslová
+    "0-20000-0-11679",        # Ústí nad Orlicí
+    "0-20000-0-11693",        # Dukovany
+    "0-20000-0-11698",        # Kuchařovice
+    "0-20000-0-11710",        # Luká
+    "0-20000-0-11723",        # Brno Černovice
+    "0-203-0-20201031001",    # Nové Heřminovy
+    "0-20000-0-11766",        # Červená
+    "0-20000-0-11774",        # Holešov
+    "0-203-0-11790",          # Ostrava Poruba
 )
+assert len(DEFAULT_MAPE2026_STATION_IDS) == 23
+assert tuple(DEFAULT_MAPE2026_STATIONS) == DEFAULT_MAPE2026_STATION_IDS
 DAILY_ELEMENTS = (
     "tas_mean",
     "tas_max",
@@ -42,6 +73,17 @@ DAILY_ELEMENTS = (
     "pressure",
     "open_water_evaporation",
 )
+PREFERRED_TIME_FUNCTION_BY_ELEMENT = {
+    "tas_mean": "AVG",
+    "tas_max": "MAX",
+    "tas_min": "MIN",
+    "wind_speed": "AVG",
+    "vapour_pressure": "AVG",
+    "relative_humidity": "AVG",
+    "pressure": "AVG",
+    "sunshine_duration": "00:00",
+    "open_water_evaporation": "06:00",
+}
 FAO_REQUIRED_COLUMNS = (
     "tas_mean",
     "tas_max",
@@ -66,6 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
         )
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_DIR)
     parser.add_argument(
         "--station-id",
         action="append",
@@ -81,6 +124,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--start-date", default=None, help="Optional YYYY-MM-DD start date.")
     parser.add_argument("--end-date", default=None, help="Optional YYYY-MM-DD end date.")
+    parser.add_argument("--force-refresh", action="store_true", help="Redownload station observations even if a matching cache file exists.")
     parser.add_argument("--no-parquet", action="store_true", help="Skip Parquet exports.")
     parser.add_argument(
         "--min-complete-days",
@@ -92,6 +136,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    overall_started_at = time.perf_counter()
     args = build_parser().parse_args(argv)
     if (args.start_date is None) != (args.end_date is None):
         raise SystemExit("Provide both --start-date and --end-date together.")
@@ -102,24 +147,32 @@ def main(argv: list[str] | None = None) -> int:
         station_ids=args.station_ids,
         station_file=args.station_file,
     )
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    args.cache_dir.mkdir(parents=True, exist_ok=True)
     print(f"Selected {len(selected_station_ids)} station(s) for MAPE 2026.")
     print("Station IDs: " + ", ".join(selected_station_ids))
-
-    print("Reading station metadata...")
-    from weatherdownload import read_station_metadata
-
-    station_metadata = read_station_metadata(country=COUNTRY)
-    selected_stations = select_station_metadata(station_metadata, selected_station_ids)
-    print(f"Loaded metadata for {len(selected_stations)} selected station(s).")
+    print("Requested daily elements: " + ", ".join(DAILY_ELEMENTS))
+    print(f"Output directory: {args.output_dir}")
+    print(f"Cache directory: {args.cache_dir}")
 
     print("Downloading daily observations...")
+    selected_stations, station_metadata_for_download = load_station_metadata_best_effort(selected_station_ids)
+
     observations = download_selected_observations(
         station_ids=selected_station_ids,
-        station_metadata=selected_stations,
+        station_metadata=station_metadata_for_download,
         start_date=args.start_date,
         end_date=args.end_date,
+        cache_dir=args.cache_dir,
+        force_refresh=args.force_refresh,
     )
     print(f"Downloaded {len(observations)} normalized long observation row(s).")
+    report_element_completeness(observations, label="Downloaded observations")
+    report_duplicate_observations(observations)
+
+    observations = filter_cz_daily_time_functions(observations)
+    report_element_completeness(observations, label="Time-function filtered observations")
+    report_duplicate_observations(observations)
 
     print("Converting observations to wide daily format...")
     from weatherdownload.utils import observations_to_wide
@@ -131,30 +184,54 @@ def main(argv: list[str] | None = None) -> int:
     wide = ensure_expected_wide_columns(wide)
     print(f"Prepared {len(wide)} wide daily row(s).")
 
+    print("Computing FAO-56 daily reference evapotranspiration...")
+    from weatherdownload import compute_fao56_daily_from_wide
+
+    wide_with_fao = compute_fao56_daily_from_wide(
+        wide,
+        selected_stations,
+        wind_measurement_height_m=10.0,
+        use_observed_pressure=False,
+    )
+    fao_output_rows = int(wide_with_fao["E_FAO"].notna().sum()) if "E_FAO" in wide_with_fao.columns else 0
+    print(f"Computed non-missing E_FAO for {fao_output_rows} row(s).")
+
     print("Building station-level summary...")
-    summary = build_summary_table(wide)
+    summary = build_summary_table(wide_with_fao)
     qualifying_fao = int((summary["n_complete_fao_rows"] >= args.min_complete_days).sum()) if not summary.empty else 0
     qualifying_extended = int((summary["n_complete_extended_rows"] >= args.min_complete_days).sum()) if not summary.empty else 0
 
     output_dir = args.output_dir
     wide_csv_path = output_dir / "fao_mape2026_daily_wide.csv"
+    wide_with_fao_csv_path = output_dir / "fao_mape2026_daily_wide_with_fao.csv"
     wide_parquet_path = output_dir / "fao_mape2026_daily_wide.parquet"
+    wide_with_fao_parquet_path = output_dir / "fao_mape2026_daily_wide_with_fao.parquet"
     stations_csv_path = output_dir / "fao_mape2026_stations.csv"
     stations_parquet_path = output_dir / "fao_mape2026_stations.parquet"
     summary_csv_path = output_dir / "fao_mape2026_summary.csv"
 
+    wide = strip_table_attrs(wide)
+    wide_with_fao = strip_table_attrs(wide_with_fao)
+    summary = strip_table_attrs(summary)
+    selected_stations = strip_table_attrs(selected_stations)
+
     print("Writing CSV outputs...")
+    from weatherdownload import export_table
+
     export_table(wide, wide_csv_path, format="csv")
-    export_table(selected_stations, stations_csv_path, format="csv")
+    export_table(wide_with_fao, wide_with_fao_csv_path, format="csv")
     export_table(summary, summary_csv_path, format="csv")
+    export_table(selected_stations, stations_csv_path, format="csv")
 
     if args.no_parquet:
         print("Skipping Parquet exports because --no-parquet was used.")
     else:
         export_optional_parquet(wide, wide_parquet_path, label="wide daily table")
+        export_optional_parquet(wide_with_fao, wide_with_fao_parquet_path, label="wide daily table with FAO")
         export_optional_parquet(selected_stations, stations_parquet_path, label="station metadata")
 
     print(f"Wide daily CSV: {wide_csv_path}")
+    print(f"Wide daily CSV with FAO: {wide_with_fao_csv_path}")
     print(f"Station metadata CSV: {stations_csv_path}")
     print(f"Summary CSV: {summary_csv_path}")
     print(
@@ -162,6 +239,7 @@ def main(argv: list[str] | None = None) -> int:
         f"{qualifying_fao} station(s) with >= {args.min_complete_days} complete FAO rows, "
         f"{qualifying_extended} station(s) with >= {args.min_complete_days} complete extended rows."
     )
+    print(f"Total elapsed time: {format_elapsed(time.perf_counter() - overall_started_at)}")
     return 0
 
 
@@ -207,14 +285,71 @@ def normalize_station_ids(station_ids: list[str]) -> list[str]:
     return normalized
 
 
-def select_station_metadata(stations: pd.DataFrame, station_ids: list[str]) -> pd.DataFrame:
+def load_station_metadata_best_effort(station_ids: list[str]) -> tuple[pd.DataFrame, pd.DataFrame | None]:
+    from weatherdownload import DEFAULT_META1_URL, read_station_metadata
+
+    try:
+        station_metadata = read_station_metadata(
+            country=COUNTRY,
+            source_url=DEFAULT_META1_URL,
+        )
+    except Exception as exc:
+        print(
+            "Warning: station metadata lookup failed; continuing with fixed station names only. "
+            f"Reason: {exc}"
+        )
+        fallback = build_minimal_station_metadata(station_ids)
+        return fallback, fallback
+
+    selected = select_station_metadata_with_fallback(station_metadata, station_ids)
+    print(f"Prepared station metadata for {len(selected)} selected station(s).")
+    return selected, station_metadata
+
+
+def build_minimal_station_metadata(station_ids: list[str]) -> pd.DataFrame:
+    import pandas as pd
+
+    rows = [
+        {
+            "station_id": station_id,
+            "gh_id": pd.NA,
+            "station_name": DEFAULT_MAPE2026_STATIONS.get(station_id, station_id),
+        }
+        for station_id in station_ids
+    ]
+    return pd.DataFrame.from_records(rows, columns=["station_id", "gh_id", "station_name"])
+
+
+def select_station_metadata_with_fallback(stations: pd.DataFrame, station_ids: list[str]) -> pd.DataFrame:
+    import pandas as pd
+
     selected = stations[stations["station_id"].astype(str).isin(station_ids)].copy()
+    if selected.empty:
+        return build_minimal_station_metadata(station_ids)
+
+    selected = selected.drop_duplicates(subset=["station_id"], keep="first").copy()
+    selected["station_name"] = selected["full_name"].fillna(selected["station_id"]).astype(str)
+    selected["station_name"] = selected["station_id"].map(DEFAULT_MAPE2026_STATIONS).fillna(selected["station_name"])
+
     missing_station_ids = [station_id for station_id in station_ids if station_id not in set(selected["station_id"].astype(str))]
     if missing_station_ids:
-        missing = ", ".join(missing_station_ids)
-        raise ValueError(f"Station metadata not found for station_id(s): {missing}")
-    selected = selected.drop_duplicates(subset=["station_id"], keep="first")
-    return selected.sort_values("station_id").reset_index(drop=True)
+        fallback = build_minimal_station_metadata(missing_station_ids)
+        selected = pd.concat([selected, fallback], ignore_index=True, sort=False)
+
+    preferred_columns = [
+        "station_id",
+        "station_name",
+        "full_name",
+        "gh_id",
+        "begin_date",
+        "end_date",
+        "longitude",
+        "latitude",
+        "elevation_m",
+    ]
+    available_columns = [column for column in preferred_columns if column in selected.columns]
+    ordered = selected.loc[:, available_columns].copy()
+    return ordered.sort_values("station_id").reset_index(drop=True)
 
 
 def download_selected_observations(
@@ -223,28 +358,126 @@ def download_selected_observations(
     station_metadata: pd.DataFrame,
     start_date: str | None,
     end_date: str | None,
+    cache_dir: Path,
+    force_refresh: bool,
 ) -> pd.DataFrame:
+    import pandas as pd
+
     from weatherdownload import ObservationQuery, download_observations
 
-    query_kwargs: dict[str, object] = {
-        "country": COUNTRY,
-        "dataset_scope": DATASET_SCOPE,
-        "resolution": RESOLUTION,
-        "station_ids": station_ids,
-        "elements": list(DAILY_ELEMENTS),
-    }
-    if start_date is not None and end_date is not None:
-        query_kwargs["start_date"] = start_date
-        query_kwargs["end_date"] = end_date
-    else:
-        query_kwargs["all_history"] = True
+    started_at = time.perf_counter()
+    tables: list[pd.DataFrame] = []
+    total_stations = len(station_ids)
+    for index, station_id in enumerate(station_ids, start=1):
+        station_started_at = time.perf_counter()
+        print(f"[{index}/{total_stations}] Station {station_id}")
+        cache_path = resolve_station_cache_path(
+            cache_dir=cache_dir,
+            station_id=station_id,
+            start_date=start_date,
+            end_date=end_date,
+            elements=DAILY_ELEMENTS,
+        )
+        try:
+            if not force_refresh:
+                cached = read_cached_station_observations(cache_path)
+                if cached is not None:
+                    tables.append(cached)
+                    print(
+                        f"  Loaded {len(cached)} row(s) from cache in "
+                        f"{format_elapsed(time.perf_counter() - station_started_at)}; "
+                        f"total elapsed {format_elapsed(time.perf_counter() - started_at)}."
+                    )
+                    continue
 
-    query = ObservationQuery(**query_kwargs)
-    return download_observations(
-        query,
-        country=COUNTRY,
-        station_metadata=station_metadata,
-    )
+            query_kwargs: dict[str, object] = {
+                "country": COUNTRY,
+                "dataset_scope": DATASET_SCOPE,
+                "resolution": RESOLUTION,
+                "station_ids": [station_id],
+                "elements": list(DAILY_ELEMENTS),
+            }
+            if start_date is not None and end_date is not None:
+                query_kwargs["start_date"] = start_date
+                query_kwargs["end_date"] = end_date
+            else:
+                query_kwargs["all_history"] = True
+
+            query = ObservationQuery(**query_kwargs)
+            station_table = download_observations(
+                query,
+                country=COUNTRY,
+                station_metadata=station_metadata,
+            )
+            write_cached_station_observations(station_table, cache_path)
+            tables.append(station_table)
+            print(
+                f"  Downloaded {len(station_table)} row(s) in "
+                f"{format_elapsed(time.perf_counter() - station_started_at)}; "
+                f"total elapsed {format_elapsed(time.perf_counter() - started_at)}."
+            )
+        except Exception as exc:
+            print(
+                f"  Station {station_id} failed after "
+                f"{format_elapsed(time.perf_counter() - station_started_at)}."
+            )
+            raise RuntimeError(f"Failed while processing station {station_id}") from exc
+
+    if not tables:
+        return pd.DataFrame()
+    combined = pd.concat(tables, ignore_index=True, sort=False)
+    print(f"Total downloaded long rows: {len(combined)}")
+    return combined
+
+
+def resolve_station_cache_path(
+    *,
+    cache_dir: Path,
+    station_id: str,
+    start_date: str | None,
+    end_date: str | None,
+    elements: tuple[str, ...],
+) -> Path:
+    range_token = f"{start_date}_to_{end_date}" if start_date is not None and end_date is not None else "all_history"
+    station_token = re.sub(r"[^A-Za-z0-9._-]+", "_", station_id)
+    element_token = "-".join(elements)
+    filename = f"{station_token}_{range_token}_{element_token}.parquet"
+    return cache_dir / filename
+
+
+def read_cached_station_observations(cache_path: Path) -> pd.DataFrame | None:
+    import pandas as pd
+
+    parquet_path = cache_path
+    csv_path = cache_path.with_suffix(".csv")
+    if parquet_path.exists():
+        try:
+            return pd.read_parquet(parquet_path)
+        except (ImportError, ValueError, OSError) as exc:
+            print(f"  Warning: failed to read cache {parquet_path}; redownloading. Reason: {exc}")
+    if csv_path.exists():
+        return pd.read_csv(csv_path)
+    return None
+
+
+def write_cached_station_observations(table: pd.DataFrame, cache_path: Path) -> None:
+    csv_path = cache_path.with_suffix(".csv")
+    try:
+        strip_table_attrs(table).to_parquet(cache_path, index=False)
+    except ImportError:
+        strip_table_attrs(table).to_csv(csv_path, index=False)
+    except ValueError:
+        strip_table_attrs(table).to_csv(csv_path, index=False)
+
+
+def format_elapsed(seconds: float) -> str:
+    if seconds < 60.0:
+        return f"{seconds:.1f}s"
+    minutes, remaining_seconds = divmod(seconds, 60.0)
+    if minutes < 60.0:
+        return f"{int(minutes)}m {remaining_seconds:.1f}s"
+    hours, remaining_minutes = divmod(int(minutes), 60)
+    return f"{hours}h {remaining_minutes}m {remaining_seconds:.1f}s"
 
 
 def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
@@ -257,6 +490,7 @@ def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
         "n_days",
         "n_complete_fao_rows",
         "n_complete_extended_rows",
+        "n_complete_fao_output_rows",
     ]
     if wide.empty:
         return pd.DataFrame(columns=summary_columns)
@@ -265,6 +499,7 @@ def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
     prepared["date"] = pd.to_datetime(prepared["date"], errors="coerce")
     prepared["complete_fao_row"] = prepared.loc[:, list(FAO_REQUIRED_COLUMNS)].notna().all(axis=1)
     prepared["complete_extended_row"] = prepared.loc[:, list(EXTENDED_REQUIRED_COLUMNS)].notna().all(axis=1)
+    prepared["complete_fao_output_row"] = prepared["E_FAO"].notna() if "E_FAO" in prepared.columns else False
 
     summary = (
         prepared.groupby("station_id", as_index=False)
@@ -274,6 +509,7 @@ def build_summary_table(wide: pd.DataFrame) -> pd.DataFrame:
             n_days=("date", "size"),
             n_complete_fao_rows=("complete_fao_row", "sum"),
             n_complete_extended_rows=("complete_extended_row", "sum"),
+            n_complete_fao_output_rows=("complete_fao_output_row", "sum"),
         )
     )
     summary["first_date"] = summary["first_date"].dt.strftime("%Y-%m-%d")
@@ -304,6 +540,139 @@ def ensure_expected_wide_columns(wide: pd.DataFrame) -> pd.DataFrame:
     return prepared.loc[:, expected_columns]
 
 
+def report_duplicate_observations(observations: pd.DataFrame) -> None:
+    import pandas as pd
+
+    if observations.empty:
+        print("Duplicate check: no observations downloaded.")
+        return
+
+    date_column = "date" if "date" in observations.columns else "observation_date"
+    grouping_columns = ["station_id", date_column, "element"]
+    duplicate_mask = observations.duplicated(subset=grouping_columns, keep=False)
+    duplicate_rows = observations.loc[duplicate_mask].copy()
+    if duplicate_rows.empty:
+        print("Duplicate check: no duplicated station/date/element groups found.")
+        return
+
+    summary_rows: list[dict[str, object]] = []
+    exact_duplicate_groups = 0
+    conflicting_groups = 0
+
+    for keys, group in duplicate_rows.groupby(grouping_columns, dropna=False, sort=True):
+        numeric_values = pd.to_numeric(group["value"], errors="coerce")
+        distinct_values = sorted({value for value in numeric_values.dropna().tolist()})
+        if numeric_values.isna().any():
+            distinct_values.append("NaN")
+        serialized_values = ", ".join(str(value) for value in distinct_values[:5])
+        if len(distinct_values) > 5:
+            serialized_values += ", ..."
+
+        row_signature_columns = [column for column in group.columns if column not in {"provider", "resolution"}]
+        exact_duplicates = group.duplicated(subset=row_signature_columns, keep=False).all()
+        if len(distinct_values) <= 1 and exact_duplicates:
+            exact_duplicate_groups += 1
+        else:
+            conflicting_groups += 1
+
+        station_id, observation_date, element = keys
+        summary_rows.append(
+            {
+                "station_id": station_id,
+                "date": observation_date,
+                "element": element,
+                "n_rows": len(group),
+                "n_distinct_values": len(distinct_values),
+                "example_values": serialized_values,
+            }
+        )
+
+    summary = pd.DataFrame.from_records(
+        summary_rows,
+        columns=["station_id", "date", "element", "n_rows", "n_distinct_values", "example_values"],
+    )
+    print(
+        "Duplicate check: "
+        f"{len(summary)} duplicated station/date/element group(s) found; "
+        f"{exact_duplicate_groups} exact-duplicate group(s), "
+        f"{conflicting_groups} conflicting group(s)."
+    )
+    print(summary.head(20).to_string(index=False))
+
+
+def report_element_completeness(observations: pd.DataFrame, *, label: str) -> None:
+    import pandas as pd
+
+    if observations.empty or "element" not in observations.columns:
+        print(f"{label}: no observation rows available for element completeness.")
+        return
+
+    counts = (
+        observations.assign(value_numeric=pd.to_numeric(observations["value"], errors="coerce"))
+        .groupby("element", dropna=False, sort=True)
+        .agg(
+            n_rows=("element", "size"),
+            n_non_missing_values=("value_numeric", lambda values: int(values.notna().sum())),
+        )
+        .reset_index()
+    )
+    print(f"{label} by element:")
+    print(counts.to_string(index=False))
+
+
+def filter_cz_daily_time_functions(observations: pd.DataFrame) -> pd.DataFrame:
+    import pandas as pd
+
+    if observations.empty or "time_function" not in observations.columns:
+        print("Time-function filter: no filtering applied.")
+        return observations
+
+    date_column = "date" if "date" in observations.columns else "observation_date"
+    grouping_columns = ["station_id", date_column, "element"]
+    kept_groups: list[pd.DataFrame] = []
+
+    for keys, group in observations.groupby(grouping_columns, dropna=False, sort=False):
+        if len(group) == 1:
+            kept_groups.append(group)
+            continue
+
+        station_id, observation_date, element = keys
+        preferred_time_function = PREFERRED_TIME_FUNCTION_BY_ELEMENT.get(str(element))
+        normalized_time_functions = group["time_function"].fillna("").astype(str).str.strip()
+
+        if preferred_time_function is None:
+            raise ValueError(
+                "No preferred CZ daily time_function is configured for duplicated observations: "
+                f"station_id={station_id}, date={observation_date}, element={element}, "
+                f"available_time_functions={sorted(set(normalized_time_functions))}"
+            )
+
+        matched = group.loc[normalized_time_functions.eq(preferred_time_function)].copy()
+        if matched.empty:
+            raise ValueError(
+                "Unable to select a unique CZ daily observation because the preferred time_function "
+                f"{preferred_time_function!r} is missing: station_id={station_id}, "
+                f"date={observation_date}, element={element}, "
+                f"available_time_functions={sorted(set(normalized_time_functions))}"
+            )
+
+        if len(matched) > 1:
+            distinct_values = sorted({str(value) for value in matched["value"].tolist()})
+            raise ValueError(
+                "Preferred CZ daily time_function still leaves multiple observation rows: "
+                f"station_id={station_id}, date={observation_date}, element={element}, "
+                f"time_function={preferred_time_function!r}, n_rows={len(matched)}, "
+                f"distinct_values={distinct_values}"
+            )
+
+        kept_groups.append(matched)
+
+    filtered = pd.concat(kept_groups, ignore_index=True)
+    removed_rows = len(observations) - len(filtered)
+    print(f"Time-function filter removed {removed_rows} row(s) before wide conversion.")
+    return filtered
+
+
 def export_optional_parquet(table: pd.DataFrame, output_path: Path, *, label: str) -> None:
     from weatherdownload import export_table
 
@@ -313,6 +682,12 @@ def export_optional_parquet(table: pd.DataFrame, output_path: Path, *, label: st
         print(f"Skipping Parquet export for {label}: {exc}")
     else:
         print(f"Parquet export written for {label}: {output_path}")
+
+
+def strip_table_attrs(table: pd.DataFrame) -> pd.DataFrame:
+    prepared = table.copy()
+    prepared.attrs = {}
+    return prepared
 
 
 if __name__ == "__main__":

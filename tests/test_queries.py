@@ -82,8 +82,18 @@ class ObservationQueryValidationTests(unittest.TestCase):
     def test_query_accepts_provider(self) -> None:
         query = ObservationQuery(country='US', provider='ghcnd', resolution='daily', station_ids=['USC00000001'], start_date='2020-05-01', end_date='2020-05-02', elements=['tas_max'])
         self.assertEqual(query.provider, 'ghcnd')
-        self.assertEqual(query.provider, 'ghcnd')
+        self.assertEqual(query.dataset_scope, 'ghcnd')
         self.assertEqual(query.elements, ['TMAX'])
+
+    def test_query_accepts_dataset_scope_alias(self) -> None:
+        query = ObservationQuery(country='CZ', dataset_scope='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean'])
+        self.assertEqual(query.provider, 'historical_csv')
+        self.assertEqual(query.dataset_scope, 'historical_csv')
+        self.assertEqual(query.elements, ['T'])
+
+    def test_query_rejects_conflicting_provider_and_dataset_scope(self) -> None:
+        with self.assertRaisesRegex(QueryValidationError, "Conflicting provider selectors"):
+            ObservationQuery(country='CZ', provider='historical_csv', dataset_scope='ghcnd', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean'])
 
     def test_query_rejects_missing_provider(self) -> None:
         with self.assertRaises(QueryValidationError):
