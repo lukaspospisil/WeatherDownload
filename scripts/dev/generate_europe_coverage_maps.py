@@ -474,6 +474,14 @@ def _country_border_path_data(
                     canvas_height=canvas_height,
                     projection_bounds=projection_bounds,
                 )
+                if _projected_segment_on_canvas_boundary(
+                    (start_x, start_y),
+                    (end_x, end_y),
+                    canvas_width=canvas_width,
+                    canvas_height=canvas_height,
+                ):
+                    segment_open = False
+                    continue
                 if not segment_open:
                     commands.append(f'M {start_x:.2f} {start_y:.2f}')
                     segment_open = True
@@ -508,6 +516,29 @@ def _segment_on_view_boundary(
 
 def _same_coordinate(value: float, boundary: float, tolerance: float) -> bool:
     return abs(value - boundary) <= tolerance
+
+
+def _projected_segment_on_canvas_boundary(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    *,
+    canvas_width: int,
+    canvas_height: int,
+    tolerance: float = 0.01,
+) -> bool:
+    start_x, start_y = start
+    end_x, end_y = end
+    return (
+        _same_coordinate(start_x, 0.0, tolerance) and _same_coordinate(end_x, 0.0, tolerance)
+    ) or (
+        _same_coordinate(start_x, float(canvas_width), tolerance)
+        and _same_coordinate(end_x, float(canvas_width), tolerance)
+    ) or (
+        _same_coordinate(start_y, 0.0, tolerance) and _same_coordinate(end_y, 0.0, tolerance)
+    ) or (
+        _same_coordinate(start_y, float(canvas_height), tolerance)
+        and _same_coordinate(end_y, float(canvas_height), tolerance)
+    )
 
 
 def _clip_ring_to_bbox(ring: list[tuple[float, float]]) -> list[tuple[float, float]]:
@@ -589,13 +620,7 @@ def _project(
 
 
 def _project_lon_lat(lon: float, lat: float) -> tuple[float, float]:
-    lon_rad = math.radians(lon)
-    max_mercator_lat = 85.05112878
-    clipped_lat = min(max(lat, -max_mercator_lat), max_mercator_lat)
-    lat_rad = math.radians(clipped_lat)
-    x = lon_rad
-    y = math.log(math.tan(math.pi / 4.0 + lat_rad / 2.0))
-    return x, y
+    return lon, lat
 
 
 def write_europe_coverage_assets(
