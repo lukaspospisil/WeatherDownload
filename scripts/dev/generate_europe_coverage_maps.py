@@ -27,28 +27,41 @@ STATUS_COLORS = {
     'attempted_no_reliable_10min': '#c62828',
     'not_attempted': '#b0bec5',
 }
+
 VIEW_BBOX = {
     'min_lon': -18.0,
     'max_lon': 42.0,
     'min_lat': 34.0,
     'max_lat': 72.0,
 }
+
 SVG_MAP_WIDTH = 900
+
+# Purely visual vertical scaling of the rectangular lon/lat projection.
+# This makes the map less horizontally flattened without changing the
+# geographic viewport, coverage semantics, country selection, or colors.
 Y_STRETCH = 1.2
+
 SVG_PADDING_FRACTION = 0.03
+
 COVERAGE_COUNTRIES = (
     'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
     'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT',
     'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'SM', 'TR', 'UA', 'VA',
 )
+
+# Backward-compatible alias used by older tests/docs wording.
 EUROPE_COUNTRIES = COVERAGE_COUNTRIES
+
 COUNTRY_NAME_FALLBACKS = {
     'FR': 'France',
     'GB': 'United Kingdom',
     'NO': 'Norway',
     'VA': 'Vatican',
 }
+
 CONTEXT_LAND_FILL = '#d6dee4'
+
 RESOLUTION_SPECS = {
     'daily': {
         'discovery_resolutions': ('daily',),
@@ -94,6 +107,7 @@ def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dic
     for resolution_name, spec in RESOLUTION_SPECS.items():
         attempted = config.get(resolution_name, {}).get(spec['attempted_config_key'], {})
         resolution_summary: dict[str, dict[str, Any]] = {}
+
         for country in COVERAGE_COUNTRIES:
             providers = _providers_for_resolution(
                 country=country,
@@ -129,7 +143,9 @@ def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dic
                     'status': 'not_attempted',
                     'providers': [],
                 }
+
         summary[resolution_name] = resolution_summary
+
     return summary
 
 
@@ -140,12 +156,15 @@ def _providers_for_resolution(
     discovery_resolutions: tuple[str, ...],
 ) -> list[str]:
     providers: list[str] = []
+
     if country not in supported_countries:
         return providers
+
     for provider in list_providers(country=country):
         available_resolutions = set(list_resolutions(country=country, provider=provider))
         if available_resolutions.intersection(discovery_resolutions):
             providers.append(provider)
+
     return sorted(set(providers))
 
 
@@ -159,9 +178,11 @@ def build_country_geometries(
     country_codes: set[str] | None = None,
 ) -> dict[str, list[list[list[tuple[float, float]]]]]:
     geometries: dict[str, list[list[list[tuple[float, float]]]]] = {}
+
     for feature in geojson.get('features', []):
         properties = feature.get('properties', {})
         iso_a2 = _resolve_country_code(properties)
+
         if not iso_a2:
             continue
         if country_codes is not None and iso_a2 not in country_codes:
@@ -170,13 +191,17 @@ def build_country_geometries(
         geometry = feature.get('geometry', {})
         geometry_type = geometry.get('type')
         coordinates = geometry.get('coordinates', [])
+
         polygons: list[list[list[tuple[float, float]]]] = []
+
         if geometry_type == 'Polygon':
             polygons = [_convert_polygon(coordinates)]
         elif geometry_type == 'MultiPolygon':
             polygons = [_convert_polygon(polygon) for polygon in coordinates]
+
         if polygons:
             geometries.setdefault(iso_a2, []).extend(polygons)
+
     return geometries
 
 
@@ -187,9 +212,11 @@ def _resolve_country_code(properties: dict[str, Any]) -> str:
 
     name = str(properties.get('NAME', '')).strip()
     admin = str(properties.get('ADMIN', '')).strip()
+
     for country_code, fallback_name in COUNTRY_NAME_FALLBACKS.items():
         if name == fallback_name or admin == fallback_name:
             return country_code
+
     return ''
 
 
@@ -206,12 +233,14 @@ def render_coverage_summary_json(summary: dict[str, dict[str, dict[str, Any]]]) 
 
 def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str, Any]]) -> str:
     resolution_spec = RESOLUTION_SPECS[resolution_name]
+
     geodata = load_geodata()
     country_geometries = build_country_geometries(geodata)
     rendered_geometries = _clip_country_geometries(country_geometries)
 
     canvas_bounds = _projected_view_bounds()
     width, height = _svg_size_from_bounds(canvas_bounds, width=SVG_MAP_WIDTH)
+
     used_statuses = sorted({country_info['status'] for country_info in summary.values()})
     context_countries = sorted(country for country in rendered_geometries if country not in COVERAGE_COUNTRIES)
 
@@ -222,65 +251,80 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         '    .country-border { fill: none; stroke: #1f2933; stroke-width: 0.85; stroke-linejoin: round; stroke-linecap: round; }',
         f'    .context-country {{ fill: {CONTEXT_LAND_FILL}; }}',
     ]
+
     for status_name in used_statuses:
         lines.append(f'    .{status_name} {{ fill: {STATUS_COLORS[status_name]}; }}')
+
     lines.append('  </style>')
 
+    # 1. Neutral context land fill.
     for country in context_countries:
         polygons = rendered_geometries.get(country, [])
         if not polygons:
             continue
+
         path_data = _country_path_data(
             polygons,
             canvas_width=width,
             canvas_height=height,
             projection_bounds=canvas_bounds,
         )
-        if not path_data:
-            continue
-        lines.append(f'  <path id="context-country-{country}" class="country context-country" d="{path_data}"/>')
 
+        if path_data:
+            lines.append(f'  <path id="context-country-{country}" class="country context-country" d="{path_data}"/>')
+
+    # 2. Context borders.
     for country in context_countries:
         polygons = rendered_geometries.get(country, [])
         if not polygons:
             continue
+
         path_data = _country_border_path_data(
             polygons,
             canvas_width=width,
             canvas_height=height,
             projection_bounds=canvas_bounds,
         )
+
         if path_data:
             lines.append(f'  <path id="context-country-border-{country}" class="country-border" d="{path_data}"/>')
 
+    # 3. Coverage country fills.
     for country in COVERAGE_COUNTRIES:
         polygons = rendered_geometries.get(country, [])
         if not polygons:
             continue
+
         path_data = _country_path_data(
             polygons,
             canvas_width=width,
             canvas_height=height,
             projection_bounds=canvas_bounds,
         )
+
         if not path_data:
             continue
+
         status = summary[country]['status']
         providers = ', '.join(summary[country].get('providers', [])) or 'none'
+
         lines.append(
             f'  <path id="country-{country}" class="country {status}" data-status="{status}" data-providers="{providers}" d="{path_data}"/>'
         )
 
+    # 4. Coverage borders on top.
     for country in COVERAGE_COUNTRIES:
         polygons = rendered_geometries.get(country, [])
         if not polygons:
             continue
+
         path_data = _country_border_path_data(
             polygons,
             canvas_width=width,
             canvas_height=height,
             projection_bounds=canvas_bounds,
         )
+
         if path_data:
             lines.append(f'  <path id="country-border-{country}" class="country-border" d="{path_data}"/>')
 
@@ -291,8 +335,10 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
 def _padded_bounds(bounds: dict[str, float], *, padding_fraction: float) -> dict[str, float]:
     width_span = bounds['max_x'] - bounds['min_x']
     height_span = bounds['max_y'] - bounds['min_y']
+
     padding_x = padding_fraction * width_span
     padding_y = padding_fraction * height_span
+
     return {
         'min_x': bounds['min_x'] - padding_x,
         'max_x': bounds['max_x'] + padding_x,
@@ -304,8 +350,10 @@ def _padded_bounds(bounds: dict[str, float], *, padding_fraction: float) -> dict
 def _svg_size_from_bounds(bounds: dict[str, float], *, width: int) -> tuple[int, int]:
     width_span = bounds['max_x'] - bounds['min_x']
     height_span = bounds['max_y'] - bounds['min_y']
+
     if width_span <= 0.0 or height_span <= 0.0:
         raise ValueError('Projected map bounds must have positive width and height.')
+
     height = round(width * height_span / width_span)
     return width, height
 
@@ -314,18 +362,24 @@ def _clip_country_geometries(
     country_geometries: dict[str, list[list[list[tuple[float, float]]]]]
 ) -> dict[str, list[list[list[tuple[float, float]]]]]:
     rendered: dict[str, list[list[list[tuple[float, float]]]]] = {}
+
     for country, polygons in country_geometries.items():
         clipped_polygons: list[list[list[tuple[float, float]]]] = []
+
         for polygon in polygons:
             clipped_rings: list[list[tuple[float, float]]] = []
+
             for ring in polygon:
                 clipped = _clip_ring_to_bbox(ring)
                 if len(clipped) >= 3:
                     clipped_rings.append(clipped)
+
             if clipped_rings:
                 clipped_polygons.append(clipped_rings)
+
         if clipped_polygons:
             rendered[country] = clipped_polygons
+
     return rendered
 
 
@@ -333,9 +387,11 @@ def _filter_country_geometries_to_view(
     country_geometries: dict[str, list[list[list[tuple[float, float]]]]]
 ) -> dict[str, list[list[list[tuple[float, float]]]]]:
     rendered: dict[str, list[list[list[tuple[float, float]]]]] = {}
+
     for country, polygons in country_geometries.items():
         if _country_intersects_view(polygons):
             rendered[country] = polygons
+
     return rendered
 
 
@@ -400,6 +456,7 @@ def _projected_view_bounds() -> dict[str, float]:
         (VIEW_BBOX['max_lon'], VIEW_BBOX['min_lat']),
         (VIEW_BBOX['max_lon'], VIEW_BBOX['max_lat']),
     ]
+
     projected = [_project_lon_lat(lon, lat) for lon, lat in corners]
     xs = [x for x, _ in projected]
     ys = [y for _, y in projected]
@@ -420,6 +477,7 @@ def _country_path_data(
     projection_bounds: dict[str, float],
 ) -> str:
     parts: list[str] = []
+
     for polygon in polygons:
         for ring in polygon:
             projected = [
@@ -432,14 +490,19 @@ def _country_path_data(
                 )
                 for point in ring
             ]
+
             if not projected:
                 continue
+
             start_x, start_y = projected[0]
             commands = [f'M {start_x:.2f} {start_y:.2f}']
+
             for x, y in projected[1:]:
                 commands.append(f'L {x:.2f} {y:.2f}')
+
             commands.append('Z')
             parts.append(' '.join(commands))
+
     return ' '.join(parts)
 
 
@@ -451,16 +514,20 @@ def _country_border_path_data(
     projection_bounds: dict[str, float],
 ) -> str:
     parts: list[str] = []
+
     for polygon in polygons:
         for ring in polygon:
             if len(ring) < 2:
                 continue
+
             commands: list[str] = []
             segment_open = False
+
             for start, end in zip(ring, ring[1:]):
                 if _segment_on_view_boundary(start, end):
                     segment_open = False
                     continue
+
                 start_x, start_y = _project(
                     start[0],
                     start[1],
@@ -475,6 +542,7 @@ def _country_border_path_data(
                     canvas_height=canvas_height,
                     projection_bounds=projection_bounds,
                 )
+
                 if _projected_segment_on_canvas_boundary(
                     (start_x, start_y),
                     (end_x, end_y),
@@ -483,12 +551,16 @@ def _country_border_path_data(
                 ):
                     segment_open = False
                     continue
+
                 if not segment_open:
                     commands.append(f'M {start_x:.2f} {start_y:.2f}')
                     segment_open = True
+
                 commands.append(f'L {end_x:.2f} {end_y:.2f}')
+
             if commands:
                 parts.append(' '.join(commands))
+
     return ' '.join(parts)
 
 
@@ -500,6 +572,7 @@ def _segment_on_view_boundary(
 ) -> bool:
     start_lon, start_lat = start
     end_lon, end_lat = end
+
     return (
         _same_coordinate(start_lon, VIEW_BBOX['min_lon'], tolerance)
         and _same_coordinate(end_lon, VIEW_BBOX['min_lon'], tolerance)
@@ -529,13 +602,16 @@ def _projected_segment_on_canvas_boundary(
 ) -> bool:
     start_x, start_y = start
     end_x, end_y = end
+
     return (
-        _same_coordinate(start_x, 0.0, tolerance) and _same_coordinate(end_x, 0.0, tolerance)
+        _same_coordinate(start_x, 0.0, tolerance)
+        and _same_coordinate(end_x, 0.0, tolerance)
     ) or (
         _same_coordinate(start_x, float(canvas_width), tolerance)
         and _same_coordinate(end_x, float(canvas_width), tolerance)
     ) or (
-        _same_coordinate(start_y, 0.0, tolerance) and _same_coordinate(end_y, 0.0, tolerance)
+        _same_coordinate(start_y, 0.0, tolerance)
+        and _same_coordinate(end_y, 0.0, tolerance)
     ) or (
         _same_coordinate(start_y, float(canvas_height), tolerance)
         and _same_coordinate(end_y, float(canvas_height), tolerance)
@@ -545,38 +621,49 @@ def _projected_segment_on_canvas_boundary(
 def _clip_ring_to_bbox(ring: list[tuple[float, float]]) -> list[tuple[float, float]]:
     if len(ring) < 3:
         return []
+
     points = ring[:-1] if ring[0] == ring[-1] else ring[:]
     clipped = points
+
     for edge_name in ('left', 'right', 'bottom', 'top'):
         clipped = _clip_polygon_against_edge(clipped, edge_name)
         if not clipped:
             return []
+
     if clipped and clipped[0] != clipped[-1]:
         clipped.append(clipped[0])
+
     return clipped
 
 
 def _clip_polygon_against_edge(points: list[tuple[float, float]], edge_name: str) -> list[tuple[float, float]]:
     if not points:
         return []
+
     output: list[tuple[float, float]] = []
+
     previous = points[-1]
     previous_inside = _point_inside(previous, edge_name)
+
     for current in points:
         current_inside = _point_inside(current, edge_name)
+
         if current_inside:
             if not previous_inside:
                 output.append(_intersection(previous, current, edge_name))
             output.append(current)
         elif previous_inside:
             output.append(_intersection(previous, current, edge_name))
+
         previous = current
         previous_inside = current_inside
+
     return output
 
 
 def _point_inside(point: tuple[float, float], edge_name: str) -> bool:
     lon, lat = point
+
     if edge_name == 'left':
         return lon >= VIEW_BBOX['min_lon']
     if edge_name == 'right':
@@ -585,21 +672,28 @@ def _point_inside(point: tuple[float, float], edge_name: str) -> bool:
         return lat >= VIEW_BBOX['min_lat']
     if edge_name == 'top':
         return lat <= VIEW_BBOX['max_lat']
+
     raise ValueError(f'Unsupported edge: {edge_name}')
 
 
 def _intersection(start: tuple[float, float], end: tuple[float, float], edge_name: str) -> tuple[float, float]:
     x1, y1 = start
     x2, y2 = end
+
     if edge_name in {'left', 'right'}:
         x_edge = VIEW_BBOX['min_lon'] if edge_name == 'left' else VIEW_BBOX['max_lon']
+
         if x2 == x1:
             return (x_edge, y1)
+
         ratio = (x_edge - x1) / (x2 - x1)
         return (x_edge, y1 + ratio * (y2 - y1))
+
     y_edge = VIEW_BBOX['min_lat'] if edge_name == 'bottom' else VIEW_BBOX['max_lat']
+
     if y2 == y1:
         return (x1, y_edge)
+
     ratio = (y_edge - y1) / (y2 - y1)
     return (x1 + ratio * (x2 - x1), y_edge)
 
@@ -613,10 +707,17 @@ def _project(
     projection_bounds: dict[str, float],
 ) -> tuple[float, float]:
     projected_x, projected_y = _project_lon_lat(lon, lat)
-    x_fraction = (projected_x - projection_bounds['min_x']) / (projection_bounds['max_x'] - projection_bounds['min_x'])
-    y_fraction = (projection_bounds['max_y'] - projected_y) / (projection_bounds['max_y'] - projection_bounds['min_y'])
+
+    x_fraction = (projected_x - projection_bounds['min_x']) / (
+        projection_bounds['max_x'] - projection_bounds['min_x']
+    )
+    y_fraction = (projection_bounds['max_y'] - projected_y) / (
+        projection_bounds['max_y'] - projection_bounds['min_y']
+    )
+
     x = x_fraction * canvas_width
     y = y_fraction * canvas_height
+
     return x, y
 
 
@@ -631,16 +732,24 @@ def write_europe_coverage_assets(
     status_config_path: Path = STATUS_CONFIG_PATH,
 ) -> tuple[dict[str, Path], Path]:
     summary = classify_europe_coverage(load_status_config(status_config_path))
+
     for resolution_name, svg_path in svg_paths.items():
         svg_path.parent.mkdir(parents=True, exist_ok=True)
-        svg_path.write_text(render_europe_coverage_svg(resolution_name, summary[resolution_name]), encoding='utf-8')
+        svg_path.write_text(
+            render_europe_coverage_svg(resolution_name, summary[resolution_name]),
+            encoding='utf-8',
+        )
+
     json_path.parent.mkdir(parents=True, exist_ok=True)
     json_path.write_text(render_coverage_summary_json(summary), encoding='utf-8')
+
     return svg_paths, json_path
 
 
 if __name__ == '__main__':
     svg_destinations, json_destination = write_europe_coverage_assets()
+
     for resolution_name in ('daily', 'hourly', '10min'):
         print(f'Wrote {svg_destinations[resolution_name]}')
+
     print(f'Wrote {json_destination}')
