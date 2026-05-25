@@ -34,7 +34,7 @@ VIEW_BBOX = {
     'max_lat': 72.0,
 }
 SVG_MAP_WIDTH = 900
-SVG_OUTPUT_HEIGHT_SCALE = 1.2
+Y_STRETCH = 1.2
 SVG_PADDING_FRACTION = 0.03
 COVERAGE_COUNTRIES = (
     'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
@@ -211,13 +211,12 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     rendered_geometries = _clip_country_geometries(country_geometries)
 
     canvas_bounds = _projected_view_bounds()
-    width, viewbox_height = _svg_size_from_bounds(canvas_bounds, width=SVG_MAP_WIDTH)
-    height = round(viewbox_height * SVG_OUTPUT_HEIGHT_SCALE)
+    width, height = _svg_size_from_bounds(canvas_bounds, width=SVG_MAP_WIDTH)
     used_statuses = sorted({country_info['status'] for country_info in summary.values()})
     context_countries = sorted(country for country in rendered_geometries if country not in COVERAGE_COUNTRIES)
 
     lines = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {viewbox_height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="{resolution_spec["aria_label"]}" style="background-color:#f4f7f8">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="{resolution_spec["aria_label"]}" style="background-color:#f4f7f8">',
         '  <style>',
         '    .country { stroke: none; fill-rule: evenodd; }',
         '    .country-border { fill: none; stroke: #1f2933; stroke-width: 0.85; stroke-linejoin: round; stroke-linecap: round; }',
@@ -234,7 +233,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         path_data = _country_path_data(
             polygons,
             canvas_width=width,
-            canvas_height=viewbox_height,
+            canvas_height=height,
             projection_bounds=canvas_bounds,
         )
         if not path_data:
@@ -248,7 +247,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         path_data = _country_border_path_data(
             polygons,
             canvas_width=width,
-            canvas_height=viewbox_height,
+            canvas_height=height,
             projection_bounds=canvas_bounds,
         )
         if path_data:
@@ -261,7 +260,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         path_data = _country_path_data(
             polygons,
             canvas_width=width,
-            canvas_height=viewbox_height,
+            canvas_height=height,
             projection_bounds=canvas_bounds,
         )
         if not path_data:
@@ -279,7 +278,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         path_data = _country_border_path_data(
             polygons,
             canvas_width=width,
-            canvas_height=viewbox_height,
+            canvas_height=height,
             projection_bounds=canvas_bounds,
         )
         if path_data:
@@ -622,7 +621,7 @@ def _project(
 
 
 def _project_lon_lat(lon: float, lat: float) -> tuple[float, float]:
-    return lon, lat
+    return lon, lat * Y_STRETCH
 
 
 def write_europe_coverage_assets(

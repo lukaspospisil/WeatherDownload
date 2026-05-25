@@ -151,18 +151,17 @@ class EuropeCoverageTests(unittest.TestCase):
 
     def test_svg_files_use_map_derived_size_and_fill_canvas(self) -> None:
         projection_bounds = MODULE._projected_view_bounds()
-        expected_width, expected_viewbox_height = MODULE._svg_size_from_bounds(
+        expected_width, expected_height = MODULE._svg_size_from_bounds(
             projection_bounds,
             width=MODULE.SVG_MAP_WIDTH,
         )
-        expected_height = round(expected_viewbox_height * MODULE.SVG_OUTPUT_HEIGHT_SCALE)
         geodata = MODULE.load_geodata()
         country_geometries = MODULE.build_country_geometries(geodata)
         rendered_geometries = MODULE._clip_country_geometries(country_geometries)
         expected_path_data = MODULE._country_path_data(
             [polygon for polygons in rendered_geometries.values() for polygon in polygons],
             canvas_width=expected_width,
-            canvas_height=expected_viewbox_height,
+            canvas_height=expected_height,
             projection_bounds=projection_bounds,
         )
         expected_coords = [float(value) for value in re.findall(r'-?\d+(?:\.\d+)?', expected_path_data)]
@@ -173,7 +172,7 @@ class EuropeCoverageTests(unittest.TestCase):
             root = ET.fromstring(svg_path.read_text(encoding='utf-8'))
             self.assertEqual(root.attrib['width'], str(expected_width))
             self.assertEqual(root.attrib['height'], str(expected_height))
-            self.assertEqual(root.attrib['viewBox'], f'0 0 {expected_width} {expected_viewbox_height}')
+            self.assertEqual(root.attrib['viewBox'], f'0 0 {expected_width} {expected_height}')
             self.assertEqual(root.attrib['preserveAspectRatio'], 'xMidYMid meet')
 
             coords: list[float] = []
