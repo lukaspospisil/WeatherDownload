@@ -1,6 +1,6 @@
 # ASTA Luxembourg
 
-This note documents the initial ASTA provider slice implemented in WeatherDownload.
+This note documents the current ASTA provider slice implemented in WeatherDownload.
 
 ## Provider identifiers
 
@@ -44,19 +44,27 @@ Station metadata include:
 
 ## Supported observed elements
 
-This first ASTA slice is intentionally conservative and exposes only the clearly identified 2 m daily temperature layers:
+This ASTA daily slice is intentionally conservative and exposes only the observed daily variables whose layer names, units, and date semantics are clear enough to fixture-test:
 
 | Raw | Canonical | Unit |
 | --- | --- | --- |
 | `avg_ta200` | `tas_mean` | `degC` |
 | `max_ta200max` | `tas_max` | `degC` |
 | `min_ta200min` | `tas_min` | `degC` |
+| `sum_nn050` | `precipitation` | `mm` |
+| `avg_wv200` | `wind_speed` | `m s^-1` |
+| `avg_rh200` | `relative_humidity` | `%` |
+| `sum_ssd` | `sunshine_duration` | `h day^-1` |
 
 Official WFS layers used:
 
 - `MF.PointTimeSeriesObservation_Daily_ASTA_avg_ta200`
 - `MF.PointTimeSeriesObservation_Daily_ASTA_max_ta200max`
 - `MF.PointTimeSeriesObservation_Daily_ASTA_min_ta200min`
+- `MF.PointTimeSeriesObservation_Daily_ASTA_sum_nn050`
+- `MF.PointTimeSeriesObservation_Daily_ASTA_avg_wv200`
+- `MF.PointTimeSeriesObservation_Daily_ASTA_avg_rh200`
+- `MF.PointTimeSeriesObservation_Daily_ASTA_sum_ssd`
 
 ## Date semantics
 
@@ -64,16 +72,21 @@ Official WFS layers used:
 - the ASTA daily WFS JSON responses expose both `day` and `datetime`
 - this implementation preserves the source-assigned date exactly and does not shift dates
 
-## Not exposed in this first slice
+## Not exposed in this slice
 
-The ASTA daily source appears to contain additional daily variables such as precipitation, relative humidity, pressure, sunshine duration, radiation, and wind-related measurements, but they are intentionally not advertised in this first implementation because their units and exact canonical semantics were not fully verified in code and tests yet.
+The ASTA daily source appears to contain additional daily variables, but some are still intentionally left unmapped here:
+
+- `avg_press` is titled `Relative Air Pressure (hPa)` in the official capabilities document; that wording is too ambiguous for a clean canonical `pressure` mapping without guessing whether it is station pressure or pressure reduced to a reference level
+- `sum_soh` is titled `Duration of Sunshine (calculated) (h)`; WeatherDownload currently exposes the measured sunshine layer `sum_ssd` instead
+- ASTA daily does not directly expose `vapour_pressure` in this implemented slice
+- no ASTA daily radiation variable is mapped here because WeatherDownload does not currently expose a canonical solar-radiation element in this provider path
 
 ## Limitations
 
 - daily only
 - observed-only
 - no derived values are introduced
-- not FAO-ready
+- not FAO-ready: the current ASTA slice now covers `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `relative_humidity`, and `sunshine_duration`, but it still does not directly expose `vapour_pressure`
 - no hourly ASTA support in this pass
 - no AGE support in this pass
 - no 10-minute Luxembourg support is introduced here

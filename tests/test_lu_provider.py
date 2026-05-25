@@ -276,7 +276,14 @@ class LuxembourgProviderTests(unittest.TestCase):
             )
 
     def test_lu_daily_downloader_with_mocked_http_returns_public_schema(self) -> None:
-        station_metadata = read_station_metadata(country='LU')
+        def fake_station_get(url, params=None, timeout=60):
+            self.assertEqual(url, LU_METEOLUX_WFS_URL)
+            if params['TYPENAMES'] == 'MF.SpatialSamplingFeature_ASTA':
+                return _MockResponse(SAMPLE_ASTA_STATION_TEXT)
+            raise AssertionError(f'unexpected params: {params}')
+
+        with patch('weatherdownload.providers.lu.metadata.requests.get', side_effect=fake_station_get):
+            station_metadata = read_station_metadata(country='LU')
 
         def fake_get(url, params=None, timeout=60):
             if url == LU_METEOLUX_DAILY_CSV_URL:

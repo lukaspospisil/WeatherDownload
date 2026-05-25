@@ -46,6 +46,10 @@ LU_ASTA_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('avg_ta200',),
     'tas_max': ('max_ta200max',),
     'tas_min': ('min_ta200min',),
+    'precipitation': ('sum_nn050',),
+    'wind_speed': ('avg_wv200',),
+    'relative_humidity': ('avg_rh200',),
+    'sunshine_duration': ('sum_ssd',),
 }
 
 LU_DAILY_PARAMETER_METADATA = {
@@ -109,6 +113,40 @@ LU_ASTA_DAILY_PARAMETER_METADATA = {
         'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_min_ta200min',
         'source_kind': 'wfs',
     },
+    'sum_nn050': {
+        'name': 'Daily precipitation amount',
+        'description': (
+            'Official ASTA daily precipitation amount, including snow and hail, '
+            'from the Luxembourg agrometeorological station network.'
+        ),
+        'unit': 'mm',
+        'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_sum_nn050',
+        'source_kind': 'wfs',
+    },
+    'avg_wv200': {
+        'name': 'Daily average wind speed at 2 m',
+        'description': 'Official ASTA daily average wind speed at 2 m from the Luxembourg agrometeorological station network.',
+        'unit': 'm/s',
+        'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_avg_wv200',
+        'source_kind': 'wfs',
+    },
+    'avg_rh200': {
+        'name': 'Daily average relative humidity at 2 m',
+        'description': 'Official ASTA daily average relative humidity at 2 m from the Luxembourg agrometeorological station network.',
+        'unit': '%',
+        'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_avg_rh200',
+        'source_kind': 'wfs',
+    },
+    'sum_ssd': {
+        'name': 'Daily measured sunshine duration',
+        'description': (
+            'Official ASTA daily measured sunshine duration from the Luxembourg agrometeorological station network. '
+            'The measured sunshine layer is exposed here; the separate calculated sunshine layer is intentionally not mapped.'
+        ),
+        'unit': 'hours',
+        'layer_name': 'MF.PointTimeSeriesObservation_Daily_ASTA_sum_ssd',
+        'source_kind': 'wfs',
+    },
 }
 
 _LU_DATASET_SPECS = [
@@ -129,7 +167,7 @@ _LU_DATASET_SPECS = [
         label='ASTA daily weather measurements from the Luxembourg agrometeorological station network',
         station_metadata_url=LU_ASTA_STATION_METADATA_URL,
         data_url=LU_METEOLUX_WFS_URL,
-        supported_elements=('avg_ta200', 'max_ta200max', 'min_ta200min'),
+        supported_elements=('avg_ta200', 'max_ta200max', 'min_ta200min', 'sum_nn050', 'avg_wv200', 'avg_rh200', 'sum_ssd'),
         time_semantics='date',
         canonical_elements=LU_ASTA_DAILY_CANONICAL_ELEMENTS,
         implemented=True,

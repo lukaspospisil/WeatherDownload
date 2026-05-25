@@ -1,0 +1,49 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "MF.PointTimeSeriesObservation_Daily_ASTA_sum_ssd.1",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [4022640.88829, 2980256.3739]
+      },
+      "geometry_name": "geometry",
+      "properties": {
+        "datetime": "2025-01-02T00:00:00Z",
+        "gml_identifier": "AGM_022_20240524_20260523",
+        "featureofinterest_xlink_href": "http://catalog.inspire.geoportail.lu/geonetwork/dataset/00b35d13-111e-45c7-bc65-556b61d17c7e/AGM_022",
+        "name_descr": "Arsdorf",
+        "day": "2025-01-02",
+        "sum_ssd": 3.64
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "MF.PointTimeSeriesObservation_Daily_ASTA_sum_ssd.2",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [4022640.88829, 2980256.3739]
+      },
+      "geometry_name": "geometry",
+      "properties": {
+        "datetime": "2025-01-03T00:00:00Z",
+        "gml_identifier": "AGM_022_20240524_20260523",
+        "featureofinterest_xlink_href": "http://catalog.inspire.geoportail.lu/geonetwork/dataset/00b35d13-111e-45c7-bc65-556b61d17c7e/AGM_022",
+        "name_descr": "Arsdorf",
+        "day": "2025-01-03",
+        "sum_ssd": null
+      }
+    }
+  ],
+  "totalFeatures": 2,
+  "numberMatched": 2,
+  "numberReturned": 2,
+  "timeStamp": "2026-05-25T14:18:12.814Z",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::3035"
+    }
+  }
+}

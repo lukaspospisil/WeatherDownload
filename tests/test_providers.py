@@ -140,7 +140,7 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='LU', provider='asta'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='LU', provider='asta', resolution='daily'),
-            ['tas_mean', 'tas_max', 'tas_min'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'sunshine_duration'],
         )
         self.assertEqual(list_resolutions(country='LU', provider='meteolux'), ['daily'])
         self.assertEqual(
