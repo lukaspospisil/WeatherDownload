@@ -110,6 +110,10 @@
       "providers": [],
       "status": "not_attempted"
     },
+    "KV": {
+      "providers": [],
+      "status": "not_attempted"
+    },
     "LI": {
       "providers": [],
       "status": "not_attempted"
@@ -332,6 +336,10 @@
         "ghcnd"
       ],
       "status": "ghcnd_daily"
+    },
+    "KV": {
+      "providers": [],
+      "status": "not_attempted"
     },
     "LI": {
       "providers": [],
@@ -560,6 +568,10 @@
       "status": "not_attempted"
     },
     "IT": {
+      "providers": [],
+      "status": "not_attempted"
+    },
+    "KV": {
       "providers": [],
       "status": "not_attempted"
     },

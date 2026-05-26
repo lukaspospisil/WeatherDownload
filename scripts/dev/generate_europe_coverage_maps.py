@@ -44,7 +44,7 @@ Y_STRETCH = 1.2
 
 COVERAGE_COUNTRIES = (
     'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR',
-    'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT',
+    'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'KV', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT',
     'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'SM', 'TR', 'UA', 'VA',
 )
 
@@ -54,6 +54,7 @@ EUROPE_COUNTRIES = COVERAGE_COUNTRIES
 COUNTRY_NAME_FALLBACKS = {
     'FR': 'France',
     'GB': 'United Kingdom',
+    'KV': 'Kosovo',
     'NO': 'Norway',
     'VA': 'Vatican',
 }

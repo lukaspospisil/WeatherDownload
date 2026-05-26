@@ -45,6 +45,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['IS']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['IT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['IT']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
+        self.assertEqual(summary['daily']['KV']['providers'], [])
         self.assertEqual(summary['daily']['LT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['LT']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['LV']['status'], 'ghcnd_daily')
@@ -119,6 +121,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['IS']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['IT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['IT']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
+        self.assertEqual(summary['daily']['KV']['providers'], [])
         self.assertEqual(summary['daily']['LT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['LT']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['LV']['status'], 'ghcnd_daily')
@@ -231,7 +235,7 @@ class EuropeCoverageTests(unittest.TestCase):
     def test_svg_renders_requested_european_country_set(self) -> None:
         expected = [
             'IS', 'IE', 'GB', 'PT', 'ES', 'FR', 'BE', 'NL', 'LU', 'DE', 'DK', 'NO', 'SE', 'FI',
-            'EE', 'LV', 'LT', 'PL', 'CZ', 'SK', 'AT', 'CH', 'IT', 'SI', 'HR', 'HU', 'RO', 'BG',
+            'EE', 'LV', 'LT', 'PL', 'CZ', 'SK', 'AT', 'CH', 'IT', 'KV', 'SI', 'HR', 'HU', 'RO', 'BG',
             'GR', 'BA', 'RS', 'ME', 'AL', 'MK', 'MD', 'UA', 'BY', 'TR',
         ]
         for svg_path in MODULE.OUTPUT_SVG_PATHS.values():
