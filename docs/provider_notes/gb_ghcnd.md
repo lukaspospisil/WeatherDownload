@@ -9,6 +9,7 @@ This note covers the thin `GB / ghcnd / daily` wrapper around the shared NOAA GH
 ## Provider identifiers
 
 - country: `GB`
+- accepted public alias: `UK -> GB`
 - provider: `ghcnd`
 - resolution(s): `daily`
 
@@ -58,6 +59,10 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 
 ```powershell
 weatherdownload stations elements --country GB --provider ghcnd --resolution daily --include-mapping
+```
+
+```powershell
+weatherdownload observations daily --country UK --provider ghcnd --station-id GB000000001 --start-date 2020-02-01 --end-date 2020-02-02 --element precipitation
 ```
 
 ## Related documentation

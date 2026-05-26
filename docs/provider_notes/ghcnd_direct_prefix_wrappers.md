@@ -5,6 +5,7 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 ## Provider identifiers
 
 - country: `FI`, `GB`, `IT`, `NO`, `NZ`
+- accepted public alias on this group: `UK -> GB`
 - provider: `ghcnd`
 - resolution(s): `daily`
 

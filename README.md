@@ -58,8 +58,40 @@ Conceptual model:
 - `provider` selects the concrete data source or product within that country
 - `resolution` selects the temporal resolution
 - `element` selects the canonical meteorological variable
+- public country aliases may normalize to a canonical code; for example, `UK` is accepted and normalizes to `GB`
 
 For the authoritative current matrix of implemented country/provider/resolution/element paths, see [Supported Capabilities](docs/supported_capabilities.md).
+
+Minimal GB examples:
+
+```python
+from weatherdownload import ObservationQuery, download_observations
+
+gb_daily = ObservationQuery(
+    country="GB",
+    provider="ghcnd",
+    resolution="daily",
+    station_ids=["GB000000001"],
+    start_date="2020-02-01",
+    end_date="2020-02-02",
+    elements=["tas_max", "precipitation"],
+)
+
+gb_hourly = ObservationQuery(
+    country="UK",
+    provider="metoffice_datahub",
+    resolution="1hour",
+    station_ids=["GCJ8DS"],
+    start="2026-05-25T08:00:00Z",
+    end="2026-05-25T09:00:00Z",
+    elements=["tas_mean", "pressure"],
+)
+
+daily_observations = download_observations(gb_daily)
+# Live Met Office Weather DataHub use requires WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY
+# or METOFFICE_DATAHUB_API_KEY and only supports the last 48 hours.
+hourly_observations = download_observations(gb_hourly)
+```
 
 ## Data Coverage
 

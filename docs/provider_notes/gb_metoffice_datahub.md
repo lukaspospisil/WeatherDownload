@@ -9,6 +9,7 @@ This note documents the current conservative official Met Office Weather DataHub
 ## Provider identifiers
 
 - country: `GB`
+- accepted public alias: `UK -> GB`
 - provider: `metoffice_datahub`
 - resolution(s): `1hour`
 
@@ -57,7 +58,16 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - the current integration is observed-only
 - precipitation is not exposed in this first slice because it is not verified from the checked-in official sample payload used here
 - `wind_direction` is not exposed because there is no established canonical mapping for it in the current project surface
+- unsupported or missing fields stay unsupported or missing rather than being derived
 - this provider is not FAO-ready
+
+## Examples
+
+```powershell
+weatherdownload observations hourly --country UK --provider metoffice_datahub --station-id GCJ8DS --start 2026-05-25T08:00:00Z --end 2026-05-25T09:00:00Z --element tas_mean --element pressure
+```
+
+Live use requires `WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY` or `METOFFICE_DATAHUB_API_KEY`.
 
 ## Related documentation
 
