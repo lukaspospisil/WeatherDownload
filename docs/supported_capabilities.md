@@ -97,6 +97,7 @@ weatherdownload stations elements --country US --station-id USC00000001 --provid
 | `PL` | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration` | IMGW-PIB historical daily synop station observations | IMGW synop daily path; open_water_evaporation not implemented. |
 | `PL` | `historical` | `1hour` | `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure` | IMGW-PIB historical hourly synop station observations | IMGW synop hourly path; open_water_evaporation not implemented. |
 | `PL` | `historical_klimat` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation` | IMGW-PIB historical daily klimat station observations | Separate IMGW klimat daily path. |
+| `PT` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` | NOAA GHCN-Daily | Thin shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation. |
 | `SE` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` | NOAA GHCN-Daily | Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix SW; inventory-driven station elements; no EVAP/open_water_evaporation. |
 | `SE` | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation` | SMHI corrected-archive daily observations | Corrected-archive excludes latest three months; `ghcnd` is an additional daily provider. |
 | `SE` | `historical` | `1hour` | `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | SMHI corrected-archive hourly observations | Corrected-archive excludes latest three months. |
@@ -114,7 +115,7 @@ Measured `open_water_evaporation` is currently supported only for:
 
 It is intentionally not supported for:
 
-- `AT`, `CA`, `CH`, `CZ`, `DE`, `DK`, `FI`, `FR`, `IT`, `MX`, `NO`, `NZ`, `SE`, and `SK` on the current `ghcnd / daily` wrappers
+- `AT`, `CA`, `CH`, `CZ`, `DE`, `DK`, `FI`, `FR`, `IT`, `MX`, `NO`, `NZ`, `PT`, `SE`, and `SK` on the current `ghcnd / daily` wrappers
 - `CH` MeteoSwiss FAO reference evaporation fields, because they are not measured open-water or pan evaporation
 - `HU`, `PL`, and other providers unless a measured open-water, pan, or evaporimeter variable is explicitly implemented
 

@@ -33,6 +33,7 @@ The capability matrix is the authoritative current overview of `country + provid
 - [Luxembourg Historical Research Note](lu_meteolux_research.md)
 - [KNMI Netherlands](nl_knmi.md)
 - [IMGW-PIB Poland](pl_imgw.md)
+- [NOAA GHCN-Daily Portugal](pt_noaa_ghcnd.md)
 - [SMHI Sweden](se_smhi.md)
 - [SHMU Slovakia](sk_shmu.md)
 
@@ -45,4 +46,4 @@ The capability matrix is the authoritative current overview of `country + provid
 - [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md)
 - [NOAA GHCN-Daily Czech Republic](cz_noaa_ghcnd.md)
 
-The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper helper supports both direct-prefix and mapped-prefix wrappers. The direct-prefix note covers the current `FI`, `IT`, `NO`, and `NZ` wrappers. The mapped-prefix note covers the current `AT`, `CH`, `CZ`, `DE`, `DK`, `SE`, and `SK` wrappers. France now has its own national Meteo-France note plus the shared `FR / ghcnd / daily` path in the capability matrix. Czech Republic also keeps a short country-specific note because it sits next to the separate CHMI provider family. The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.
+The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper helper supports both direct-prefix and mapped-prefix wrappers. The direct-prefix note covers the current `FI`, `IT`, `NO`, and `NZ` wrappers. The mapped-prefix note covers the current `AT`, `CH`, `CZ`, `DE`, `DK`, `PT`, `SE`, and `SK` wrappers. France now has its own national Meteo-France note plus the shared `FR / ghcnd / daily` path in the capability matrix. Czech Republic and Portugal also keep short country-specific notes because their GHCN prefix mapping is worth making explicit. The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.

@@ -4,7 +4,7 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 
 ## Provider identifiers
 
-- country: `AT`, `CH`, `CZ`, `DE`, `DK`, `SE`, `SK`
+- country: `AT`, `CH`, `CZ`, `DE`, `DK`, `PT`, `SE`, `SK`
 - provider: `ghcnd`
 - `provider`: `ghcnd`
 - resolution(s): `daily`
@@ -30,6 +30,7 @@ These wrappers are grouped together because the WeatherDownload country code and
 - `CZ -> EZ`
 - `DE -> GM`
 - `DK -> DA`
+- `PT -> PO`
 - `SE -> SW`
 - `SK -> LO`
 

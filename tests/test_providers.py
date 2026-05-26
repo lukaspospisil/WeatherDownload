@@ -48,7 +48,7 @@ def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'HU', 'IE', 'IT', 'LU', 'MX', 'NL', 'NO', 'NZ', 'PL', 'SE', 'SK', 'US'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'HU', 'IE', 'IT', 'LU', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'SE', 'SK', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
@@ -121,6 +121,14 @@ class ProviderTests(unittest.TestCase):
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
                     ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
+
+    def test_discovery_country_pt_includes_conservative_ghcnd_core_without_evap(self) -> None:
+        self.assertEqual(list_providers(country='PT'), ['ghcnd'])
+        self.assertEqual(list_resolutions(country='PT', provider='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='PT', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
 
     def test_discovery_country_fr_includes_meteo_france_and_ghcnd(self) -> None:
         self.assertEqual(list_providers(country='FR'), ['ghcnd', 'meteo_france'])
