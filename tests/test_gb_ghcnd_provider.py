@@ -35,18 +35,27 @@ class GreatBritainGhcndProviderTests(unittest.TestCase):
     def test_supported_countries_include_gb(self) -> None:
         self.assertIn('GB', list_supported_countries())
 
-    def test_provider_capability_metadata_is_explicit(self) -> None:
+    def test_provider_capability_metadata_is_explicit_for_combined_gb_provider(self) -> None:
         provider = get_provider('GB')
         self.assertEqual(provider.supported_country_codes, ('GB',))
-        self.assertEqual(provider.supported_providers, ('ghcnd',))
-        self.assertEqual(provider.supported_resolutions, ('daily',))
+        self.assertEqual(provider.supported_providers, ('ghcnd', 'metoffice_datahub'))
+        self.assertEqual(provider.supported_resolutions, ('daily', '1hour'))
         self.assertEqual(
             provider.supported_canonical_elements,
-            ('tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'),
+            (
+                'tas_mean',
+                'tas_max',
+                'tas_min',
+                'precipitation',
+                'snow_depth',
+                'relative_humidity',
+                'wind_speed',
+                'pressure',
+            ),
         )
 
     def test_discovery_country_gb_returns_ghcnd_daily_elements_without_evap(self) -> None:
-        self.assertEqual(list_providers(country='GB'), ['ghcnd'])
+        self.assertIn('ghcnd', list_providers(country='GB'))
         self.assertEqual(list_resolutions(country='GB', provider='ghcnd'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='GB', provider='ghcnd', resolution='daily'),
@@ -55,6 +64,10 @@ class GreatBritainGhcndProviderTests(unittest.TestCase):
         self.assertEqual(
             list_supported_elements(country='GB', provider='ghcnd', resolution='daily', provider_raw=True),
             ['TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'],
+        )
+        self.assertNotIn(
+            'open_water_evaporation',
+            list_supported_elements(country='GB', provider='ghcnd', resolution='daily'),
         )
 
     def test_query_normalizes_canonical_and_raw_gb_ghcnd_elements(self) -> None:

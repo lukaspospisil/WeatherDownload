@@ -514,8 +514,10 @@
       "status": "not_attempted"
     },
     "GB": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "metoffice_datahub"
+      ],
+      "status": "national_hourly"
     },
     "GR": {
       "providers": [],
