@@ -31,6 +31,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('meteireann', summary['daily']['IE']['providers'])
         self.assertEqual(summary['daily']['LU']['status'], 'national_daily')
         self.assertIn('meteolux', summary['daily']['LU']['providers'])
+        self.assertEqual(summary['daily']['GB']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['GB']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['IT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['IT']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['SK']['status'], 'attempted_no_reliable_daily')
@@ -85,6 +87,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['CZ']['status'], 'national_daily')
         self.assertEqual(summary['daily']['IE']['status'], 'national_daily')
         self.assertEqual(summary['daily']['LU']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['GB']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['GB']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['IT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['IT']['providers'], ['ghcnd'])
 

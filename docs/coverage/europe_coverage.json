@@ -288,8 +288,10 @@
       "status": "national_daily"
     },
     "GB": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "GR": {
       "providers": [],

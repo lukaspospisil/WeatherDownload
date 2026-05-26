@@ -11,6 +11,7 @@ from .at import PROVIDER as GEOSPHERE_PROVIDER
 from .es import PROVIDER as ES_PROVIDER
 from .fi import PROVIDER as FI_GHCND_PROVIDER
 from .fr import PROVIDER as FR_GHCND_PROVIDER
+from .gb import PROVIDER as GB_GHCND_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
 from .ie import PROVIDER as IE_PROVIDER
 from .it import PROVIDER as IT_GHCND_PROVIDER
@@ -36,6 +37,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'ES': ES_PROVIDER,
     'FI': FI_GHCND_PROVIDER,
     'FR': FR_GHCND_PROVIDER,
+    'GB': GB_GHCND_PROVIDER,
     'HU': HU_PROVIDER,
     'IE': IE_PROVIDER,
     'IT': IT_GHCND_PROVIDER,
@@ -51,6 +53,10 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'US': US_GHCND_PROVIDER,
 }
 
+COUNTRY_ALIASES: dict[str, str] = {
+    'UK': 'GB',
+}
+
 
 def normalize_country_code(country: str | None = None) -> str:
     if country is None:
@@ -58,7 +64,7 @@ def normalize_country_code(country: str | None = None) -> str:
     normalized = country.strip().upper()
     if not normalized:
         return 'CZ'
-    return normalized
+    return COUNTRY_ALIASES.get(normalized, normalized)
 
 
 def get_provider(country: str | None = None) -> WeatherProvider:

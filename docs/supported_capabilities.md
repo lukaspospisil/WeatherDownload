@@ -80,6 +80,7 @@ weatherdownload stations elements --country US --station-id USC00000001 --provid
 | `FI` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` | NOAA GHCN-Daily | Thin shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation. |
 | `FR` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` | NOAA GHCN-Daily | Shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation. |
 | `FR` | `meteo_france` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation` | Meteo-France daily climatological base RR-T-Vent observations | National Meteo-France daily RR-T-Vent slice; native 8-digit Meteo-France station ids; station-level availability comes from official station metadata; current RR-T-Vent RR/TN/TX/TM values are parsed as decimal mm/deg C without an extra /10 scaling step; no open_water_evaporation; tas_mean comes only from raw TM. |
+| `GB` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` | NOAA GHCN-Daily | Thin shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation. |
 | `HU` | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `sunshine_duration` | HungaroMet historical daily station observations | Generic HungaroMet archive path; open_water_evaporation not implemented. |
 | `HU` | `historical` | `1hour` | `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed` | HungaroMet historical hourly station observations | Generic HungaroMet archive path; open_water_evaporation not implemented. |
 | `HU` | `historical` | `10min` | `precipitation`, `tas_mean`, `pressure`, `relative_humidity`, `wind_speed` | HungaroMet historical 10-minute station observations | Generic HungaroMet archive path; separate wind-only product exists. |
@@ -116,7 +117,7 @@ Measured `open_water_evaporation` is currently supported only for:
 
 It is intentionally not supported for:
 
-- `AT`, `CA`, `CH`, `CZ`, `DE`, `DK`, `FI`, `FR`, `IT`, `MX`, `NO`, `NZ`, `PT`, `SE`, and `SK` on the current `ghcnd / daily` wrappers
+- `AT`, `CA`, `CH`, `CZ`, `DE`, `DK`, `FI`, `FR`, `GB`, `IT`, `MX`, `NO`, `NZ`, `PT`, `SE`, and `SK` on the current `ghcnd / daily` wrappers
 - `PT / ipma / 1hour`, because this first IPMA slice does not expose measured open-water evaporation
 - `CH` MeteoSwiss FAO reference evaporation fields, because they are not measured open-water or pan evaporation
 - `HU`, `PL`, and other providers unless a measured open-water, pan, or evaporimeter variable is explicitly implemented

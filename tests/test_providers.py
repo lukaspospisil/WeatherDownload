@@ -48,8 +48,9 @@ def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'HU', 'IE', 'IT', 'LU', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'SE', 'SK', 'US'])
+        self.assertEqual(list_supported_countries(), ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'ES', 'FI', 'FR', 'GB', 'HU', 'IE', 'IT', 'LU', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'SE', 'SK', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
+        self.assertEqual(normalize_country_code('uk'), 'GB')
         self.assertEqual(normalize_country_code(None), 'CZ')
 
     def test_every_registered_country_has_discoverable_provider_paths(self) -> None:
@@ -111,7 +112,7 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
-        for country in ['IT', 'NO', 'NZ']:
+        for country in ['GB', 'IT', 'NO', 'NZ']:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
@@ -121,6 +122,14 @@ class ProviderTests(unittest.TestCase):
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
                     ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
+
+    def test_discovery_country_uk_uses_gb_alias(self) -> None:
+        self.assertEqual(list_providers(country='UK'), ['ghcnd'])
+        self.assertEqual(list_resolutions(country='UK', provider='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='UK', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
 
     def test_discovery_country_pt_includes_conservative_ghcnd_core_and_ipma_hourly_without_evap(self) -> None:
         self.assertEqual(list_providers(country='PT'), ['ghcnd', 'ipma'])

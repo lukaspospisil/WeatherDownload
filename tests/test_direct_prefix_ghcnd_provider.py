@@ -38,6 +38,14 @@ COUNTRY_SPECS = {
         'start_date': '2020-08-01',
         'end_date': '2020-08-02',
     },
+    'GB': {
+        'station_core': 'GB000000001',
+        'station_prcp_only': 'GB000000002',
+        'station_unsupported': 'GB000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_GB000000001.dly'),
+        'start_date': '2020-02-01',
+        'end_date': '2020-02-02',
+    },
     'IT': {
         'station_core': 'IT000000001',
         'station_prcp_only': 'IT000000002',
@@ -64,7 +72,7 @@ COUNTRY_SPECS = {
     },
 }
 
-GHCND_ONLY_COUNTRIES = ('IT', 'NO', 'NZ')
+GHCND_ONLY_COUNTRIES = ('GB', 'IT', 'NO', 'NZ')
 
 
 class DirectPrefixGhcndProviderTests(unittest.TestCase):

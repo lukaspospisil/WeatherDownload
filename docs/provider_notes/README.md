@@ -26,6 +26,7 @@ The capability matrix is the authoritative current overview of `country + provid
 - [AEMET Spain](es_aemet.md)
 - [FMI Finland](fi_fmi.md)
 - [Meteo-France France](fr_meteo_france.md)
+- [NOAA GHCN-Daily United Kingdom](gb_ghcnd.md)
 - [HungaroMet Hungary](hu_hungaromet.md)
 - [Met Eireann Ireland](ie_meteireann.md)
 - [MeteoLux Luxembourg](lu_meteolux.md)
@@ -47,4 +48,4 @@ The capability matrix is the authoritative current overview of `country + provid
 - [NOAA GHCN-Daily Czech Republic](cz_noaa_ghcnd.md)
 - [NOAA GHCN-Daily Portugal](pt_noaa_ghcnd.md)
 
-The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper helper supports both direct-prefix and mapped-prefix wrappers. The direct-prefix note covers the current `FI`, `IT`, `NO`, and `NZ` wrappers. The mapped-prefix note covers the current `AT`, `CH`, `CZ`, `DE`, `DK`, `PT`, `SE`, and `SK` wrappers. France now has its own national Meteo-France note plus the shared `FR / ghcnd / daily` path in the capability matrix. Czech Republic and Portugal also keep short country-specific notes because their GHCN prefix mapping is worth making explicit. The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.
+The shared GHCN implementation lives under `weatherdownload/providers/ghcnd/`, while country wrappers stay thin. The shared wrapper helper supports both direct-prefix and mapped-prefix wrappers. The direct-prefix note covers the current `FI`, `GB`, `IT`, `NO`, and `NZ` wrappers. The mapped-prefix note covers the current `AT`, `CH`, `CZ`, `DE`, `DK`, `PT`, `SE`, and `SK` wrappers. France now has its own national Meteo-France note plus the shared `FR / ghcnd / daily` path in the capability matrix. Czech Republic and Portugal also keep short country-specific notes because their GHCN prefix mapping is worth making explicit. The U.S. note stays separate because `US / ghcnd / daily` is the only current GHCN wrapper that supports `open_water_evaporation`.
