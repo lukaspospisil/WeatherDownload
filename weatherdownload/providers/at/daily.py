@@ -11,6 +11,7 @@ from .registry import get_dataset_spec
 from ...queries import ObservationQuery
 
 GEOSPHERE_DAILY_API_URL = 'https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d'
+_DAILY_SOLAR_RADIATION_SCALE = 0.01
 
 
 def download_daily_observations_geosphere(
@@ -85,6 +86,9 @@ def normalize_daily_observations_geosphere(
             continue
         quality_column = f'{raw_code}_flag' if f'{raw_code}_flag' in table.columns else None
         element_columns = canonicalize_element_series(pd.Series([raw_code] * len(table.index), index=table.index), query)
+        values = pd.to_numeric(table[raw_code], errors='coerce')
+        if raw_code == 'cglo_j':
+            values = values * _DAILY_SOLAR_RADIATION_SCALE
         normalized = pd.DataFrame(
             {
                 'station_id': table['station'].astype(str).str.strip(),
@@ -92,7 +96,7 @@ def normalize_daily_observations_geosphere(
                 'element_raw': element_columns['element_raw'],
                 'observation_date': pd.to_datetime(table['time'], utc=True, errors='coerce').dt.date,
                 'time_function': pd.NA,
-                'value': pd.to_numeric(table[raw_code], errors='coerce'),
+                'value': values,
                 'flag': pd.NA,
                 'quality': pd.to_numeric(table[quality_column], errors='coerce').astype('Int64') if quality_column else pd.Series(pd.NA, index=table.index, dtype='Int64'),
                 'provider': query.provider,

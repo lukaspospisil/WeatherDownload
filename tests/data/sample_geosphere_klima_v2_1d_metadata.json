@@ -57,6 +57,12 @@
       "unit": "mm"
     },
     {
+      "name": "cglo_j",
+      "long_name": "Global radiation",
+      "description": "Calibrated 24-hour sum of global radiation",
+      "unit": "J/cm²"
+    },
+    {
       "name": "so_h",
       "long_name": "Sunshine duration",
       "description": "Sunshine duration daily sum",

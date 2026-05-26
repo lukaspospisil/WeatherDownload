@@ -45,6 +45,12 @@
       "unit": "mm"
     },
     {
+      "name": "cglo",
+      "long_name": "Globalstrahlung Mittelwert",
+      "description": "Globalstrahlung, kalibriert, Mittelwert",
+      "unit": "W/m²"
+    },
+    {
       "name": "ff",
       "long_name": "Windgeschwindigkeit 10m, vektorieller Mittelwert",
       "description": "Windgeschwindigkeit in 10m H\u00f6he, vektorieller 10-Minuten-Mittelwert",

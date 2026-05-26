@@ -45,6 +45,12 @@
       "unit": "mm"
     },
     {
+      "name": "cglo",
+      "long_name": "Global radiation mean",
+      "description": "Calibrated hourly mean global irradiance",
+      "unit": "W/m²"
+    },
+    {
       "name": "ff",
       "long_name": "Wind speed",
       "description": "Wind speed hourly mean",

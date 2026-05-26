@@ -81,9 +81,9 @@ SOURCE_DESCRIPTIONS: dict[tuple[str, str, str], str] = {
 }
 
 NOTES: dict[tuple[str, str, str], str] = {
-    ('AT', 'historical', 'daily'): 'National GeoSphere daily path; `ghcnd` is an additional daily provider.',
-    ('AT', 'historical', '1hour'): 'Single public hourly provider for AT.',
-    ('AT', 'historical', '10min'): 'Single public 10-minute provider for AT.',
+    ('AT', 'historical', 'daily'): 'National GeoSphere daily path; `ghcnd` is an additional daily provider. `cglo_j` is mapped to observed `solar_radiation` in canonical MJ m^-2 via `value * 0.01`; sunshine_duration remains separate.',
+    ('AT', 'historical', '1hour'): 'Single public hourly provider for AT. `cglo` hourly mean irradiance is converted to observed `solar_radiation` interval energy in canonical MJ m^-2 via `value * 0.0036`; sunshine_duration remains separate; no FAO workflow change.',
+    ('AT', 'historical', '10min'): 'Single public 10-minute provider for AT. `cglo` 10-minute mean irradiance is converted to observed `solar_radiation` interval energy in canonical MJ m^-2 via `value * 0.0006`; sunshine_duration remains separate; no provider-side aggregation.',
     ('AT', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix AU; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('BE', 'historical', 'daily'): 'Provider-side daily aggregates; raw QC stays in flag.',
     ('BE', 'historical', '1hour'): 'Provider-side hourly aggregates; raw QC stays in flag.',

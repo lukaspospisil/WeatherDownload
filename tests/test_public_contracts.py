@@ -201,7 +201,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='CZ', station_metadata=station_metadata)
     if country == 'AT':
         station_metadata = _read_station_metadata_fixture('AT')
-        query = ObservationQuery(country='AT', provider='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='daily', station_ids=['1'], start_date='2024-01-01', end_date='2024-01-03', elements=['tas_mean', 'precipitation', 'solar_radiation'])
         with patch('weatherdownload.providers.at.daily.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':
@@ -413,7 +413,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
 def _download_hourly_fixture(country: str) -> pd.DataFrame:
     if country == 'AT':
         station_metadata = _read_station_metadata_fixture('AT')
-        query = ObservationQuery(country='AT', provider='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='1hour', station_ids=['1'], start='2024-01-01T00:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure', 'solar_radiation'])
         with patch('weatherdownload.providers.at.hourly.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_HOURLY_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':
@@ -518,7 +518,7 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
 def _download_tenmin_fixture(country: str) -> pd.DataFrame:
     if country == 'AT':
         station_metadata = _read_station_metadata_fixture('AT')
-        query = ObservationQuery(country='AT', provider='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        query = ObservationQuery(country='AT', provider='historical', resolution='10min', station_ids=['1'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure', 'solar_radiation'])
         with patch('weatherdownload.providers.at.tenmin.requests.get', return_value=_MockTextResponse(SAMPLE_GEOSPHERE_TENMIN_CSV_TEXT)):
             return download_observations(query, country='AT', station_metadata=station_metadata)
     if country == 'BE':

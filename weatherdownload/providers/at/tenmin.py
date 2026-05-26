@@ -14,6 +14,7 @@ from .parser import (
 from ...queries import ObservationQuery
 
 GEOSPHERE_TENMIN_API_URL = 'https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min'
+_TENMIN_SOLAR_RADIATION_SCALE = 0.0006
 
 
 def download_tenmin_observations_geosphere(
@@ -88,13 +89,16 @@ def normalize_tenmin_observations_geosphere(
             continue
         flag_column = f'{raw_code}_flag' if f'{raw_code}_flag' in table.columns else None
         element_columns = canonicalize_element_series(pd.Series([raw_code] * len(table.index), index=table.index), query)
+        values = pd.to_numeric(table[raw_code], errors='coerce')
+        if raw_code == 'cglo':
+            values = values * _TENMIN_SOLAR_RADIATION_SCALE
         normalized = pd.DataFrame(
             {
                 'station_id': table['station'].astype(str).str.strip(),
                 'element': element_columns['element'],
                 'element_raw': element_columns['element_raw'],
                 'timestamp': pd.to_datetime(table['time'], utc=True, errors='coerce'),
-                'value': pd.to_numeric(table[raw_code], errors='coerce'),
+                'value': values,
                 'flag': table[flag_column].map(build_geosphere_flag) if flag_column else pd.Series(pd.NA, index=table.index, dtype='object'),
                 'quality': pd.Series(pd.NA, index=table.index, dtype='Int64'),
                 'provider': query.provider,
