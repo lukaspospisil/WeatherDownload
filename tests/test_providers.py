@@ -122,12 +122,17 @@ class ProviderTests(unittest.TestCase):
                     ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
 
-    def test_discovery_country_pt_includes_conservative_ghcnd_core_without_evap(self) -> None:
-        self.assertEqual(list_providers(country='PT'), ['ghcnd'])
+    def test_discovery_country_pt_includes_conservative_ghcnd_core_and_ipma_hourly_without_evap(self) -> None:
+        self.assertEqual(list_providers(country='PT'), ['ghcnd', 'ipma'])
         self.assertEqual(list_resolutions(country='PT', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='PT', provider='ipma'), ['1hour'])
         self.assertEqual(
             list_supported_elements(country='PT', provider='ghcnd', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='PT', provider='ipma', resolution='1hour'),
+            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity'],
         )
 
     def test_discovery_country_fr_includes_meteo_france_and_ghcnd(self) -> None:

@@ -1,0 +1,45 @@
+{
+  "2026-05-25T04:00": {
+    "1234567": {
+      "temperatura": 17.2,
+      "precAcumulada": 0.0,
+      "intensidadeVento": 1.4,
+      "humidade": 81.0,
+      "pressao": -99.0,
+      "radiacao": 0.0,
+      "idDireccVento": 7,
+      "intensidadeVentoKM": 5.0
+    },
+    "2345678": {
+      "temperatura": 18.5,
+      "precAcumulada": -99.0,
+      "humidade": 72.0
+    },
+    "3456789": {
+      "temperatura": 20.1,
+      "precAcumulada": 0.2,
+      "intensidadeVento": 3.1,
+      "humidade": 68.0
+    }
+  },
+  "2026-05-25T05:00": {
+    "1234567": {
+      "temperatura": 17.8,
+      "precAcumulada": 0.1,
+      "intensidadeVento": -99.0,
+      "humidade": 79.0
+    },
+    "2345678": {
+      "temperatura": 19.0,
+      "precAcumulada": 0.0,
+      "intensidadeVento": 2.2,
+      "humidade": 70.0
+    },
+    "3456789": {
+      "temperatura": 20.5,
+      "precAcumulada": 0.0,
+      "intensidadeVento": 3.3,
+      "humidade": 67.0
+    }
+  }
+}

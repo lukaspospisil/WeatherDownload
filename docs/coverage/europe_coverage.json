@@ -594,8 +594,10 @@
       "status": "national_hourly"
     },
     "PT": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ipma"
+      ],
+      "status": "national_hourly"
     },
     "RO": {
       "providers": [],

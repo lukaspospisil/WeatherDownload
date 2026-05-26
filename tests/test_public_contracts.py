@@ -497,6 +497,21 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.providers.se.hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='SE', station_metadata=station_metadata)
+    if country == 'PT':
+        stations_text = Path('tests/data/sample_pt_ipma_stations.json').read_text(encoding='utf-8')
+        observations_text = Path('tests/data/sample_pt_ipma_observations.json').read_text(encoding='utf-8')
+        station_metadata = read_station_metadata(country='PT', source_url='tests/data/sample_pt_ipma_stations.json')
+        query = ObservationQuery(country='PT', provider='ipma', resolution='1hour', station_ids=['1234567'], start='2026-05-25T04:00:00', end='2026-05-25T05:00:00', elements=['tas_mean', 'precipitation'])
+
+        def fake_get(url: str, timeout: int = 60):
+            if url.endswith('/observations.json'):
+                return _MockTextResponse(text=observations_text)
+            if url.endswith('/stations.json'):
+                return _MockTextResponse(text=stations_text)
+            raise AssertionError(f'unexpected URL: {url}')
+
+        with patch('weatherdownload.providers.pt.ipma_parser.requests.get', side_effect=fake_get):
+            return download_observations(query, country='PT', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
 
@@ -715,6 +730,20 @@ def test_hourly_download_contract_is_stable_for_supported_poland_path() -> None:
 
 def test_hourly_download_contract_is_stable_for_supported_sweden_path() -> None:
     _assert_subdaily_contract(_download_hourly_fixture('SE'), '1hour', 'null', 'se')
+
+
+def test_hourly_download_contract_is_stable_for_supported_portugal_path() -> None:
+    observations = _download_hourly_fixture('PT')
+    assert list(observations.columns) == ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution']
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['provider'].eq('ipma').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].isna().all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
 
 
 def test_tenmin_download_contract_is_stable_for_supported_austria_path() -> None:

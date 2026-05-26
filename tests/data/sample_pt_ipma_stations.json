@@ -1,0 +1,35 @@
+[
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [-8.6133, 41.1413]
+    },
+    "properties": {
+      "idEstacao": 1234567,
+      "localEstacao": "Porto"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [-9.1393, 38.7223]
+    },
+    "properties": {
+      "idEstacao": 2345678,
+      "localEstacao": "Lisboa"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [-7.9304, 37.0194]
+    },
+    "properties": {
+      "idEstacao": 3456789,
+      "localEstacao": "Faro"
+    }
+  }
+]

@@ -33,6 +33,7 @@ The capability matrix is the authoritative current overview of `country + provid
 - [Luxembourg Historical Research Note](lu_meteolux_research.md)
 - [KNMI Netherlands](nl_knmi.md)
 - [IMGW-PIB Poland](pl_imgw.md)
+- [IPMA Portugal](pt_ipma.md)
 - [SMHI Sweden](se_smhi.md)
 - [SHMU Slovakia](sk_shmu.md)
 
