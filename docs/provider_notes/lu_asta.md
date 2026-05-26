@@ -83,7 +83,10 @@ The ASTA daily source appears to contain additional daily variables, but some ar
 - `avg_press` is titled `Relative Air Pressure (hPa)` in the official capabilities document; that wording is too ambiguous for a clean canonical `pressure` mapping without guessing whether it is station pressure or pressure reduced to a reference level
 - `sum_soh` is titled `Duration of Sunshine (calculated) (h)`; WeatherDownload currently exposes the measured sunshine layer `sum_ssd` instead
 - ASTA daily does not directly expose `vapour_pressure` in this implemented slice
-- no ASTA daily radiation variable is mapped here because WeatherDownload does not currently expose a canonical solar-radiation element in this provider path
+- `sum_gs200` is a strong future `solar_radiation` candidate, and official ASTA daily and hourly layers both exist for it
+- `sum_gs200` is not mapped in the current ASTA slice because the official source semantics are still unresolved: the layer title says `Global Radiation (W/m²)`, the field name suggests a sum, and checked daily values match the sum of hourly values
+- do not map `sum_gs200` until an authoritative official source confirms the physical unit and interval semantics well enough to choose a safe normalization to canonical `solar_radiation` in `MJ m^-2`
+- `sum_ssd` remains the separate `sunshine_duration` variable; `sum_gs200` must not be conflated with it
 
 ## Limitations
 
@@ -91,6 +94,7 @@ The ASTA daily source appears to contain additional daily variables, but some ar
 - observed-only
 - no derived values are introduced
 - not FAO-ready as an observed provider slice: the current ASTA slice now covers `tas_mean`, `tas_max`, `tas_min`, `wind_speed`, `relative_humidity`, and `sunshine_duration`, but it still does not directly expose observed `vapour_pressure`
+- no ASTA `solar_radiation` mapping in this pass; the FAO workflow is unchanged
 - no hourly ASTA support in this pass
 - no AGE support in this pass
 - no 10-minute Luxembourg support is introduced here

@@ -365,6 +365,17 @@ Outcome:
 - a conservative ASTA daily provider is now implemented in WeatherDownload
 - hourly ASTA is still future work
 
+Solar-radiation follow-up:
+
+- `sum_gs200` remains a strong future `solar_radiation` candidate
+- official ASTA daily and hourly collections both exist for `sum_gs200`
+- current WeatherDownload `LU / asta` remains daily-only, and `sum_gs200` is not currently mapped
+- the blocker is unresolved unit and interval semantics: the official collection title says `Global Radiation (W/m²)`, but checked daily values equal the sum of hourly values, which strongly suggests an additive interval quantity rather than a daily mean irradiance
+- no authoritative official source was found confirming whether the additive values are `Wh m^-2`, `kJ m^-2`, `J cm^-2`, or another energy unit
+- do not map `sum_gs200` until official unit confirmation is obtained
+- `sum_ssd` remains the separate `sunshine_duration` variable
+- the FAO workflow remains unchanged
+
 ### 5. AGE INSPIRE WFS weather station network
 
 Official source:
