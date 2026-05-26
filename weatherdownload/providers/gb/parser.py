@@ -36,7 +36,27 @@ GB_METOFFICE_DATAHUB_RAW_TO_CANONICAL = {
     'temperature': 'tas_mean',
     'humidity': 'relative_humidity',
     'wind_speed': 'wind_speed',
+    'wind_direction': 'wind_direction',
     'mslp': 'pressure',
+}
+
+GB_METOFFICE_DATAHUB_COMPASS_TO_DEGREES = {
+    'N': 0.0,
+    'NNE': 22.5,
+    'NE': 45.0,
+    'ENE': 67.5,
+    'E': 90.0,
+    'ESE': 112.5,
+    'SE': 135.0,
+    'SSE': 157.5,
+    'S': 180.0,
+    'SSW': 202.5,
+    'SW': 225.0,
+    'WSW': 247.5,
+    'W': 270.0,
+    'WNW': 292.5,
+    'NW': 315.0,
+    'NNW': 337.5,
 }
 
 GB_METOFFICE_DATAHUB_PARAMETER_METADATA: dict[str, dict[str, str]] = {
@@ -53,6 +73,11 @@ GB_METOFFICE_DATAHUB_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     'wind_speed': {
         'name': 'Hourly wind speed',
         'description': 'Met Office Weather DataHub Land Observations 10 m wind speed in m/s.',
+        'schedule': 'PT1H Met Office Weather DataHub Land Observations',
+    },
+    'wind_direction': {
+        'name': 'Hourly wind direction',
+        'description': 'Met Office Weather DataHub Land Observations wind direction as meteorological direction-from in degrees clockwise from true north.',
         'schedule': 'PT1H Met Office Weather DataHub Land Observations',
     },
     'mslp': {
@@ -140,7 +165,10 @@ def parse_metoffice_datahub_hourly_observations_json(json_text: str) -> pd.DataF
             continue
         row: dict[str, object] = {'timestamp': timestamp}
         for raw_code in GB_METOFFICE_DATAHUB_RAW_TO_CANONICAL:
-            row[raw_code] = _parse_float(item.get(raw_code))
+            if raw_code == 'wind_direction':
+                row[raw_code] = _parse_metoffice_wind_direction(item.get(raw_code))
+            else:
+                row[raw_code] = _parse_float(item.get(raw_code))
         rows.append(row)
     if not rows:
         return pd.DataFrame()
@@ -247,6 +275,15 @@ def _parse_float(value: Any) -> float | None:
         return None
 
 
+def _parse_metoffice_wind_direction(value: Any) -> float | None:
+    cleaned = _clean_string(value).upper()
+    if not cleaned:
+        return None
+    if cleaned in GB_METOFFICE_DATAHUB_COMPASS_TO_DEGREES:
+        return GB_METOFFICE_DATAHUB_COMPASS_TO_DEGREES[cleaned]
+    return _parse_float(cleaned)
+
+
 __all__ = [
     'GHCND_NORMALIZED_DAILY_COLUMNS',
     'GB_METOFFICE_DATAHUB_NORMALIZED_SUBDAILY_COLUMNS',
@@ -261,6 +298,7 @@ __all__ = [
     'parse_ghcnd_dly_text',
     'parse_ghcnd_inventory_text',
     'parse_ghcnd_stations_text',
+    'GB_METOFFICE_DATAHUB_COMPASS_TO_DEGREES',
     'parse_metoffice_datahub_hourly_observations_json',
     'parse_metoffice_datahub_station_metadata_json',
     'read_text_from_source',

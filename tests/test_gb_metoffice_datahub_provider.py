@@ -14,6 +14,7 @@ from weatherdownload import (
 )
 from weatherdownload.core.queries import QueryValidationError
 from weatherdownload.providers.gb.metadata import resolve_metoffice_datahub_api_key
+from weatherdownload.providers.gb.parser import parse_metoffice_datahub_hourly_observations_json
 
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_gb_metoffice_datahub_stations.json')
@@ -37,11 +38,11 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
         self.assertEqual(list_resolutions(country='GB', provider='metoffice_datahub'), ['1hour'])
         self.assertEqual(
             list_supported_elements(country='GB', provider='metoffice_datahub', resolution='1hour'),
-            ['tas_mean', 'relative_humidity', 'wind_speed', 'pressure'],
+            ['tas_mean', 'relative_humidity', 'wind_speed', 'wind_direction', 'pressure'],
         )
         self.assertEqual(
             list_supported_elements(country='GB', provider='metoffice_datahub', resolution='1hour', provider_raw=True),
-            ['temperature', 'humidity', 'wind_speed', 'mslp'],
+            ['temperature', 'humidity', 'wind_speed', 'wind_direction', 'mslp'],
         )
 
     def test_gb_hourly_queries_accept_canonical_and_raw_codes(self) -> None:
@@ -52,7 +53,7 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             station_ids=['gcj8ds'],
             start='2026-05-25T08:00:00Z',
             end='2026-05-25T09:00:00Z',
-            elements=['tas_mean', 'pressure'],
+            elements=['tas_mean', 'wind_direction', 'pressure'],
         )
         raw_query = ObservationQuery(
             country='GB',
@@ -61,11 +62,11 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             station_ids=['gcj8ds'],
             start='2026-05-25T08:00:00Z',
             end='2026-05-25T09:00:00Z',
-            elements=['temperature', 'mslp'],
+            elements=['temperature', 'wind_direction', 'mslp'],
         )
         self.assertEqual(canonical_query.station_ids, ['GCJ8DS'])
-        self.assertEqual(canonical_query.elements, ['temperature', 'mslp'])
-        self.assertEqual(raw_query.elements, ['temperature', 'mslp'])
+        self.assertEqual(canonical_query.elements, ['temperature', 'wind_direction', 'mslp'])
+        self.assertEqual(raw_query.elements, ['temperature', 'wind_direction', 'mslp'])
 
     def test_read_station_metadata_country_gb_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='GB', source_url=str(SAMPLE_STATIONS_PATH))
@@ -82,7 +83,11 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             list(metadata.columns),
             ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'],
         )
-        self.assertEqual(sorted(metadata['element'].unique().tolist()), ['humidity', 'mslp', 'temperature', 'wind_speed'])
+        self.assertEqual(sorted(metadata['element'].unique().tolist()), ['humidity', 'mslp', 'temperature', 'wind_direction', 'wind_speed'])
+
+    def test_parse_metoffice_hourly_json_converts_cardinal_wind_direction_to_degrees(self) -> None:
+        parsed = parse_metoffice_datahub_hourly_observations_json(SAMPLE_HOURLY_TEXT)
+        self.assertEqual(parsed['wind_direction'].tolist(), [0.0, 0.0])
 
     def test_download_hourly_observations_gb_normalizes_output_from_fixture(self) -> None:
         station_metadata = read_station_metadata(country='GB', source_url=str(SAMPLE_STATIONS_PATH))
@@ -93,7 +98,7 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             station_ids=['gcj8ds'],
             start='2026-05-25T08:00:00Z',
             end='2026-05-25T09:00:00Z',
-            elements=['tas_mean', 'relative_humidity', 'wind_speed', 'pressure'],
+            elements=['tas_mean', 'relative_humidity', 'wind_speed', 'wind_direction', 'pressure'],
         )
         with patch.dict(os.environ, {'WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY': 'test-key'}, clear=False):
             with patch('weatherdownload.providers.gb.observations.requests.get', return_value=_MockTextResponse(SAMPLE_HOURLY_TEXT)):
@@ -104,13 +109,15 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             list(observations.columns),
             ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'],
         )
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'relative_humidity', 'tas_mean', 'wind_speed'])
-        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['humidity', 'mslp', 'temperature', 'wind_speed'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['pressure', 'relative_humidity', 'tas_mean', 'wind_direction', 'wind_speed'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['humidity', 'mslp', 'temperature', 'wind_direction', 'wind_speed'])
         self.assertTrue(observations['gh_id'].isna().all())
         self.assertTrue(observations['flag'].isna().all())
         self.assertTrue(observations['quality'].isna().all())
         self.assertEqual(observations['provider'].unique().tolist(), ['metoffice_datahub'])
         self.assertEqual(observations['resolution'].unique().tolist(), ['1hour'])
+        wind_direction_rows = observations[observations['element'] == 'wind_direction'].sort_values('timestamp')
+        self.assertEqual(wind_direction_rows['value'].tolist(), [0.0, 0.0])
 
     def test_gb_metoffice_datahub_requires_api_key_for_live_downloads(self) -> None:
         station_metadata = read_station_metadata(country='GB', source_url=str(SAMPLE_STATIONS_PATH))

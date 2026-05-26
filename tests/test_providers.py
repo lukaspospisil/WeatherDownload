@@ -133,11 +133,11 @@ class ProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             list_supported_elements(country='GB', provider='metoffice_datahub', resolution='1hour'),
-            ['tas_mean', 'relative_humidity', 'wind_speed', 'pressure'],
+            ['tas_mean', 'relative_humidity', 'wind_speed', 'wind_direction', 'pressure'],
         )
         self.assertEqual(
             list_supported_elements(country='GB', provider='metoffice_datahub', resolution='1hour', provider_raw=True),
-            ['temperature', 'humidity', 'wind_speed', 'mslp'],
+            ['temperature', 'humidity', 'wind_speed', 'wind_direction', 'mslp'],
         )
 
     def test_discovery_country_uk_uses_gb_alias(self) -> None:
@@ -150,7 +150,7 @@ class ProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             list_supported_elements(country='UK', provider='metoffice_datahub', resolution='1hour'),
-            ['tas_mean', 'relative_humidity', 'wind_speed', 'pressure'],
+            ['tas_mean', 'relative_humidity', 'wind_speed', 'wind_direction', 'pressure'],
         )
 
     def test_discovery_country_pt_includes_conservative_ghcnd_core_and_ipma_hourly_without_evap(self) -> None:

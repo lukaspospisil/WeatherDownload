@@ -25,6 +25,7 @@ GB_METOFFICE_DATAHUB_CANONICAL_ELEMENTS = {
     'tas_mean': ('temperature',),
     'relative_humidity': ('humidity',),
     'wind_speed': ('wind_speed',),
+    'wind_direction': ('wind_direction',),
     'pressure': ('mslp',),
 }
 
@@ -52,7 +53,7 @@ _GB_DATASET_SPECS = [
         provider='metoffice_datahub',
         resolution='1hour',
         label='Met Office Weather DataHub Land Observations recent hourly station observations',
-        supported_elements=('temperature', 'humidity', 'wind_speed', 'mslp'),
+        supported_elements=('temperature', 'humidity', 'wind_speed', 'wind_direction', 'mslp'),
         canonical_elements=GB_METOFFICE_DATAHUB_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,

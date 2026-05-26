@@ -37,9 +37,12 @@ Current source-backed mapping for `GB / metoffice_datahub / 1hour`:
 - `temperature` -> `tas_mean`
 - `humidity` -> `relative_humidity`
 - `wind_speed` -> `wind_speed`
+- `wind_direction` -> `wind_direction`
 - `mslp` -> `pressure`
 
-Unsupported documented sample fields stay unsupported in this first slice, including `wind_direction`, `wind_gust`, `visibility`, `pressure_tendency`, and `weather_code`.
+`wind_direction` is normalized from Met Office compass-point strings such as `N`, `NE`, and `SSW` to meteorological direction-from degrees clockwise from true north.
+
+Unsupported documented sample fields stay unsupported in this first slice, including `wind_gust`, `visibility`, `pressure_tendency`, and `weather_code`.
 
 For the authoritative current matrix, see [Supported Capabilities](../supported_capabilities.md).
 
@@ -57,8 +60,8 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - live use requires `WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY` or `METOFFICE_DATAHUB_API_KEY`
 - the current integration is observed-only
 - precipitation is not exposed in this first slice because it is not verified from the checked-in official sample payload used here
-- canonical `wind_direction` now means meteorological direction from which the wind blows in degrees clockwise from true north
-- the checked-in Met Office sample payload carries `wind_direction` as compass-point strings such as `N`, not degree values, so this path does not expose it in this pass
+- canonical `wind_direction` means meteorological direction from which the wind blows in degrees clockwise from true north
+- the checked-in Met Office sample payload carries `wind_direction` as compass-point strings such as `N`, which WeatherDownload normalizes to numeric degree values on this path
 - unsupported or missing fields stay unsupported or missing rather than being derived
 - this provider is not FAO-ready
 
