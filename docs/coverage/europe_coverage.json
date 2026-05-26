@@ -380,8 +380,10 @@
       "status": "national_daily"
     },
     "PT": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "RO": {
       "providers": [],

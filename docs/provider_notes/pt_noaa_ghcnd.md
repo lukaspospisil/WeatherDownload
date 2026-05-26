@@ -39,6 +39,8 @@ Current raw-to-canonical mapping:
 
 `open_water_evaporation` is intentionally unsupported on this wrapper.
 
+This wrapper is observed-only and does not add derived values.
+
 For the authoritative current matrix, see [Supported Capabilities](../supported_capabilities.md).
 
 ## Limitations and caveats
@@ -46,6 +48,7 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - the wrapper is intentionally thin and shares parser, metadata, inventory, and observation logic with the common GHCN helper under `weatherdownload/providers/ghcnd/`
 - station-level availability is inventory-driven and can differ by station
 - `open_water_evaporation` is not advertised on `PT / ghcnd / daily`
+- the wrapper is observed-only and does not make FAO-ready or derived-data claims
 
 ## Related documentation
 
