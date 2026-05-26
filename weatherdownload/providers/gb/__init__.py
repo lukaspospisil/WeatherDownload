@@ -1,8 +1,20 @@
 from __future__ import annotations
 
-from .metadata import read_station_metadata_ghcnd, read_station_observation_metadata_ghcnd
+from .metadata import (
+    read_station_metadata,
+    read_station_metadata_ghcnd,
+    read_station_metadata_metoffice_datahub,
+    read_station_observation_metadata,
+    read_station_observation_metadata_ghcnd,
+    read_station_observation_metadata_metoffice_datahub,
+)
+from .observations import (
+    download_daily_observations_ghcnd,
+    download_hourly_observations_metoffice_datahub,
+    download_observations,
+)
 from .registry import get_dataset_spec, list_dataset_specs, list_implemented_dataset_specs
-from ..ghcnd.wrappers import build_country_provider
+from ..base import WeatherProvider
 
 SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_mean',
@@ -10,18 +22,36 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_min',
     'precipitation',
     'snow_depth',
+    'relative_humidity',
+    'wind_speed',
+    'pressure',
 )
 
-from .observations import download_daily_observations_ghcnd
 
-
-PROVIDER = build_country_provider(
+PROVIDER = WeatherProvider(
     country_code='GB',
-    read_station_metadata=read_station_metadata_ghcnd,
-    read_station_observation_metadata=read_station_observation_metadata_ghcnd,
+    name='Met Office Weather DataHub recent hourly + NOAA GHCN-Daily',
+    read_station_metadata=read_station_metadata,
+    read_station_observation_metadata=read_station_observation_metadata,
     list_dataset_specs=list_dataset_specs,
     list_implemented_dataset_specs=list_implemented_dataset_specs,
     get_dataset_spec=get_dataset_spec,
-    download_daily_observations=download_daily_observations_ghcnd,
+    download_observations=download_observations,
+    supported_country_codes=('GB',),
+    supported_providers=('ghcnd', 'metoffice_datahub'),
+    supported_resolutions=('daily', '1hour'),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
 )
+
+__all__ = [
+    'PROVIDER',
+    'SUPPORTED_CANONICAL_ELEMENTS',
+    'download_daily_observations_ghcnd',
+    'download_hourly_observations_metoffice_datahub',
+    'read_station_metadata',
+    'read_station_metadata_ghcnd',
+    'read_station_metadata_metoffice_datahub',
+    'read_station_observation_metadata',
+    'read_station_observation_metadata_ghcnd',
+    'read_station_observation_metadata_metoffice_datahub',
+]

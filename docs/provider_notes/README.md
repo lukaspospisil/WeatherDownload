@@ -26,6 +26,7 @@ The capability matrix is the authoritative current overview of `country + provid
 - [AEMET Spain](es_aemet.md)
 - [FMI Finland](fi_fmi.md)
 - [Meteo-France France](fr_meteo_france.md)
+- [Met Office Weather DataHub Great Britain](gb_metoffice_datahub.md)
 - [NOAA GHCN-Daily United Kingdom](gb_ghcnd.md)
 - [HungaroMet Hungary](hu_hungaromet.md)
 - [Met Eireann Ireland](ie_meteireann.md)

@@ -73,6 +73,8 @@ SAMPLE_GHCND_CA_DLY_TEXT = Path('tests/data/sample_ghcnd_CA000000001.dly').read_
 SAMPLE_GHCND_FI_DLY_TEXT = Path('tests/data/sample_ghcnd_FI000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_FR_DLY_TEXT = Path('tests/data/sample_ghcnd_FR000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_GB_DLY_TEXT = Path('tests/data/sample_ghcnd_GB000000001.dly').read_text(encoding='utf-8')
+SAMPLE_GB_METOFFICE_STATIONS_PATH = Path('tests/data/sample_gb_metoffice_datahub_stations.json')
+SAMPLE_GB_METOFFICE_HOURLY_TEXT = Path('tests/data/sample_gb_metoffice_datahub_hourly.json').read_text(encoding='utf-8')
 SAMPLE_GHCND_IT_DLY_TEXT = Path('tests/data/sample_ghcnd_IT000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_MX_DLY_TEXT = Path('tests/data/sample_ghcnd_MX000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_NO_DLY_TEXT = Path('tests/data/sample_ghcnd_NO000000001.dly').read_text(encoding='utf-8')
@@ -520,6 +522,14 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.providers.pt.ipma_parser.requests.get', side_effect=fake_get):
             return download_observations(query, country='PT', station_metadata=station_metadata)
+    if country == 'GB':
+        station_metadata = read_station_metadata(country='GB', source_url=str(SAMPLE_GB_METOFFICE_STATIONS_PATH))
+        query = ObservationQuery(country='GB', provider='metoffice_datahub', resolution='1hour', station_ids=['GCJ8DS'], start='2026-05-25T08:00:00Z', end='2026-05-25T09:00:00Z', elements=['tas_mean', 'pressure'])
+
+        with patch.dict('os.environ', {'WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY': 'test-key'}, clear=False):
+            with patch('weatherdownload.providers.gb.observations.requests.get', return_value=_MockTextResponse(SAMPLE_GB_METOFFICE_HOURLY_TEXT)):
+                with patch('weatherdownload.providers.gb.observations._current_utc', return_value='2026-05-26T00:00:00Z'):
+                    return download_observations(query, country='GB', station_metadata=station_metadata)
     raise AssertionError(f'unsupported test country: {country}')
 
 
@@ -748,6 +758,20 @@ def test_hourly_download_contract_is_stable_for_supported_portugal_path() -> Non
     assert observations['element_raw'].notna().all()
     assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
     assert observations['provider'].eq('ipma').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].isna().all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
+
+
+def test_hourly_download_contract_is_stable_for_supported_great_britain_path() -> None:
+    observations = _download_hourly_fixture('GB')
+    assert list(observations.columns) == ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution']
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['provider'].eq('metoffice_datahub').all()
     assert observations['resolution'].eq('1hour').all()
     assert observations['gh_id'].isna().all()
     assert observations['flag'].isna().all()

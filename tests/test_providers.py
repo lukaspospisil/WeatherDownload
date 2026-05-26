@@ -112,7 +112,7 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
-        for country in ['GB', 'IT', 'NO', 'NZ']:
+        for country in ['IT', 'NO', 'NZ']:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
@@ -123,12 +123,34 @@ class ProviderTests(unittest.TestCase):
                     ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
 
+    def test_discovery_country_gb_includes_metoffice_hourly_and_ghcnd_daily(self) -> None:
+        self.assertEqual(list_providers(country='GB'), ['ghcnd', 'metoffice_datahub'])
+        self.assertEqual(list_resolutions(country='GB', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='GB', provider='metoffice_datahub'), ['1hour'])
+        self.assertEqual(
+            list_supported_elements(country='GB', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='GB', provider='metoffice_datahub', resolution='1hour'),
+            ['tas_mean', 'relative_humidity', 'wind_speed', 'pressure'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='GB', provider='metoffice_datahub', resolution='1hour', provider_raw=True),
+            ['temperature', 'humidity', 'wind_speed', 'mslp'],
+        )
+
     def test_discovery_country_uk_uses_gb_alias(self) -> None:
-        self.assertEqual(list_providers(country='UK'), ['ghcnd'])
+        self.assertEqual(list_providers(country='UK'), ['ghcnd', 'metoffice_datahub'])
         self.assertEqual(list_resolutions(country='UK', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='UK', provider='metoffice_datahub'), ['1hour'])
         self.assertEqual(
             list_supported_elements(country='UK', provider='ghcnd', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='UK', provider='metoffice_datahub', resolution='1hour'),
+            ['tas_mean', 'relative_humidity', 'wind_speed', 'pressure'],
         )
 
     def test_discovery_country_pt_includes_conservative_ghcnd_core_and_ipma_hourly_without_evap(self) -> None:

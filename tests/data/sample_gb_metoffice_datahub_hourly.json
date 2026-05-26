@@ -1,0 +1,26 @@
+[
+  {
+    "weather_code": 7,
+    "datetime": "2026-05-25T08:00:00Z",
+    "wind_direction": "N",
+    "wind_gust": 5.0,
+    "visibility": 13750.0,
+    "humidity": 69,
+    "mslp": 1019,
+    "temperature": 18.41,
+    "wind_speed": 3.7,
+    "pressure_tendency": "R"
+  },
+  {
+    "weather_code": 7,
+    "datetime": "2026-05-25T09:00:00Z",
+    "wind_direction": "N",
+    "wind_gust": 6.0,
+    "visibility": 15490.0,
+    "humidity": 65,
+    "mslp": 1019,
+    "temperature": 18.74,
+    "wind_speed": 2.7,
+    "pressure_tendency": "R"
+  }
+]

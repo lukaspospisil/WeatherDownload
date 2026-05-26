@@ -21,6 +21,7 @@ pip install .[full]
 ```
 
 `NL` also requires `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` for KNMI Open Data API access.
+`GB / metoffice_datahub / 1hour` requires `WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY` or `METOFFICE_DATAHUB_API_KEY` for live Met Office Weather DataHub access.
 
 ## Quick Start
 

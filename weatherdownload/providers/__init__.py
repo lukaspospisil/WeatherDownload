@@ -11,7 +11,7 @@ from .at import PROVIDER as GEOSPHERE_PROVIDER
 from .es import PROVIDER as ES_PROVIDER
 from .fi import PROVIDER as FI_GHCND_PROVIDER
 from .fr import PROVIDER as FR_GHCND_PROVIDER
-from .gb import PROVIDER as GB_GHCND_PROVIDER
+from .gb import PROVIDER as GB_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
 from .ie import PROVIDER as IE_PROVIDER
 from .it import PROVIDER as IT_GHCND_PROVIDER
@@ -37,7 +37,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'ES': ES_PROVIDER,
     'FI': FI_GHCND_PROVIDER,
     'FR': FR_GHCND_PROVIDER,
-    'GB': GB_GHCND_PROVIDER,
+    'GB': GB_PROVIDER,
     'HU': HU_PROVIDER,
     'IE': IE_PROVIDER,
     'IT': IT_GHCND_PROVIDER,

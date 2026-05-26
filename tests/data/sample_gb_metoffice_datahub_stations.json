@@ -1,0 +1,24 @@
+[
+  {
+    "geohash": "gcj8ds",
+    "area": "Devon",
+    "region": "sw",
+    "country": "England",
+    "olson_time_zone": "Europe/London",
+    "full_name": "Devon sample geohash",
+    "latitude": 50.718,
+    "longitude": -3.533,
+    "elevation_m": 45.0
+  },
+  {
+    "geohash": "gcpvj0",
+    "area": "London",
+    "region": "se",
+    "country": "England",
+    "olson_time_zone": "Europe/London",
+    "full_name": "London sample geohash",
+    "latitude": 51.507,
+    "longitude": -0.128,
+    "elevation_m": 22.0
+  }
+]
