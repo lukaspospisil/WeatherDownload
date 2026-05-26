@@ -98,7 +98,7 @@ weatherdownload stations elements --country US --station-id USC00000001 --provid
 | `PL` | `historical` | `1hour` | `tas_mean`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `vapour_pressure`, `pressure` | IMGW-PIB historical hourly synop station observations | IMGW synop hourly path; open_water_evaporation not implemented. |
 | `PL` | `historical_klimat` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation` | IMGW-PIB historical daily klimat station observations | Separate IMGW klimat daily path. |
 | `PT` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` | NOAA GHCN-Daily | Thin shared GHCN wrapper; raw GHCN station ids; inventory-driven station elements; no EVAP/open_water_evaporation. |
-| `PT` | `ipma` | `1hour` | `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity` | IPMA recent hourly station observations | Official IPMA recent hourly station observations; station_id is IPMA idEstacao; timestamps are parsed as naive because the source keys do not include a timezone suffix; observed-only with tas_mean, precipitation, wind_speed, and relative_humidity; pressure is intentionally not mapped; no derived values; not FAO-ready. |
+| `PT` | `ipma` | `1hour` | `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `solar_radiation` | IPMA recent hourly station observations | Official IPMA recent hourly station observations; station_id is IPMA idEstacao; timestamps are parsed as naive because the source keys do not include a timezone suffix; observed-only with tas_mean, precipitation, wind_speed, relative_humidity, and solar_radiation; radiacao is converted from kJ m^-2 to canonical solar_radiation in MJ m^-2 over the published hourly interval; pressure is intentionally not mapped; no derived values; not FAO-ready. |
 | `SE` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` | NOAA GHCN-Daily | Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix SW; inventory-driven station elements; no EVAP/open_water_evaporation. |
 | `SE` | `historical` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation` | SMHI corrected-archive daily observations | Corrected-archive excludes latest three months; `ghcnd` is an additional daily provider. |
 | `SE` | `historical` | `1hour` | `tas_mean`, `wind_speed`, `relative_humidity`, `precipitation`, `pressure` | SMHI corrected-archive hourly observations | Corrected-archive excludes latest three months. |
@@ -117,7 +117,7 @@ Measured `open_water_evaporation` is currently supported only for:
 It is intentionally not supported for:
 
 - `AT`, `CA`, `CH`, `CZ`, `DE`, `DK`, `FI`, `FR`, `IT`, `MX`, `NO`, `NZ`, `PT`, `SE`, and `SK` on the current `ghcnd / daily` wrappers
-- `PT / ipma / 1hour`, because this first IPMA slice exposes only observed tas_mean, precipitation, wind_speed, and relative_humidity
+- `PT / ipma / 1hour`, because this first IPMA slice does not expose measured open-water evaporation
 - `CH` MeteoSwiss FAO reference evaporation fields, because they are not measured open-water or pan evaporation
 - `HU`, `PL`, and other providers unless a measured open-water, pan, or evaporimeter variable is explicitly implemented
 

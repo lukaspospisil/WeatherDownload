@@ -25,6 +25,7 @@ _IPMA_HOURLY_CANONICAL_ELEMENTS = {
     'precipitation': ('precAcumulada',),
     'wind_speed': ('intensidadeVento',),
     'relative_humidity': ('humidade',),
+    'solar_radiation': ('radiacao',),
 }
 
 
@@ -46,7 +47,7 @@ _PT_DATASET_SPECS = [
         provider='ipma',
         resolution='1hour',
         label='IPMA recent hourly station observations',
-        supported_elements=('temperatura', 'precAcumulada', 'intensidadeVento', 'humidade'),
+        supported_elements=('temperatura', 'precAcumulada', 'intensidadeVento', 'humidade', 'radiacao'),
         canonical_elements=_IPMA_HOURLY_CANONICAL_ELEMENTS,
         time_semantics='datetime',
         implemented=True,

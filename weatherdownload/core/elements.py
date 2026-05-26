@@ -13,6 +13,10 @@ CANONICAL_ELEMENT_METADATA: dict[str, dict[str, str]] = {
         'description': 'Daily measured evaporation from an open water surface.',
         'unit': 'mm',
     },
+    'solar_radiation': {
+        'description': "Observed incoming solar radiation energy over the provider's published observation interval.",
+        'unit': 'MJ m^-2',
+    },
 }
 
 

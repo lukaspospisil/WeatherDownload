@@ -15,6 +15,7 @@ Common examples:
 - `tas_mean`
 - `tas_max`
 - `tas_min`
+- `solar_radiation`
 - `open_water_evaporation`
 - `wind_speed`
 - `vapour_pressure`
@@ -25,6 +26,11 @@ Common examples:
 
 Specific meaning note:
 
+- `solar_radiation` means observed incoming solar radiation energy over the provider's published observation interval in normalized `MJ m^-2`
+- it is interval energy, not irradiance or power flux in `W m^-2`
+- it is not `sunshine_duration`
+- it is not FAO workflow-derived `Rs`
+- it is not `Rn`/net radiation or `Rso`/clear-sky radiation
 - `open_water_evaporation` means daily measured evaporation from an open water surface, evaporation pan, or evaporimeter in `mm`
 - it is intentionally not the generic name `evaporation`
 - it is not `vapour_pressure`

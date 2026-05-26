@@ -132,7 +132,7 @@ class ProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             list_supported_elements(country='PT', provider='ipma', resolution='1hour'),
-            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity'],
+            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'solar_radiation'],
         )
 
     def test_discovery_country_fr_includes_meteo_france_and_ghcnd(self) -> None:

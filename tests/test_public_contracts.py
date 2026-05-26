@@ -501,7 +501,7 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
         stations_text = Path('tests/data/sample_pt_ipma_stations.json').read_text(encoding='utf-8')
         observations_text = Path('tests/data/sample_pt_ipma_observations.json').read_text(encoding='utf-8')
         station_metadata = read_station_metadata(country='PT', source_url='tests/data/sample_pt_ipma_stations.json')
-        query = ObservationQuery(country='PT', provider='ipma', resolution='1hour', station_ids=['1234567'], start='2026-05-25T04:00:00', end='2026-05-25T05:00:00', elements=['tas_mean', 'precipitation'])
+        query = ObservationQuery(country='PT', provider='ipma', resolution='1hour', station_ids=['1234567'], start='2026-05-25T04:00:00', end='2026-05-25T05:00:00', elements=['tas_mean', 'precipitation', 'solar_radiation'])
 
         def fake_get(url: str, timeout: int = 60):
             if url.endswith('/observations.json'):

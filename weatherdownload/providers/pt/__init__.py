@@ -22,6 +22,7 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'precipitation',
     'wind_speed',
     'relative_humidity',
+    'solar_radiation',
     'snow_depth',
 )
 

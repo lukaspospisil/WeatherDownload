@@ -54,7 +54,7 @@ class PortugalProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             list_supported_elements(country='PT', provider='ipma', resolution='1hour'),
-            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity'],
+            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'solar_radiation'],
         )
         self.assertNotIn(
             'open_water_evaporation',
@@ -66,6 +66,10 @@ class PortugalProviderTests(unittest.TestCase):
         )
         self.assertNotIn(
             'pressure',
+            list_supported_elements(country='PT', provider='ipma', resolution='1hour'),
+        )
+        self.assertNotIn(
+            'sunshine_duration',
             list_supported_elements(country='PT', provider='ipma', resolution='1hour'),
         )
 
@@ -97,7 +101,7 @@ class PortugalProviderTests(unittest.TestCase):
             station_ids=['1234567', '2345678'],
             start='2026-05-25T04:00:00',
             end='2026-05-25T05:00:00',
-            elements=['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity'],
+            elements=['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'solar_radiation'],
         )
         with patch('weatherdownload.providers.pt.ipma_parser.requests.get', side_effect=fake_get):
             stations = read_station_metadata(country='PT', source_url=str(SAMPLE_IPMA_STATIONS_PATH))
@@ -108,11 +112,11 @@ class PortugalProviderTests(unittest.TestCase):
         self.assertEqual(sorted(observations['station_id'].unique().tolist()), ['1234567', '2345678'])
         self.assertEqual(
             sorted(observations['element'].unique().tolist()),
-            ['precipitation', 'relative_humidity', 'tas_mean', 'wind_speed'],
+            ['precipitation', 'relative_humidity', 'solar_radiation', 'tas_mean', 'wind_speed'],
         )
         self.assertEqual(
             sorted(observations['element_raw'].unique().tolist()),
-            ['humidade', 'intensidadeVento', 'precAcumulada', 'temperatura'],
+            ['humidade', 'intensidadeVento', 'precAcumulada', 'radiacao', 'temperatura'],
         )
         self.assertTrue(observations['gh_id'].isna().all())
         self.assertTrue(observations['flag'].isna().all())
@@ -120,6 +124,7 @@ class PortugalProviderTests(unittest.TestCase):
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
         self.assertTrue(all(value.tzinfo is None for value in observations['timestamp']))
         self.assertTrue(pd.isna(observations[(observations['station_id'] == '2345678') & (observations['element'] == 'precipitation')].iloc[0]['value']))
+        self.assertTrue(pd.isna(observations[(observations['station_id'] == '2345678') & (observations['element'] == 'solar_radiation')].iloc[0]['value']))
         self.assertTrue(
             pd.isna(
                 observations[
@@ -128,6 +133,28 @@ class PortugalProviderTests(unittest.TestCase):
                     & (observations['element'] == 'wind_speed')
                 ].iloc[0]['value']
             )
+        )
+        self.assertAlmostEqual(
+            float(
+                observations[
+                    (observations['station_id'] == '1234567')
+                    & (observations['timestamp'] == pd.Timestamp('2026-05-25T04:00:00'))
+                    & (observations['element'] == 'solar_radiation')
+                ].iloc[0]['value']
+            ),
+            0.36,
+            places=6,
+        )
+        self.assertAlmostEqual(
+            float(
+                observations[
+                    (observations['station_id'] == '1234567')
+                    & (observations['timestamp'] == pd.Timestamp('2026-05-25T05:00:00'))
+                    & (observations['element'] == 'solar_radiation')
+                ].iloc[0]['value']
+            ),
+            1.25,
+            places=6,
         )
         self.assertFalse((observations['station_id'] == '3456789').any())
         self.assertEqual(observations['timestamp'].min(), pd.Timestamp('2026-05-25T04:00:00'))

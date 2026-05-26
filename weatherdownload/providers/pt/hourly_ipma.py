@@ -5,7 +5,12 @@ import pandas as pd
 from ...elements import canonicalize_element_series
 from ...errors import EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from ...queries import ObservationQuery
-from .ipma_parser import IPMA_NORMALIZED_SUBDAILY_COLUMNS, normalize_ipma_hourly_observations, read_text_from_source
+from .ipma_parser import (
+    IPMA_NORMALIZED_SUBDAILY_COLUMNS,
+    normalize_ipma_hourly_observations,
+    normalize_ipma_interval_value,
+    read_text_from_source,
+)
 from .metadata import read_station_metadata_ipma
 from .registry import get_dataset_spec
 
@@ -51,6 +56,10 @@ def download_hourly_observations_ipma(
     element_columns = canonicalize_element_series(normalized['element_raw'], query)
     normalized['element'] = element_columns['element']
     normalized['element_raw'] = element_columns['element_raw']
+    normalized['value'] = [
+        normalize_ipma_interval_value(str(raw_code), value)
+        for raw_code, value in zip(normalized['element_raw'], normalized['value'], strict=False)
+    ]
     return normalized.loc[:, IPMA_NORMALIZED_SUBDAILY_COLUMNS].sort_values(
         ['station_id', 'timestamp', 'element'],
         kind='stable',

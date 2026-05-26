@@ -5,15 +5,16 @@
       "precAcumulada": 0.0,
       "intensidadeVento": 1.4,
       "humidade": 81.0,
+      "radiacao": 360.0,
       "pressao": -99.0,
-      "radiacao": 0.0,
       "idDireccVento": 7,
       "intensidadeVentoKM": 5.0
     },
     "2345678": {
       "temperatura": 18.5,
       "precAcumulada": -99.0,
-      "humidade": 72.0
+      "humidade": 72.0,
+      "radiacao": -99.0
     },
     "3456789": {
       "temperatura": 20.1,
@@ -27,7 +28,8 @@
       "temperatura": 17.8,
       "precAcumulada": 0.1,
       "intensidadeVento": -99.0,
-      "humidade": 79.0
+      "humidade": 79.0,
+      "radiacao": 1250.0
     },
     "2345678": {
       "temperatura": 19.0,

@@ -39,6 +39,10 @@ IPMA_PARAMETER_METADATA: dict[str, dict[str, str]] = {
         'name': 'Hourly mean relative humidity',
         'description': 'Official IPMA hourly mean relative humidity in percent.',
     },
+    'radiacao': {
+        'name': 'Hourly solar radiation',
+        'description': 'Official IPMA hourly observed incoming solar radiation energy in kilojoules per square metre for the published hourly interval.',
+    },
 }
 
 _NULLABLE_INT_DTYPE = pd.Int64Dtype()
@@ -221,6 +225,15 @@ def _normalize_value(value: object) -> object:
     if float(numeric) == _IPMA_NODATA:
         return pd.NA
     return float(numeric)
+
+
+def normalize_ipma_interval_value(raw_code: str, value: object) -> object:
+    normalized = _normalize_value(value)
+    if pd.isna(normalized):
+        return pd.NA
+    if raw_code == 'radiacao':
+        return float(normalized) / 1000.0
+    return normalized
 
 
 def _normalize_query_timestamp(value: object) -> pd.Timestamp:
