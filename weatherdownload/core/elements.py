@@ -8,6 +8,9 @@ import pandas as pd
 
 CanonicalElementMap = Mapping[str, tuple[str, ...]]
 ELEMENT_MAPPING_COLUMNS = ['element', 'element_raw', 'raw_elements']
+CANONICAL_ELEMENT_ALIASES: dict[str, str] = {
+    'wind_from_direction': 'wind_direction',
+}
 CANONICAL_ELEMENT_METADATA: dict[str, dict[str, str]] = {
     'open_water_evaporation': {
         'description': 'Daily measured evaporation from an open water surface.',
@@ -17,7 +20,16 @@ CANONICAL_ELEMENT_METADATA: dict[str, dict[str, str]] = {
         'description': "Observed incoming solar radiation energy over the provider's published observation interval.",
         'unit': 'MJ m^-2',
     },
+    'wind_direction': {
+        'description': 'Meteorological wind direction: direction from which the wind blows, measured clockwise from true north.',
+        'unit': 'degree',
+    },
 }
+
+
+def normalize_canonical_element_name(element: str) -> str:
+    cleaned = str(element).strip().lower()
+    return CANONICAL_ELEMENT_ALIASES.get(cleaned, cleaned)
 
 
 def canonical_element_map_for_spec(spec: Any) -> dict[str, tuple[str, ...]]:
@@ -89,7 +101,7 @@ def normalize_requested_elements(elements: Sequence[str], spec: Any) -> list[str
         cleaned = item.strip()
         if not cleaned:
             continue
-        canonical_name = cleaned.lower()
+        canonical_name = normalize_canonical_element_name(cleaned)
         if canonical_name in canonical_map:
             preferred_raw = canonical_map[canonical_name][0]
             if preferred_raw not in seen:
@@ -119,7 +131,7 @@ def unsupported_requested_elements(elements: Sequence[str], spec: Any) -> list[s
         cleaned = item.strip()
         if not cleaned:
             continue
-        if cleaned.lower() in canonical_map:
+        if normalize_canonical_element_name(cleaned) in canonical_map:
             continue
         if cleaned.casefold() in supported_raw_lookup:
             continue

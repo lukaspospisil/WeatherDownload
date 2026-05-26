@@ -5,7 +5,12 @@ from datetime import date, datetime
 
 import pandas as pd
 
-from .elements import element_mapping_dict_for_spec, element_mapping_for_spec, supported_elements_for_spec
+from .elements import (
+    element_mapping_dict_for_spec,
+    element_mapping_for_spec,
+    normalize_canonical_element_name,
+    supported_elements_for_spec,
+)
 from .metadata import STATION_METADATA_COLUMNS, filter_stations, read_station_metadata, read_station_observation_metadata
 from .queries import normalize_provider_name
 
@@ -343,8 +348,9 @@ def _normalize_requested_canonical_elements(elements: Sequence[str], spec) -> li
         if not cleaned:
             continue
         canonical = None
-        if cleaned.lower() in canonical_elements:
-            canonical = cleaned.lower()
+        normalized_name = normalize_canonical_element_name(cleaned)
+        if normalized_name in canonical_elements:
+            canonical = normalized_name
         else:
             canonical = raw_to_canonical.get(cleaned.casefold())
         if canonical is None:

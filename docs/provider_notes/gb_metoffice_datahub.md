@@ -57,7 +57,8 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - live use requires `WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY` or `METOFFICE_DATAHUB_API_KEY`
 - the current integration is observed-only
 - precipitation is not exposed in this first slice because it is not verified from the checked-in official sample payload used here
-- `wind_direction` is not exposed because there is no established canonical mapping for it in the current project surface
+- canonical `wind_direction` now means meteorological direction from which the wind blows in degrees clockwise from true north
+- the checked-in Met Office sample payload carries `wind_direction` as compass-point strings such as `N`, not degree values, so this path does not expose it in this pass
 - unsupported or missing fields stay unsupported or missing rather than being derived
 - this provider is not FAO-ready
 

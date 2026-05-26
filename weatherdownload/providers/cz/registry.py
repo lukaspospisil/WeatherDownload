@@ -52,7 +52,7 @@ _DAILY_HISTORICAL_CSV_CANONICAL_ELEMENTS: dict[str, tuple[str, ...]] = {
     'tas_mean': ('T',),
     'tas_max': ('TMA',),
     'tas_min': ('TMI',),
-    'wind_from_direction': ('WDIR',),
+    'wind_direction': ('WDIR',),
 }
 
 _TENMIN_HISTORICAL_CSV_ELEMENT_GROUPS: dict[str, str] = {

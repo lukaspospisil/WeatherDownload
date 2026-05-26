@@ -11,6 +11,14 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(metadata['description'], 'Daily measured evaporation from an open water surface.')
         self.assertEqual(metadata['unit'], 'mm')
 
+    def test_canonical_element_metadata_contains_wind_direction(self) -> None:
+        metadata = CANONICAL_ELEMENT_METADATA['wind_direction']
+        self.assertEqual(
+            metadata['description'],
+            'Meteorological wind direction: direction from which the wind blows, measured clockwise from true north.',
+        )
+        self.assertEqual(metadata['unit'], 'degree')
+
     def test_get_dataset_spec_for_daily_historical_csv(self) -> None:
         spec = get_dataset_spec('historical_csv', 'daily')
         self.assertEqual(spec.provider, 'historical_csv')

@@ -103,7 +103,7 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'pressure',
     'relative_humidity',
     'precipitation',
-    'wind_from_direction',
+    'wind_direction',
     'cloud_cover',
     'past_weather_1',
     'past_weather_2',

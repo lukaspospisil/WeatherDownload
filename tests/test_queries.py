@@ -17,7 +17,7 @@ class DiscoveryTests(unittest.TestCase):
 
     def test_list_supported_elements_for_daily_historical_csv_returns_canonical_names(self) -> None:
         elements = list_supported_elements(resolution='daily', provider='historical_csv')
-        self.assertEqual(elements, ['open_water_evaporation', 'vapour_pressure', 'wind_speed', 'snow_depth', 'pressure', 'relative_humidity', 'precipitation', 'sunshine_duration', 'tas_mean', 'tas_max', 'tas_min', 'wind_from_direction'])
+        self.assertEqual(elements, ['open_water_evaporation', 'vapour_pressure', 'wind_speed', 'snow_depth', 'pressure', 'relative_humidity', 'precipitation', 'sunshine_duration', 'tas_mean', 'tas_max', 'tas_min', 'wind_direction'])
 
     def test_list_supported_elements_can_return_provider_raw_codes(self) -> None:
         elements = list_supported_elements(resolution='daily', provider='historical_csv', provider_raw=True)
@@ -37,6 +37,18 @@ class DiscoveryTests(unittest.TestCase):
     def test_cz_daily_query_accepts_open_water_evaporation_canonical_name(self) -> None:
         query = ObservationQuery(country='CZ', provider='historical_csv', resolution='daily', station_ids=['0-20000-0-11406'], start_date='2024-01-01', end_date='2024-01-02', elements=['open_water_evaporation'])
         self.assertEqual(query.elements, ['VY'])
+
+    def test_cz_daily_query_accepts_deprecated_wind_from_direction_alias(self) -> None:
+        query = ObservationQuery(
+            country='CZ',
+            provider='historical_csv',
+            resolution='daily',
+            station_ids=['0-20000-0-11406'],
+            start_date='2024-01-01',
+            end_date='2024-01-02',
+            elements=['wind_from_direction'],
+        )
+        self.assertEqual(query.elements, ['WDIR'])
 
     def test_ca_daily_discovery_excludes_open_water_evaporation(self) -> None:
         self.assertEqual(

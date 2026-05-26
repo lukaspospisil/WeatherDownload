@@ -173,6 +173,8 @@ WeatherDownload preserves both user-facing meaning and source provenance:
 
 This lets users work with stable cross-country names without losing the original source code.
 
+For wind direction specifically, canonical `wind_direction` means meteorological direction from which the wind blows, measured in degrees clockwise from true north.
+
 ## `observation_date` vs `timestamp`
 
 Use this rule of thumb:

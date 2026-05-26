@@ -18,6 +18,7 @@ Common examples:
 - `solar_radiation`
 - `open_water_evaporation`
 - `wind_speed`
+- `wind_direction`
 - `vapour_pressure`
 - `sunshine_duration`
 - `precipitation`
@@ -35,6 +36,7 @@ Specific meaning note:
 - it is intentionally not the generic name `evaporation`
 - it is not `vapour_pressure`
 - it is not ET0, PET, FAO reference evaporation, reference evapotranspiration, or modeled evaporation
+- `wind_direction` means meteorological wind direction: the direction from which the wind blows, measured in degrees clockwise from true north
 
 Backward compatibility is preserved:
 
@@ -149,7 +151,7 @@ Important GHCN boundaries:
 | `precipitation` | `SRA` |
 | `pressure` | `P` |
 | `relative_humidity` | `RH` |
-| `wind_from_direction` | `WDIR` |
+| `wind_direction` | `WDIR` |
 | `snow_depth` | `HS` |
 
 `open_water_evaporation` on this CZ path is measured open-water-surface evaporation from CHMI raw code `VY` in `mm`. It is not ET0, PET, FAO reference evaporation, or another modeled evapotranspiration field.
