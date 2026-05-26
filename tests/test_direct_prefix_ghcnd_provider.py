@@ -30,6 +30,14 @@ SAMPLE_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 SAMPLE_INVENTORY_PATH = Path('tests/data/sample_ghcnd_inventory.txt')
 
 COUNTRY_SPECS = {
+    'EE': {
+        'station_core': 'EE000000001',
+        'station_prcp_only': 'EE000000002',
+        'station_unsupported': 'EE000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_EE000000001.dly'),
+        'start_date': '2020-03-01',
+        'end_date': '2020-03-02',
+    },
     'FI': {
         'station_core': 'FI000000001',
         'station_prcp_only': 'FI000000002',
@@ -46,6 +54,14 @@ COUNTRY_SPECS = {
         'start_date': '2020-02-01',
         'end_date': '2020-02-02',
     },
+    'IS': {
+        'station_core': 'IS000000001',
+        'station_prcp_only': 'IS000000002',
+        'station_unsupported': 'IS000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_IS000000001.dly'),
+        'start_date': '2020-04-01',
+        'end_date': '2020-04-02',
+    },
     'IT': {
         'station_core': 'IT000000001',
         'station_prcp_only': 'IT000000002',
@@ -53,6 +69,22 @@ COUNTRY_SPECS = {
         'fixture_path': Path('tests/data/sample_ghcnd_IT000000001.dly'),
         'start_date': '2020-11-01',
         'end_date': '2020-11-02',
+    },
+    'LT': {
+        'station_core': 'LT000000001',
+        'station_prcp_only': 'LT000000002',
+        'station_unsupported': 'LT000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_LT000000001.dly'),
+        'start_date': '2020-05-01',
+        'end_date': '2020-05-02',
+    },
+    'LV': {
+        'station_core': 'LV000000001',
+        'station_prcp_only': 'LV000000002',
+        'station_unsupported': 'LV000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_LV000000001.dly'),
+        'start_date': '2020-06-01',
+        'end_date': '2020-06-02',
     },
     'NO': {
         'station_core': 'NO000000001',
@@ -72,7 +104,7 @@ COUNTRY_SPECS = {
     },
 }
 
-GHCND_ONLY_COUNTRIES = ('IT', 'NO', 'NZ')
+GHCND_ONLY_COUNTRIES = ('EE', 'IS', 'IT', 'LT', 'LV', 'NO', 'NZ')
 
 
 class DirectPrefixGhcndProviderTests(unittest.TestCase):

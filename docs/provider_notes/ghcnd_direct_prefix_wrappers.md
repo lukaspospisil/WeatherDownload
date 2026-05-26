@@ -1,10 +1,10 @@
 # NOAA GHCN-Daily Direct-Prefix Wrappers
 
-This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `FI`, `GB`, `IT`, `NO`, and `NZ` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
+This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `EE`, `FI`, `GB`, `IS`, `IT`, `LT`, `LV`, `NO`, and `NZ` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
 
 ## Provider identifiers
 
-- country: `FI`, `GB`, `IT`, `NO`, `NZ`
+- country: `EE`, `FI`, `GB`, `IS`, `IT`, `LT`, `LV`, `NO`, `NZ`
 - accepted public alias on this group: `UK -> GB`
 - provider: `ghcnd`
 - resolution(s): `daily`
@@ -24,9 +24,13 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 
 These wrappers are grouped together because the GHCN country prefix matches the WeatherDownload country code directly:
 
+- `EE -> EE`
 - `FI -> FI`
 - `GB -> GB`
+- `IS -> IS`
 - `IT -> IT`
+- `LT -> LT`
+- `LV -> LV`
 - `NO -> NO`
 - `NZ -> NZ`
 
@@ -60,6 +64,7 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - `snowfall` is intentionally unsupported because there is no existing canonical snowfall element wired for GHCN in this pass
 - `open_water_evaporation` is intentionally unsupported on these wrappers
 - the shared wrapper audit did not justify exposing raw `EVAP` for this group
+- none of these wrappers are FAO-ready
 
 ## Examples
 

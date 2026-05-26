@@ -266,8 +266,10 @@
       "status": "national_daily"
     },
     "EE": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "ES": {
       "providers": [
@@ -314,8 +316,10 @@
       "status": "national_daily"
     },
     "IS": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "IT": {
       "providers": [
@@ -328,8 +332,10 @@
       "status": "not_attempted"
     },
     "LT": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "LU": {
       "providers": [
@@ -339,8 +345,10 @@
       "status": "national_daily"
     },
     "LV": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "MC": {
       "providers": [],
