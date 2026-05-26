@@ -227,8 +227,10 @@
       "status": "national_daily"
     },
     "BG": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "BY": {
       "providers": [],
@@ -296,12 +298,16 @@
       "status": "ghcnd_daily"
     },
     "GR": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "HR": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "HU": {
       "providers": [
@@ -396,8 +402,10 @@
       "status": "ghcnd_daily"
     },
     "RO": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "RS": {
       "providers": [],
@@ -410,8 +418,10 @@
       "status": "national_daily"
     },
     "SI": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "SK": {
       "note": "Investigated and partially implemented, but no reliable daily downloader is currently documented as stable support.",

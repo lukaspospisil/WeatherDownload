@@ -69,6 +69,7 @@ SAMPLE_SHMU_MONTH_INDEX_HTML = Path('tests/data/sample_shmu_recent_daily_month_i
 SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 SAMPLE_GHCND_STATIONS_TEXT = SAMPLE_GHCND_STATIONS_PATH.read_text(encoding='utf-8')
 SAMPLE_GHCND_INVENTORY_TEXT = Path('tests/data/sample_ghcnd_inventory.txt').read_text(encoding='utf-8')
+SAMPLE_GHCND_BG_DLY_TEXT = Path('tests/data/sample_ghcnd_BG000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_CA_DLY_TEXT = Path('tests/data/sample_ghcnd_CA000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_EE_DLY_TEXT = Path('tests/data/sample_ghcnd_EE000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_FI_DLY_TEXT = Path('tests/data/sample_ghcnd_FI000000001.dly').read_text(encoding='utf-8')
@@ -76,6 +77,8 @@ SAMPLE_GHCND_FR_DLY_TEXT = Path('tests/data/sample_ghcnd_FR000000001.dly').read_
 SAMPLE_GHCND_GB_DLY_TEXT = Path('tests/data/sample_ghcnd_GB000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GB_METOFFICE_STATIONS_PATH = Path('tests/data/sample_gb_metoffice_datahub_stations.json')
 SAMPLE_GB_METOFFICE_HOURLY_TEXT = Path('tests/data/sample_gb_metoffice_datahub_hourly.json').read_text(encoding='utf-8')
+SAMPLE_GHCND_GR_DLY_TEXT = Path('tests/data/sample_ghcnd_GR000000001.dly').read_text(encoding='utf-8')
+SAMPLE_GHCND_HR_DLY_TEXT = Path('tests/data/sample_ghcnd_HR000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_IS_DLY_TEXT = Path('tests/data/sample_ghcnd_IS000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_IT_DLY_TEXT = Path('tests/data/sample_ghcnd_IT000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_LT_DLY_TEXT = Path('tests/data/sample_ghcnd_LT000000001.dly').read_text(encoding='utf-8')
@@ -84,6 +87,8 @@ SAMPLE_GHCND_MX_DLY_TEXT = Path('tests/data/sample_ghcnd_MX000000001.dly').read_
 SAMPLE_GHCND_NO_DLY_TEXT = Path('tests/data/sample_ghcnd_NO000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_NZ_DLY_TEXT = Path('tests/data/sample_ghcnd_NZ000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_PT_DLY_TEXT = Path('tests/data/sample_ghcnd_PO000000001.dly').read_text(encoding='utf-8')
+SAMPLE_GHCND_RO_DLY_TEXT = Path('tests/data/sample_ghcnd_RO000000001.dly').read_text(encoding='utf-8')
+SAMPLE_GHCND_SI_DLY_TEXT = Path('tests/data/sample_ghcnd_SI000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_DLY_TEXT = Path('tests/data/sample_ghcnd_USC00000001.dly').read_text(encoding='utf-8')
 SAMPLE_FR_STATIONS_PATH = Path('tests/data/sample_fr_meteo_france_fiches.json')
 SAMPLE_FR_DAILY_TEXT = Path('tests/data/sample_fr_meteo_france_rr_t_vent.csv').read_text(encoding='utf-8')
@@ -152,6 +157,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
             return read_station_metadata(country='AT')
     if country == 'BE':
         return read_station_metadata(country='BE', source_url=str(SAMPLE_BE_STATIONS_PATH))
+    if country == 'BG':
+        return read_station_metadata(country='BG', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'CH':
         return read_station_metadata(country='CH', source_url=str(SAMPLE_CH_STATIONS_PATH))
     if country == 'DE':
@@ -193,6 +200,10 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
         return read_station_metadata(country='FR', source_url=str(SAMPLE_FR_STATIONS_PATH))
     if country == 'GB':
         return read_station_metadata(country='GB', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+    if country == 'GR':
+        return read_station_metadata(country='GR', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+    if country == 'HR':
+        return read_station_metadata(country='HR', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'IT':
         return read_station_metadata(country='IT', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'LT':
@@ -205,6 +216,10 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
         return read_station_metadata(country='NO', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'NZ':
         return read_station_metadata(country='NZ', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+    if country == 'RO':
+        return read_station_metadata(country='RO', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+    if country == 'SI':
+        return read_station_metadata(country='SI', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'US':
         return read_station_metadata(country='US', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     raise AssertionError(f'unsupported test country: {country}')
@@ -226,6 +241,11 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
         query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
         with patch('weatherdownload.providers.be.daily.requests.get', return_value=_MockTextResponse(SAMPLE_BE_DAILY_TEXT)):
             return download_observations(query, country='BE', station_metadata=station_metadata)
+    if country == 'BG':
+        station_metadata = _read_station_metadata_fixture('BG')
+        query = ObservationQuery(country='BG', provider='ghcnd', resolution='daily', station_ids=['BG000000001'], start_date='2020-07-01', end_date='2020-07-02', elements=['tas_max', 'precipitation'])
+        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_BG_DLY_TEXT):
+            return download_observations(query, country='BG', station_metadata=station_metadata)
     if country == 'CH':
         station_metadata = _read_station_metadata_fixture('CH')
         query = ObservationQuery(country='CH', provider='historical', resolution='daily', station_ids=['AIG'], start_date='2025-12-31', end_date='2026-01-02', elements=['tas_mean', 'pressure', 'precipitation'])
@@ -410,6 +430,16 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
         query = ObservationQuery(country='GB', provider='ghcnd', resolution='daily', station_ids=['GB000000001'], start_date='2020-02-01', end_date='2020-02-02', elements=['tas_max', 'precipitation'])
         with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_GB_DLY_TEXT):
             return download_observations(query, country='GB', station_metadata=station_metadata)
+    if country == 'GR':
+        station_metadata = _read_station_metadata_fixture('GR')
+        query = ObservationQuery(country='GR', provider='ghcnd', resolution='daily', station_ids=['GR000000001'], start_date='2020-08-01', end_date='2020-08-02', elements=['tas_max', 'precipitation'])
+        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_GR_DLY_TEXT):
+            return download_observations(query, country='GR', station_metadata=station_metadata)
+    if country == 'HR':
+        station_metadata = _read_station_metadata_fixture('HR')
+        query = ObservationQuery(country='HR', provider='ghcnd', resolution='daily', station_ids=['HR000000001'], start_date='2020-09-01', end_date='2020-09-02', elements=['tas_max', 'precipitation'])
+        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_HR_DLY_TEXT):
+            return download_observations(query, country='HR', station_metadata=station_metadata)
     if country == 'IT':
         station_metadata = _read_station_metadata_fixture('IT')
         query = ObservationQuery(country='IT', provider='ghcnd', resolution='daily', station_ids=['IT000000001'], start_date='2020-11-01', end_date='2020-11-02', elements=['tas_max', 'precipitation'])
@@ -445,6 +475,16 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
         query = ObservationQuery(country='PT', provider='ghcnd', resolution='daily', station_ids=['PO000000001'], start_date='2020-10-01', end_date='2020-10-02', elements=['tas_max', 'precipitation'])
         with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_PT_DLY_TEXT):
             return download_observations(query, country='PT', station_metadata=station_metadata)
+    if country == 'RO':
+        station_metadata = _read_station_metadata_fixture('RO')
+        query = ObservationQuery(country='RO', provider='ghcnd', resolution='daily', station_ids=['RO000000001'], start_date='2020-10-01', end_date='2020-10-02', elements=['tas_max', 'precipitation'])
+        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_RO_DLY_TEXT):
+            return download_observations(query, country='RO', station_metadata=station_metadata)
+    if country == 'SI':
+        station_metadata = _read_station_metadata_fixture('SI')
+        query = ObservationQuery(country='SI', provider='ghcnd', resolution='daily', station_ids=['SI000000001'], start_date='2020-11-01', end_date='2020-11-02', elements=['tas_max', 'precipitation'])
+        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_SI_DLY_TEXT):
+            return download_observations(query, country='SI', station_metadata=station_metadata)
     if country == 'US':
         station_metadata = _read_station_metadata_fixture('US')
         query = ObservationQuery(country='US', provider='ghcnd', resolution='daily', station_ids=['USC00000001'], start_date='2020-05-01', end_date='2020-05-02', elements=['open_water_evaporation'])
@@ -632,6 +672,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
     expected_station_ids = {
         'AT': ['1', '2', 'AU000000001', 'AU000000002'],
         'BE': ['6414', '6438'],
+        'BG': ['BG000000001', 'BG000000002'],
         'CA': ['CA000000001', 'CA000000002'],
         'CH': ['ABO', 'AEG', 'AIG', 'ALT', 'AND'],
         'CZ': ['0-20000-0-11406', '0-20000-0-11414'],
@@ -642,6 +683,8 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'FI': ['FI000000001', 'FI000000002'],
         'FR': ['07005001', '13055001'],
         'GB': ['GB000000001', 'GB000000002'],
+        'GR': ['GR000000001', 'GR000000002'],
+        'HR': ['HR000000001', 'HR000000002'],
         'HU': ['13704', '13704', '13711'],
         'IE': ['1575', '2275', '2375', '3723', '3904', '4935', '518', '532'],
         'IS': ['IS000000001', 'IS000000002'],
@@ -654,12 +697,14 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'NZ': ['NZ000000001', 'NZ000000002'],
         'PL': ['00375', '00400', '00600'],
         'PT': ['PO000000001', 'PO000000002'],
+        'RO': ['RO000000001', 'RO000000002'],
         'SE': ['98230'],
+        'SI': ['SI000000001', 'SI000000002'],
         'SK': ['11800', '11999'],
         'US': ['USC00000001', 'USC00000002', 'USC00000003'],
     }
 
-    for country in ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'SE', 'SK', 'US']:
+    for country in ['AT', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'US']:
         stations = _read_station_metadata_fixture(country)
         assert list(stations.columns) == STATION_METADATA_COLUMNS
         actual_station_ids = stations['station_id'].tolist()
@@ -672,9 +717,9 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AT': 'historical', 'BE': 'historical', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'SE': 'historical', 'SK': 'recent', 'US': 'ghcnd'}
+    expected_providers = {'AT': 'historical', 'BE': 'historical', 'BG': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'SE': 'historical', 'SI': 'ghcnd', 'SK': 'recent', 'US': 'ghcnd'}
 
-    for country in ['AT', 'BE', 'CA', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'SE', 'SK', 'US']:
+    for country in ['AT', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'US']:
         observations = _download_daily_fixture(country)
         assert list(observations.columns) == expected_columns
         assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
@@ -683,7 +728,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
         assert observations['provider'].eq(expected_providers[country]).all()
         assert observations['resolution'].eq('daily').all()
 
-        if country in {'AT', 'BE', 'CA', 'CH', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PT', 'SE', 'SK', 'US'}:
+        if country in {'AT', 'BE', 'BG', 'CA', 'CH', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PT', 'RO', 'SE', 'SI', 'SK', 'US'}:
             assert observations['gh_id'].isna().all()
         elif country == 'PL':
             assert observations['gh_id'].notna().all()
@@ -715,7 +760,7 @@ def test_daily_download_contract_is_stable_across_supported_countries() -> None:
             assert set(observations['quality'].dropna().astype(str).unique()) <= {'2'}
         elif country == 'US':
             assert set(observations['quality'].dropna().astype(str).unique()) <= {'X'}
-        elif country in {'CA', 'EE', 'FI', 'FR', 'GB', 'IS', 'IT', 'LT', 'LV', 'MX', 'NO', 'NZ', 'PT'}:
+        elif country in {'BG', 'CA', 'EE', 'FI', 'FR', 'GB', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'MX', 'NO', 'NZ', 'PT', 'RO', 'SI'}:
             assert observations['quality'].isna().all()
         else:
             assert observations['quality'].isna().all()

@@ -30,6 +30,14 @@ SAMPLE_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 SAMPLE_INVENTORY_PATH = Path('tests/data/sample_ghcnd_inventory.txt')
 
 COUNTRY_SPECS = {
+    'BG': {
+        'station_core': 'BG000000001',
+        'station_prcp_only': 'BG000000002',
+        'station_unsupported': 'BG000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_BG000000001.dly'),
+        'start_date': '2020-07-01',
+        'end_date': '2020-07-02',
+    },
     'EE': {
         'station_core': 'EE000000001',
         'station_prcp_only': 'EE000000002',
@@ -53,6 +61,22 @@ COUNTRY_SPECS = {
         'fixture_path': Path('tests/data/sample_ghcnd_GB000000001.dly'),
         'start_date': '2020-02-01',
         'end_date': '2020-02-02',
+    },
+    'GR': {
+        'station_core': 'GR000000001',
+        'station_prcp_only': 'GR000000002',
+        'station_unsupported': 'GR000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_GR000000001.dly'),
+        'start_date': '2020-08-01',
+        'end_date': '2020-08-02',
+    },
+    'HR': {
+        'station_core': 'HR000000001',
+        'station_prcp_only': 'HR000000002',
+        'station_unsupported': 'HR000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_HR000000001.dly'),
+        'start_date': '2020-09-01',
+        'end_date': '2020-09-02',
     },
     'IS': {
         'station_core': 'IS000000001',
@@ -102,9 +126,25 @@ COUNTRY_SPECS = {
         'start_date': '1998-01-01',
         'end_date': '1998-01-02',
     },
+    'RO': {
+        'station_core': 'RO000000001',
+        'station_prcp_only': 'RO000000002',
+        'station_unsupported': 'RO000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_RO000000001.dly'),
+        'start_date': '2020-10-01',
+        'end_date': '2020-10-02',
+    },
+    'SI': {
+        'station_core': 'SI000000001',
+        'station_prcp_only': 'SI000000002',
+        'station_unsupported': 'SI000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_SI000000001.dly'),
+        'start_date': '2020-11-01',
+        'end_date': '2020-11-02',
+    },
 }
 
-GHCND_ONLY_COUNTRIES = ('EE', 'IS', 'IT', 'LT', 'LV', 'NO', 'NZ')
+GHCND_ONLY_COUNTRIES = ('BG', 'EE', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'NO', 'NZ', 'RO', 'SI')
 
 
 class DirectPrefixGhcndProviderTests(unittest.TestCase):

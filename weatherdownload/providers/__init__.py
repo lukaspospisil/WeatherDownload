@@ -5,6 +5,7 @@ from importlib import import_module
 from .at import PROVIDER as GEOSPHERE_PROVIDER
 from .base import WeatherProvider
 from .be import PROVIDER as BE_PROVIDER
+from .bg import PROVIDER as BG_GHCND_PROVIDER
 from .ca import PROVIDER as CA_GHCND_PROVIDER
 from .ch import PROVIDER as CH_PROVIDER
 from .cz import PROVIDER as CHMI_PROVIDER
@@ -15,6 +16,8 @@ from .es import PROVIDER as ES_PROVIDER
 from .fi import PROVIDER as FI_GHCND_PROVIDER
 from .fr import PROVIDER as FR_GHCND_PROVIDER
 from .gb import PROVIDER as GB_PROVIDER
+from .gr import PROVIDER as GR_GHCND_PROVIDER
+from .hr import PROVIDER as HR_GHCND_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
 from .ie import PROVIDER as IE_PROVIDER
 from .it import PROVIDER as IT_GHCND_PROVIDER
@@ -27,7 +30,9 @@ from .no import PROVIDER as NO_GHCND_PROVIDER
 from .nz import PROVIDER as NZ_GHCND_PROVIDER
 from .pl import PROVIDER as PL_PROVIDER
 from .pt import PROVIDER as PT_PROVIDER
+from .ro import PROVIDER as RO_GHCND_PROVIDER
 from .se import PROVIDER as SE_PROVIDER
+from .si import PROVIDER as SI_GHCND_PROVIDER
 from .sk import PROVIDER as SHMU_PROVIDER
 from .us import PROVIDER as US_GHCND_PROVIDER
 
@@ -36,6 +41,7 @@ IS_GHCND_PROVIDER = import_module('weatherdownload.providers.is').PROVIDER
 PROVIDERS: dict[str, WeatherProvider] = {
     'AT': GEOSPHERE_PROVIDER,
     'BE': BE_PROVIDER,
+    'BG': BG_GHCND_PROVIDER,
     'CA': CA_GHCND_PROVIDER,
     'CH': CH_PROVIDER,
     'CZ': CHMI_PROVIDER,
@@ -46,6 +52,8 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'FI': FI_GHCND_PROVIDER,
     'FR': FR_GHCND_PROVIDER,
     'GB': GB_PROVIDER,
+    'GR': GR_GHCND_PROVIDER,
+    'HR': HR_GHCND_PROVIDER,
     'HU': HU_PROVIDER,
     'IE': IE_PROVIDER,
     'IS': IS_GHCND_PROVIDER,
@@ -59,7 +67,9 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'NZ': NZ_GHCND_PROVIDER,
     'PL': PL_PROVIDER,
     'PT': PT_PROVIDER,
+    'RO': RO_GHCND_PROVIDER,
     'SE': SE_PROVIDER,
+    'SI': SI_GHCND_PROVIDER,
     'SK': SHMU_PROVIDER,
     'US': US_GHCND_PROVIDER,
 }
