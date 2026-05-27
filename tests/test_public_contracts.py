@@ -92,6 +92,7 @@ SAMPLE_GHCND_SI_DLY_TEXT = Path('tests/data/sample_ghcnd_SI000000001.dly').read_
 SAMPLE_GHCND_DLY_TEXT = Path('tests/data/sample_ghcnd_USC00000001.dly').read_text(encoding='utf-8')
 SAMPLE_FR_STATIONS_PATH = Path('tests/data/sample_fr_meteo_france_fiches.json')
 SAMPLE_FR_DAILY_TEXT = Path('tests/data/sample_fr_meteo_france_rr_t_vent.csv').read_text(encoding='utf-8')
+SAMPLE_SI_ARSO_FIXTURE_DIR = Path('tests/data/si_arso')
 SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland Abgabe
 ----------- --------- --------- ------------- --------- --------- ----------------------------------------- ---------- ------
 00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\xfcrttemberg Frei
@@ -142,6 +143,13 @@ def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockTextRespo
     if url.endswith('ghcnd-inventory.txt'):
         return _MockTextResponse(SAMPLE_GHCND_INVENTORY_TEXT)
     raise AssertionError(f'unexpected GHCND metadata URL: {url}')
+
+
+def _mock_si_arso_observation_response(url: str, timeout: int = 60) -> _MockTextResponse:
+    del timeout
+    if 'id=1895' not in url:
+        raise AssertionError(f'unexpected ARSO observation URL: {url}')
+    return _MockTextResponse((SAMPLE_SI_ARSO_FIXTURE_DIR / 'obs_1895_2024-01-01_2024-01-03.xml').read_text(encoding='utf-8'))
 
 
 def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
@@ -219,7 +227,7 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'RO':
         return read_station_metadata(country='RO', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'SI':
-        return read_station_metadata(country='SI', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        return read_station_metadata(country='SI', source_url=str(SAMPLE_SI_ARSO_FIXTURE_DIR))
     if country == 'US':
         return read_station_metadata(country='US', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     raise AssertionError(f'unsupported test country: {country}')
@@ -482,8 +490,16 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='RO', station_metadata=station_metadata)
     if country == 'SI':
         station_metadata = _read_station_metadata_fixture('SI')
-        query = ObservationQuery(country='SI', provider='ghcnd', resolution='daily', station_ids=['SI000000001'], start_date='2020-11-01', end_date='2020-11-02', elements=['tas_max', 'precipitation'])
-        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_SI_DLY_TEXT):
+        query = ObservationQuery(
+            country='SI',
+            provider='arso',
+            resolution='daily',
+            station_ids=['1895'],
+            start_date='2024-01-01',
+            end_date='2024-01-03',
+            elements=['tas_mean', 'precipitation', 'snow_depth'],
+        )
+        with patch('weatherdownload.providers.si.arso_daily.requests.get', side_effect=_mock_si_arso_observation_response):
             return download_observations(query, country='SI', station_metadata=station_metadata)
     if country == 'US':
         station_metadata = _read_station_metadata_fixture('US')
@@ -699,7 +715,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'PT': ['PO000000001', 'PO000000002'],
         'RO': ['RO000000001', 'RO000000002'],
         'SE': ['98230'],
-        'SI': ['SI000000001', 'SI000000002'],
+        'SI': ['1895', '3049'],
         'SK': ['11800', '11999'],
         'US': ['USC00000001', 'USC00000002', 'USC00000003'],
     }
@@ -717,7 +733,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AT': 'historical', 'BE': 'historical', 'BG': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'SE': 'historical', 'SI': 'ghcnd', 'SK': 'recent', 'US': 'ghcnd'}
+    expected_providers = {'AT': 'historical', 'BE': 'historical', 'BG': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'ghcnd', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'US': 'ghcnd'}
 
     for country in ['AT', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'US']:
         observations = _download_daily_fixture(country)

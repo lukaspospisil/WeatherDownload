@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response><![CDATA[
+AcademaPUJS.set({
+  archives: {
+    daily: {
+      desc: "Dnevni podatki",
+      mindate: "1948-01-01",
+      types: [1, 2, 3],
+      params: [
+        {pid: 35, name: "t2m_klima", unit: "°C"},
+        {pid: 38, name: "tmax", unit: "°C"},
+        {pid: 36, name: "tmin", unit: "°C"},
+        {pid: 85, name: "padavine_klima", unit: "mm"},
+        {pid: 88, name: "sneg_skupni", unit: "cm"},
+        {pid: 41, name: "trajanje_so", unit: "h"}
+      ]
+    }
+  }
+});
+]]></response>

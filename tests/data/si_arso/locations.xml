@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response><![CDATA[
+AcademaPUJS.set({
+  locations: {
+    _1895: {name: "Ljubljana Bežigrad", lon: 14.512359, lat: 46.065505, alt: 299, type: 3},
+    _3049: {name: "Letališče Jožeta Pučnika Ljubljana", lon: 14.457611, lat: 46.223889, alt: 364, type: 3}
+  }
+});
+]]></response>

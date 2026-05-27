@@ -427,9 +427,9 @@
     },
     "SI": {
       "providers": [
-        "ghcnd"
+        "arso"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "SK": {
       "note": "Investigated and partially implemented, but no reliable daily downloader is currently documented as stable support.",
