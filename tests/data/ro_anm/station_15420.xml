@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wfs:FeatureCollection
+    xmlns:wfs="http://www.opengis.net/wfs/2.0"
+    xmlns:ef="http://inspire.ec.europa.eu/schemas/ef/4.0"
+    xmlns:gml="http://www.opengis.net/gml/3.2"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+  <wfs:member>
+    <ef:EnvironmentalMonitoringFacility gml:id="EnvironmentalMonitoringFacility.15420">
+      <gml:identifier codeSpace="https://inspire.meteoromania.ro/ids">EnvironmentalMonitoringFacility.15420</gml:identifier>
+      <gml:description>Meterological Station București Băneasa</gml:description>
+      <ef:geometry>
+        <gml:Point srsName="EPSG:4326">
+          <gml:pos>26.0782 44.5104</gml:pos>
+        </gml:Point>
+      </ef:geometry>
+      <ef:operationalActivityPeriod>
+        <gml:TimePeriod gml:id="OperationalActivityPeriod.15420">
+          <gml:beginPosition>1955-01-01T00:00:00Z</gml:beginPosition>
+          <gml:endPosition indeterminatePosition="now"/>
+        </gml:TimePeriod>
+      </ef:operationalActivityPeriod>
+      <ef:narrower xlink:href="https://inspire.meteoromania.ro/ids/EnvironmentalMonitoringFacility.15420/TemperatureAverageDailyCLIMAT"/>
+      <ef:narrower xlink:href="https://inspire.meteoromania.ro/ids/EnvironmentalMonitoringFacility.15420/TemperatureMaximumDailyCLIMAT"/>
+      <ef:narrower xlink:href="https://inspire.meteoromania.ro/ids/EnvironmentalMonitoringFacility.15420/TemperatureMinimumDailyCLIMAT"/>
+      <ef:narrower xlink:href="https://inspire.meteoromania.ro/ids/EnvironmentalMonitoringFacility.15420/TotalPrecipitationCLIMAT"/>
+    </ef:EnvironmentalMonitoringFacility>
+  </wfs:member>
+</wfs:FeatureCollection>

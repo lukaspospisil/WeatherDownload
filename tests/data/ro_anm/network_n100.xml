@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wfs:FeatureCollection
+    xmlns:wfs="http://www.opengis.net/wfs/2.0"
+    xmlns:ef="http://inspire.ec.europa.eu/schemas/ef/4.0"
+    xmlns:gml="http://www.opengis.net/gml/3.2"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+  <wfs:member>
+    <ef:EnvironmentalMonitoringNetwork gml:id="EnvironmentalMonitoringNetwork.N100">
+      <gml:identifier codeSpace="https://inspire.meteoromania.ro/ids">EnvironmentalMonitoringNetwork.N100</gml:identifier>
+      <ef:contains>
+        <ef:NetworkFacility>
+          <ef:contains xlink:href="https://inspire.meteoromania.ro/ids/EnvironmentalMonitoringFacility.15015" xlink:title="Ocna Sugatag"/>
+          <ef:contains xlink:href="https://inspire.meteoromania.ro/ids/EnvironmentalMonitoringFacility.15420" xlink:title="Bucuresti Baneasa"/>
+        </ef:NetworkFacility>
+      </ef:contains>
+    </ef:EnvironmentalMonitoringNetwork>
+  </wfs:member>
+</wfs:FeatureCollection>

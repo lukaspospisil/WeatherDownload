@@ -411,9 +411,9 @@
     },
     "RO": {
       "providers": [
-        "ghcnd"
+        "anm"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "RS": {
       "providers": [],

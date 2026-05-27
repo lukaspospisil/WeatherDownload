@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ..ghcnd.wrappers import build_daily_observation_downloader, build_station_dly_url_builder
+from .anm_daily import download_daily_observations_anm
 from .registry import get_dataset_spec
 
 download_daily_observations_ghcnd = build_daily_observation_downloader(get_dataset_spec=get_dataset_spec)

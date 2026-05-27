@@ -38,6 +38,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [KNMI Netherlands](nl_knmi.md)
 - [IMGW-PIB Poland](pl_imgw.md)
 - [IPMA Portugal](pt_ipma.md)
+- [ANM Romania](ro_anm.md)
 - [SMHI Sweden](se_smhi.md)
 - [SHMU Slovakia](sk_shmu.md)
 

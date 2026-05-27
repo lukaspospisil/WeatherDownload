@@ -112,7 +112,7 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
-        for country in ['BG', 'EE', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'NO', 'NZ', 'RO', 'SI']:
+        for country in ['BG', 'EE', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'NO', 'NZ', 'SI']:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
@@ -122,6 +122,19 @@ class ProviderTests(unittest.TestCase):
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
                     ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
+
+    def test_discovery_country_ro_includes_anm_and_ghcnd_daily(self) -> None:
+        self.assertEqual(list_providers(country='RO'), ['anm', 'ghcnd'])
+        self.assertEqual(list_resolutions(country='RO', provider='anm'), ['daily'])
+        self.assertEqual(list_resolutions(country='RO', provider='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='RO', provider='anm', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='RO', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
 
     def test_discovery_country_gb_includes_metoffice_hourly_and_ghcnd_daily(self) -> None:
         self.assertEqual(list_providers(country='GB'), ['ghcnd', 'metoffice_datahub'])

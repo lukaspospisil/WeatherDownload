@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wfs:FeatureCollection
+    xmlns:wfs="http://www.opengis.net/wfs/2.0"
+    xmlns:gml="http://www.opengis.net/gml/3.2"
+    xmlns:om="http://www.opengis.net/om/2.0"
+    xmlns:wml2="http://www.opengis.net/waterml/2.0">
+  <wfs:member>
+    <om:OM_Observation gml:id="OM_Observation.EnvironmentalMonitoringFacility.15015.TemperatureMaximumDailyCLIMAT.AllValuesWML20">
+      <om:result>
+        <wml2:MeasurementTimeseries gml:id="MeasurementTimeseries.15015.TemperatureMaximumDailyCLIMAT">
+          <wml2:defaultPointMetadata>
+            <wml2:DefaultTVPMeasurementMetadata>
+              <wml2:uom code="K"/>
+            </wml2:DefaultTVPMeasurementMetadata>
+          </wml2:defaultPointMetadata>
+          <wml2:point><wml2:MeasurementTVP><wml2:time>1961-01-01T00:00:00Z</wml2:time><wml2:value>274.15</wml2:value></wml2:MeasurementTVP></wml2:point>
+          <wml2:point><wml2:MeasurementTVP><wml2:time>1961-01-02T00:00:00Z</wml2:time><wml2:value>277.35</wml2:value></wml2:MeasurementTVP></wml2:point>
+          <wml2:point><wml2:MeasurementTVP><wml2:time>1961-01-03T00:00:00Z</wml2:time><wml2:value>280.35</wml2:value></wml2:MeasurementTVP></wml2:point>
+        </wml2:MeasurementTimeseries>
+      </om:result>
+    </om:OM_Observation>
+  </wfs:member>
+</wfs:FeatureCollection>
