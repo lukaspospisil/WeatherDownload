@@ -12,6 +12,7 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
+from weatherdownload.core.errors import UnsupportedQueryError
 from weatherdownload.core.queries import QueryValidationError
 from weatherdownload.providers.gb.metadata import resolve_metoffice_datahub_api_key
 from weatherdownload.providers.gb.parser import parse_metoffice_datahub_hourly_observations_json
@@ -19,6 +20,11 @@ from weatherdownload.providers.gb.parser import parse_metoffice_datahub_hourly_o
 
 SAMPLE_STATIONS_PATH = Path('tests/data/sample_gb_metoffice_datahub_stations.json')
 SAMPLE_HOURLY_TEXT = Path('tests/data/sample_gb_metoffice_datahub_hourly.json').read_text(encoding='utf-8')
+FROZEN_CURRENT_UTC = '2026-05-26T00:00:00Z'
+IN_WINDOW_START = '2026-05-25T08:00:00Z'
+IN_WINDOW_END = '2026-05-25T09:00:00Z'
+OUTSIDE_WINDOW_START = '2026-05-20T08:00:00Z'
+OUTSIDE_WINDOW_END = '2026-05-20T09:00:00Z'
 
 
 class _MockTextResponse:
@@ -51,8 +57,8 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             provider='metoffice_datahub',
             resolution='1hour',
             station_ids=['gcj8ds'],
-            start='2026-05-25T08:00:00Z',
-            end='2026-05-25T09:00:00Z',
+            start=IN_WINDOW_START,
+            end=IN_WINDOW_END,
             elements=['tas_mean', 'wind_direction', 'pressure'],
         )
         raw_query = ObservationQuery(
@@ -60,8 +66,8 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             provider='metoffice_datahub',
             resolution='1hour',
             station_ids=['gcj8ds'],
-            start='2026-05-25T08:00:00Z',
-            end='2026-05-25T09:00:00Z',
+            start=IN_WINDOW_START,
+            end=IN_WINDOW_END,
             elements=['temperature', 'wind_direction', 'mslp'],
         )
         self.assertEqual(canonical_query.station_ids, ['GCJ8DS'])
@@ -96,13 +102,13 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             provider='metoffice_datahub',
             resolution='1hour',
             station_ids=['gcj8ds'],
-            start='2026-05-25T08:00:00Z',
-            end='2026-05-25T09:00:00Z',
+            start=IN_WINDOW_START,
+            end=IN_WINDOW_END,
             elements=['tas_mean', 'relative_humidity', 'wind_speed', 'wind_direction', 'pressure'],
         )
         with patch.dict(os.environ, {'WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY': 'test-key'}, clear=False):
             with patch('weatherdownload.providers.gb.observations.requests.get', return_value=_MockTextResponse(SAMPLE_HOURLY_TEXT)):
-                with patch('weatherdownload.providers.gb.observations._current_utc', return_value='2026-05-26T00:00:00Z'):
+                with patch('weatherdownload.providers.gb.observations._current_utc', return_value=FROZEN_CURRENT_UTC):
                     observations = download_observations(query, country='GB', station_metadata=station_metadata)
 
         self.assertEqual(
@@ -126,13 +132,16 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             provider='metoffice_datahub',
             resolution='1hour',
             station_ids=['gcj8ds'],
-            start='2026-05-25T08:00:00Z',
-            end='2026-05-25T09:00:00Z',
+            start=IN_WINDOW_START,
+            end=IN_WINDOW_END,
             elements=['tas_mean'],
         )
         with patch.dict(os.environ, {}, clear=True):
-            with self.assertRaisesRegex(ValueError, r'Met Office Weather DataHub API key is required'):
-                download_observations(query, country='GB', station_metadata=station_metadata)
+            with patch('weatherdownload.providers.gb.observations._current_utc', return_value=FROZEN_CURRENT_UTC):
+                with patch('weatherdownload.providers.gb.observations.requests.get') as mock_get:
+                    with self.assertRaisesRegex(ValueError, r'Met Office Weather DataHub API key is required'):
+                        download_observations(query, country='GB', station_metadata=station_metadata)
+        mock_get.assert_not_called()
 
     def test_resolve_metoffice_datahub_api_key_accepts_project_env_var(self) -> None:
         with patch.dict(os.environ, {'WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY': 'test-key'}, clear=True):
@@ -145,13 +154,13 @@ class GbMetOfficeDataHubProviderTests(unittest.TestCase):
             provider='metoffice_datahub',
             resolution='1hour',
             station_ids=['gcj8ds'],
-            start='2026-05-20T08:00:00Z',
-            end='2026-05-20T09:00:00Z',
+            start=OUTSIDE_WINDOW_START,
+            end=OUTSIDE_WINDOW_END,
             elements=['tas_mean'],
         )
         with patch.dict(os.environ, {'WEATHERDOWNLOAD_METOFFICE_DATAHUB_API_KEY': 'test-key'}, clear=False):
-            with patch('weatherdownload.providers.gb.observations._current_utc', return_value='2026-05-26T00:00:00Z'):
-                with self.assertRaisesRegex(Exception, r'last 48 hours'):
+            with patch('weatherdownload.providers.gb.observations._current_utc', return_value=FROZEN_CURRENT_UTC):
+                with self.assertRaisesRegex(UnsupportedQueryError, r'last 48 hours'):
                     download_observations(query, country='GB', station_metadata=station_metadata)
 
     def test_gb_metoffice_datahub_does_not_accept_daily_or_tenmin_queries(self) -> None:

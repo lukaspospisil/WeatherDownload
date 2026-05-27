@@ -6,6 +6,8 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from weatherdownload import list_providers, list_resolutions, list_supported_countries
+
 
 MODULE_PATH = Path('scripts/dev/generate_europe_coverage_maps.py')
 SPEC = importlib.util.spec_from_file_location('generate_europe_coverage_maps', MODULE_PATH)
@@ -104,33 +106,23 @@ class EuropeCoverageTests(unittest.TestCase):
     def test_daily_distinguishes_national_and_ghcnd_support(self) -> None:
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
 
+        expected = _expected_daily_summary_from_discovery()
+        ghcnd_daily_countries = {
+            country
+            for country, country_info in expected.items()
+            if country_info['status'] == 'ghcnd_daily'
+        }
+
         self.assertEqual(summary['daily']['CZ']['status'], 'national_daily')
         self.assertEqual(summary['daily']['IE']['status'], 'national_daily')
         self.assertEqual(summary['daily']['LU']['status'], 'national_daily')
-        self.assertEqual(summary['daily']['GB']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['GB']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['BG']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['BG']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['EE']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['EE']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['GR']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['GR']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['HR']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['HR']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['IS']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['IS']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['IT']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['IT']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
-        self.assertEqual(summary['daily']['LT']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['LT']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['LV']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['LV']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['RO']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['RO']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['SI']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['SI']['providers'], ['ghcnd'])
+        self.assertTrue({'BG', 'EE', 'GR', 'HR', 'IS', 'LT', 'LV', 'RO', 'SI'}.issubset(ghcnd_daily_countries))
+
+        for country in MODULE.COVERAGE_COUNTRIES:
+            with self.subTest(country=country):
+                self.assertEqual(summary['daily'][country], expected[country])
 
     def test_ghcnd_is_not_used_for_hourly_or_tenmin(self) -> None:
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
@@ -495,6 +487,52 @@ def _projected_segment(
 
 def _same_svg_coordinate(value: float, boundary: float) -> bool:
     return abs(value - boundary) <= 0.01
+
+
+def _expected_daily_summary_from_discovery() -> dict[str, dict[str, object]]:
+    supported_countries = set(list_supported_countries())
+    attempted = MODULE.load_status_config()['daily']['attempted_no_reliable']
+    expected: dict[str, dict[str, object]] = {}
+
+    for country in MODULE.COVERAGE_COUNTRIES:
+        providers = _daily_providers_for_country(country, supported_countries)
+
+        if country in attempted:
+            attempted_info = attempted[country]
+            expected[country] = {
+                'status': 'attempted_no_reliable_daily',
+                'providers': providers,
+                'note': attempted_info.get('note', '') if isinstance(attempted_info, dict) else '',
+                'project_status_override': True,
+            }
+        elif any(provider != 'ghcnd' for provider in providers):
+            expected[country] = {
+                'status': 'national_daily',
+                'providers': [provider for provider in providers if provider != 'ghcnd'],
+            }
+        elif 'ghcnd' in providers:
+            expected[country] = {
+                'status': 'ghcnd_daily',
+                'providers': ['ghcnd'],
+            }
+        else:
+            expected[country] = {
+                'status': 'not_attempted',
+                'providers': [],
+            }
+
+    return expected
+
+
+def _daily_providers_for_country(country: str, supported_countries: set[str]) -> list[str]:
+    if country not in supported_countries:
+        return []
+
+    providers: list[str] = []
+    for provider in list_providers(country=country):
+        if 'daily' in set(list_resolutions(country=country, provider=provider)):
+            providers.append(provider)
+    return sorted(set(providers))
 
 
 if __name__ == '__main__':
