@@ -41,11 +41,11 @@ Units and conversions:
 - `degC` -> canonical degrees Celsius for `tas_mean`, `tas_max`, and `tas_min`
 - `mm` -> canonical millimetres for `precipitation`
 - `m/s` -> canonical metres per second for `wind_speed`
-- `cm` -> canonical millimetres for `snow_depth` via `value * 10.0`
+- `cm` -> canonical millimetres for `snow_depth` via `value * 10.0`; Frost documents coded `surface_snow_thickness` states in centimetres, for example `0` meaning snow depth less than `0.5 cm`
 
 Observed-only notes:
 
-- Frost documents daily `sum(precipitation_amount P1D)` value `-1` as `No precipitation`, with product-series converted value `0.0 mm`; WeatherDownload therefore normalizes this coded state to canonical observed `0.0 mm` instead of leaving the value missing
+- Frost documents daily `sum(precipitation_amount P1D)` value `-1` as `No precipitation`, with product-series converted value `0.0 mm`; this is a coded no-precipitation state, not a documented trace-precipitation code, so WeatherDownload normalizes it to canonical observed `0.0 mm` instead of leaving the value missing
 - Frost coded snow-depth values such as `-3`, `-1`, and `0` are treated as coded source states rather than measured depths; WeatherDownload preserves the coded meaning in `flag` and leaves canonical `value` missing for those rows
 - daily dates come from Frost `referenceTime`; `timeOffset` is preserved in `flag` metadata but does not shift the published observation date
 

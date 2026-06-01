@@ -16,3 +16,5 @@ figures/
 weatherdownload.egg-info/
 dist/
 build/
+
+.tmp_pytest_cache*/

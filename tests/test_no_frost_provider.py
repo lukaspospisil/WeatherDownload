@@ -39,6 +39,25 @@ class _MockTextResponse:
 
 
 class NoFrostProviderTests(unittest.TestCase):
+    def test_parse_frost_observations_preserves_documented_precipitation_and_snow_units_from_fixture(self) -> None:
+        parsed = parse_frost_observations_json(SAMPLE_DAILY_TEXT)
+
+        precipitation_row = parsed[
+            (parsed['station_id'] == 'SN18700')
+            & (parsed['observation_date'] == pd.Timestamp('2024-01-01').date())
+            & (parsed['element_raw'] == 'sum(precipitation_amount P1D)')
+        ].iloc[0]
+        self.assertEqual(precipitation_row['value_raw'], -1.0)
+        self.assertEqual(precipitation_row['unit'], 'mm')
+
+        snow_row = parsed[
+            (parsed['station_id'] == 'SN18700')
+            & (parsed['observation_date'] == pd.Timestamp('2024-01-01').date())
+            & (parsed['element_raw'] == 'surface_snow_thickness')
+        ].iloc[0]
+        self.assertEqual(snow_row['value_raw'], 12.0)
+        self.assertEqual(snow_row['unit'], 'cm')
+
     def test_supported_countries_include_no(self) -> None:
         self.assertIn('NO', list_supported_countries())
         self.assertEqual(list_providers(country='NO'), ['frost', 'ghcnd'])
@@ -191,6 +210,26 @@ class NoFrostProviderTests(unittest.TestCase):
         self.assertIn('-1.0', precipitation_row['flag'])
         self.assertIn('coded_value_description', precipitation_row['flag'])
         self.assertIn('No precipitation', precipitation_row['flag'])
+
+    def test_no_frost_daily_snow_depth_converts_documented_cm_values_to_mm(self) -> None:
+        station_metadata = read_station_metadata(country='NO', source_url=str(SAMPLE_STATIONS_PATH))
+        station_metadata.attrs['observations_source_url'] = str(SAMPLE_DAILY_PATH)
+        query = ObservationQuery(
+            country='NO',
+            provider='frost',
+            resolution='daily',
+            station_ids=['SN18700'],
+            start_date='2024-01-01',
+            end_date='2024-01-01',
+            elements=['snow_depth'],
+        )
+
+        observations = download_observations(query, country='NO', station_metadata=station_metadata)
+
+        snow_row = observations.iloc[0]
+        self.assertEqual(snow_row['element_raw'], 'surface_snow_thickness')
+        self.assertEqual(snow_row['value'], 120.0)
+        self.assertIn('"unit": "cm"', snow_row['flag'])
 
     def test_no_frost_daily_normalizer_rejects_unexpected_units(self) -> None:
         payload = parse_frost_observations_json(SAMPLE_DAILY_TEXT)
