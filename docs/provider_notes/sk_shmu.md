@@ -6,6 +6,8 @@
 
 This note documents the current experimental SHMU OpenDATA slice. The implementation is intentionally narrow and focuses on the recent operational daily JSON feed.
 
+This provider counts as an implemented national `SK / recent / daily` downloader in the project coverage maps, but it remains experimental and recent-only. It should not be read as validated historical daily archive support or as authoritative station-registry coverage.
+
 ## Provider identifiers
 
 - country: `SK`

@@ -57,10 +57,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['RO']['providers'], ['anm'])
         self.assertEqual(summary['daily']['SI']['status'], 'national_daily')
         self.assertEqual(summary['daily']['SI']['providers'], ['arso'])
-        self.assertEqual(summary['daily']['SK']['status'], 'attempted_no_reliable_daily')
-        self.assertTrue(summary['daily']['SK']['project_status_override'])
-        self.assertIn('ghcnd', summary['daily']['SK']['providers'])
-        self.assertIn('recent', summary['daily']['SK']['providers'])
+        self.assertEqual(summary['daily']['SK']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['SK']['providers'], ['recent'])
 
         self.assertEqual(summary['hourly']['DE']['status'], 'national_hourly')
         self.assertIn('historical', summary['hourly']['DE']['providers'])
@@ -427,11 +425,15 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('European data coverage maps: [Data Coverage](docs/data_coverage.md)', readme_text)
         self.assertIn('[Data Coverage](docs/data_coverage.md)', readme_text)
 
-    def test_generated_json_contains_documented_sk_override_note(self) -> None:
+    def test_supported_capabilities_and_coverage_classify_sk_recent_daily_consistently(self) -> None:
+        capabilities_doc = Path('docs/supported_capabilities.md').read_text(encoding='utf-8')
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
 
-        self.assertEqual(summary['daily']['SK']['status'], 'attempted_no_reliable_daily')
-        self.assertIn('no reliable daily downloader', summary['daily']['SK']['note'])
+        self.assertIn('| `SK` | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` |', capabilities_doc)
+        self.assertEqual(summary['daily']['SK']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['SK']['providers'], ['recent'])
+        self.assertNotIn('project_status_override', summary['daily']['SK'])
+        self.assertNotIn('note', summary['daily']['SK'])
 
 
 def _path_segments(path_data: str) -> set[tuple[tuple[float, float], tuple[float, float]]]:

@@ -1,4 +1,5 @@
 .venv/
+.tmp_pytest_cache/
 .tmp/
 tmp/
 .cache/
