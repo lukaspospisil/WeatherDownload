@@ -39,7 +39,7 @@ These wrappers are grouped together because the GHCN country prefix matches the 
 - `RO -> RO`
 - `SI -> SI`
 
-Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separately in [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md). `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code. France now keeps a separate national provider note because `FR` supports both `meteo_france / daily` and `ghcnd / daily`.
+Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separately in [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md). `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code. France now keeps a separate national provider note because `FR` supports both `meteo_france / daily` and `ghcnd / daily`. Norway likewise keeps a separate national provider note because `NO` now supports both `frost / daily` and `ghcnd / daily`.
 
 ## Supported data
 

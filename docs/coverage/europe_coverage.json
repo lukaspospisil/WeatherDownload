@@ -392,9 +392,9 @@
     },
     "NO": {
       "providers": [
-        "ghcnd"
+        "frost"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "PL": {
       "providers": [

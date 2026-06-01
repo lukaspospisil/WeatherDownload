@@ -53,6 +53,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['LT']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['LV']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['LV']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['NO']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
         self.assertEqual(summary['daily']['RO']['status'], 'national_daily')
         self.assertEqual(summary['daily']['RO']['providers'], ['anm'])
         self.assertEqual(summary['daily']['SI']['status'], 'national_daily')
@@ -114,6 +116,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['CZ']['status'], 'national_daily')
         self.assertEqual(summary['daily']['IE']['status'], 'national_daily')
         self.assertEqual(summary['daily']['LU']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['NO']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
         self.assertTrue({'BG', 'EE', 'GR', 'HR', 'IS', 'LT', 'LV'}.issubset(ghcnd_daily_countries))
@@ -434,6 +438,15 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['SK']['providers'], ['recent'])
         self.assertNotIn('project_status_override', summary['daily']['SK'])
         self.assertNotIn('note', summary['daily']['SK'])
+
+    def test_supported_capabilities_and_coverage_classify_no_frost_daily_consistently(self) -> None:
+        capabilities_doc = Path('docs/supported_capabilities.md').read_text(encoding='utf-8')
+        summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
+
+        self.assertIn('| `NO` | `frost` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `snow_depth` |', capabilities_doc)
+        self.assertIn('| `NO` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` |', capabilities_doc)
+        self.assertEqual(summary['daily']['NO']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
 
 
 def _path_segments(path_data: str) -> set[tuple[tuple[float, float], tuple[float, float]]]:
