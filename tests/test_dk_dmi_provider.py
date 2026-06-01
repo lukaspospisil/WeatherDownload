@@ -36,13 +36,14 @@ EXPECTED_DK_SUBDAILY_COLUMNS = [
 ]
 EXPECTED_DK_DAILY_CANONICAL_MAPPING = {
     'tas_mean': 'mean_temp',
-    'tas_max': 'mean_daily_max_temp',
-    'tas_min': 'mean_daily_min_temp',
+    'tas_max': 'max_temp_w_date',
+    'tas_min': 'min_temp',
     'precipitation': 'acc_precip',
     'wind_speed': 'mean_wind_speed',
     'relative_humidity': 'mean_relative_hum',
     'pressure': 'mean_pressure',
     'sunshine_duration': 'bright_sunshine',
+    'solar_radiation': 'mean_radiation',
 }
 EXPECTED_DK_HOURLY_CANONICAL_MAPPING = {
     'tas_mean': 'mean_temp',
@@ -74,12 +75,13 @@ class _MockResponse:
             raise RuntimeError(f'HTTP {self.status_code}')
 
 
-class DenmarkProviderTests(unittest.TestCase):
+class DenmarkDmiProviderTests(unittest.TestCase):
     def test_supported_countries_include_dk(self) -> None:
         self.assertIn('DK', list_supported_countries())
-        self.assertEqual(list_providers(country='DK'), ['ghcnd', 'historical'])
+        self.assertEqual(list_providers(country='DK'), ['dmi', 'ghcnd', 'historical'])
+        self.assertEqual(list_resolutions(country='DK', provider='dmi'), ['daily'])
         self.assertEqual(list_resolutions(country='DK', provider='ghcnd'), ['daily'])
-        self.assertEqual(list_resolutions(country='DK', provider='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(list_resolutions(country='DK', provider='historical'), ['10min', '1hour'])
 
     def test_read_station_metadata_country_dk_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
@@ -91,14 +93,14 @@ class DenmarkProviderTests(unittest.TestCase):
         metadata = read_station_observation_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
         self.assertEqual(list(metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('mean_temp', metadata['element'].tolist())
-        self.assertIn('bright_sunshine', metadata['element'].tolist())
+        self.assertIn('mean_radiation', metadata['element'].tolist())
         self.assertIn('HISTORICAL_HOURLY', metadata['obs_type'].tolist())
         self.assertNotIn('HISTORICAL_10MIN', metadata['obs_type'].tolist())
 
     def test_discovery_country_dk_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='DK', provider='historical', resolution='daily'),
-            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
+            list_supported_elements(country='DK', provider='dmi', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration', 'solar_radiation'],
         )
         self.assertEqual(
             list_supported_elements(country='DK', provider='historical', resolution='1hour'),
@@ -107,6 +109,10 @@ class DenmarkProviderTests(unittest.TestCase):
         self.assertEqual(
             list_supported_elements(country='DK', provider='historical', resolution='10min'),
             ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='DK', provider='dmi', resolution='daily', provider_raw=True),
+            ['mean_temp', 'max_temp_w_date', 'min_temp', 'acc_precip', 'mean_wind_speed', 'mean_relative_hum', 'mean_pressure', 'bright_sunshine', 'mean_radiation'],
         )
         self.assertEqual(
             list_supported_elements(country='DK', provider='historical', resolution='1hour', provider_raw=True),
@@ -118,10 +124,10 @@ class DenmarkProviderTests(unittest.TestCase):
         )
 
     def test_dk_daily_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='DK', provider='historical', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
-        raw_query = ObservationQuery(country='DK', provider='historical', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['mean_temp', 'acc_precip'])
-        self.assertEqual(canonical_query.elements, ['mean_temp', 'acc_precip'])
-        self.assertEqual(raw_query.elements, ['mean_temp', 'acc_precip'])
+        canonical_query = ObservationQuery(country='DK', provider='dmi', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation', 'solar_radiation'])
+        raw_query = ObservationQuery(country='DK', provider='dmi', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['mean_temp', 'acc_precip', 'mean_radiation'])
+        self.assertEqual(canonical_query.elements, ['mean_temp', 'acc_precip', 'mean_radiation'])
+        self.assertEqual(raw_query.elements, ['mean_temp', 'acc_precip', 'mean_radiation'])
 
     def test_dk_hourly_query_accepts_canonical_and_raw_codes(self) -> None:
         canonical_query = ObservationQuery(country='DK', provider='historical', resolution='1hour', station_ids=['06180'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
@@ -142,7 +148,7 @@ class DenmarkProviderTests(unittest.TestCase):
             if url != DMI_CLIMATE_STATION_VALUE_URL:
                 raise AssertionError(f'unexpected url: {url}')
             self.assertEqual(params['stationId'], '06180')
-            self.assertIn(params['parameterId'], {'mean_temp', 'acc_precip'})
+            self.assertIn(params['parameterId'], {'mean_temp', 'acc_precip', 'mean_radiation'})
             self.assertEqual(params['timeResolution'], 'day')
             filtered = {
                 'type': 'FeatureCollection',
@@ -154,11 +160,11 @@ class DenmarkProviderTests(unittest.TestCase):
             }
             return _MockResponse(json.dumps(filtered))
 
-        query = ObservationQuery(country='DK', provider='historical', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
+        query = ObservationQuery(country='DK', provider='dmi', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation', 'solar_radiation'])
         with patch('weatherdownload.providers.dk.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DK', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_DK_DAILY_COLUMNS)
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'solar_radiation', 'tas_mean'])
         self.assertEqual(observations.iloc[0]['flag'], EXPECTED_RAW_FLAG)
         self.assertTrue(observations['gh_id'].isna().all())
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
@@ -235,14 +241,17 @@ class DenmarkProviderTests(unittest.TestCase):
             }
             return _MockResponse(json.dumps(filtered))
 
-        query = ObservationQuery(country='DK', provider='historical', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-01', elements=list(EXPECTED_DK_DAILY_CANONICAL_MAPPING.keys()))
+        query = ObservationQuery(country='DK', provider='dmi', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-01', elements=list(EXPECTED_DK_DAILY_CANONICAL_MAPPING.keys()))
         with patch('weatherdownload.providers.dk.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='DK', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
         self.assertEqual(mapping, EXPECTED_DK_DAILY_CANONICAL_MAPPING)
         lookup = observations.set_index(['element', 'observation_date'])['value']
         self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2024-01-01').date())]), 3.5)
+        self.assertAlmostEqual(float(lookup[('tas_max', pd.Timestamp('2024-01-01').date())]), 5.1)
+        self.assertAlmostEqual(float(lookup[('tas_min', pd.Timestamp('2024-01-01').date())]), 1.2)
         self.assertAlmostEqual(float(lookup[('sunshine_duration', pd.Timestamp('2024-01-01').date())]), 1.3)
+        self.assertAlmostEqual(float(lookup[('solar_radiation', pd.Timestamp('2024-01-01').date())]), 2.4)
 
     def test_dk_hourly_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='DK', source_url=str(SAMPLE_STATIONS_PATH))
@@ -294,4 +303,3 @@ class DenmarkProviderTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

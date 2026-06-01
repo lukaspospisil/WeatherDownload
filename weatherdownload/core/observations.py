@@ -176,13 +176,13 @@ def _download_observations_dk(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.provider == 'historical' and query.resolution == 'daily':
+    if query.provider == 'dmi' and query.resolution == 'daily':
         return download_daily_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_DAILY_COLUMNS]
     if query.provider == 'historical' and query.resolution == '1hour':
         return download_hourly_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_SUBDAILY_COLUMNS]
     if query.provider == 'historical' and query.resolution == '10min':
         return download_tenmin_observations_dk(query, timeout=timeout, station_metadata=station_metadata).loc[:, DK_NORMALIZED_SUBDAILY_COLUMNS]
-    raise NotImplementedError('DMI Denmark support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
+    raise NotImplementedError('DMI Denmark support currently implements dmi/daily, historical/1hour, and historical/10min station observations.')
 
 def _download_observations_se(
     query: ObservationQuery,

@@ -1,6 +1,10 @@
 {
   "daily": {
-    "attempted_no_reliable": {}
+    "attempted_no_reliable": {
+      "SK": {
+        "note": "Experimental SHMU recent daily downloader exists, but support is recent-only, fragile, and lacks reliable authoritative station metadata, so it is not counted as stable national daily coverage."
+      }
+    }
   },
   "hourly": {
     "attempted_no_reliable": {}

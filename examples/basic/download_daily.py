@@ -40,7 +40,7 @@ COUNTRY_DEFAULTS = {
         'elements': ['tas_mean', 'precipitation'],
     },
     'DK': {
-        'provider': 'historical',
+        'provider': 'dmi',
         'station_ids': ['06180'],
         'start_date': '2024-01-01',
         'end_date': '2024-01-03',

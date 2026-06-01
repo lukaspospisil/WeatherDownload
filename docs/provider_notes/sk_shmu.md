@@ -6,7 +6,7 @@
 
 This note documents the current experimental SHMU OpenDATA slice. The implementation is intentionally narrow and focuses on the recent operational daily JSON feed.
 
-This provider counts as an implemented national `SK / recent / daily` downloader in the project coverage maps, but it remains experimental and recent-only. It should not be read as validated historical daily archive support or as authoritative station-registry coverage.
+This provider counts as an implemented `SK / recent / daily` downloader in the capability matrix, but it is not counted as stable national daily coverage on the Europe coverage map. It remains experimental, recent-only, fragile, and lacks reliable authoritative station-registry metadata, so it should not be read as validated historical daily archive support.
 
 ## Provider identifiers
 
@@ -52,6 +52,7 @@ This provider uses the official SHMU values directly and does not apply a specia
 
 - `SK` support is experimental
 - only `recent / daily` is implemented
+- this downloader is listed in [Supported Capabilities](../supported_capabilities.md) because the implementation exists, but it is intentionally downgraded in the Europe coverage maps and JSON to avoid implying stable national daily support
 - station discovery and station observation metadata are probe-derived rather than backed by an authoritative station registry
 - `flag` and `quality` remain null because the implemented feed does not expose clearly documented QC semantics
 - validated historical SHMU climate support is not implemented

@@ -187,8 +187,8 @@ The BE branch uses only the existing Belgium provider through the unified public
 Observed inputs used:
 
 - `tas_mean` via `mean_temp`
-- `tas_max` via `mean_daily_max_temp`
-- `tas_min` via `mean_daily_min_temp`
+- `tas_max` via `max_temp_w_date`
+- `tas_min` via `min_temp`
 - `wind_speed` via `mean_wind_speed`
 - `sunshine_duration` via `bright_sunshine`
 

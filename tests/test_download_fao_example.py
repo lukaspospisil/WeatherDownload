@@ -877,9 +877,11 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_dk_mapping(self) -> None:
         config = download_fao.get_fao_country_config('DK')
         self.assertEqual(config.country, 'DK')
-        self.assertEqual(config.provider, 'historical')
+        self.assertEqual(config.provider, 'dmi')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['MEAN_TEMP'], 'tas_mean')
+        self.assertEqual(config.raw_to_canonical['MAX_TEMP_W_DATE'], 'tas_max')
+        self.assertEqual(config.raw_to_canonical['MIN_TEMP'], 'tas_min')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
 
     def test_get_fao_country_config_returns_hu_mapping(self) -> None:
@@ -994,8 +996,8 @@ class DownloadFaoExampleTests(unittest.TestCase):
         config = download_fao.get_fao_country_config('DK')
         daily_table = pd.DataFrame([
             {'station_id': '06180', 'element': 'tas_mean', 'element_raw': 'mean_temp', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '3.5'},
-            {'station_id': '06180', 'element': 'tas_max', 'element_raw': 'mean_daily_max_temp', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '6.0'},
-            {'station_id': '06180', 'element': 'tas_min', 'element_raw': 'mean_daily_min_temp', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '1.2'},
+            {'station_id': '06180', 'element': 'tas_max', 'element_raw': 'max_temp_w_date', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '6.0'},
+            {'station_id': '06180', 'element': 'tas_min', 'element_raw': 'min_temp', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '1.2'},
             {'station_id': '06180', 'element': 'wind_speed', 'element_raw': 'mean_wind_speed', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '4.1'},
             {'station_id': '06180', 'element': 'sunshine_duration', 'element_raw': 'bright_sunshine', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '1.3'},
         ])

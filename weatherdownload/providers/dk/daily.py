@@ -13,7 +13,7 @@ from .parser import (
     observation_date_from_interval_start,
     parse_dk_feature_collection_json,
 )
-from .registry import DMI_CLIMATE_STATION_VALUE_URL
+from .registry import DMI_CLIMATE_STATION_VALUE_URL, get_dataset_spec
 from ...elements import canonicalize_element_series
 from ...errors import EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from ...queries import ObservationQuery
@@ -27,8 +27,8 @@ def download_daily_observations_dk(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.provider != 'historical' or query.resolution != 'daily':
-        raise UnsupportedQueryError('The DMI Denmark daily downloader only supports historical/daily.')
+    if query.provider != 'dmi' or query.resolution != 'daily':
+        raise UnsupportedQueryError('The DMI Denmark daily downloader only supports dmi/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The DMI Denmark daily downloader requires at least one element.')
 
@@ -78,6 +78,9 @@ def normalize_daily_observations_dk(
     if station_metadata is not None and not station_metadata.empty:
         metadata_lookup = station_metadata.loc[:, ['station_id', 'gh_id']].drop_duplicates(subset=['station_id'])
 
+    spec = get_dataset_spec(query.provider, query.resolution)
+    supported_raw_codes = set(spec.supported_elements)
+
     rows: list[dict[str, object]] = []
     for feature in features:
         if not isinstance(feature, dict):
@@ -89,6 +92,8 @@ def normalize_daily_observations_dk(
         if station_id not in query.station_ids:
             continue
         raw_code = str(properties.get('parameterId', '')).strip()
+        if raw_code not in supported_raw_codes:
+            raise ValueError(f'Unsupported DMI Denmark daily element: {raw_code!r}')
         if raw_code not in (query.elements or []):
             continue
         observation_date = observation_date_from_interval_start(properties.get('from'))

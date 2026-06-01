@@ -286,7 +286,7 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='DE', station_metadata=station_metadata)
     if country == 'DK':
         station_metadata = _read_station_metadata_fixture('DK')
-        query = ObservationQuery(country='DK', provider='historical', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
+        query = ObservationQuery(country='DK', provider='dmi', resolution='daily', station_ids=['06180'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
         sample_payload = json.loads(SAMPLE_DK_DAILY_TEXT)
 
         def fake_get(url, params=None, timeout=60):
@@ -733,7 +733,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AT': 'historical', 'BE': 'historical', 'BG': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'historical', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'US': 'ghcnd'}
+    expected_providers = {'AT': 'historical', 'BE': 'historical', 'BG': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'dmi', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'US': 'ghcnd'}
 
     for country in ['AT', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'US']:
         observations = _download_daily_fixture(country)

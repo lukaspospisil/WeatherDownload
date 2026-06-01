@@ -212,8 +212,8 @@ DK_ASSUMPTIONS = {
 }
 DK_PROVIDER_ELEMENT_MAPPING = {
     'tas_mean': {'raw_codes': ['mean_temp'], 'selection_rule': None, 'status': 'observed'},
-    'tas_max': {'raw_codes': ['mean_daily_max_temp'], 'selection_rule': None, 'status': 'observed'},
-    'tas_min': {'raw_codes': ['mean_daily_min_temp'], 'selection_rule': None, 'status': 'observed'},
+    'tas_max': {'raw_codes': ['max_temp_w_date'], 'selection_rule': None, 'status': 'observed'},
+    'tas_min': {'raw_codes': ['min_temp'], 'selection_rule': None, 'status': 'observed'},
     'wind_speed': {'raw_codes': ['mean_wind_speed'], 'selection_rule': None, 'status': 'observed'},
     'vapour_pressure': {
         'raw_codes': [],
@@ -808,6 +808,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
     daily_provider_name = 'historical'
     if normalized_country == 'CZ':
         daily_provider_name = 'historical_csv'
+    elif normalized_country == 'DK':
+        daily_provider_name = 'dmi'
     elif normalized_country == 'ES':
         daily_provider_name = 'aemet'
     elif normalized_country == 'LU':
@@ -870,7 +872,7 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
     if normalized_country == 'CH':
         return FaoCountryConfig('CH', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, CH_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(CH_PROVIDER_ELEMENT_MAPPING), dict(CH_ASSUMPTIONS), 'MeteoSwiss Switzerland observed daily input bundle prepared for later FAO workflow packaging', 'MeteoSwiss A1 automatic weather stations historical daily observations')
     if normalized_country == 'DK':
-        return FaoCountryConfig('DK', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
+        return FaoCountryConfig('DK', 'dmi', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, DK_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(DK_PROVIDER_ELEMENT_MAPPING), dict(DK_ASSUMPTIONS), 'DMI Denmark observed daily input bundle prepared for later FAO workflow packaging', 'DMI Climate Data station and stationValue daily station observations for Denmark')
     if normalized_country == 'HU':
         return FaoCountryConfig('HU', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, HU_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(HU_PROVIDER_ELEMENT_MAPPING), dict(HU_ASSUMPTIONS), 'HungaroMet Hungary observed daily input bundle prepared for later FAO workflow packaging', 'HungaroMet open data daily station observations from odp.met.hu')
     if normalized_country == 'ES':

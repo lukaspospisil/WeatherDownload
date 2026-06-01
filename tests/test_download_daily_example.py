@@ -65,7 +65,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                 'value': 3.5,
                 'flag': '{"qcStatus":"manual","validity":true}',
                 'quality': None,
-                'provider': 'historical',
+                'provider': 'dmi',
                 'resolution': 'daily',
             }
         ])
@@ -76,7 +76,7 @@ class DownloadDailyExampleTests(unittest.TestCase):
                     download_daily.main()
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'DK')
-        self.assertEqual(query.provider, 'historical')
+        self.assertEqual(query.provider, 'dmi')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.station_ids, ['06180'])
         self.assertEqual(query.elements, ['mean_temp', 'acc_precip', 'bright_sunshine'])

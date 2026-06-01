@@ -13,13 +13,14 @@
         "validTo": null,
         "parameterId": [
           "mean_temp",
-          "mean_daily_max_temp",
-          "mean_daily_min_temp",
+          "max_temp_w_date",
+          "min_temp",
           "acc_precip",
           "mean_wind_speed",
           "mean_relative_hum",
           "mean_pressure",
-          "bright_sunshine"
+          "bright_sunshine",
+          "mean_radiation"
         ]
       }
     },

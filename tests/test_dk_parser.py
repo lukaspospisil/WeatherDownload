@@ -1,6 +1,7 @@
 import json
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 
@@ -41,11 +42,12 @@ class DenmarkParserTests(unittest.TestCase):
         self.assertAlmostEqual(float(first['latitude']), 55.4331)
 
     def test_normalize_dk_observation_metadata_uses_supported_daily_parameter_ids(self) -> None:
-        spec = get_dataset_spec('historical', 'daily')
+        spec = get_dataset_spec('dmi', 'daily')
         metadata = normalize_dk_observation_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT), spec, DK_DAILY_PARAMETER_METADATA)
         self.assertEqual(list(metadata.columns), ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
         self.assertIn('mean_temp', metadata['element'].tolist())
         self.assertIn('bright_sunshine', metadata['element'].tolist())
+        self.assertIn('mean_radiation', metadata['element'].tolist())
         self.assertNotIn('04250', metadata['station_id'].tolist())
         self.assertTrue(metadata['schedule'].eq('P1D DMI climateData stationValue').all())
 
@@ -80,21 +82,56 @@ class DenmarkParserTests(unittest.TestCase):
         station_metadata = normalize_dk_station_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT))
         query = ObservationQuery(
             country='DK',
-            provider='historical',
+            provider='dmi',
             resolution='daily',
             station_ids=['06180'],
             start_date='2024-01-01',
             end_date='2024-01-02',
-            elements=['tas_mean', 'precipitation'],
+            elements=['tas_mean', 'precipitation', 'solar_radiation'],
         )
         observations = normalize_daily_observations_dk(parse_dk_feature_collection_json(SAMPLE_DAILY_TEXT), query, station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution'])
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean'])
-        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['acc_precip', 'mean_temp'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'solar_radiation', 'tas_mean'])
+        self.assertEqual(sorted(observations['element_raw'].unique().tolist()), ['acc_precip', 'mean_radiation', 'mean_temp'])
         lookup = observations.set_index(['element', 'observation_date'])['value']
         self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2024-01-01').date())]), 3.5)
         self.assertAlmostEqual(float(lookup[('precipitation', pd.Timestamp('2024-01-02').date())]), 0.2)
+        self.assertAlmostEqual(float(lookup[('solar_radiation', pd.Timestamp('2024-01-01').date())]), 2.4)
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
+
+    def test_normalize_daily_observations_dk_rejects_unsupported_elements(self) -> None:
+        station_metadata = normalize_dk_station_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT))
+        payload = parse_dk_feature_collection_json(SAMPLE_DAILY_TEXT)
+        payload['features'][0]['properties']['parameterId'] = 'mean_vapour_pressure'
+        query = SimpleNamespace(
+            country='DK',
+            provider='dmi',
+            resolution='daily',
+            station_ids=['06180'],
+            start_date=pd.Timestamp('2024-01-01').date(),
+            end_date=pd.Timestamp('2024-01-02').date(),
+            elements=['mean_vapour_pressure'],
+        )
+        with self.assertRaisesRegex(ValueError, r'Unsupported DMI Denmark daily element'):
+            normalize_daily_observations_dk(payload, query, station_metadata=station_metadata)
+
+    def test_normalize_daily_observations_dk_preserves_missing_values(self) -> None:
+        station_metadata = normalize_dk_station_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT))
+        payload = parse_dk_feature_collection_json(SAMPLE_DAILY_TEXT)
+        payload['features'][0]['properties']['value'] = None
+        query = ObservationQuery(
+            country='DK',
+            provider='dmi',
+            resolution='daily',
+            station_ids=['06180'],
+            start_date='2024-01-01',
+            end_date='2024-01-02',
+            elements=['tas_mean'],
+        )
+        observations = normalize_daily_observations_dk(payload, query, station_metadata=station_metadata)
+        self.assertEqual(len(observations), 2)
+        missing_row = observations[observations['observation_date'] == pd.Timestamp('2024-01-01').date()].iloc[0]
+        self.assertTrue(pd.isna(missing_row['value']))
 
     def test_normalize_hourly_observations_dk_maps_canonical_elements(self) -> None:
         station_metadata = normalize_dk_station_metadata(parse_dk_feature_collection_json(SAMPLE_STATIONS_TEXT))

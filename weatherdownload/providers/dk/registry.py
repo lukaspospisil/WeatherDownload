@@ -32,13 +32,14 @@ DMI_DENMARK_COUNTRY_CODE = 'DNK'
 
 _DK_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('mean_temp',),
-    'tas_max': ('mean_daily_max_temp',),
-    'tas_min': ('mean_daily_min_temp',),
+    'tas_max': ('max_temp_w_date',),
+    'tas_min': ('min_temp',),
     'precipitation': ('acc_precip',),
     'wind_speed': ('mean_wind_speed',),
     'relative_humidity': ('mean_relative_hum',),
     'pressure': ('mean_pressure',),
     'sunshine_duration': ('bright_sunshine',),
+    'solar_radiation': ('mean_radiation',),
 }
 
 _DK_HOURLY_CANONICAL_ELEMENTS = {
@@ -65,13 +66,13 @@ DK_DAILY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
         'name': 'Daily mean temperature',
         'description': 'Official DMI Climate Data daily mean temperature in degrees Celsius from the stationValue collection.',
     },
-    'mean_daily_max_temp': {
-        'name': 'Daily mean of daily maximum temperature',
-        'description': 'Official DMI Climate Data daily mean of daily maximum temperature in degrees Celsius from the stationValue collection.',
+    'max_temp_w_date': {
+        'name': 'Daily maximum temperature',
+        'description': 'Official DMI Climate Data daily maximum temperature in degrees Celsius from the stationValue collection.',
     },
-    'mean_daily_min_temp': {
-        'name': 'Daily mean of daily minimum temperature',
-        'description': 'Official DMI Climate Data daily mean of daily minimum temperature in degrees Celsius from the stationValue collection.',
+    'min_temp': {
+        'name': 'Daily minimum temperature',
+        'description': 'Official DMI Climate Data daily minimum temperature in degrees Celsius from the stationValue collection.',
     },
     'acc_precip': {
         'name': 'Daily accumulated precipitation',
@@ -92,6 +93,10 @@ DK_DAILY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     'bright_sunshine': {
         'name': 'Daily bright sunshine duration',
         'description': 'Official DMI Climate Data daily bright sunshine duration in hours from the stationValue collection.',
+    },
+    'mean_radiation': {
+        'name': 'Daily mean radiation',
+        'description': 'Official DMI Climate Data daily mean radiation in MJ m^-2 from the stationValue collection.',
     },
 }
 
@@ -151,20 +156,21 @@ DK_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
 
 _DK_DATASET_SPECS = [
     DenmarkDatasetSpec(
-        provider='historical',
+        provider='dmi',
         resolution='daily',
-        label='DMI Climate Data historical daily station observations',
+        label='DMI Climate Data daily stationValue observations',
         metadata_url=f'{DMI_CLIMATE_STATION_URL}?limit=300000',
         data_url=DMI_CLIMATE_STATION_VALUE_URL,
         supported_elements=(
             'mean_temp',
-            'mean_daily_max_temp',
-            'mean_daily_min_temp',
+            'max_temp_w_date',
+            'min_temp',
             'acc_precip',
             'mean_wind_speed',
             'mean_relative_hum',
             'mean_pressure',
             'bright_sunshine',
+            'mean_radiation',
         ),
         canonical_elements=_DK_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',

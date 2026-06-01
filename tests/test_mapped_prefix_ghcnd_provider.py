@@ -61,7 +61,7 @@ COUNTRY_SPECS = {
     },
     'DK': {
         'ghcn_prefix': 'DA',
-        'national_provider': 'historical',
+        'national_provider': 'dmi',
         'station_core': 'DA000000001',
         'station_prcp_only': 'DA000000002',
         'station_unsupported': 'DA000000003',
@@ -108,8 +108,11 @@ class MappedPrefixGhcndProviderTests(unittest.TestCase):
     def test_discovery_for_mapped_prefix_countries_returns_ghcnd_daily_without_evap(self) -> None:
         for country, spec in COUNTRY_SPECS.items():
             with self.subTest(country=country):
-                self.assertEqual(list_providers(country=country), ['ghcnd', spec['national_provider']])
-                self.assertEqual(list_providers(country=country), ['ghcnd', spec['national_provider']])
+                expected_providers = ['ghcnd', spec['national_provider']]
+                if country == 'DK':
+                    expected_providers = ['dmi', 'ghcnd', 'historical']
+                self.assertEqual(list_providers(country=country), expected_providers)
+                self.assertEqual(list_providers(country=country), expected_providers)
                 self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(list_resolutions(country=country, provider='ghcnd'), ['daily'])
                 self.assertEqual(
