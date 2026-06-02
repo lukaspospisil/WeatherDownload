@@ -4,61 +4,69 @@
   <img src="../images/logo.svg" alt="WeatherDownload logo" width="180">
 </p>
 
-This note documents the current conservative KNMI slice used for the Netherlands. The public API stays standard while KNMI-specific authentication and dataset-validation boundaries stay explicit.
+This note documents the current conservative Netherlands daily slice backed by the official KNMI public `daggegevens` interface.
 
 ## Provider identifiers
 
 - country: `NL`
-- provider: `historical`
-- `provider`: `historical`
-- resolution(s): `daily`, `1hour`, `10min`
+- provider: `knmi`
+- resolution: `daily`
 
-## Source
+## Official source
 
-- official source: KNMI Open Data API
-- daily dataset: `daily-in-situ-meteorological-observations-validated`
-- hourly dataset: `hourly-in-situ-meteorological-observations-validated`
-- 10-minute dataset: `10-minute-in-situ-meteorological-observations`
-- version: `1.0`
+- public endpoint: `https://www.daggegevens.knmi.nl/klimatologie/daggegevens`
+- source owner: Royal Netherlands Meteorological Institute (KNMI)
+- interface: public POST-backed daily CSV/text response with inline station metadata in the header
+- license: KNMI Data Platform open data is published under `CC BY 4.0`; the KNMI site also states website content is generally reusable under `CC0` unless noted otherwise
 
-## Station identifiers
+## Station scope
 
-- `station_id` is the official KNMI station identifier from the source-backed station metadata CSV
+- automatic weather stations listed in the official KNMI daily response header
+- station identifiers are official KNMI numeric `STN` codes such as `260`
 - `gh_id` remains null on this path
-- station metadata are retrieved through the KNMI Open Data API
+- WeatherDownload station discovery reads the station table embedded in the official daily response header
 
-## Supported data
+## Supported observed elements
 
-Current source-backed mapping includes:
+- `tas_mean` via `TG`
+- `tas_max` via `TX`
+- `tas_min` via `TN`
+- `precipitation` via `RH`
+- `wind_speed` via `FG`
+- `relative_humidity` via `UG`
+- `pressure` via `PG`
+- `sunshine_duration` via `SQ`
+- `solar_radiation` via `Q`
 
-- `daily`: `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `sunshine_duration`, `wind_speed`, `pressure`, `relative_humidity`
-- `1hour`: `tas_mean`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
-- `10min`: `tas_mean`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`
+## Unsupported or postponed elements
 
-For the authoritative current matrix, see [Supported Capabilities](../supported_capabilities.md).
+- `vapour_pressure` is not exposed even though KNMI documents daily vapour pressure products, because the published daily value is described as derived from hourly data rather than treated here as a direct observed provider element
+- `EV24` is not exposed because it does not match a supported observed element in WeatherDownload
+- no ambiguous calculated variables are mapped
 
-## Units and conversions
+## Unit conversions
 
-This provider uses the official KNMI values directly and does not apply a special unit-conversion layer beyond the shared WeatherDownload normalization.
+- `TG`, `TX`, `TN`: source `0.1 degC` -> canonical `degC` via `value * 0.1`
+- `RH`: source `0.1 mm` -> canonical `mm` via `value * 0.1`
+- `FG`: source `0.1 m/s` -> canonical `m/s` via `value * 0.1`
+- `PG`: source `0.1 hPa` -> canonical `hPa` via `value * 0.1`
+- `SQ`: source `0.1 hour` -> canonical `hour` via `value * 0.1`
+- `Q`: source `J/cm^2` -> canonical `MJ m^-2` via `value * 0.01`
 
-## Limitations and caveats
+## Missing values and trace handling
 
-- KNMI access requires `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY`
-- `daily` and `1hour` use validated KNMI datasets
-- `10min` uses the official near-real-time KNMI dataset and is not documented as validated in the same way
-- daily timestamps are converted from the published end timestamp back to `observation_date`
-- hourly and 10-minute timestamps preserve the published UTC timestamp
-- `quality` and `flag` remain null unless future source-backed semantics are added
-- KNMI EDR paths remain out of scope
+- blank KNMI fields stay missing
+- `RH=-1` is documented by KNMI for precipitation below `0.05 mm`; WeatherDownload normalizes this trace precipitation code to observed `0.0 mm`
+- `SQ=-1` is documented by KNMI for sunshine duration below `0.05 hour`; WeatherDownload normalizes this below-threshold code to observed `0.0 hour`
 
-## Examples
+## FAO status
 
-```powershell
-weatherdownload stations elements --country NL --provider historical --resolution daily --include-mapping
-```
+- not provider-level FAO-ready because observed `vapour_pressure` is unavailable on this path
+- the shared workflow may still fill `vapour_pressure` only in explicit `--fill-missing allow-derived` mode from observed `tas_mean` plus observed `relative_humidity`
+- that fallback remains workflow-level `derived_opt_in`, not provider data
 
-## Related documentation
+## Notes
 
-- [Provider Model](../providers.md)
-- [Supported Capabilities](../supported_capabilities.md)
-- [Normalized Output Schemas](../output_schema.md)
+- the official response header includes station metadata and variable descriptions before the `STN,YYYYMMDD,...` data header
+- no KNMI API key is required for this provider slice
+- no provider-side derivation is performed beyond explicit source-unit normalization and documented trace handling

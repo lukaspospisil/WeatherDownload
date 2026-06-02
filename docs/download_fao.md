@@ -77,8 +77,6 @@ The current shared workflow uses the fixed `aemet` daily provider path selected 
 
 `--compute-fao-intermediates` defaults to off. When you enable it, the workflow keeps the standard six-field observed/prepared bundle unchanged and appends FAO-56 derived columns to each exported station series in MAT and Parquet outputs.
 
-For `NL`, set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first.
-
 For `ES`, set `WEATHERDOWNLOAD_AEMET_API_KEY` or `AEMET_API_KEY` first.
 
 For `CH`, `HU`, and `PL`, no extra API key is required for the current provider slices.
@@ -335,12 +333,13 @@ Observed inputs used:
 - `tas_min` via `TN`
 - `wind_speed` via `FG`
 - `sunshine_duration` via `SQ`
+- `relative_humidity` via `UG`
 
 Unavailable in the current shared path:
 
 - `vapour_pressure` stays null
 
-The NL branch uses only the existing KNMI provider through the unified public interface.
+The NL branch uses only the existing `NL / knmi / daily` provider through the unified public interface. It uses the public KNMI `daggegevens` daily CSV response, applies only documented source-unit normalization and trace handling, and leaves provider-level `vapour_pressure` unavailable. Shared `--fill-missing allow-derived` remains the only way to opt into workflow-level derived `vapour_pressure`.
 
 ### SE
 

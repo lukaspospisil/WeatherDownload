@@ -67,8 +67,8 @@ class EuropeCoverageTests(unittest.TestCase):
 
         self.assertEqual(summary['hourly']['DE']['status'], 'national_hourly')
         self.assertIn('historical', summary['hourly']['DE']['providers'])
-        self.assertEqual(summary['10min']['NL']['status'], 'national_10min')
-        self.assertIn('historical', summary['10min']['NL']['providers'])
+        self.assertEqual(summary['10min']['NL']['status'], 'not_attempted')
+        self.assertEqual(summary['10min']['NL']['providers'], [])
 
     def test_generated_assets_exist_and_match_generator(self) -> None:
         json_path = Path('docs/coverage/europe_coverage.json')

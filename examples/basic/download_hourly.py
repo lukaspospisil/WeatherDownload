@@ -53,13 +53,6 @@ COUNTRY_DEFAULTS = {
         'end': '2026-01-01T01:00:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
-    'NL': {
-        'provider': 'historical',
-        'station_ids': ['0-20000-0-06260'],
-        'start': '2024-01-01T01:00:00Z',
-        'end': '2024-01-01T02:00:00Z',
-        'elements': ['tas_mean', 'pressure'],
-    },
     'PL': {
         'provider': 'historical',
         'station_ids': ['00375'],

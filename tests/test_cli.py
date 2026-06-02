@@ -175,7 +175,7 @@ class ObservationCliTests(unittest.TestCase):
     def _sample_nl_daily_table(self) -> pd.DataFrame:
         return pd.DataFrame([
             {
-                'station_id': '0-20000-0-06260',
+                'station_id': '260',
                 'gh_id': None,
                 'element': 'tas_mean',
                 'element_raw': 'TG',
@@ -184,40 +184,8 @@ class ObservationCliTests(unittest.TestCase):
                 'value': 3.4,
                 'flag': None,
                 'quality': None,
-                'provider': 'historical',
+                'provider': 'knmi',
                 'resolution': 'daily',
-            }
-        ])
-
-    def _sample_nl_hourly_table(self) -> pd.DataFrame:
-        return pd.DataFrame([
-            {
-                'station_id': '0-20000-0-06260',
-                'gh_id': None,
-                'element': 'tas_mean',
-                'element_raw': 'T',
-                'timestamp': '2024-01-01T01:00:00Z',
-                'value': 3.1,
-                'flag': None,
-                'quality': None,
-                'provider': 'historical',
-                'resolution': '1hour',
-            }
-        ])
-
-    def _sample_nl_tenmin_table(self) -> pd.DataFrame:
-        return pd.DataFrame([
-            {
-                'station_id': '0-20000-0-06260',
-                'gh_id': None,
-                'element': 'tas_mean',
-                'element_raw': 'ta',
-                'timestamp': '2024-01-01T09:10:00Z',
-                'value': 3.1,
-                'flag': None,
-                'quality': None,
-                'provider': 'historical',
-                'resolution': '10min',
             }
         ])
 
@@ -405,23 +373,6 @@ class ObservationCliTests(unittest.TestCase):
         self.assertIn('00044', buffer.getvalue())
         self.assertIn('tas_mean', buffer.getvalue())
 
-    def test_tenmin_cli_explicit_country_nl_uses_nl_query_shape(self) -> None:
-        buffer = io.StringIO()
-        with patch('weatherdownload.cli.download_observations', return_value=self._sample_nl_tenmin_table()) as download_mock:
-            with redirect_stdout(buffer):
-                exit_code = main([
-                    'observations', '10min', '--country', 'NL', '--station-id', '0-20000-0-06260', '--element', 'tas_mean', '--start', '2024-01-01T09:10:00Z', '--end', '2024-01-01T09:20:00Z'
-                ])
-        self.assertEqual(exit_code, 0)
-        query = download_mock.call_args.args[0]
-        self.assertEqual(query.country, 'NL')
-        self.assertEqual(query.provider, 'historical')
-        self.assertEqual(query.resolution, '10min')
-        self.assertEqual(query.elements, ['ta'])
-        self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
-        self.assertIn('0-20000-0-06260', buffer.getvalue())
-        self.assertIn('tas_mean', buffer.getvalue())
-
     def test_tenmin_cli_csv_export_defaults_to_wide_layout(self) -> None:
         original_cwd = Path.cwd()
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -479,23 +430,6 @@ class ObservationCliTests(unittest.TestCase):
         self.assertEqual(query.elements, ['TT_TU'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'DE')
         self.assertIn('00044', buffer.getvalue())
-        self.assertIn('tas_mean', buffer.getvalue())
-
-    def test_hourly_cli_explicit_country_nl_uses_nl_query_shape(self) -> None:
-        buffer = io.StringIO()
-        with patch('weatherdownload.cli.download_observations', return_value=self._sample_nl_hourly_table()) as download_mock:
-            with redirect_stdout(buffer):
-                exit_code = main([
-                    'observations', 'hourly', '--country', 'NL', '--station-id', '0-20000-0-06260', '--element', 'tas_mean', '--start', '2024-01-01T01:00:00Z', '--end', '2024-01-01T02:00:00Z'
-                ])
-        self.assertEqual(exit_code, 0)
-        query = download_mock.call_args.args[0]
-        self.assertEqual(query.country, 'NL')
-        self.assertEqual(query.provider, 'historical')
-        self.assertEqual(query.resolution, '1hour')
-        self.assertEqual(query.elements, ['T'])
-        self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
-        self.assertIn('0-20000-0-06260', buffer.getvalue())
         self.assertIn('tas_mean', buffer.getvalue())
 
     def test_hourly_cli_explicit_country_fi_fmi_can_use_mocked_wfs_payload(self) -> None:
@@ -628,16 +562,16 @@ class ObservationCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_nl_daily_table()) as download_mock:
             with redirect_stdout(buffer):
                 exit_code = main([
-                    'observations', 'daily', '--country', 'NL', '--station-id', '0-20000-0-06260', '--element', 'tas_mean', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
+                    'observations', 'daily', '--country', 'NL', '--station-id', '260', '--element', 'tas_mean', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
                 ])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]
         self.assertEqual(query.country, 'NL')
-        self.assertEqual(query.provider, 'historical')
+        self.assertEqual(query.provider, 'knmi')
         self.assertEqual(query.resolution, 'daily')
         self.assertEqual(query.elements, ['TG'])
         self.assertEqual(download_mock.call_args.kwargs['country'], 'NL')
-        self.assertIn('0-20000-0-06260', buffer.getvalue())
+        self.assertIn('260', buffer.getvalue())
         self.assertIn('tas_mean', buffer.getvalue())
 
     def test_daily_cli_explicit_country_us_uses_ghcnd_query_shape(self) -> None:

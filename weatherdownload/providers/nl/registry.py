@@ -7,161 +7,94 @@ from dataclasses import dataclass
 class KnmiDatasetSpec:
     provider: str
     resolution: str
-    dataset_name: str
-    dataset_version: str
     label: str
+    data_url: str
     supported_elements: tuple[str, ...]
     time_semantics: str
     implemented: bool = False
     canonical_elements: dict[str, tuple[str, ...]] | None = None
 
 
-KNMI_STATION_DATASET_NAME = 'waarneemstations_csv'
-KNMI_STATION_DATASET_VERSION = '1.0'
-KNMI_OPEN_DATA_BASE_URL = 'https://api.dataplatform.knmi.nl/open-data/v1'
-KNMI_DAILY_FILENAME_PREFIX = 'daily-observations-'
-KNMI_HOURLY_FILENAME_PREFIX = 'hourly-observations-'
-KNMI_TENMIN_FILENAME_PREFIX = 'KMDS__OPER_P___10M_OBS_L2_'
+KNMI_DAILY_DATA_URL = 'https://www.daggegevens.knmi.nl/klimatologie/daggegevens'
 
-_KNMI_DAILY_CANONICAL_ELEMENTS = {
+KNMI_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('TG',),
     'tas_max': ('TX',),
     'tas_min': ('TN',),
     'precipitation': ('RH',),
-    'sunshine_duration': ('SQ',),
     'wind_speed': ('FG',),
-    'pressure': ('PG',),
     'relative_humidity': ('UG',),
-}
-
-_KNMI_HOURLY_CANONICAL_ELEMENTS = {
-    'tas_mean': ('T',),
-    'precipitation': ('RH',),
-    'wind_speed': ('FH',),
-    'relative_humidity': ('U',),
-    'pressure': ('P',),
+    'pressure': ('PG',),
     'sunshine_duration': ('SQ',),
-}
-
-_KNMI_TENMIN_CANONICAL_ELEMENTS = {
-    'tas_mean': ('ta',),
-    'wind_speed': ('ff',),
-    'relative_humidity': ('rh',),
-    'pressure': ('pp',),
-    'sunshine_duration': ('ss',),
+    'solar_radiation': ('Q',),
 }
 
 KNMI_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     'TG': {
         'name': 'Daily mean air temperature',
-        'description': 'Daily mean air temperature at 1.50 meters, in degrees Celsius.',
+        'description': 'Official KNMI daily mean air temperature in 0.1 degrees Celsius, converted to degrees Celsius.',
+        'unit': 'degC',
+        'source_unit': '0.1 degC',
     },
     'TX': {
         'name': 'Daily maximum air temperature',
-        'description': 'Daily maximum air temperature at 1.50 meters, in degrees Celsius.',
+        'description': 'Official KNMI daily maximum air temperature in 0.1 degrees Celsius, converted to degrees Celsius.',
+        'unit': 'degC',
+        'source_unit': '0.1 degC',
     },
     'TN': {
         'name': 'Daily minimum air temperature',
-        'description': 'Daily minimum air temperature at 1.50 meters, in degrees Celsius.',
+        'description': 'Official KNMI daily minimum air temperature in 0.1 degrees Celsius, converted to degrees Celsius.',
+        'unit': 'degC',
+        'source_unit': '0.1 degC',
     },
-    'RH_DAILY': {
+    'RH': {
         'name': 'Daily precipitation amount',
-        'description': 'Daily precipitation amount, in millimeters.',
-    },
-    'SQ_DAILY': {
-        'name': 'Daily sunshine duration',
-        'description': 'Daily sunshine duration in hours, calculated from global solar radiation.',
+        'description': 'Official KNMI daily precipitation amount in 0.1 millimetres; coded -1 is normalized to observed 0.0 mm for trace precipitation below 0.05 mm.',
+        'unit': 'mm',
+        'source_unit': '0.1 mm',
     },
     'FG': {
         'name': 'Daily mean wind speed',
-        'description': 'Daily mean wind speed, representative for 10 meters, in meters per second.',
-    },
-    'PG': {
-        'name': 'Daily mean sea level pressure',
-        'description': 'Daily mean sea level pressure, in hectopascal.',
+        'description': 'Official KNMI daily mean wind speed in 0.1 m/s, converted to m/s.',
+        'unit': 'm/s',
+        'source_unit': '0.1 m/s',
     },
     'UG': {
         'name': 'Daily mean relative humidity',
-        'description': 'Daily mean relative atmospheric humidity, in percent.',
+        'description': 'Official KNMI daily mean relative humidity in percent.',
+        'unit': '%',
+        'source_unit': '%',
     },
-    'T': {
-        'name': 'Hourly air temperature',
-        'description': 'Hourly air temperature at 1.50 meters at the end of the hourly interval (past 1 minute), in degrees Celsius.',
+    'PG': {
+        'name': 'Daily mean sea level pressure',
+        'description': 'Official KNMI daily mean sea level pressure in 0.1 hPa, converted to hPa.',
+        'unit': 'hPa',
+        'source_unit': '0.1 hPa',
     },
-    'FH': {
-        'name': 'Hourly mean wind speed',
-        'description': 'Hourly mean wind speed, representative for 10 meters, in meters per second.',
+    'SQ': {
+        'name': 'Daily sunshine duration',
+        'description': 'Official KNMI daily sunshine duration in 0.1 hour; coded -1 is normalized to observed 0.0 hour for sunshine below 0.05 hour.',
+        'unit': 'hour',
+        'source_unit': '0.1 hour',
     },
-    'U': {
-        'name': 'Hourly relative humidity',
-        'description': 'Hourly relative humidity at 1.50 meters at the end of the hourly interval (past 1 minute), in percent.',
-    },
-    'P': {
-        'name': 'Hourly sea level pressure',
-        'description': 'Hourly sea level pressure at the end of the hourly interval (past 1 minute), in hectopascal.',
-    },
-    'SQ_HOUR': {
-        'name': 'Hourly sunshine duration',
-        'description': 'Hourly sunshine duration during the past hourly interval, in hours.',
-    },
-    'RH_HOUR': {
-        'name': 'Hourly precipitation amount',
-        'description': 'Hourly precipitation amount during the past hourly interval, in millimeters.',
-    },
-    'ta_10MIN': {
-        'name': '10-minute air temperature',
-        'description': 'Past minute mean air temperature at 1.50 meters, in degrees Celsius.',
-    },
-    'ff_10MIN': {
-        'name': '10-minute mean wind speed',
-        'description': 'Past 10 minute mean wind speed, representative for 10 meters, in meters per second.',
-    },
-    'rh_10MIN': {
-        'name': '10-minute relative humidity',
-        'description': 'Past minute mean relative humidity at 1.50 meters, in percent.',
-    },
-    'pp_10MIN': {
-        'name': '10-minute sea level pressure',
-        'description': 'Past minute mean air pressure at mean sea level, in hectopascal.',
-    },
-    'ss_10MIN': {
-        'name': '10-minute sunshine duration',
-        'description': 'Past 10 minute sunshine duration, in minutes.',
+    'Q': {
+        'name': 'Daily global solar radiation',
+        'description': 'Official KNMI daily global solar radiation in J/cm^2, converted to canonical MJ m^-2.',
+        'unit': 'MJ m^-2',
+        'source_unit': 'J/cm^2',
     },
 }
 
 _KNMI_DATASET_SPECS = [
     KnmiDatasetSpec(
-        provider='historical',
+        provider='knmi',
         resolution='daily',
-        dataset_name='daily-in-situ-meteorological-observations-validated',
-        dataset_version='1.0',
-        label='KNMI validated daily in-situ meteorological observations',
-        supported_elements=('TG', 'TX', 'TN', 'RH', 'SQ', 'FG', 'PG', 'UG'),
-        canonical_elements=_KNMI_DAILY_CANONICAL_ELEMENTS,
+        label='KNMI public daily station observations via daggegevens CSV',
+        data_url=KNMI_DAILY_DATA_URL,
+        supported_elements=('TG', 'TX', 'TN', 'RH', 'FG', 'UG', 'PG', 'SQ', 'Q'),
+        canonical_elements=KNMI_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
-        implemented=True,
-    ),
-    KnmiDatasetSpec(
-        provider='historical',
-        resolution='1hour',
-        dataset_name='hourly-in-situ-meteorological-observations-validated',
-        dataset_version='1.0',
-        label='KNMI validated hourly in-situ meteorological observations',
-        supported_elements=('T', 'RH', 'FH', 'U', 'P', 'SQ'),
-        canonical_elements=_KNMI_HOURLY_CANONICAL_ELEMENTS,
-        time_semantics='datetime',
-        implemented=True,
-    ),
-    KnmiDatasetSpec(
-        provider='historical',
-        resolution='10min',
-        dataset_name='10-minute-in-situ-meteorological-observations',
-        dataset_version='1.0',
-        label='KNMI near real-time 10-minute in-situ meteorological observations',
-        supported_elements=('ta', 'ff', 'rh', 'pp', 'ss'),
-        canonical_elements=_KNMI_TENMIN_CANONICAL_ELEMENTS,
-        time_semantics='datetime',
         implemented=True,
     ),
 ]
@@ -176,10 +109,9 @@ def list_implemented_dataset_specs() -> list[KnmiDatasetSpec]:
 
 
 def get_dataset_spec(provider: str, resolution: str) -> KnmiDatasetSpec:
-    normalized_scope = provider.strip()
+    normalized_provider = provider.strip()
     normalized_resolution = resolution.strip()
     for spec in _KNMI_DATASET_SPECS:
-        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_provider and spec.resolution == normalized_resolution:
             return spec
     raise ValueError(f'Unsupported KNMI dataset combination: {provider}/{resolution}')
-

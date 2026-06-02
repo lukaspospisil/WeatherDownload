@@ -371,39 +371,21 @@ class ProviderTests(unittest.TestCase):
             ['wind_speed', 'wind_speed_max'],
         )
 
-    def test_discovery_country_nl_includes_daily_hourly_and_tenmin(self) -> None:
-        self.assertEqual(list_providers(country='NL'), ['historical'])
-        self.assertEqual(list_resolutions(country='NL', provider='historical'), ['10min', '1hour', 'daily'])
+    def test_discovery_country_nl_includes_public_knmi_daily(self) -> None:
+        self.assertEqual(list_providers(country='NL'), ['knmi'])
+        self.assertEqual(list_resolutions(country='NL', provider='knmi'), ['daily'])
         self.assertEqual(
-            list_supported_elements(country='NL', provider='historical', resolution='daily'),
-            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'sunshine_duration', 'wind_speed', 'pressure', 'relative_humidity'],
+            list_supported_elements(country='NL', provider='knmi', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration', 'solar_radiation'],
         )
         self.assertEqual(
-            list_supported_elements(country='NL', provider='historical', resolution='daily', provider_raw=True),
-            ['TG', 'TX', 'TN', 'RH', 'SQ', 'FG', 'PG', 'UG'],
-        )
-        self.assertEqual(
-            list_supported_elements(country='NL', provider='historical', resolution='1hour'),
-            ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
-        )
-        self.assertEqual(
-            list_supported_elements(country='NL', provider='historical', resolution='1hour', provider_raw=True),
-            ['T', 'RH', 'FH', 'U', 'P', 'SQ'],
-        )
-        self.assertEqual(
-            list_supported_elements(country='NL', provider='historical', resolution='10min'),
-            ['tas_mean', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
-        )
-        self.assertEqual(
-            list_supported_elements(country='NL', provider='historical', resolution='10min', provider_raw=True),
-            ['ta', 'ff', 'rh', 'pp', 'ss'],
+            list_supported_elements(country='NL', provider='knmi', resolution='daily', provider_raw=True),
+            ['TG', 'TX', 'TN', 'RH', 'FG', 'UG', 'PG', 'SQ', 'Q'],
         )
 
-    def test_nl_subdaily_queries_are_provider_valid(self) -> None:
-        hourly_query = ObservationQuery(country='NL', provider='historical', resolution='1hour', station_ids=['0-20000-0-06260'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
-        tenmin_query = ObservationQuery(country='NL', provider='historical', resolution='10min', station_ids=['0-20000-0-06260'], start='2024-01-01T09:10:00Z', end='2024-01-01T09:20:00Z', elements=['tas_mean', 'pressure'])
-        self.assertEqual(hourly_query.elements, ['T', 'P'])
-        self.assertEqual(tenmin_query.elements, ['ta', 'pp'])
+    def test_nl_daily_query_is_provider_valid(self) -> None:
+        daily_query = ObservationQuery(country='NL', provider='knmi', resolution='daily', station_ids=['260'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation', 'solar_radiation'])
+        self.assertEqual(daily_query.elements, ['TG', 'RH', 'Q'])
 
     def test_discovery_country_dk_includes_daily(self) -> None:
         self.assertEqual(list_providers(country='DK'), ['dmi', 'ghcnd', 'historical'])

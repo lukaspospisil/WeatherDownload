@@ -832,7 +832,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_nl_mapping(self) -> None:
         config = download_fao.get_fao_country_config('NL')
         self.assertEqual(config.country, 'NL')
-        self.assertEqual(config.provider, 'historical')
+        self.assertEqual(config.provider, 'knmi')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['TG'], 'tas_mean')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')
@@ -938,12 +938,12 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_prepare_complete_station_series_handles_nl_without_deriving_vapour_pressure(self) -> None:
         config = download_fao.get_fao_country_config('NL')
         daily_table = pd.DataFrame([
-            {'station_id': '0-20000-0-06260', 'element': 'tas_mean', 'element_raw': 'TG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '3.0'},
-            {'station_id': '0-20000-0-06260', 'element': 'tas_max', 'element_raw': 'TX', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '6.0'},
-            {'station_id': '0-20000-0-06260', 'element': 'tas_min', 'element_raw': 'TN', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '1.0'},
-            {'station_id': '0-20000-0-06260', 'element': 'wind_speed', 'element_raw': 'FG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '2.5'},
-            {'station_id': '0-20000-0-06260', 'element': 'sunshine_duration', 'element_raw': 'SQ', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '0.5'},
-            {'station_id': '0-20000-0-06260', 'element': 'relative_humidity', 'element_raw': 'RH', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '81.0'},
+            {'station_id': '260', 'element': 'tas_mean', 'element_raw': 'TG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '3.0'},
+            {'station_id': '260', 'element': 'tas_max', 'element_raw': 'TX', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '6.0'},
+            {'station_id': '260', 'element': 'tas_min', 'element_raw': 'TN', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '1.0'},
+            {'station_id': '260', 'element': 'wind_speed', 'element_raw': 'FG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '2.5'},
+            {'station_id': '260', 'element': 'sunshine_duration', 'element_raw': 'SQ', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '0.5'},
+            {'station_id': '260', 'element': 'relative_humidity', 'element_raw': 'UG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '81.0'},
         ])
 
         complete = download_fao.prepare_complete_station_series(daily_table, config=config)
@@ -955,12 +955,12 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_prepare_complete_station_series_can_derive_vapour_pressure_when_enabled(self) -> None:
         config = download_fao.get_fao_country_config('NL', fill_missing='allow-derived')
         daily_table = pd.DataFrame([
-            {'station_id': '0-20000-0-06260', 'element': 'tas_mean', 'element_raw': 'TG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '10.0'},
-            {'station_id': '0-20000-0-06260', 'element': 'tas_max', 'element_raw': 'TX', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '15.0'},
-            {'station_id': '0-20000-0-06260', 'element': 'tas_min', 'element_raw': 'TN', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '7.0'},
-            {'station_id': '0-20000-0-06260', 'element': 'wind_speed', 'element_raw': 'FG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '2.5'},
-            {'station_id': '0-20000-0-06260', 'element': 'sunshine_duration', 'element_raw': 'SQ', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '0.5'},
-            {'station_id': '0-20000-0-06260', 'element': 'relative_humidity', 'element_raw': 'RH', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '80.0'},
+            {'station_id': '260', 'element': 'tas_mean', 'element_raw': 'TG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '10.0'},
+            {'station_id': '260', 'element': 'tas_max', 'element_raw': 'TX', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '15.0'},
+            {'station_id': '260', 'element': 'tas_min', 'element_raw': 'TN', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '7.0'},
+            {'station_id': '260', 'element': 'wind_speed', 'element_raw': 'FG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '2.5'},
+            {'station_id': '260', 'element': 'sunshine_duration', 'element_raw': 'SQ', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '0.5'},
+            {'station_id': '260', 'element': 'relative_humidity', 'element_raw': 'UG', 'observation_date': '2024-01-01', 'time_function': pd.NA, 'value': '80.0'},
         ])
 
         complete, provenance, applied_rules = download_fao.prepare_complete_station_series_with_provenance(
@@ -1323,7 +1323,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
 
     def test_build_data_info_includes_nl_limitations(self) -> None:
         config = download_fao.get_fao_country_config('NL')
-        info = download_fao.build_data_info(config, station_rows=[{'station_id': '0-20000-0-06260'}], min_complete_days=3650)
+        info = download_fao.build_data_info(config, station_rows=[{'station_id': '260'}], min_complete_days=3650)
 
         self.assertEqual(info['country'], 'NL')
         self.assertIn('assumptions', info)

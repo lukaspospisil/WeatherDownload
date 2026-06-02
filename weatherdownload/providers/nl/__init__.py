@@ -9,10 +9,11 @@ SUPPORTED_CANONICAL_ELEMENTS = (
     'tas_max',
     'tas_min',
     'precipitation',
-    'sunshine_duration',
     'wind_speed',
-    'pressure',
     'relative_humidity',
+    'pressure',
+    'sunshine_duration',
+    'solar_radiation',
 )
 
 
@@ -32,11 +33,8 @@ PROVIDER = WeatherProvider(
     get_dataset_spec=get_dataset_spec,
     download_observations=_download_observations,
     supported_country_codes=('NL',),
-    supported_providers=('historical',),
-    supported_resolutions=('10min', '1hour', 'daily'),
+    supported_providers=('knmi',),
+    supported_resolutions=('daily',),
     supported_canonical_elements=SUPPORTED_CANONICAL_ELEMENTS,
     experimental=False,
 )
-
-
-

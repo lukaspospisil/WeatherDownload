@@ -23,7 +23,7 @@ class DownloadTenminExampleTests(unittest.TestCase):
         self.assertEqual(parser.parse_args(['--country', 'CH']).country, 'CH')
         self.assertEqual(parser.parse_args(['--country', 'DK']).country, 'DK')
         self.assertEqual(parser.parse_args(['--country', 'HU']).country, 'HU')
-        self.assertEqual(parser.parse_args(['--country', 'NL']).country, 'NL')
+        self.assertEqual(parser.parse_args(['--country', 'DE']).country, 'DE')
 
     def test_main_uses_shared_at_query_shape(self) -> None:
         sample = pd.DataFrame([{'station_id': '1', 'gh_id': None, 'element': 'tas_mean', 'element_raw': 'tl', 'timestamp': '2024-01-01T00:10:00Z', 'value': 0.1, 'flag': '12', 'quality': None, 'provider': 'historical', 'resolution': '10min'}])
@@ -85,20 +85,20 @@ class DownloadTenminExampleTests(unittest.TestCase):
         self.assertEqual(query.elements, ['ta', 'p'])
         self.assertIn('13704', buffer.getvalue())
 
-    def test_main_uses_shared_nl_query_shape(self) -> None:
-        sample = pd.DataFrame([{'station_id': '0-20000-0-06260', 'gh_id': None, 'element': 'tas_mean', 'element_raw': 'ta', 'timestamp': '2024-01-01T09:10:00Z', 'value': 3.1, 'flag': None, 'quality': None, 'provider': 'historical', 'resolution': '10min'}])
+    def test_main_uses_shared_de_query_shape(self) -> None:
+        sample = pd.DataFrame([{'station_id': '00044', 'gh_id': None, 'element': 'tas_mean', 'element_raw': 'TT_10', 'timestamp': '2024-01-01T09:10:00Z', 'value': 3.1, 'flag': None, 'quality': None, 'provider': 'historical', 'resolution': '10min'}])
         buffer = io.StringIO()
         with patch.object(download_tenmin, 'download_observations', return_value=sample) as download_mock:
-            with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'NL']):
+            with patch.object(sys, 'argv', ['download_tenmin.py', '--country', 'DE']):
                 with redirect_stdout(buffer):
                     download_tenmin.main()
         query = download_mock.call_args.args[0]
-        self.assertEqual(query.country, 'NL')
+        self.assertEqual(query.country, 'DE')
         self.assertEqual(query.provider, 'historical')
         self.assertEqual(query.resolution, '10min')
-        self.assertEqual(query.station_ids, ['0-20000-0-06260'])
-        self.assertEqual(query.elements, ['ta', 'pp'])
-        self.assertIn('0-20000-0-06260', buffer.getvalue())
+        self.assertEqual(query.station_ids, ['00044'])
+        self.assertEqual(query.elements, ['TT_10', 'RF_10'])
+        self.assertIn('00044', buffer.getvalue())
 
 
 if __name__ == '__main__':

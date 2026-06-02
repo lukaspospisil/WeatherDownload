@@ -50,8 +50,6 @@ from ..providers.hu.parser import HU_NORMALIZED_DAILY_COLUMNS, HU_NORMALIZED_SUB
 from ..providers.nl.daily import download_daily_observations_knmi
 from ..providers.pl.daily import download_daily_observations_pl
 from ..providers.pl.hourly import download_hourly_observations_pl
-from ..providers.nl.hourly import download_hourly_observations_knmi
-from ..providers.nl.tenmin import download_tenmin_observations_knmi
 from ..providers.nl.parser import KNMI_NORMALIZED_DAILY_COLUMNS, KNMI_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.dk.parser import DK_NORMALIZED_DAILY_COLUMNS, DK_NORMALIZED_SUBDAILY_COLUMNS
 from ..providers.se.parser import SE_NORMALIZED_DAILY_COLUMNS, SE_NORMALIZED_SUBDAILY_COLUMNS
@@ -161,13 +159,9 @@ def _download_observations_knmi(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.provider == 'historical' and query.resolution == 'daily':
+    if query.provider == 'knmi' and query.resolution == 'daily':
         return download_daily_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_DAILY_COLUMNS]
-    if query.provider == 'historical' and query.resolution == '1hour':
-        return download_hourly_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_SUBDAILY_COLUMNS]
-    if query.provider == 'historical' and query.resolution == '10min':
-        return download_tenmin_observations_knmi(query, timeout=timeout, station_metadata=station_metadata).loc[:, KNMI_NORMALIZED_SUBDAILY_COLUMNS]
-    raise NotImplementedError('KNMI Netherlands support currently implements only historical/daily, historical/1hour, and historical/10min station observations.')
+    raise NotImplementedError('KNMI Netherlands support currently implements only knmi/daily station observations.')
 
 
 

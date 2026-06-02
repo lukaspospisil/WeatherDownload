@@ -151,10 +151,8 @@
       "status": "not_attempted"
     },
     "NL": {
-      "providers": [
-        "historical"
-      ],
-      "status": "national_10min"
+      "providers": [],
+      "status": "not_attempted"
     },
     "NO": {
       "providers": [],
@@ -386,7 +384,7 @@
     },
     "NL": {
       "providers": [
-        "historical"
+        "knmi"
       ],
       "status": "national_daily"
     },
@@ -612,10 +610,8 @@
       "status": "not_attempted"
     },
     "NL": {
-      "providers": [
-        "historical"
-      ],
-      "status": "national_hourly"
+      "providers": [],
+      "status": "not_attempted"
     },
     "NO": {
       "providers": [],

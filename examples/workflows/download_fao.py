@@ -381,11 +381,11 @@ PL_HOURLY_PROVIDER_ELEMENT_MAPPING = {
 }
 NL_ASSUMPTIONS = {
     'observed_inputs_only': (
-        'The Netherlands branch packages only source-backed daily observations from the KNMI provider. '
+        'The Netherlands branch packages only source-backed daily observations from the KNMI public daggegevens provider. '
         'The shared workflow does not compute FAO-56 ET0 or derive any meteorological variables.'
     ),
     'vapour_pressure_availability': (
-        'KNMI NL historical daily support in this pass does not expose observed vapour_pressure in the provider path used here. '
+        'KNMI NL knmi daily support in this pass does not expose observed vapour_pressure in the provider path used here. '
         'The shared workflow leaves vapour_pressure empty instead of deriving it from humidity or temperature.'
     ),
     'pressure_usage': (
@@ -812,6 +812,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         daily_provider_name = 'dmi'
     elif normalized_country == 'ES':
         daily_provider_name = 'aemet'
+    elif normalized_country == 'NL':
+        daily_provider_name = 'knmi'
     elif normalized_country == 'LU':
         daily_provider_name = 'asta'
     try:
@@ -908,7 +910,7 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
             hourly_query_elements = ('wind_speed', 'vapour_pressure')
         return FaoCountryConfig('PL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, PL_REQUIRED_OBSERVED_ELEMENTS, query_elements, provider_mapping, assumptions, dataset_type, source, 'historical' if hourly_query_elements else None, '1hour' if hourly_query_elements else None, hourly_query_elements)
     if normalized_country == 'NL':
-        return FaoCountryConfig('NL', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI Open Data API validated daily in-situ meteorological observations')
+        return FaoCountryConfig('NL', 'knmi', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, NL_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(NL_PROVIDER_ELEMENT_MAPPING), dict(NL_ASSUMPTIONS), 'KNMI observed daily input bundle prepared for later FAO workflow packaging', 'KNMI public daggegevens daily station observations')
     if normalized_country == 'LU':
         return FaoCountryConfig('LU', 'asta', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, LU_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(LU_PROVIDER_ELEMENT_MAPPING), dict(LU_ASSUMPTIONS), 'Luxembourg ASTA observed daily input bundle prepared for later FAO workflow packaging', 'Official Luxembourg ASTA INSPIRE WFS daily station observations')
     if normalized_country == 'SE':

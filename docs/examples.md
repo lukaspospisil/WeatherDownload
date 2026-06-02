@@ -123,10 +123,10 @@ PL notes:
 
 NL notes:
 
-- set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
-- `daily` and `1hour` are implemented through the official KNMI validated datasets
-- `10min` is implemented through the official KNMI near-real-time Open Data path and is not documented as validated in the same way
-- KNMI EDR remains out of scope in this pass
+- `NL` uses the shared daily example path through the official KNMI public `daggegevens` daily observations endpoint
+- no API key is required on the implemented `NL / knmi / daily` slice
+- the current conservative observed mapping exposes `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `relative_humidity`, `pressure`, `sunshine_duration`, and `solar_radiation`
+- KNMI subdaily products and EDR remain out of scope in this pass
 
 SE notes:
 
@@ -177,7 +177,6 @@ python examples/basic/download_hourly.py --country CH
 python examples/basic/download_hourly.py --country DE
 python examples/basic/download_hourly.py --country DK
 python examples/basic/download_hourly.py --country HU
-python examples/basic/download_hourly.py --country NL
 python examples/basic/download_hourly.py --country PL
 python examples/basic/download_hourly.py --country SE
 ```
@@ -229,14 +228,6 @@ PL hourly notes:
 - raw IMGW hourly status codes such as `WTEMP`, `WFWR`, `WPORW`, `WWLGW`, `WCPW`, and `WPPPS` are preserved in `flag`, while normalized `quality` stays null
 - this slice adds official subdaily observations only; it does not aggregate them into daily FAO inputs and does not compute FAO-56 ET0
 
-NL hourly notes:
-
-- `NL` uses the shared hourly example path through the official KNMI Open Data API `hourly-in-situ-meteorological-observations-validated` dataset
-- set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
-- the example preserves the published KNMI hourly file timestamp as the normalized UTC `timestamp`
-- provider-defined hourly element semantics stay behind the provider layer; mapped fields stay source-backed only
-- raw `flag` and normalized `quality` both remain null in this slice
-
 SE hourly notes:
 
 - `SE` uses the shared hourly example path through the official SMHI Meteorological Observations corrected-archive CSV path
@@ -269,7 +260,6 @@ python examples/basic/download_tenmin.py --country CH
 python examples/basic/download_tenmin.py --country DE
 python examples/basic/download_tenmin.py --country DK
 python examples/basic/download_tenmin.py --country HU
-python examples/basic/download_tenmin.py --country NL
 ```
 
 AT 10-minute notes:
@@ -312,15 +302,6 @@ HU 10-minute notes:
 - raw HungaroMet `Q_<field>` values are preserved in `flag` and normalized `quality` stays null
 - the separate HungaroMet `10_minutes_wind` product is exposed through the distinct `provider="historical_wind"` capability in the library, but it is intentionally not merged into the shared default `10min` example path
 - for an explicit HU / historical_wind / 10min Python download example and CLI discovery example, see [HungaroMet Hungary Provider Notes](provider_notes/hu_hungaromet.md#wind-only-10-minute-example)
-
-NL 10-minute notes:
-
-- `NL` uses the shared 10-minute example path through the official KNMI Open Data API `10-minute-in-situ-meteorological-observations` dataset
-- set `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` first
-- the example preserves the published KNMI 10-minute file timestamp as the normalized UTC `timestamp`
-- this KNMI path is official and source-backed, but it is a near-real-time dataset and is not documented as validated in the same way as the KNMI daily and hourly validated datasets
-- mapped fields stay source-backed only; this first slice does not derive missing variables or recompute hourly or daily values from 10-minute data
-- raw `flag` and normalized `quality` both remain null in this slice
 
 ## Workflow Examples
 
@@ -444,7 +425,7 @@ Important boundary:
 - `DK` is included through the shared workflow using only observed Denmark daily inputs from the existing provider; Denmark daily values come from the DMI Climate Data `stationValue` path and the workflow remains Denmark-only in this pass
 - `HU` is included through the shared workflow using only observed Hungary daily inputs from the existing provider; observed `vapour_pressure` is not exposed by the current Hungary provider slice and may be filled only through the existing opt-in shared `--fill-missing allow-derived` fallback rule when observed `tas_mean` and `relative_humidity` are available
 - `PL` is included through the shared workflow using observed IMGW synop daily inputs by default; `wind_speed` and `vapour_pressure` remain null in the default slice, but the explicit `--fill-missing allow-hourly-aggregate` mode may supplement them from official IMGW `historical / 1hour` observations with provenance labeled as `aggregated_hourly_opt_in`
-- `NL` is included through the shared workflow using only observed KNMI daily inputs, and `WEATHERDOWNLOAD_KNMI_API_KEY` or `KNMI_API_KEY` is required
+- `NL` is included through the shared workflow using only observed KNMI daily inputs from the public `daggegevens` endpoint; observed `vapour_pressure` is unavailable on this provider slice and may be filled only through the existing opt-in shared `--fill-missing allow-derived` fallback when observed `tas_mean` and `relative_humidity` are available
 - `SE` is included through the shared workflow using only observed SMHI daily inputs from the corrected-archive daily path; wind_speed, vapour_pressure, and sunshine_duration remain null when they are unavailable in the current provider path
 - every shared FAO export writes a matching human-readable `.info` sidecar that records the selected fill policy and field-level observed/derived/missing counts
 

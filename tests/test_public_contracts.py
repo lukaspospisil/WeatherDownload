@@ -41,7 +41,7 @@ SAMPLE_DK_STATIONS_PATH = Path('tests/data/sample_dk_dmi_stations.json')
 SAMPLE_DK_DAILY_TEXT = Path('tests/data/sample_dk_dmi_daily.json').read_text(encoding='utf-8')
 SAMPLE_DK_HOURLY_TEXT = Path('tests/data/sample_dk_dmi_hourly.json').read_text(encoding='utf-8')
 SAMPLE_DK_TENMIN_TEXT = Path('tests/data/sample_dk_dmi_tenmin.json').read_text(encoding='utf-8')
-SAMPLE_KNMI_STATIONS_PATH = Path('tests/data/sample_knmi_station_metadata.csv')
+SAMPLE_KNMI_DAILY_PATH = Path('tests/data/sample_knmi_daily_public.txt')
 SAMPLE_PL_STATIONS_PATH = Path('tests/data/sample_pl_wykaz_stacji.csv')
 SAMPLE_PL_METEO_COORDINATES_JSON = Path('tests/data/sample_pl_meteo_api.json').read_text(encoding='utf-8')
 SAMPLE_PL_STATION_2025_CSV = Path('tests/data/sample_pl_synop_station_2025.csv').read_text(encoding='utf-8')
@@ -190,7 +190,7 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'IS':
         return read_station_metadata(country='IS', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'NL':
-        return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_STATIONS_PATH))
+        return read_station_metadata(country='NL', source_url=str(SAMPLE_KNMI_DAILY_PATH))
     if country == 'PL':
         with patch('weatherdownload.providers.pl.metadata.requests.get', return_value=_MockTextResponse(SAMPLE_PL_METEO_COORDINATES_JSON)):
             return read_station_metadata(country='PL', source_url=str(SAMPLE_PL_STATIONS_PATH), timeout=5)
@@ -342,32 +342,14 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='IE', station_metadata=station_metadata)
     if country == 'NL':
         station_metadata = _read_station_metadata_fixture('NL')
-        query = ObservationQuery(country='NL', provider='historical', resolution='daily', station_ids=['0-20000-0-06260'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
-        parsed_payloads = iter([
-            {
-                'observation_date': pd.Timestamp('2024-01-01').date(),
-                'stations': pd.DataFrame([
-                    {'station_id': '0-20000-0-06260', 'full_name': 'De Bilt', 'latitude': 52.1, 'longitude': 5.18, 'elevation_m': 4.0},
-                    {'station_id': '0-20000-0-06310', 'full_name': 'Vlissingen', 'latitude': 51.442, 'longitude': 3.596, 'elevation_m': 8.0},
-                ]),
-                'variables': {'TG': pd.Series([3.4, 5.6]), 'RH': pd.Series([1.2, 0.0])},
-            },
-            {
-                'observation_date': pd.Timestamp('2024-01-02').date(),
-                'stations': pd.DataFrame([
-                    {'station_id': '0-20000-0-06260', 'full_name': 'De Bilt', 'latitude': 52.1, 'longitude': 5.18, 'elevation_m': 4.0},
-                    {'station_id': '0-20000-0-06310', 'full_name': 'Vlissingen', 'latitude': 51.442, 'longitude': 3.596, 'elevation_m': 8.0},
-                ]),
-                'variables': {'TG': pd.Series([4.1, 6.2]), 'RH': pd.Series([0.5, 0.1])},
-            },
-        ])
-        file_listing = {'files': [{'filename': 'daily-observations-20240101.nc'}, {'filename': 'daily-observations-20240102.nc'}]}
+        query = ObservationQuery(country='NL', provider='knmi', resolution='daily', station_ids=['260'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
 
-        with patch.dict('os.environ', {'WEATHERDOWNLOAD_KNMI_API_KEY': 'test-key'}, clear=False):
-            with patch('weatherdownload.providers.nl.daily.list_knmi_files', return_value=file_listing):
-                with patch('weatherdownload.providers.nl.daily.download_knmi_file_bytes', side_effect=[b'first', b'second']):
-                    with patch('weatherdownload.providers.nl.daily.parse_knmi_daily_netcdf_bytes', side_effect=lambda payload: next(parsed_payloads)):
-                        return download_observations(query, country='NL', station_metadata=station_metadata)
+        def fake_post(url, data=None, timeout=60):
+            del url, data, timeout
+            return _MockTextResponse(SAMPLE_KNMI_DAILY_PATH.read_text(encoding='utf-8'))
+
+        with patch('weatherdownload.providers.nl.metadata.requests.post', side_effect=fake_post):
+            return download_observations(query, country='NL', station_metadata=station_metadata)
     if country == 'PL':
         station_metadata = _read_station_metadata_fixture('PL')
         query = ObservationQuery(country='PL', provider='historical', resolution='daily', station_ids=['00375'], start_date='2025-01-01', end_date='2026-01-02', elements=['tas_mean', 'precipitation'])
@@ -708,7 +690,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'LT': ['LT000000001', 'LT000000002'],
         'MX': ['MX000000001', 'MX000000002'],
         'LV': ['LV000000001', 'LV000000002'],
-        'NL': ['0-20000-0-06260', '0-20000-0-06310'],
+        'NL': ['260', '310'],
         'NO': ['SN18700', 'SN90450'],
         'NZ': ['NZ000000001', 'NZ000000002'],
         'PL': ['00375', '00400', '00600'],
@@ -733,7 +715,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AT': 'historical', 'BE': 'historical', 'BG': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'dmi', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'historical', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'US': 'ghcnd'}
+    expected_providers = {'AT': 'historical', 'BE': 'historical', 'BG': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'dmi', 'EE': 'ghcnd', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'ghcnd', 'IT': 'ghcnd', 'LT': 'ghcnd', 'LV': 'ghcnd', 'MX': 'ghcnd', 'NL': 'knmi', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'US': 'ghcnd'}
 
     for country in ['AT', 'BE', 'BG', 'CA', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LV', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'US']:
         observations = _download_daily_fixture(country)
