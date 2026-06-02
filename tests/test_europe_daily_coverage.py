@@ -37,8 +37,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['GB']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['BG']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['BG']['providers'], ['ghcnd'])
-        self.assertEqual(summary['daily']['EE']['status'], 'ghcnd_daily')
-        self.assertEqual(summary['daily']['EE']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['EE']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['EE']['providers'], ['ilmateenistus'])
         self.assertEqual(summary['daily']['GR']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['GR']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['HR']['status'], 'ghcnd_daily')
@@ -123,7 +123,7 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
-        self.assertTrue({'BG', 'EE', 'GR', 'HR', 'IS', 'LT', 'LV'}.issubset(ghcnd_daily_countries))
+        self.assertTrue({'BG', 'GR', 'HR', 'IS', 'LT', 'LV'}.issubset(ghcnd_daily_countries))
 
         for country in MODULE.COVERAGE_COUNTRIES:
             with self.subTest(country=country):

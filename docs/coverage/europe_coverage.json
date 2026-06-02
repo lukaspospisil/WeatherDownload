@@ -271,9 +271,9 @@
     },
     "EE": {
       "providers": [
-        "ghcnd"
+        "ilmateenistus"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "ES": {
       "providers": [

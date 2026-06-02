@@ -112,7 +112,7 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
-        for country in ['BG', 'EE', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'NZ']:
+        for country in ['BG', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'NZ']:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
@@ -245,6 +245,19 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(
             list_supported_elements(country='ES', provider='aemet', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'sunshine_duration'],
+        )
+
+    def test_discovery_country_ee_includes_ilmateenistus_and_ghcnd_daily(self) -> None:
+        self.assertEqual(list_providers(country='EE'), ['ghcnd', 'ilmateenistus'])
+        self.assertEqual(list_resolutions(country='EE', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='EE', provider='ilmateenistus'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='EE', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='EE', provider='ilmateenistus', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'sunshine_duration', 'pressure', 'snow_depth', 'solar_radiation'],
         )
 
     def test_discovery_country_cz_includes_chmi_and_ghcnd_daily_without_evap_on_ghcnd(self) -> None:

@@ -144,7 +144,7 @@ COUNTRY_SPECS = {
     },
 }
 
-GHCND_ONLY_COUNTRIES = ('BG', 'EE', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'NZ')
+GHCND_ONLY_COUNTRIES = ('BG', 'GR', 'HR', 'IS', 'IT', 'LT', 'LV', 'NZ')
 
 
 class DirectPrefixGhcndProviderTests(unittest.TestCase):

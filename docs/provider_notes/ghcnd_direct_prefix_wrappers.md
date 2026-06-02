@@ -1,10 +1,10 @@
 # NOAA GHCN-Daily Direct-Prefix Wrappers
 
-This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `BG`, `EE`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LT`, `LV`, `NO`, `NZ`, `RO`, and `SI` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
+This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `BG`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LT`, `LV`, `NO`, `NZ`, `RO`, and `SI` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
 
 ## Provider identifiers
 
-- country: `BG`, `EE`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LT`, `LV`, `NO`, `NZ`, `RO`, `SI`
+- country: `BG`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LT`, `LV`, `NO`, `NZ`, `RO`, `SI`
 - accepted public alias on this group: `UK -> GB`
 - provider: `ghcnd`
 - resolution(s): `daily`
@@ -25,7 +25,6 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 These wrappers are grouped together because the GHCN country prefix matches the WeatherDownload country code directly:
 
 - `BG -> BG`
-- `EE -> EE`
 - `FI -> FI`
 - `GB -> GB`
 - `GR -> GR`
