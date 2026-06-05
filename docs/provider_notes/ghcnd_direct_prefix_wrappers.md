@@ -1,10 +1,10 @@
 # NOAA GHCN-Daily Direct-Prefix Wrappers
 
-This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `BG`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LV`, `NO`, `NZ`, `RO`, and `SI` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
+This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current `BG`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LV`, `NL`, `NO`, `NZ`, `RO`, and `SI` country adapters. These notes stay intentionally short because the runtime logic lives in the shared helper under `weatherdownload/providers/ghcnd/`.
 
 ## Provider identifiers
 
-- country: `BG`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LV`, `NO`, `NZ`, `RO`, `SI`
+- country: `BG`, `FI`, `GB`, `GR`, `HR`, `IS`, `IT`, `LV`, `NL`, `NO`, `NZ`, `RO`, `SI`
 - accepted public alias on this group: `UK -> GB`
 - provider: `ghcnd`
 - resolution(s): `daily`
@@ -32,12 +32,13 @@ These wrappers are grouped together because the GHCN country prefix matches the 
 - `IS -> IS`
 - `IT -> IT`
 - `LV -> LV`
+- `NL -> NL`
 - `NO -> NO`
 - `NZ -> NZ`
 - `RO -> RO`
 - `SI -> SI`
 
-Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separately in [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md). `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code. France now keeps a separate national provider note because `FR` supports both `meteo_france / daily` and `ghcnd / daily`. Latvia likewise keeps a separate national provider note because `LV` now supports both `lvgmc / daily` and `ghcnd / daily`. Lithuania likewise keeps a separate national provider note because `LT` now supports both `meteo_lt / daily` and `ghcnd / daily`. Norway likewise keeps a separate national provider note because `NO` now supports both `frost / daily` and `ghcnd / daily`.
+Mapped-prefix wrappers such as `CZ -> EZ` and `DE -> GM` are documented separately in [NOAA GHCN-Daily Mapped-Prefix Wrappers](ghcnd_mapped_prefix_wrappers.md). `CA` and `MX` also keep short country-specific notes even though their current station-id pattern already matches their wrapper code. France now keeps a separate national provider note because `FR` supports both `meteo_france / daily` and `ghcnd / daily`. Latvia likewise keeps a separate national provider note because `LV` now supports both `lvgmc / daily` and `ghcnd / daily`. Lithuania likewise keeps a separate national provider note because `LT` now supports both `meteo_lt / daily` and `ghcnd / daily`. Netherlands likewise keeps a separate national provider note because `NL` now supports both `knmi / daily` and `ghcnd / daily`. Norway likewise keeps a separate national provider note because `NO` now supports both `frost / daily` and `ghcnd / daily`.
 
 ## Supported data
 

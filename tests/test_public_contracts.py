@@ -89,6 +89,7 @@ SAMPLE_GHCND_IT_DLY_TEXT = Path('tests/data/sample_ghcnd_IT000000001.dly').read_
 SAMPLE_GHCND_LT_DLY_TEXT = Path('tests/data/sample_ghcnd_LT000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_LV_DLY_TEXT = Path('tests/data/sample_ghcnd_LV000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_MX_DLY_TEXT = Path('tests/data/sample_ghcnd_MX000000001.dly').read_text(encoding='utf-8')
+SAMPLE_GHCND_NL_DLY_TEXT = Path('tests/data/sample_ghcnd_NL000000001.dly').read_text(encoding='utf-8')
 SAMPLE_GHCND_NZ_DLY_TEXT = Path('tests/data/sample_ghcnd_NZ000000001.dly').read_text(encoding='utf-8')
 SAMPLE_NO_FROST_STATIONS_PATH = Path('tests/data/sample_no_frost_stations.json')
 SAMPLE_GHCND_PT_DLY_TEXT = Path('tests/data/sample_ghcnd_PO000000001.dly').read_text(encoding='utf-8')

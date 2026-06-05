@@ -24,7 +24,7 @@ class KnmiParserTests(unittest.TestCase):
         self.assertEqual(stations['full_name'].tolist(), ['De Bilt', 'Vlissingen'])
         self.assertAlmostEqual(float(stations.iloc[0]['longitude']), 5.18)
         self.assertAlmostEqual(float(stations.iloc[1]['latitude']), 51.442)
-        self.assertEqual(parsed.table.columns.tolist(), ['STN', 'YYYYMMDD', 'TG', 'TX', 'TN', 'RH', 'FG', 'UG', 'PG', 'SQ', 'Q'])
+        self.assertEqual(parsed.table.columns.tolist(), ['STN', 'YYYYMMDD', 'TG', 'TX', 'TN', 'RH', 'FG', 'FXX', 'UG', 'PG', 'SQ', 'Q'])
 
     def test_normalize_knmi_observation_metadata_lists_supported_daily_elements(self) -> None:
         parsed = parse_knmi_daily_text(SAMPLE_TEXT)
@@ -34,7 +34,7 @@ class KnmiParserTests(unittest.TestCase):
             list(metadata.columns),
             ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'],
         )
-        self.assertEqual(sorted(metadata['element'].unique().tolist()), ['FG', 'PG', 'Q', 'RH', 'SQ', 'TG', 'TN', 'TX', 'UG'])
+        self.assertEqual(sorted(metadata['element'].unique().tolist()), ['FG', 'FXX', 'PG', 'Q', 'RH', 'SQ', 'TG', 'TN', 'TX', 'UG'])
         self.assertTrue(metadata['schedule'].eq('P1D KNMI daggegevens public daily CSV').all())
 
     def test_normalize_knmi_daily_rows_applies_exact_unit_and_trace_conversions(self) -> None:
@@ -52,7 +52,7 @@ class KnmiParserTests(unittest.TestCase):
                 start_date=query_start,
                 end_date=query_end,
             )
-            for raw_code in ['TG', 'TX', 'TN', 'RH', 'FG', 'UG', 'PG', 'SQ', 'Q']
+            for raw_code in ['TG', 'TX', 'TN', 'RH', 'FG', 'FXX', 'UG', 'PG', 'SQ', 'Q']
         }
 
         self.assertEqual(list(frames['TG'].columns), KNMI_NORMALIZED_DAILY_COLUMNS)
@@ -62,6 +62,7 @@ class KnmiParserTests(unittest.TestCase):
         self.assertAlmostEqual(float(frames['RH'].iloc[0]['value']), 0.0)
         self.assertAlmostEqual(float(frames['RH'].iloc[1]['value']), 24.0)
         self.assertAlmostEqual(float(frames['FG'].iloc[0]['value']), 5.5)
+        self.assertAlmostEqual(float(frames['FXX'].iloc[0]['value']), 9.8)
         self.assertAlmostEqual(float(frames['UG'].iloc[0]['value']), 87.0)
         self.assertAlmostEqual(float(frames['PG'].iloc[0]['value']), 1001.3)
         self.assertAlmostEqual(float(frames['SQ'].iloc[0]['value']), 0.0)

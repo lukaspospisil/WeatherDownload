@@ -411,20 +411,25 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_country_nl_includes_public_knmi_daily(self) -> None:
-        self.assertEqual(list_providers(country='NL'), ['knmi'])
+        self.assertEqual(list_providers(country='NL'), ['ghcnd', 'knmi'])
+        self.assertEqual(list_resolutions(country='NL', provider='ghcnd'), ['daily'])
         self.assertEqual(list_resolutions(country='NL', provider='knmi'), ['daily'])
         self.assertEqual(
             list_supported_elements(country='NL', provider='knmi', resolution='daily'),
-            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration', 'solar_radiation'],
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'sunshine_duration', 'solar_radiation'],
         )
         self.assertEqual(
             list_supported_elements(country='NL', provider='knmi', resolution='daily', provider_raw=True),
-            ['TG', 'TX', 'TN', 'RH', 'FG', 'UG', 'PG', 'SQ', 'Q'],
+            ['TG', 'TX', 'TN', 'RH', 'FG', 'FXX', 'UG', 'PG', 'SQ', 'Q'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='NL', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
 
     def test_nl_daily_query_is_provider_valid(self) -> None:
-        daily_query = ObservationQuery(country='NL', provider='knmi', resolution='daily', station_ids=['260'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation', 'solar_radiation'])
-        self.assertEqual(daily_query.elements, ['TG', 'RH', 'Q'])
+        daily_query = ObservationQuery(country='NL', provider='knmi', resolution='daily', station_ids=['260'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation', 'wind_speed_max', 'solar_radiation'])
+        self.assertEqual(daily_query.elements, ['TG', 'RH', 'FXX', 'Q'])
 
     def test_discovery_country_dk_includes_daily(self) -> None:
         self.assertEqual(list_providers(country='DK'), ['dmi', 'ghcnd', 'historical'])

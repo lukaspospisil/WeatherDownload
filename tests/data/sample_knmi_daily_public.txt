@@ -11,12 +11,13 @@
 # TN        : Minimum temperatuur (in 0.1 graden Celsius) / Minimum temperature (in 0.1 degrees Celsius)
 # RH        : Etmaalsom van de neerslag (in 0.1 mm) (-1 voor <0.05 mm) / Daily precipitation amount (in 0.1 mm) (-1 for <0.05 mm)
 # FG        : Etmaalgemiddelde windsnelheid (in 0.1 m/s) / Daily mean windspeed (in 0.1 m/s)
+# FXX       : Hoogste windstoot (in 0.1 m/s) / Highest wind gust (in 0.1 m/s)
 # UG        : Etmaalgemiddelde relatieve vochtigheid (in procenten) / Daily mean relative atmospheric humidity (in percents)
 # PG        : Etmaalgemiddelde luchtdruk herleid tot zeeniveau (in 0.1 hPa) berekend uit 24 uurwaarden / Daily mean sea level pressure (in 0.1 hPa) calculated from 24 hourly values
 # SQ        : Zonneschijnduur (in 0.1 uur) berekend uit de globale straling (-1 voor <0.05 uur) / Sunshine duration (in 0.1 hour) calculated from global radiation (-1 for <0.05 hour)
 # Q         : Globale straling (in J/cm2) / Global radiation (in J/cm2)
-# STN,YYYYMMDD,   TG,   TX,   TN,   RH,   FG,   UG,   PG,   SQ,    Q
-  260,20240101,   74,   91,   64,   -1,   55,   87,10013,   -1,  142
-  260,20240102,  105,  129,   68,  240,   66,   91, 9876,    0,   67
-  310,20240101,   85,  100,   70,  103,   61,   89,10020,    5,  150
-  310,20240102,      ,  120,   74,    0,   70,   92, 9888,    8,   80
+# STN,YYYYMMDD,   TG,   TX,   TN,   RH,   FG,  FXX,   UG,   PG,   SQ,    Q
+  260,20240101,   74,   91,   64,   -1,   55,   98,   87,10013,   -1,  142
+  260,20240102,  105,  129,   68,  240,   66,  120,   91, 9876,    0,   67
+  310,20240101,   85,  100,   70,  103,   61,  105,   89,10020,    5,  150
+  310,20240102,      ,  120,   74,    0,   70,  115,   92, 9888,    8,   80

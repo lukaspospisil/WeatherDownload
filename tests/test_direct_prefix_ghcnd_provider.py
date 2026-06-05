@@ -110,6 +110,14 @@ COUNTRY_SPECS = {
         'start_date': '2020-06-01',
         'end_date': '2020-06-02',
     },
+    'NL': {
+        'station_core': 'NL000000001',
+        'station_prcp_only': 'NL000000002',
+        'station_unsupported': 'NL000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_NL000000001.dly'),
+        'start_date': '2020-05-01',
+        'end_date': '2020-05-02',
+    },
     'NO': {
         'station_core': 'NO000000001',
         'station_prcp_only': 'NO000000002',

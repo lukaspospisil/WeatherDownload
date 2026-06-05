@@ -2,6 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..ghcnd.registry import (
+    GHCND_STANDARD_CANONICAL_ELEMENTS,
+    GhcndDatasetSpec,
+    build_country_dataset_specs,
+    get_country_dataset_spec,
+    list_country_dataset_specs,
+    list_country_implemented_dataset_specs,
+)
+
 
 @dataclass(frozen=True)
 class KnmiDatasetSpec:
@@ -23,6 +32,7 @@ KNMI_DAILY_CANONICAL_ELEMENTS = {
     'tas_min': ('TN',),
     'precipitation': ('RH',),
     'wind_speed': ('FG',),
+    'wind_speed_max': ('FXX',),
     'relative_humidity': ('UG',),
     'pressure': ('PG',),
     'sunshine_duration': ('SQ',),
@@ -60,6 +70,12 @@ KNMI_PARAMETER_METADATA: dict[str, dict[str, str]] = {
         'unit': 'm/s',
         'source_unit': '0.1 m/s',
     },
+    'FXX': {
+        'name': 'Daily maximum wind gust',
+        'description': 'Official KNMI daily maximum wind gust in 0.1 m/s, converted to m/s.',
+        'unit': 'm/s',
+        'source_unit': '0.1 m/s',
+    },
     'UG': {
         'name': 'Daily mean relative humidity',
         'description': 'Official KNMI daily mean relative humidity in percent.',
@@ -92,25 +108,35 @@ _KNMI_DATASET_SPECS = [
         resolution='daily',
         label='KNMI public daily station observations via daggegevens CSV',
         data_url=KNMI_DAILY_DATA_URL,
-        supported_elements=('TG', 'TX', 'TN', 'RH', 'FG', 'UG', 'PG', 'SQ', 'Q'),
+        supported_elements=('TG', 'TX', 'TN', 'RH', 'FG', 'FXX', 'UG', 'PG', 'SQ', 'Q'),
         canonical_elements=KNMI_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
         implemented=True,
     ),
 ]
 
-
-def list_dataset_specs() -> list[KnmiDatasetSpec]:
-    return list(_KNMI_DATASET_SPECS)
-
-
-def list_implemented_dataset_specs() -> list[KnmiDatasetSpec]:
-    return [spec for spec in _KNMI_DATASET_SPECS if spec.implemented]
+_GHCND_DATASET_SPECS = build_country_dataset_specs(
+    supported_elements=('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'),
+    canonical_elements=GHCND_STANDARD_CANONICAL_ELEMENTS,
+)
 
 
-def get_dataset_spec(provider: str, resolution: str) -> KnmiDatasetSpec:
+def list_dataset_specs() -> list[KnmiDatasetSpec | GhcndDatasetSpec]:
+    return [*_KNMI_DATASET_SPECS, *list_country_dataset_specs(_GHCND_DATASET_SPECS)]
+
+
+def list_implemented_dataset_specs() -> list[KnmiDatasetSpec | GhcndDatasetSpec]:
+    return [
+        *(spec for spec in _KNMI_DATASET_SPECS if spec.implemented),
+        *list_country_implemented_dataset_specs(_GHCND_DATASET_SPECS),
+    ]
+
+
+def get_dataset_spec(provider: str, resolution: str) -> KnmiDatasetSpec | GhcndDatasetSpec:
     normalized_provider = provider.strip()
     normalized_resolution = resolution.strip()
+    if normalized_provider == 'ghcnd':
+        return get_country_dataset_spec(_GHCND_DATASET_SPECS, normalized_provider, normalized_resolution)
     for spec in _KNMI_DATASET_SPECS:
         if spec.provider == normalized_provider and spec.resolution == normalized_resolution:
             return spec

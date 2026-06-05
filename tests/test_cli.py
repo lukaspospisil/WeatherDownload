@@ -562,7 +562,7 @@ class ObservationCliTests(unittest.TestCase):
         with patch('weatherdownload.cli.download_observations', return_value=self._sample_nl_daily_table()) as download_mock:
             with redirect_stdout(buffer):
                 exit_code = main([
-                    'observations', 'daily', '--country', 'NL', '--station-id', '260', '--element', 'tas_mean', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
+                    'observations', 'daily', '--country', 'NL', '--provider', 'knmi', '--station-id', '260', '--element', 'tas_mean', '--start-date', '2024-01-01', '--end-date', '2024-01-03'
                 ])
         self.assertEqual(exit_code, 0)
         query = download_mock.call_args.args[0]

@@ -5,6 +5,10 @@ from datetime import timedelta
 import pandas as pd
 import requests
 
+from ..ghcnd.wrappers import (
+    build_station_metadata_reader,
+    build_station_observation_metadata_reader,
+)
 from .parser import (
     normalize_knmi_observation_metadata,
     normalize_knmi_station_metadata,
@@ -12,6 +16,12 @@ from .parser import (
     read_text_from_source,
 )
 from .registry import KNMI_DAILY_DATA_URL, get_dataset_spec
+
+read_station_metadata_ghcnd = build_station_metadata_reader(country_prefix='NL', get_dataset_spec=get_dataset_spec)
+read_station_observation_metadata_ghcnd = build_station_observation_metadata_reader(
+    country_prefix='NL',
+    get_dataset_spec=get_dataset_spec,
+)
 
 
 def read_station_metadata_knmi(source_url: str | None = None, timeout: int = 60):
@@ -40,6 +50,7 @@ def download_knmi_daily_text(
         'start': start_date.replace('-', ''),
         'end': end_date.replace('-', ''),
         'vars': ':'.join(raw_elements),
+        'fmt': 'csv',
     }
     if station_ids:
         payload['stns'] = ':'.join(station_ids)

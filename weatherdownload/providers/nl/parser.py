@@ -211,7 +211,7 @@ def _convert_daily_value(raw_code: str, value: object):
     if pd.isna(numeric):
         return pd.NA
     numeric = float(numeric)
-    if raw_code in {'TG', 'TX', 'TN', 'FG', 'PG'}:
+    if raw_code in {'TG', 'TX', 'TN', 'FG', 'FXX', 'PG'}:
         return numeric * 0.1
     if raw_code == 'RH':
         return 0.0 if numeric == -1.0 else numeric * 0.1
