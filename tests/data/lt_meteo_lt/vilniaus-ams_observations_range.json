@@ -1,0 +1,14 @@
+{
+  "station": {
+    "code": "vilniaus-ams",
+    "name": "Vilniaus AMS",
+    "coordinates": {
+      "latitude": 54.625992,
+      "longitude": 25.107064
+    }
+  },
+  "observationsDataRange": {
+    "startTimeUtc": "2023-12-30T00:00:00Z",
+    "endTimeUtc": "2024-01-04T23:00:00Z"
+  }
+}

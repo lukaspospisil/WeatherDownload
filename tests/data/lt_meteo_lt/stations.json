@@ -1,0 +1,18 @@
+[
+  {
+    "code": "kauno-ams",
+    "name": "Kauno AMS",
+    "coordinates": {
+      "latitude": 54.8833,
+      "longitude": 23.8333
+    }
+  },
+  {
+    "code": "vilniaus-ams",
+    "name": "Vilniaus AMS",
+    "coordinates": {
+      "latitude": 54.625992,
+      "longitude": 25.107064
+    }
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "station": {
+    "code": "kauno-ams",
+    "name": "Kauno AMS",
+    "coordinates": {
+      "latitude": 54.8833,
+      "longitude": 23.8333
+    }
+  },
+  "observationsDataRange": {
+    "startTimeUtc": "2023-12-31T00:00:00Z",
+    "endTimeUtc": "2024-01-03T23:00:00Z"
+  }
+}

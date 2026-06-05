@@ -345,9 +345,9 @@
     },
     "LT": {
       "providers": [
-        "ghcnd"
+        "meteo_lt"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "LU": {
       "providers": [
