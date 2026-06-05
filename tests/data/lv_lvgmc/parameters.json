@@ -1,0 +1,97 @@
+{
+  "success": true,
+  "result": {
+    "records": [
+      {
+        "ABBREVIATION": "HTDRY",
+        "EN_DESCRIPTION": "Hourly average air temperature",
+        "LV_DESCRIPTION": "Stundas videja gaisa temperatura",
+        "SCALE": "1",
+        "LOWER_LIMIT": "-50",
+        "UPPER_LIMIT": "50",
+        "MEASUREMENT_UNIT": "degC"
+      },
+      {
+        "ABBREVIATION": "HATMX",
+        "EN_DESCRIPTION": "Hourly maximum air temperature",
+        "LV_DESCRIPTION": "Stundas maks gaisa temperatura",
+        "SCALE": "1",
+        "LOWER_LIMIT": "-50",
+        "UPPER_LIMIT": "55",
+        "MEASUREMENT_UNIT": "degC"
+      },
+      {
+        "ABBREVIATION": "HATMN",
+        "EN_DESCRIPTION": "Hourly minimum air temperature",
+        "LV_DESCRIPTION": "Stundas min gaisa temperatura",
+        "SCALE": "1",
+        "LOWER_LIMIT": "-55",
+        "UPPER_LIMIT": "45",
+        "MEASUREMENT_UNIT": "degC"
+      },
+      {
+        "ABBREVIATION": "HPRAB",
+        "EN_DESCRIPTION": "Hourly total precipitation amount",
+        "LV_DESCRIPTION": "Stundas nokrisnu summa",
+        "SCALE": "1",
+        "LOWER_LIMIT": "0",
+        "UPPER_LIMIT": "500",
+        "MEASUREMENT_UNIT": "mm"
+      },
+      {
+        "ABBREVIATION": "HWNDS",
+        "EN_DESCRIPTION": "Hourly average wind speed",
+        "LV_DESCRIPTION": "Stundas videjais veja atrums",
+        "SCALE": "1",
+        "LOWER_LIMIT": "0",
+        "UPPER_LIMIT": "80",
+        "MEASUREMENT_UNIT": "m/s"
+      },
+      {
+        "ABBREVIATION": "HWSMX",
+        "EN_DESCRIPTION": "Hourly maximum wind speed",
+        "LV_DESCRIPTION": "Stundas maksimalais veja atrums",
+        "SCALE": "1",
+        "LOWER_LIMIT": "0",
+        "UPPER_LIMIT": "90",
+        "MEASUREMENT_UNIT": "m/s"
+      },
+      {
+        "ABBREVIATION": "HPRSL",
+        "EN_DESCRIPTION": "Hourly average atmospheric pressure at sea level",
+        "LV_DESCRIPTION": "Stundas videjais spiediens juras limeni",
+        "SCALE": "1",
+        "LOWER_LIMIT": "870",
+        "UPPER_LIMIT": "1085",
+        "MEASUREMENT_UNIT": "hPa"
+      },
+      {
+        "ABBREVIATION": "HRLH",
+        "EN_DESCRIPTION": "Hourly average relative humidity",
+        "LV_DESCRIPTION": "Stundas videjais relativais gaisa mitrums",
+        "SCALE": "1",
+        "LOWER_LIMIT": "0",
+        "UPPER_LIMIT": "100",
+        "MEASUREMENT_UNIT": "%"
+      },
+      {
+        "ABBREVIATION": "HSNOW",
+        "EN_DESCRIPTION": "Hourly snow depth",
+        "LV_DESCRIPTION": "Sniega segas biezums",
+        "SCALE": "1",
+        "LOWER_LIMIT": "0",
+        "UPPER_LIMIT": "300",
+        "MEASUREMENT_UNIT": "cm"
+      },
+      {
+        "ABBREVIATION": "HCLOUD",
+        "EN_DESCRIPTION": "Hourly cloud amount",
+        "LV_DESCRIPTION": "Stundas makonu daudzums",
+        "SCALE": "1",
+        "LOWER_LIMIT": "0",
+        "UPPER_LIMIT": "100",
+        "MEASUREMENT_UNIT": "%"
+      }
+    ]
+  }
+}

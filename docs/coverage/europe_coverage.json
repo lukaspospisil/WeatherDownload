@@ -358,9 +358,9 @@
     },
     "LV": {
       "providers": [
-        "ghcnd"
+        "lvgmc"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "MC": {
       "providers": [],

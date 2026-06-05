@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "result": {
+    "records": [
+      {
+        "STATION_ID": "0001",
+        "NAME": "Riga Center",
+        "WMO_ID": "26422",
+        "BEGIN_DATE": "2010-01-01T00:00:00",
+        "END_DATE": "3999-12-31T23:59:00",
+        "GEOGR1": "24.1052",
+        "GEOGR2": "56.9496",
+        "ELEVATION": "7.0",
+        "ELEVATION_PRESSURE": "6.2"
+      },
+      {
+        "STATION_ID": "0002",
+        "NAME": "Liepaja",
+        "WMO_ID": "26415",
+        "BEGIN_DATE": "2012-05-01T00:00:00",
+        "END_DATE": "3999-12-31T23:59:00",
+        "GEOGR1": "21.0108",
+        "GEOGR2": "56.5047",
+        "ELEVATION": "4.0",
+        "ELEVATION_PRESSURE": "3.4"
+      },
+      {
+        "STATION_ID": "0999",
+        "NAME": "Historic Closed",
+        "WMO_ID": "26000",
+        "BEGIN_DATE": "1990-01-01T00:00:00",
+        "END_DATE": "2020-12-31T23:59:00",
+        "GEOGR1": "23.5000",
+        "GEOGR2": "56.5000",
+        "ELEVATION": "10.0",
+        "ELEVATION_PRESSURE": "9.2"
+      }
+    ]
+  }
+}
