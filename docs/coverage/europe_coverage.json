@@ -371,8 +371,10 @@
       "status": "not_attempted"
     },
     "MD": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "ME": {
       "providers": [],
