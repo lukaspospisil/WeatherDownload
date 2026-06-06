@@ -9,6 +9,7 @@ from .be import PROVIDER as BE_PROVIDER
 from .bg import PROVIDER as BG_GHCND_PROVIDER
 from .ca import PROVIDER as CA_GHCND_PROVIDER
 from .ch import PROVIDER as CH_PROVIDER
+from .cy import PROVIDER as CY_GHCND_PROVIDER
 from .cz import PROVIDER as CHMI_PROVIDER
 from .de import PROVIDER as DWD_PROVIDER
 from .dk import PROVIDER as DK_PROVIDER
@@ -47,6 +48,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'BG': BG_GHCND_PROVIDER,
     'CA': CA_GHCND_PROVIDER,
     'CH': CH_PROVIDER,
+    'CY': CY_GHCND_PROVIDER,
     'CZ': CHMI_PROVIDER,
     'DE': DWD_PROVIDER,
     'DK': DK_PROVIDER,

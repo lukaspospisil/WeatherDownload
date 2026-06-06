@@ -29,6 +29,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('historical_csv', summary['daily']['CZ']['providers'])
         self.assertEqual(summary['daily']['AL']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['AL']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['CY']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['CY']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['FR']['status'], 'national_daily')
         self.assertIn('meteo_france', summary['daily']['FR']['providers'])
         self.assertEqual(summary['daily']['IE']['status'], 'national_daily')
@@ -127,7 +129,7 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
-        self.assertTrue({'AL', 'BG', 'GR', 'HR', 'IS', 'MT'}.issubset(ghcnd_daily_countries))
+        self.assertTrue({'AL', 'BG', 'CY', 'GR', 'HR', 'IS', 'MT'}.issubset(ghcnd_daily_countries))
 
         for country in MODULE.COVERAGE_COUNTRIES:
             with self.subTest(country=country):

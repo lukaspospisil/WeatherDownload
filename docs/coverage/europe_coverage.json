@@ -247,8 +247,10 @@
       "status": "national_daily"
     },
     "CY": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "CZ": {
       "providers": [
