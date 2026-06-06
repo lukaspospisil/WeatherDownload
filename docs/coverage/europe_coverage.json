@@ -379,8 +379,10 @@
       "status": "not_attempted"
     },
     "MT": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "NL": {
       "providers": [

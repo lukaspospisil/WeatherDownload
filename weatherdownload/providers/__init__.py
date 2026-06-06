@@ -24,6 +24,7 @@ from .it import PROVIDER as IT_GHCND_PROVIDER
 from .lt import PROVIDER as LT_GHCND_PROVIDER
 from .lu import PROVIDER as LU_PROVIDER
 from .lv import PROVIDER as LV_GHCND_PROVIDER
+from .mt import PROVIDER as MT_GHCND_PROVIDER
 from .mx import PROVIDER as MX_GHCND_PROVIDER
 from .nl import PROVIDER as KNMI_PROVIDER
 from .no import PROVIDER as NO_GHCND_PROVIDER
@@ -61,6 +62,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'LT': LT_GHCND_PROVIDER,
     'LU': LU_PROVIDER,
     'LV': LV_GHCND_PROVIDER,
+    'MT': MT_GHCND_PROVIDER,
     'MX': MX_GHCND_PROVIDER,
     'NL': KNMI_PROVIDER,
     'NO': NO_GHCND_PROVIDER,
