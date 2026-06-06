@@ -205,8 +205,10 @@
   },
   "daily": {
     "AD": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "meteo_ad"
+      ],
+      "status": "national_daily"
     },
     "AL": {
       "providers": [

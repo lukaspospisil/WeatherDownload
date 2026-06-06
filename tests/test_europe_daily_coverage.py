@@ -25,6 +25,8 @@ class EuropeCoverageTests(unittest.TestCase):
     def test_classification_matches_registry_and_documented_overrides(self) -> None:
         summary = MODULE.classify_europe_coverage()
 
+        self.assertEqual(summary['daily']['AD']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['AD']['providers'], ['meteo_ad'])
         self.assertEqual(summary['daily']['CZ']['status'], 'national_daily')
         self.assertIn('historical_csv', summary['daily']['CZ']['providers'])
         self.assertEqual(summary['daily']['AL']['status'], 'ghcnd_daily')
@@ -140,6 +142,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['CZ']['status'], 'national_daily')
         self.assertEqual(summary['daily']['IE']['status'], 'national_daily')
         self.assertEqual(summary['daily']['LU']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['AD']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['AD']['providers'], ['meteo_ad'])
         self.assertEqual(summary['daily']['LI']['status'], 'national_daily')
         self.assertEqual(summary['daily']['NO']['status'], 'national_daily')
         self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
@@ -463,6 +467,14 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('| `SK` | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` |', capabilities_doc)
         self.assertEqual(summary['daily']['SK']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['SK']['providers'], ['ghcnd', 'recent'])
+
+    def test_supported_capabilities_and_coverage_classify_ad_national_daily_consistently(self) -> None:
+        capabilities_doc = Path('docs/supported_capabilities.md').read_text(encoding='utf-8')
+        summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
+
+        self.assertIn('| `AD` | `meteo_ad` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `wind_speed`, `wind_speed_max`, `relative_humidity`, `sunshine_duration`, `solar_radiation` |', capabilities_doc)
+        self.assertEqual(summary['daily']['AD']['status'], 'national_daily')
+        self.assertEqual(summary['daily']['AD']['providers'], ['meteo_ad'])
 
     def test_supported_capabilities_and_coverage_classify_no_frost_daily_consistently(self) -> None:
         capabilities_doc = Path('docs/supported_capabilities.md').read_text(encoding='utf-8')

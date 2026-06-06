@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from importlib import import_module
 
+from .ad import PROVIDER as AD_METEO_AD_PROVIDER
 from .al import PROVIDER as AL_GHCND_PROVIDER
 from .at import PROVIDER as GEOSPHERE_PROVIDER
 from .ba import PROVIDER as BA_GHCND_PROVIDER
@@ -51,6 +52,7 @@ from .us import PROVIDER as US_GHCND_PROVIDER
 IS_GHCND_PROVIDER = import_module('weatherdownload.providers.is').PROVIDER
 
 PROVIDERS: dict[str, WeatherProvider] = {
+    'AD': AD_METEO_AD_PROVIDER,
     'AT': GEOSPHERE_PROVIDER,
     'AL': AL_GHCND_PROVIDER,
     'BA': BA_GHCND_PROVIDER,

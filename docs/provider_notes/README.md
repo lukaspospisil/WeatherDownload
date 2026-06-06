@@ -19,6 +19,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 
 ## National providers
 
+- [Meteo.ad Andorra](ad_meteo_ad.md)
 - [GeoSphere Austria](at_geosphere.md)
 - [RMI/KMI Belgium](be_rmi.md)
 - [CHMI Czech Republic](cz_chmi.md)

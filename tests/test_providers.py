@@ -48,10 +48,18 @@ def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CA', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MD', 'ME', 'MK', 'MT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'TR', 'UA', 'US'])
+        self.assertEqual(list_supported_countries(), ['AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CA', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV', 'MD', 'ME', 'MK', 'MT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'TR', 'UA', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code('uk'), 'GB')
         self.assertEqual(normalize_country_code(None), 'CZ')
+
+    def test_discovery_country_ad_exposes_meteo_ad_daily_station_slice(self) -> None:
+        self.assertEqual(list_providers(country='AD'), ['meteo_ad'])
+        self.assertEqual(list_resolutions(country='AD', provider='meteo_ad'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='AD', provider='meteo_ad', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'sunshine_duration', 'solar_radiation'],
+        )
 
     def test_discovery_country_li_exposes_meteoswiss_daily_station_slice(self) -> None:
         self.assertEqual(list_providers(country='LI'), ['meteoswiss'])

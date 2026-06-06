@@ -21,6 +21,7 @@ class CapabilityRow:
 
 
 SOURCE_DESCRIPTIONS: dict[tuple[str, str, str], str] = {
+    ('AD', 'meteo_ad', 'daily'): 'Meteo.ad public daily climatology export',
     ('AT', 'historical', 'daily'): 'GeoSphere Austria historical daily station observations',
     ('AT', 'historical', '1hour'): 'GeoSphere Austria historical hourly station observations',
     ('AT', 'historical', '10min'): 'GeoSphere Austria historical 10-minute station observations',
@@ -104,6 +105,7 @@ SOURCE_DESCRIPTIONS: dict[tuple[str, str, str], str] = {
 }
 
 NOTES: dict[tuple[str, str, str], str] = {
+    ('AD', 'meteo_ad', 'daily'): 'Official national Meteo.ad daily export path. Source-backed fields only: tas_mean, tas_max, tas_min, precipitation, wind_speed, wind_speed_max, relative_humidity, sunshine_duration, and solar_radiation. Sunshine minutes are normalized to canonical hours, solar radiation J m^-2 is normalized to canonical MJ m^-2, and no provider-side derivation is added for pressure, vapour_pressure, snow_depth, or FAO fields.',
     ('AL', 'ghcnd', 'daily'): 'Direct-prefix GHCN fallback for Albania only; raw GHCN station ids with prefix AL; inventory-driven station elements; unsupported wind, humidity, pressure, vapour_pressure, sunshine_duration, and solar_radiation are not provider-derived; not FAO-ready.',
     ('BA', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix BK; NOAA GHCND prefix BA means Bahrain and is not used for Bosnia and Herzegovina; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('AT', 'historical', 'daily'): 'National GeoSphere daily path; `ghcnd` is an additional daily provider. `cglo_j` is mapped to observed `solar_radiation` in canonical MJ m^-2 via `value * 0.01`; sunshine_duration remains separate.',
