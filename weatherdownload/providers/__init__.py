@@ -4,6 +4,7 @@ from importlib import import_module
 
 from .al import PROVIDER as AL_GHCND_PROVIDER
 from .at import PROVIDER as GEOSPHERE_PROVIDER
+from .ba import PROVIDER as BA_GHCND_PROVIDER
 from .base import WeatherProvider
 from .be import PROVIDER as BE_PROVIDER
 from .bg import PROVIDER as BG_GHCND_PROVIDER
@@ -48,6 +49,7 @@ IS_GHCND_PROVIDER = import_module('weatherdownload.providers.is').PROVIDER
 PROVIDERS: dict[str, WeatherProvider] = {
     'AT': GEOSPHERE_PROVIDER,
     'AL': AL_GHCND_PROVIDER,
+    'BA': BA_GHCND_PROVIDER,
     'BE': BE_PROVIDER,
     'BG': BG_GHCND_PROVIDER,
     'CA': CA_GHCND_PROVIDER,

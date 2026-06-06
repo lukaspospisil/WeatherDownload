@@ -221,8 +221,10 @@
       "status": "national_daily"
     },
     "BA": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "BE": {
       "providers": [

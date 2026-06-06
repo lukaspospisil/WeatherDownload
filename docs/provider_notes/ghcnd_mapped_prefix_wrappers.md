@@ -4,7 +4,7 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 
 ## Provider identifiers
 
-- country: `AT`, `CH`, `CZ`, `DE`, `DK`, `ME`, `PT`, `RS`, `SE`, `SK`
+- country: `AT`, `BA`, `CH`, `CZ`, `DE`, `DK`, `ME`, `PT`, `RS`, `SE`, `SK`
 - provider: `ghcnd`
 - `provider`: `ghcnd`
 - resolution(s): `daily`
@@ -25,6 +25,7 @@ This note covers the shared NOAA GHCN-Daily wrapper pattern used for the current
 
 These wrappers are grouped together because the WeatherDownload country code and the GHCN country prefix differ:
 
+- `BA -> BK`
 - `AT -> AU`
 - `CH -> SZ`
 - `CZ -> EZ`
@@ -36,7 +37,7 @@ These wrappers are grouped together because the WeatherDownload country code and
 - `SE -> SW`
 - `SK -> LO`
 
-The `AT -> AU` mapping is especially worth keeping explicit because GHCN `AU` means Austria here, not WeatherDownload country `AU`. The `ME -> MJ` mapping is important because Montenegro uses GHCN prefix `MJ`, not direct prefix `ME`. The `RS -> RI` mapping is equally important because GHCN `RI` means Serbia, while GHCN `RS` means Russia and must not be used for Serbia.
+The `AT -> AU` mapping is especially worth keeping explicit because GHCN `AU` means Austria here, not WeatherDownload country `AU`. The `BA -> BK` mapping is important because GHCN `BA` means Bahrain, while Bosnia and Herzegovina uses GHCN prefix `BK`. The `ME -> MJ` mapping is important because Montenegro uses GHCN prefix `MJ`, not direct prefix `ME`. The `RS -> RI` mapping is equally important because GHCN `RI` means Serbia, while GHCN `RS` means Russia and must not be used for Serbia.
 
 ## Supported data
 
@@ -63,6 +64,7 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - the shared helper supports both direct-prefix wrappers (`FI -> FI`) and mapped-prefix wrappers (`DE -> GM`) using the same configuration pattern
 - station-level availability is inventory-driven and can differ by station
 - `tas_mean` comes only from raw NOAA `TAVG`; this wrapper does not derive a mean from `TMAX` and `TMIN`
+- Bosnia and Herzegovina uses WeatherDownload country code `BA` but GHCN station prefix `BK`; GHCN prefix `BA` belongs to Bahrain
 - Montenegro uses WeatherDownload country code `ME` but GHCN station prefix `MJ`; do not use direct prefix `ME` for Montenegro
 - Serbia uses WeatherDownload country code `RS` but GHCN station prefix `RI`; GHCN prefix `RS` belongs to Russia
 - `snowfall` is intentionally unsupported because there is no existing canonical snowfall element wired for GHCN in this pass

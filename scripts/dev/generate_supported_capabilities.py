@@ -25,6 +25,7 @@ SOURCE_DESCRIPTIONS: dict[tuple[str, str, str], str] = {
     ('AT', 'historical', '1hour'): 'GeoSphere Austria historical hourly station observations',
     ('AT', 'historical', '10min'): 'GeoSphere Austria historical 10-minute station observations',
     ('AL', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
+    ('BA', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('AT', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('BE', 'ghcnd', 'daily'): 'NOAA GHCN-Daily station observations',
     ('BE', 'historical', '1hour'): 'RMI/KMI AWS hourly observations',
@@ -100,6 +101,7 @@ SOURCE_DESCRIPTIONS: dict[tuple[str, str, str], str] = {
 
 NOTES: dict[tuple[str, str, str], str] = {
     ('AL', 'ghcnd', 'daily'): 'Direct-prefix GHCN fallback for Albania only; raw GHCN station ids with prefix AL; inventory-driven station elements; unsupported wind, humidity, pressure, vapour_pressure, sunshine_duration, and solar_radiation are not provider-derived; not FAO-ready.',
+    ('BA', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix BK; NOAA GHCND prefix BA means Bahrain and is not used for Bosnia and Herzegovina; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('AT', 'historical', 'daily'): 'National GeoSphere daily path; `ghcnd` is an additional daily provider. `cglo_j` is mapped to observed `solar_radiation` in canonical MJ m^-2 via `value * 0.01`; sunshine_duration remains separate.',
     ('AT', 'historical', '1hour'): 'Single public hourly provider for AT. `cglo` hourly mean irradiance is converted to observed `solar_radiation` interval energy in canonical MJ m^-2 via `value * 0.0036`; sunshine_duration remains separate; no FAO workflow change.',
     ('AT', 'historical', '10min'): 'Single public 10-minute provider for AT. `cglo` 10-minute mean irradiance is converted to observed `solar_radiation` interval energy in canonical MJ m^-2 via `value * 0.0006`; sunshine_duration remains separate; no provider-side aggregation.',
