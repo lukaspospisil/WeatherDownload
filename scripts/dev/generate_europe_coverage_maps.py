@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from weatherdownload import list_providers, list_resolutions, list_supported_countries
+from weatherdownload.providers import get_provider
 
 
 STATUS_CONFIG_PATH = Path('docs/coverage/europe_resolution_status.yml')
@@ -113,6 +114,11 @@ def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dic
                 supported_countries=supported_countries,
                 discovery_resolutions=spec['discovery_resolutions'],
             )
+            stable_national_daily_providers = _stable_national_daily_providers(
+                country=country,
+                supported_countries=supported_countries,
+                providers=providers,
+            )
 
             if country in attempted:
                 note = attempted[country].get('note', '') if isinstance(attempted[country], dict) else ''
@@ -122,7 +128,7 @@ def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dic
                     'note': note,
                     'project_status_override': True,
                 }
-            elif resolution_name == 'daily' and any(provider != 'ghcnd' for provider in providers):
+            elif resolution_name == 'daily' and stable_national_daily_providers:
                 resolution_summary[country] = {
                     'status': spec['national_status'],
                     'providers': [provider for provider in providers if provider != 'ghcnd'],
@@ -130,7 +136,7 @@ def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dic
             elif resolution_name == 'daily' and 'ghcnd' in providers:
                 resolution_summary[country] = {
                     'status': 'ghcnd_daily',
-                    'providers': ['ghcnd'],
+                    'providers': providers,
                 }
             elif resolution_name != 'daily' and providers:
                 resolution_summary[country] = {
@@ -165,6 +171,26 @@ def _providers_for_resolution(
             providers.append(provider)
 
     return sorted(set(providers))
+
+
+def _stable_national_daily_providers(
+    *,
+    country: str,
+    supported_countries: set[str],
+    providers: list[str],
+) -> list[str]:
+    if country not in supported_countries:
+        return []
+
+    weather_provider = get_provider(country=country)
+    stable_non_ghcnd_providers = {
+        spec.provider
+        for spec in weather_provider.list_implemented_dataset_specs()
+        if spec.resolution == 'daily'
+        and spec.provider != 'ghcnd'
+        and not getattr(spec, 'experimental', False)
+    }
+    return [provider for provider in providers if provider in stable_non_ghcnd_providers]
 
 
 def load_geodata(path: Path = GEODATA_PATH) -> dict[str, Any]:

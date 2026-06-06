@@ -37,7 +37,7 @@ These wrappers are grouped together because the WeatherDownload country code and
 - `SE -> SW`
 - `SK -> LO`
 
-The `AT -> AU` mapping is especially worth keeping explicit because GHCN `AU` means Austria here, not WeatherDownload country `AU`. The `BA -> BK` mapping is important because GHCN `BA` means Bahrain, while Bosnia and Herzegovina uses GHCN prefix `BK`. The `ME -> MJ` mapping is important because Montenegro uses GHCN prefix `MJ`, not direct prefix `ME`. The `RS -> RI` mapping is equally important because GHCN `RI` means Serbia, while GHCN `RS` means Russia and must not be used for Serbia.
+The `AT -> AU` mapping is especially worth keeping explicit because GHCN `AU` means Austria here, not WeatherDownload country `AU`. The `BA -> BK` mapping is important because GHCN `BA` means Bahrain, while Bosnia and Herzegovina uses GHCN prefix `BK`. The `ME -> MJ` mapping is important because Montenegro uses GHCN prefix `MJ`, not direct prefix `ME`. The `RS -> RI` mapping is equally important because GHCN `RI` means Serbia, while GHCN `RS` means Russia and must not be used for Serbia. The `SK -> LO` mapping is important because Slovakia uses GHCN prefix `LO`, not direct prefix `SK`.
 
 ## Supported data
 
@@ -67,6 +67,8 @@ For the authoritative current matrix, see [Supported Capabilities](../supported_
 - Bosnia and Herzegovina uses WeatherDownload country code `BA` but GHCN station prefix `BK`; GHCN prefix `BA` belongs to Bahrain
 - Montenegro uses WeatherDownload country code `ME` but GHCN station prefix `MJ`; do not use direct prefix `ME` for Montenegro
 - Serbia uses WeatherDownload country code `RS` but GHCN station prefix `RI`; GHCN prefix `RS` belongs to Russia
+- Slovakia uses WeatherDownload country code `SK` but GHCN station prefix `LO`; do not use direct prefix `SK` for Slovakia
+- `SK / ghcnd / daily` is a GHCN-Daily fallback path, not a national Slovakia provider; the separate `SK / recent / daily` SHMU path remains experimental and recent-only
 - `snowfall` is intentionally unsupported because there is no existing canonical snowfall element wired for GHCN in this pass
 - `open_water_evaporation` is intentionally unsupported on these wrappers
 - national providers remain the place for country-specific station IDs and extra national-only elements such as `CZ / historical_csv / daily` raw `VY` or `SK / recent / daily` raw `voda_vypar`

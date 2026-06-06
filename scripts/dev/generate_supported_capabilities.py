@@ -173,8 +173,8 @@ NOTES: dict[tuple[str, str, str], str] = {
     ('SE', 'historical', 'daily'): 'Corrected-archive excludes latest three months; `ghcnd` is an additional daily provider.',
     ('SE', 'historical', '1hour'): 'Corrected-archive excludes latest three months.',
     ('SE', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix SW; inventory-driven station elements; no EVAP/open_water_evaporation.',
-    ('SK', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix LO; inventory-driven station elements; no EVAP/open_water_evaporation.',
-    ('SK', 'recent', 'daily'): 'Experimental provider; measured water-surface evaporation supported via raw voda_vypar.',
+    ('SK', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix LO; direct GHCND prefix SK is not used for Slovakia; inventory-driven station elements; no EVAP/open_water_evaporation.',
+    ('SK', 'recent', 'daily'): 'Experimental recent-only provider; measured water-surface evaporation supported via raw voda_vypar; stable daily fallback coverage is provided separately through `SK / ghcnd / daily`.',
     ('US', 'ghcnd', 'daily'): 'Raw GHCN station ids; inventory-driven station elements; measured open_water_evaporation supported via raw EVAP.',
 }
 

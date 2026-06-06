@@ -6,7 +6,7 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from weatherdownload import list_providers, list_resolutions, list_supported_countries
+from weatherdownload import get_provider, list_providers, list_resolutions, list_supported_countries
 
 
 MODULE_PATH = Path('scripts/dev/generate_europe_coverage_maps.py')
@@ -75,11 +75,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['RS']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['SI']['status'], 'national_daily')
         self.assertEqual(summary['daily']['SI']['providers'], ['arso'])
-        self.assertEqual(summary['daily']['SK']['status'], 'attempted_no_reliable_daily')
-        self.assertIn('recent', summary['daily']['SK']['providers'])
-        self.assertIn('ghcnd', summary['daily']['SK']['providers'])
-        self.assertTrue(summary['daily']['SK']['project_status_override'])
-        self.assertIn('recent-only', summary['daily']['SK']['note'])
+        self.assertEqual(summary['daily']['SK']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['SK']['providers'], ['ghcnd', 'recent'])
 
         self.assertEqual(summary['hourly']['DE']['status'], 'national_hourly')
         self.assertIn('historical', summary['hourly']['DE']['providers'])
@@ -139,7 +136,7 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
-        self.assertTrue({'AL', 'BA', 'BG', 'CY', 'GR', 'HR', 'IS', 'MD', 'ME', 'MK', 'MT', 'RS'}.issubset(ghcnd_daily_countries))
+        self.assertTrue({'AL', 'BA', 'BG', 'CY', 'GR', 'HR', 'IS', 'MD', 'ME', 'MK', 'MT', 'RS', 'SK'}.issubset(ghcnd_daily_countries))
 
         for country in MODULE.COVERAGE_COUNTRIES:
             with self.subTest(country=country):
@@ -452,13 +449,10 @@ class EuropeCoverageTests(unittest.TestCase):
         capabilities_doc = Path('docs/supported_capabilities.md').read_text(encoding='utf-8')
         summary = json.loads(Path('docs/coverage/europe_coverage.json').read_text(encoding='utf-8'))
 
+        self.assertIn('| `SK` | `ghcnd` | `daily` | `tas_mean`, `tas_max`, `tas_min`, `precipitation`, `snow_depth` |', capabilities_doc)
         self.assertIn('| `SK` | `recent` | `daily` | `tas_max`, `tas_min`, `sunshine_duration`, `precipitation`, `open_water_evaporation` |', capabilities_doc)
-        self.assertEqual(summary['daily']['SK']['status'], 'attempted_no_reliable_daily')
-        self.assertIn('recent', summary['daily']['SK']['providers'])
-        self.assertIn('ghcnd', summary['daily']['SK']['providers'])
-        self.assertTrue(summary['daily']['SK']['project_status_override'])
-        self.assertIn('SHMU recent daily downloader', summary['daily']['SK']['note'])
-        self.assertIn('not counted as stable national daily coverage', summary['daily']['SK']['note'])
+        self.assertEqual(summary['daily']['SK']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['SK']['providers'], ['ghcnd', 'recent'])
 
     def test_supported_capabilities_and_coverage_classify_no_frost_daily_consistently(self) -> None:
         capabilities_doc = Path('docs/supported_capabilities.md').read_text(encoding='utf-8')
@@ -541,7 +535,7 @@ def _expected_daily_summary_from_discovery() -> dict[str, dict[str, object]]:
                 'note': attempted_info.get('note', '') if isinstance(attempted_info, dict) else '',
                 'project_status_override': True,
             }
-        elif any(provider != 'ghcnd' for provider in providers):
+        elif _stable_daily_non_ghcnd_providers(country, supported_countries, providers):
             expected[country] = {
                 'status': 'national_daily',
                 'providers': [provider for provider in providers if provider != 'ghcnd'],
@@ -549,7 +543,7 @@ def _expected_daily_summary_from_discovery() -> dict[str, dict[str, object]]:
         elif 'ghcnd' in providers:
             expected[country] = {
                 'status': 'ghcnd_daily',
-                'providers': ['ghcnd'],
+                'providers': providers,
             }
         else:
             expected[country] = {
@@ -569,6 +563,25 @@ def _daily_providers_for_country(country: str, supported_countries: set[str]) ->
         if 'daily' in set(list_resolutions(country=country, provider=provider)):
             providers.append(provider)
     return sorted(set(providers))
+
+
+def _stable_daily_non_ghcnd_providers(
+    country: str,
+    supported_countries: set[str],
+    providers: list[str],
+) -> list[str]:
+    if country not in supported_countries:
+        return []
+
+    weather_provider = get_provider(country=country)
+    stable_non_ghcnd_providers = {
+        spec.provider
+        for spec in weather_provider.list_implemented_dataset_specs()
+        if spec.resolution == 'daily'
+        and spec.provider != 'ghcnd'
+        and not getattr(spec, 'experimental', False)
+    }
+    return [provider for provider in providers if provider in stable_non_ghcnd_providers]
 
 
 if __name__ == '__main__':

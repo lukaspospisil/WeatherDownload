@@ -543,6 +543,19 @@ class ProviderTests(unittest.TestCase):
             ['1', '4', '6', '7', '9'],
         )
 
+    def test_discovery_country_sk_includes_stable_ghcnd_daily_and_experimental_recent(self) -> None:
+        self.assertEqual(list_providers(country='SK'), ['ghcnd', 'recent'])
+        self.assertEqual(list_resolutions(country='SK', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='SK', provider='recent'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='SK', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='SK', provider='recent', resolution='daily'),
+            ['tas_max', 'tas_min', 'sunshine_duration', 'precipitation', 'open_water_evaporation'],
+        )
+
     def test_se_hourly_query_is_provider_valid(self) -> None:
         hourly_query = ObservationQuery(country='SE', provider='historical', resolution='1hour', station_ids=['98230'], start='2012-11-29T11:00:00Z', end='2012-11-29T13:00:00Z', elements=['tas_mean', 'pressure'])
         self.assertEqual(hourly_query.elements, ['1', '9'])
