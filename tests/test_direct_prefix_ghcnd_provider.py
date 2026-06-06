@@ -142,6 +142,14 @@ COUNTRY_SPECS = {
         'start_date': '2021-03-01',
         'end_date': '2021-03-02',
     },
+    'MK': {
+        'station_core': 'MK000000001',
+        'station_prcp_only': 'MK000000002',
+        'station_unsupported': 'MK000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_MK000000001.dly'),
+        'start_date': '2021-04-01',
+        'end_date': '2021-04-02',
+    },
     'LV': {
         'station_core': 'LV000000001',
         'station_prcp_only': 'LV000000002',
@@ -192,7 +200,7 @@ COUNTRY_SPECS = {
     },
 }
 
-GHCND_ONLY_COUNTRIES = ('AL', 'BG', 'CY', 'GR', 'HR', 'IS', 'IT', 'MD', 'MT', 'NZ')
+GHCND_ONLY_COUNTRIES = ('AL', 'BG', 'CY', 'GR', 'HR', 'IS', 'IT', 'MD', 'MK', 'MT', 'NZ')
 
 
 class DirectPrefixGhcndProviderTests(unittest.TestCase):
