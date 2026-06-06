@@ -30,6 +30,14 @@ SAMPLE_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 SAMPLE_INVENTORY_PATH = Path('tests/data/sample_ghcnd_inventory.txt')
 
 COUNTRY_SPECS = {
+    'AL': {
+        'station_core': 'AL000000001',
+        'station_prcp_only': 'AL000000002',
+        'station_unsupported': 'AL000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_AL000000001.dly'),
+        'start_date': '2021-01-01',
+        'end_date': '2021-01-02',
+    },
     'BE': {
         'station_core': 'BE000000001',
         'station_prcp_only': 'BE000000002',
@@ -168,7 +176,7 @@ COUNTRY_SPECS = {
     },
 }
 
-GHCND_ONLY_COUNTRIES = ('BG', 'GR', 'HR', 'IS', 'IT', 'MT', 'NZ')
+GHCND_ONLY_COUNTRIES = ('AL', 'BG', 'GR', 'HR', 'IS', 'IT', 'MT', 'NZ')
 
 
 class DirectPrefixGhcndProviderTests(unittest.TestCase):

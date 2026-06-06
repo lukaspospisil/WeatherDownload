@@ -209,8 +209,10 @@
       "status": "not_attempted"
     },
     "AL": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "AT": {
       "providers": [
