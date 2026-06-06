@@ -224,7 +224,7 @@
     },
     "BE": {
       "providers": [
-        "historical"
+        "rmi"
       ],
       "status": "national_daily"
     },

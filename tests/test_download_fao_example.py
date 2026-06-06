@@ -869,7 +869,7 @@ class DownloadFaoExampleTests(unittest.TestCase):
     def test_get_fao_country_config_returns_be_mapping(self) -> None:
         config = download_fao.get_fao_country_config('BE')
         self.assertEqual(config.country, 'BE')
-        self.assertEqual(config.provider, 'historical')
+        self.assertEqual(config.provider, 'rmi')
         self.assertEqual(config.query_elements, ('tas_mean', 'tas_max', 'tas_min', 'wind_speed', 'sunshine_duration'))
         self.assertEqual(config.raw_to_canonical['TEMP_AVG'], 'tas_mean')
         self.assertEqual(config.provider_element_mapping['vapour_pressure']['status'], 'unavailable')

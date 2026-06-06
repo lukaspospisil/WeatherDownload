@@ -812,6 +812,8 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
         daily_provider_name = 'dmi'
     elif normalized_country == 'ES':
         daily_provider_name = 'aemet'
+    elif normalized_country == 'BE':
+        daily_provider_name = 'rmi'
     elif normalized_country == 'NL':
         daily_provider_name = 'knmi'
     elif normalized_country == 'LU':
@@ -870,7 +872,7 @@ def get_fao_country_config(country: str | None, *, fill_missing: str = 'none') -
     if normalized_country == 'AT':
         return FaoCountryConfig('AT', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, AT_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(AT_PROVIDER_ELEMENT_MAPPING), dict(AT_ASSUMPTIONS), 'GeoSphere Austria observed daily input bundle prepared for later FAO workflow packaging', 'GeoSphere Austria Dataset API station historical daily klima-v2-1d')
     if normalized_country == 'BE':
-        return FaoCountryConfig('BE', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, BE_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(BE_PROVIDER_ELEMENT_MAPPING), dict(BE_ASSUMPTIONS), 'RMI/KMI Belgium observed daily input bundle prepared for later FAO workflow packaging', 'RMI/KMI open-data platform aws_1day daily station observations')
+        return FaoCountryConfig('BE', 'rmi', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, BE_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(BE_PROVIDER_ELEMENT_MAPPING), dict(BE_ASSUMPTIONS), 'RMI/KMI Belgium observed daily input bundle prepared for later FAO workflow packaging', 'RMI/KMI open-data platform aws_1day daily station observations')
     if normalized_country == 'CH':
         return FaoCountryConfig('CH', 'historical', 'daily', ('HISTORICAL_DAILY',), selected_canonical_to_raw, raw_to_canonical, {}, CH_REQUIRED_OBSERVED_ELEMENTS, query_elements, dict(CH_PROVIDER_ELEMENT_MAPPING), dict(CH_ASSUMPTIONS), 'MeteoSwiss Switzerland observed daily input bundle prepared for later FAO workflow packaging', 'MeteoSwiss A1 automatic weather stations historical daily observations')
     if normalized_country == 'DK':

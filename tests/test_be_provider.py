@@ -20,6 +20,8 @@ SAMPLE_STATIONS_PATH = Path('tests/data/sample_be_aws_station.json')
 SAMPLE_DAILY_TEXT = Path('tests/data/sample_be_aws_1day.json').read_text(encoding='utf-8')
 SAMPLE_HOURLY_TEXT = Path('tests/data/sample_be_aws_1hour.json').read_text(encoding='utf-8')
 SAMPLE_TENMIN_TEXT = Path('tests/data/sample_be_aws_10min.json').read_text(encoding='utf-8')
+SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
+SAMPLE_GHCND_DLY_TEXT = Path('tests/data/sample_ghcnd_BE000000001.dly').read_text(encoding='utf-8')
 
 EXPECTED_BE_DAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function',
@@ -29,12 +31,13 @@ EXPECTED_BE_SUBDAILY_COLUMNS = [
     'station_id', 'gh_id', 'element', 'element_raw', 'timestamp',
     'value', 'flag', 'quality', 'provider', 'resolution',
 ]
-EXPECTED_BE_DAILY_CANONICAL_MAPPING = {
+EXPECTED_BE_RMI_DAILY_CANONICAL_MAPPING = {
     'tas_mean': 'temp_avg',
     'tas_max': 'temp_max',
     'tas_min': 'temp_min',
     'precipitation': 'precip_quantity',
     'wind_speed': 'wind_speed_10m',
+    'wind_speed_max': 'wind_gusts_speed',
     'relative_humidity': 'humidity_rel_shelter_avg',
     'pressure': 'pressure',
     'sunshine_duration': 'sun_duration',
@@ -66,8 +69,10 @@ class _MockResponse:
 class BelgiumProviderTests(unittest.TestCase):
     def test_supported_countries_include_be(self) -> None:
         self.assertIn('BE', list_supported_countries())
-        self.assertEqual(list_providers(country='BE'), ['historical'])
-        self.assertEqual(list_resolutions(country='BE', provider='historical'), ['10min', '1hour', 'daily'])
+        self.assertEqual(list_providers(country='BE'), ['ghcnd', 'historical', 'rmi'])
+        self.assertEqual(list_resolutions(country='BE', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='BE', provider='historical'), ['10min', '1hour'])
+        self.assertEqual(list_resolutions(country='BE', provider='rmi'), ['daily'])
 
     def test_read_station_metadata_country_be_from_local_fixture(self) -> None:
         stations = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
@@ -76,6 +81,11 @@ class BelgiumProviderTests(unittest.TestCase):
             ['station_id', 'gh_id', 'begin_date', 'end_date', 'full_name', 'longitude', 'latitude', 'elevation_m'],
         )
         self.assertEqual(stations['station_id'].tolist(), ['6414', '6438'])
+        self.assertTrue(stations['gh_id'].isna().all())
+
+    def test_read_station_metadata_country_be_from_ghcnd_fixture(self) -> None:
+        stations = read_station_metadata(country='BE', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        self.assertEqual(stations['station_id'].tolist(), ['BE000000001', 'BE000000002'])
         self.assertTrue(stations['gh_id'].isna().all())
 
     def test_be_station_metadata_keeps_only_source_backed_fields(self) -> None:
@@ -97,14 +107,24 @@ class BelgiumProviderTests(unittest.TestCase):
             ['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'],
         )
         self.assertIn('temp_avg', metadata['element'].tolist())
+        self.assertIn('wind_gusts_speed', metadata['element'].tolist())
         self.assertIn('temp_dry_shelter_avg', metadata['element'].tolist())
+        self.assertIn('HISTORICAL_DAILY', metadata['obs_type'].tolist())
         self.assertIn('HISTORICAL_HOURLY', metadata['obs_type'].tolist())
         self.assertIn('HISTORICAL_10MIN', metadata['obs_type'].tolist())
 
     def test_discovery_country_be_returns_canonical_and_raw_elements(self) -> None:
         self.assertEqual(
-            list_supported_elements(country='BE', provider='historical', resolution='daily'),
-            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'],
+            list_supported_elements(country='BE', provider='rmi', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'sunshine_duration'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='BE', provider='rmi', resolution='daily', provider_raw=True),
+            ['temp_avg', 'temp_max', 'temp_min', 'precip_quantity', 'wind_speed_10m', 'wind_gusts_speed', 'humidity_rel_shelter_avg', 'pressure', 'sun_duration'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='BE', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
             list_supported_elements(country='BE', provider='historical', resolution='1hour'),
@@ -116,10 +136,10 @@ class BelgiumProviderTests(unittest.TestCase):
         )
 
     def test_be_daily_query_accepts_canonical_and_raw_codes(self) -> None:
-        canonical_query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
-        raw_query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['temp_avg', 'precip_quantity'])
-        self.assertEqual(canonical_query.elements, ['temp_avg', 'precip_quantity'])
-        self.assertEqual(raw_query.elements, ['temp_avg', 'precip_quantity'])
+        canonical_query = ObservationQuery(country='BE', provider='rmi', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation', 'wind_speed_max', 'sunshine_duration'])
+        raw_query = ObservationQuery(country='BE', provider='rmi', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['temp_avg', 'precip_quantity', 'wind_gusts_speed', 'sun_duration'])
+        self.assertEqual(canonical_query.elements, ['temp_avg', 'precip_quantity', 'wind_gusts_speed', 'sun_duration'])
+        self.assertEqual(raw_query.elements, ['temp_avg', 'precip_quantity', 'wind_gusts_speed', 'sun_duration'])
 
     def test_be_hourly_query_accepts_canonical_and_raw_codes(self) -> None:
         canonical_query = ObservationQuery(country='BE', provider='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
@@ -140,15 +160,15 @@ class BelgiumProviderTests(unittest.TestCase):
             if url == RMI_AWS_WFS_URL:
                 self.assertIn('code = 6414', params['cql_filter'])
                 self.assertIn("timestamp >= '2024-01-01T00:00:00Z'", params['cql_filter'])
-                self.assertEqual(params['typeName'], 'aws:aws_1day')
+                self.assertEqual(params['typeNames'], 'aws:aws_1day')
                 return _MockResponse(SAMPLE_DAILY_TEXT)
             raise AssertionError(f'unexpected url: {url}')
 
-        query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation'])
+        query = ObservationQuery(country='BE', provider='rmi', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'precipitation', 'wind_speed_max', 'sunshine_duration'])
         with patch('weatherdownload.providers.be.daily.requests.get', side_effect=fake_get):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         self.assertEqual(list(observations.columns), EXPECTED_BE_DAILY_COLUMNS)
-        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'tas_mean'])
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'sunshine_duration', 'tas_mean', 'wind_speed_max'])
         self.assertEqual(observations.iloc[0]['flag'], EXPECTED_DAILY_RAW_QC_FLAG)
         self.assertEqual(str(observations['quality'].dtype), 'Int64')
 
@@ -193,13 +213,15 @@ class BelgiumProviderTests(unittest.TestCase):
 
     def test_be_daily_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
-        query = ObservationQuery(country='BE', provider='historical', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=list(EXPECTED_BE_DAILY_CANONICAL_MAPPING.keys()))
+        query = ObservationQuery(country='BE', provider='rmi', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=list(EXPECTED_BE_RMI_DAILY_CANONICAL_MAPPING.keys()))
         with patch('weatherdownload.providers.be.daily.requests.get', return_value=_MockResponse(SAMPLE_DAILY_TEXT)):
             observations = download_observations(query, country='BE', station_metadata=station_metadata)
         mapping = {row.element: row.element_raw for row in observations[['element', 'element_raw']].drop_duplicates().itertuples(index=False)}
-        self.assertEqual(mapping, EXPECTED_BE_DAILY_CANONICAL_MAPPING)
+        self.assertEqual(mapping, EXPECTED_BE_RMI_DAILY_CANONICAL_MAPPING)
         lookup = observations.set_index(['element', 'observation_date'])['value']
         self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2024-01-01').date())]), 4.2)
+        self.assertAlmostEqual(float(lookup[('wind_speed_max', pd.Timestamp('2024-01-01').date())]), 8.2)
+        self.assertAlmostEqual(float(lookup[('sunshine_duration', pd.Timestamp('2024-01-01').date())]), 380.92 / 60.0)
 
     def test_be_hourly_contract_mapping_and_key_values_are_stable(self) -> None:
         station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_STATIONS_PATH))
@@ -223,7 +245,15 @@ class BelgiumProviderTests(unittest.TestCase):
         self.assertAlmostEqual(float(lookup[('tas_mean', pd.Timestamp('2024-01-01T00:10:00Z'))]), 4.15)
         self.assertAlmostEqual(float(lookup[('pressure', pd.Timestamp('2024-01-01T00:20:00Z'))]), 1008.3)
 
+    def test_download_be_ghcnd_daily_fallback_works(self) -> None:
+        station_metadata = read_station_metadata(country='BE', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        query = ObservationQuery(country='BE', provider='ghcnd', resolution='daily', station_ids=['BE000000001'], start_date='2020-04-01', end_date='2020-04-02', elements=['tas_mean', 'tas_max', 'precipitation', 'snow_depth'])
+        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_DLY_TEXT):
+            observations = download_observations(query, country='BE', station_metadata=station_metadata)
+        self.assertEqual(list(observations.columns), EXPECTED_BE_DAILY_COLUMNS)
+        self.assertEqual(sorted(observations['element'].unique().tolist()), ['precipitation', 'snow_depth', 'tas_max', 'tas_mean'])
+        self.assertTrue(observations['flag'].isna().all())
+
 
 if __name__ == '__main__':
     unittest.main()
-

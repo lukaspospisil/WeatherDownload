@@ -30,6 +30,14 @@ SAMPLE_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 SAMPLE_INVENTORY_PATH = Path('tests/data/sample_ghcnd_inventory.txt')
 
 COUNTRY_SPECS = {
+    'BE': {
+        'station_core': 'BE000000001',
+        'station_prcp_only': 'BE000000002',
+        'station_unsupported': 'BE000000003',
+        'fixture_path': Path('tests/data/sample_ghcnd_BE000000001.dly'),
+        'start_date': '2020-04-01',
+        'end_date': '2020-04-02',
+    },
     'BG': {
         'station_core': 'BG000000001',
         'station_prcp_only': 'BG000000002',

@@ -2,6 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..ghcnd.registry import (
+    GHCND_STANDARD_CANONICAL_ELEMENTS,
+    GhcndDatasetSpec,
+    build_country_dataset_specs,
+    get_country_dataset_spec,
+    list_country_dataset_specs,
+    list_country_implemented_dataset_specs,
+)
+
 
 @dataclass(frozen=True)
 class BelgiumDatasetSpec:
@@ -16,18 +25,24 @@ class BelgiumDatasetSpec:
     canonical_elements: dict[str, tuple[str, ...]] | None = None
 
 
-RMI_AWS_WFS_URL = 'https://opendata.meteo.be/geoserver/aws/ows'
+RMI_AWS_WFS_URL = 'https://opendata.meteo.be/service/aws/ows'
 RMI_AWS_STATION_LAYER = 'aws:aws_station'
 RMI_AWS_DAILY_LAYER = 'aws:aws_1day'
 RMI_AWS_HOURLY_LAYER = 'aws:aws_1hour'
 RMI_AWS_TENMIN_LAYER = 'aws:aws_10min'
 
-_BE_DAILY_CANONICAL_ELEMENTS = {
+_RMI_STATION_METADATA_URL = (
+    f'{RMI_AWS_WFS_URL}?service=WFS&version=2.0.0&request=GetFeature'
+    f'&typeNames={RMI_AWS_STATION_LAYER}&outputFormat=application/json&srsName=EPSG:4326'
+)
+
+_BE_RMI_DAILY_CANONICAL_ELEMENTS = {
     'tas_mean': ('temp_avg',),
     'tas_max': ('temp_max',),
     'tas_min': ('temp_min',),
     'precipitation': ('precip_quantity',),
     'wind_speed': ('wind_speed_10m',),
+    'wind_speed_max': ('wind_gusts_speed',),
     'relative_humidity': ('humidity_rel_shelter_avg',),
     'pressure': ('pressure',),
     'sunshine_duration': ('sun_duration',),
@@ -54,35 +69,39 @@ _BE_TENMIN_CANONICAL_ELEMENTS = {
 BE_DAILY_PARAMETER_METADATA: dict[str, dict[str, str]] = {
     'precip_quantity': {
         'name': 'Daily precipitation amount',
-        'description': 'Official RMI/KMI provider-side daily sum of precipitation quantity in millimeters from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily sum of precipitation quantity in millimeters from the published aws_1day layer.',
     },
     'temp_avg': {
         'name': 'Daily mean air temperature',
-        'description': 'Official RMI/KMI provider-side daily average air temperature in degrees Celsius from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily average air temperature in degrees Celsius from the published aws_1day layer.',
     },
     'temp_max': {
         'name': 'Daily maximum air temperature',
-        'description': 'Official RMI/KMI provider-side daily maximum air temperature in degrees Celsius from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily maximum air temperature in degrees Celsius from the published aws_1day layer.',
     },
     'temp_min': {
         'name': 'Daily minimum air temperature',
-        'description': 'Official RMI/KMI provider-side daily minimum air temperature in degrees Celsius from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily minimum air temperature in degrees Celsius from the published aws_1day layer.',
     },
     'wind_speed_10m': {
         'name': 'Daily mean wind speed at 10 m',
-        'description': 'Official RMI/KMI provider-side daily mean wind speed at 10 meters in meters per second from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily mean wind speed at 10 meters in meters per second from the published aws_1day layer.',
+    },
+    'wind_gusts_speed': {
+        'name': 'Daily maximum wind gust speed',
+        'description': 'Official RMI/KMI provider-side daily maximum wind gust speed in meters per second from the published aws_1day layer.',
     },
     'humidity_rel_shelter_avg': {
         'name': 'Daily mean relative humidity',
-        'description': 'Official RMI/KMI provider-side daily mean relative humidity in the shelter, in percent, from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily mean relative humidity in the shelter, in percent, from the published aws_1day layer.',
     },
     'pressure': {
         'name': 'Daily mean station pressure',
-        'description': 'Official RMI/KMI provider-side daily average atmospheric pressure at station level in hectopascal from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily mean station-level atmospheric pressure in hectopascal from the published aws_1day layer.',
     },
     'sun_duration': {
         'name': 'Daily sunshine duration',
-        'description': 'Official RMI/KMI provider-side daily sunshine duration in minutes from the documented AWS daily aggregation.',
+        'description': 'Official RMI/KMI provider-side daily sunshine duration in source minutes from the published aws_1day layer; WeatherDownload normalizes it to hours.',
     },
 }
 
@@ -142,16 +161,12 @@ BE_TENMIN_PARAMETER_METADATA: dict[str, dict[str, str]] = {
 
 BE_PARAMETER_METADATA = {**BE_DAILY_PARAMETER_METADATA, **BE_HOURLY_PARAMETER_METADATA, **BE_TENMIN_PARAMETER_METADATA}
 
-
 _BE_DATASET_SPECS = [
     BelgiumDatasetSpec(
-        provider='historical',
+        provider='rmi',
         resolution='daily',
-        label='RMI/KMI AWS historical daily observations',
-        metadata_url=(
-            f'{RMI_AWS_WFS_URL}?service=WFS&version=1.0.0&request=GetFeature'
-            f'&typeName={RMI_AWS_STATION_LAYER}&outputFormat=application/json&srsName=EPSG:4326'
-        ),
+        label='RMI/KMI AWS daily observations',
+        metadata_url=_RMI_STATION_METADATA_URL,
         data_url=RMI_AWS_WFS_URL,
         supported_elements=(
             'temp_avg',
@@ -159,11 +174,12 @@ _BE_DATASET_SPECS = [
             'temp_min',
             'precip_quantity',
             'wind_speed_10m',
+            'wind_gusts_speed',
             'humidity_rel_shelter_avg',
             'pressure',
             'sun_duration',
         ),
-        canonical_elements=_BE_DAILY_CANONICAL_ELEMENTS,
+        canonical_elements=_BE_RMI_DAILY_CANONICAL_ELEMENTS,
         time_semantics='date',
         implemented=True,
     ),
@@ -171,10 +187,7 @@ _BE_DATASET_SPECS = [
         provider='historical',
         resolution='1hour',
         label='RMI/KMI AWS historical hourly observations',
-        metadata_url=(
-            f'{RMI_AWS_WFS_URL}?service=WFS&version=1.0.0&request=GetFeature'
-            f'&typeName={RMI_AWS_STATION_LAYER}&outputFormat=application/json&srsName=EPSG:4326'
-        ),
+        metadata_url=_RMI_STATION_METADATA_URL,
         data_url=RMI_AWS_WFS_URL,
         supported_elements=(
             'temp_dry_shelter_avg',
@@ -192,10 +205,7 @@ _BE_DATASET_SPECS = [
         provider='historical',
         resolution='10min',
         label='RMI/KMI AWS historical 10-minute observations',
-        metadata_url=(
-            f'{RMI_AWS_WFS_URL}?service=WFS&version=1.0.0&request=GetFeature'
-            f'&typeName={RMI_AWS_STATION_LAYER}&outputFormat=application/json&srsName=EPSG:4326'
-        ),
+        metadata_url=_RMI_STATION_METADATA_URL,
         data_url=RMI_AWS_WFS_URL,
         supported_elements=(
             'temp_dry_shelter_avg',
@@ -211,20 +221,29 @@ _BE_DATASET_SPECS = [
     ),
 ]
 
-
-def list_dataset_specs() -> list[BelgiumDatasetSpec]:
-    return list(_BE_DATASET_SPECS)
-
-
-def list_implemented_dataset_specs() -> list[BelgiumDatasetSpec]:
-    return [spec for spec in _BE_DATASET_SPECS if spec.implemented]
+_GHCND_DATASET_SPECS = build_country_dataset_specs(
+    supported_elements=('TAVG', 'TMAX', 'TMIN', 'PRCP', 'SNWD'),
+    canonical_elements=GHCND_STANDARD_CANONICAL_ELEMENTS,
+)
 
 
-def get_dataset_spec(provider: str, resolution: str) -> BelgiumDatasetSpec:
-    normalized_scope = provider.strip()
+def list_dataset_specs() -> list[BelgiumDatasetSpec | GhcndDatasetSpec]:
+    return [*_BE_DATASET_SPECS, *list_country_dataset_specs(_GHCND_DATASET_SPECS)]
+
+
+def list_implemented_dataset_specs() -> list[BelgiumDatasetSpec | GhcndDatasetSpec]:
+    return [
+        *(spec for spec in _BE_DATASET_SPECS if spec.implemented),
+        *list_country_implemented_dataset_specs(_GHCND_DATASET_SPECS),
+    ]
+
+
+def get_dataset_spec(provider: str, resolution: str) -> BelgiumDatasetSpec | GhcndDatasetSpec:
+    normalized_provider = provider.strip()
     normalized_resolution = resolution.strip()
+    if normalized_provider == 'ghcnd':
+        return get_country_dataset_spec(_GHCND_DATASET_SPECS, normalized_provider, normalized_resolution)
     for spec in _BE_DATASET_SPECS:
-        if spec.provider == normalized_scope and spec.resolution == normalized_resolution:
+        if spec.provider == normalized_provider and spec.resolution == normalized_resolution:
             return spec
     raise ValueError(f'Unsupported RMI/KMI Belgium dataset combination: {provider}/{resolution}')
-

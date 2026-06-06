@@ -6,8 +6,8 @@ import pandas as pd
 import requests
 
 from .metadata import read_station_metadata_be
-from .parser import BE_NORMALIZED_DAILY_COLUMNS, parse_be_feature_collection_json, normalize_be_station_id
-from .registry import RMI_AWS_DAILY_LAYER, RMI_AWS_WFS_URL, get_dataset_spec
+from .parser import BE_NORMALIZED_DAILY_COLUMNS, normalize_be_station_id, parse_be_feature_collection_json
+from .registry import RMI_AWS_DAILY_LAYER, RMI_AWS_WFS_URL
 from ...elements import canonicalize_element_series
 from ...errors import EmptyResultError, StationNotFoundError, UnsupportedQueryError
 from ...queries import ObservationQuery
@@ -18,8 +18,8 @@ def download_daily_observations_be(
     timeout: int = 60,
     station_metadata: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if query.provider != 'historical' or query.resolution != 'daily':
-        raise UnsupportedQueryError('The RMI/KMI Belgium daily downloader only supports historical/daily.')
+    if query.provider != 'rmi' or query.resolution != 'daily':
+        raise UnsupportedQueryError('The RMI/KMI Belgium daily downloader only supports rmi/daily.')
     if not query.elements:
         raise UnsupportedQueryError('The RMI/KMI Belgium daily downloader requires at least one element.')
 
@@ -43,7 +43,6 @@ def download_daily_observations_be(
         raise EmptyResultError('No observations found for the given query.')
     combined = pd.concat(normalized_frames, ignore_index=True)
     return combined.loc[:, BE_NORMALIZED_DAILY_COLUMNS].reset_index(drop=True)
-
 
 
 def normalize_daily_observations_be(
@@ -81,6 +80,9 @@ def normalize_daily_observations_be(
             if raw_code not in properties:
                 continue
             element_columns = canonicalize_element_series(pd.Series([raw_code]), query)
+            value = pd.to_numeric(pd.Series([properties.get(raw_code)]), errors='coerce').iloc[0]
+            if raw_code == 'sun_duration' and not pd.isna(value):
+                value = float(value) / 60.0
             rows.append(
                 {
                     'station_id': station_id,
@@ -89,7 +91,7 @@ def normalize_daily_observations_be(
                     'element_raw': element_columns.iloc[0]['element_raw'],
                     'observation_date': observation_date,
                     'time_function': pd.NA,
-                    'value': pd.to_numeric(pd.Series([properties.get(raw_code)]), errors='coerce').iloc[0],
+                    'value': value,
                     'flag': properties.get('qc_flags') if properties.get('qc_flags') not in (None, '') else pd.NA,
                     'quality': pd.Series([pd.NA], dtype='Int64').iloc[0],
                     'provider': query.provider,
@@ -107,31 +109,30 @@ def normalize_daily_observations_be(
     return combined.loc[:, BE_NORMALIZED_DAILY_COLUMNS].reset_index(drop=True)
 
 
-
 def _resolve_request_range(query: ObservationQuery, station_metadata: pd.DataFrame) -> tuple[date, date]:
     if not query.all_history:
         return query.start_date, query.end_date
     selected = station_metadata[station_metadata['station_id'].isin(query.station_ids)].copy()
     begin = pd.to_datetime(selected['begin_date'], utc=True, errors='coerce').min()
     end = pd.to_datetime(selected['end_date'], utc=True, errors='coerce')
-    end = end.fillna(pd.Timestamp.utcnow().tz_localize('UTC') if pd.Timestamp.utcnow().tzinfo is None else pd.Timestamp.utcnow().tz_convert('UTC'))
+    now_utc = pd.Timestamp.now(tz='UTC')
+    end = end.fillna(now_utc)
     latest = end.max()
     if pd.isna(begin) or pd.isna(latest):
         raise UnsupportedQueryError('RMI/KMI Belgium all_history mode requires station coverage metadata.')
     return begin.date(), latest.date()
 
 
-
 def _download_daily_payload(*, station_id: str, request_start: date, request_end: date, timeout: int) -> dict[str, object]:
     params = {
         'service': 'WFS',
-        'version': '1.0.0',
+        'version': '2.0.0',
         'request': 'GetFeature',
-        'typeName': RMI_AWS_DAILY_LAYER,
+        'typeNames': RMI_AWS_DAILY_LAYER,
         'outputFormat': 'application/json',
         'srsName': 'EPSG:4326',
-        'sortBy': 'timestamp A',
-        'maxFeatures': '50000',
+        'sortBy': 'timestamp+A',
+        'count': '50000',
         'cql_filter': _build_cql_filter(station_id=station_id, request_start=request_start, request_end=request_end),
     }
     response = requests.get(RMI_AWS_WFS_URL, params=params, timeout=timeout)
@@ -140,11 +141,8 @@ def _download_daily_payload(*, station_id: str, request_start: date, request_end
     return parse_be_feature_collection_json(response.text)
 
 
-
 def _build_cql_filter(*, station_id: str, request_start: date, request_end: date) -> str:
     code = int(station_id)
     start_iso = f'{request_start.isoformat()}T00:00:00Z'
     end_iso = f'{request_end.isoformat()}T00:00:00Z'
     return f"code = {code} AND timestamp >= '{start_iso}' AND timestamp <= '{end_iso}'"
-
-

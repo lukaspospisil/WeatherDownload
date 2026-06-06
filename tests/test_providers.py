@@ -361,12 +361,16 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'solar_radiation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
     def test_discovery_country_be_includes_daily_hourly_and_tenmin(self) -> None:
-        self.assertEqual(list_providers(country='BE'), ['historical'])
-        self.assertEqual(list_resolutions(country='BE', provider='historical'), ['10min', '1hour', 'daily'])
-        daily_elements = list_supported_elements(country='BE', provider='historical', resolution='daily')
+        self.assertEqual(list_providers(country='BE'), ['ghcnd', 'historical', 'rmi'])
+        self.assertEqual(list_resolutions(country='BE', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='BE', provider='historical'), ['10min', '1hour'])
+        self.assertEqual(list_resolutions(country='BE', provider='rmi'), ['daily'])
+        ghcnd_daily_elements = list_supported_elements(country='BE', provider='ghcnd', resolution='daily')
+        daily_elements = list_supported_elements(country='BE', provider='rmi', resolution='daily')
         hourly_elements = list_supported_elements(country='BE', provider='historical', resolution='1hour')
         tenmin_elements = list_supported_elements(country='BE', provider='historical', resolution='10min')
-        self.assertEqual(daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
+        self.assertEqual(ghcnd_daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'])
+        self.assertEqual(daily_elements, ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'sunshine_duration'])
         self.assertEqual(hourly_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
         self.assertEqual(tenmin_elements, ['tas_mean', 'precipitation', 'wind_speed', 'relative_humidity', 'pressure', 'sunshine_duration'])
 
@@ -457,8 +461,10 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(hourly_query.elements, ['tl', 'cglo'])
 
     def test_be_subdaily_queries_are_provider_valid(self) -> None:
+        daily_query = ObservationQuery(country='BE', provider='rmi', resolution='daily', station_ids=['6414'], start_date='2024-01-01', end_date='2024-01-02', elements=['tas_mean', 'wind_speed_max', 'sunshine_duration'])
         hourly_query = ObservationQuery(country='BE', provider='historical', resolution='1hour', station_ids=['6414'], start='2024-01-01T01:00:00Z', end='2024-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
         tenmin_query = ObservationQuery(country='BE', provider='historical', resolution='10min', station_ids=['6414'], start='2024-01-01T00:10:00Z', end='2024-01-01T00:20:00Z', elements=['tas_mean', 'pressure'])
+        self.assertEqual(daily_query.elements, ['temp_avg', 'wind_gusts_speed', 'sun_duration'])
         self.assertEqual(hourly_query.elements, ['temp_dry_shelter_avg', 'pressure'])
         self.assertEqual(tenmin_query.elements, ['temp_dry_shelter_avg', 'pressure'])
 

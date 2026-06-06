@@ -73,9 +73,10 @@ class BelgiumParserTests(unittest.TestCase):
 
     def test_normalize_be_observation_metadata_builds_daily_rows_for_supported_elements(self) -> None:
         stations = self._sample_station_table()
-        metadata = normalize_be_observation_metadata(stations, get_dataset_spec('historical', 'daily'), BE_DAILY_PARAMETER_METADATA)
+        metadata = normalize_be_observation_metadata(stations, get_dataset_spec('rmi', 'daily'), BE_DAILY_PARAMETER_METADATA)
         self.assertEqual(metadata.iloc[0]['station_id'], '6414')
         self.assertIn('temp_avg', metadata['element'].tolist())
+        self.assertIn('wind_gusts_speed', metadata['element'].tolist())
         self.assertIn('P1D', metadata['schedule'].iloc[0])
         self.assertIn('precipitation', ' '.join(metadata['description'].fillna('').tolist()).lower())
 
