@@ -424,8 +424,10 @@
       "status": "national_daily"
     },
     "RS": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "SE": {
       "providers": [

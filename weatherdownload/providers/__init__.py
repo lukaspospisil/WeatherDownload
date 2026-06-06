@@ -36,6 +36,7 @@ from .nz import PROVIDER as NZ_GHCND_PROVIDER
 from .pl import PROVIDER as PL_PROVIDER
 from .pt import PROVIDER as PT_PROVIDER
 from .ro import PROVIDER as RO_GHCND_PROVIDER
+from .rs import PROVIDER as RS_GHCND_PROVIDER
 from .se import PROVIDER as SE_PROVIDER
 from .si import PROVIDER as SI_GHCND_PROVIDER
 from .sk import PROVIDER as SHMU_PROVIDER
@@ -78,6 +79,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'PL': PL_PROVIDER,
     'PT': PT_PROVIDER,
     'RO': RO_GHCND_PROVIDER,
+    'RS': RS_GHCND_PROVIDER,
     'SE': SE_PROVIDER,
     'SI': SI_GHCND_PROVIDER,
     'SK': SHMU_PROVIDER,
