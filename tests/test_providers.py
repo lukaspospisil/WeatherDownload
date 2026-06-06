@@ -48,7 +48,7 @@ def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockResponse:
 
 class ProviderTests(unittest.TestCase):
     def test_supported_countries_and_normalization(self) -> None:
-        self.assertEqual(list_supported_countries(), ['AL', 'AT', 'BE', 'BG', 'CA', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LU', 'LV', 'MD', 'MK', 'MT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'US'])
+        self.assertEqual(list_supported_countries(), ['AL', 'AT', 'BE', 'BG', 'CA', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LT', 'LU', 'LV', 'MD', 'ME', 'MK', 'MT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'US'])
         self.assertEqual(normalize_country_code('de'), 'DE')
         self.assertEqual(normalize_country_code('uk'), 'GB')
         self.assertEqual(normalize_country_code(None), 'CZ')
