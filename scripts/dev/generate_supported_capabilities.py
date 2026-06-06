@@ -27,6 +27,7 @@ SOURCE_DESCRIPTIONS: dict[tuple[str, str, str], str] = {
     ('AL', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('BA', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('AT', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
+    ('BY', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('BE', 'ghcnd', 'daily'): 'NOAA GHCN-Daily station observations',
     ('BE', 'historical', '1hour'): 'RMI/KMI AWS hourly observations',
     ('BE', 'historical', '10min'): 'RMI/KMI AWS 10-minute observations',
@@ -96,6 +97,8 @@ SOURCE_DESCRIPTIONS: dict[tuple[str, str, str], str] = {
     ('SE', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('SK', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('SK', 'recent', 'daily'): 'SHMU recent daily climatological stations',
+    ('TR', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
+    ('UA', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
     ('US', 'ghcnd', 'daily'): 'NOAA GHCN-Daily',
 }
 
@@ -103,6 +106,7 @@ NOTES: dict[tuple[str, str, str], str] = {
     ('AL', 'ghcnd', 'daily'): 'Direct-prefix GHCN fallback for Albania only; raw GHCN station ids with prefix AL; inventory-driven station elements; unsupported wind, humidity, pressure, vapour_pressure, sunshine_duration, and solar_radiation are not provider-derived; not FAO-ready.',
     ('BA', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix BK; NOAA GHCND prefix BA means Bahrain and is not used for Bosnia and Herzegovina; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('AT', 'historical', 'daily'): 'National GeoSphere daily path; `ghcnd` is an additional daily provider. `cglo_j` is mapped to observed `solar_radiation` in canonical MJ m^-2 via `value * 0.01`; sunshine_duration remains separate.',
+    ('BY', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix BO; NOAA GHCND prefix BY means Burundi and is not used for Belarus; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('AT', 'historical', '1hour'): 'Single public hourly provider for AT. `cglo` hourly mean irradiance is converted to observed `solar_radiation` interval energy in canonical MJ m^-2 via `value * 0.0036`; sunshine_duration remains separate; no FAO workflow change.',
     ('AT', 'historical', '10min'): 'Single public 10-minute provider for AT. `cglo` 10-minute mean irradiance is converted to observed `solar_radiation` interval energy in canonical MJ m^-2 via `value * 0.0006`; sunshine_duration remains separate; no provider-side aggregation.',
     ('AT', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix AU; inventory-driven station elements; no EVAP/open_water_evaporation.',
@@ -175,6 +179,8 @@ NOTES: dict[tuple[str, str, str], str] = {
     ('SE', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix SW; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('SK', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix LO; direct GHCND prefix SK is not used for Slovakia; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('SK', 'recent', 'daily'): 'Experimental recent-only provider; measured water-surface evaporation supported via raw voda_vypar; stable daily fallback coverage is provided separately through `SK / ghcnd / daily`.',
+    ('TR', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix TU; direct GHCND prefix TR is not used for Turkey; inventory-driven station elements; no EVAP/open_water_evaporation.',
+    ('UA', 'ghcnd', 'daily'): 'Mapped-prefix GHCN wrapper using raw GHCN station ids with prefix UP; direct GHCND prefix UA is not used for Ukraine; inventory-driven station elements; no EVAP/open_water_evaporation.',
     ('US', 'ghcnd', 'daily'): 'Raw GHCN station ids; inventory-driven station elements; measured open_water_evaporation supported via raw EVAP.',
 }
 

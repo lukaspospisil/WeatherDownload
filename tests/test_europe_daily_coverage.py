@@ -33,6 +33,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['BA']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['CY']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['CY']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['BY']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['BY']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['MD']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['MD']['providers'], ['ghcnd'])
         self.assertEqual(summary['daily']['ME']['status'], 'ghcnd_daily')
@@ -77,6 +79,10 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['SI']['providers'], ['arso'])
         self.assertEqual(summary['daily']['SK']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['SK']['providers'], ['ghcnd', 'recent'])
+        self.assertEqual(summary['daily']['TR']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['TR']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['UA']['status'], 'ghcnd_daily')
+        self.assertEqual(summary['daily']['UA']['providers'], ['ghcnd'])
 
         self.assertEqual(summary['hourly']['DE']['status'], 'national_hourly')
         self.assertIn('historical', summary['hourly']['DE']['providers'])
@@ -136,7 +142,7 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['NO']['providers'], ['frost'])
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
-        self.assertTrue({'AL', 'BA', 'BG', 'CY', 'GR', 'HR', 'IS', 'MD', 'ME', 'MK', 'MT', 'RS', 'SK'}.issubset(ghcnd_daily_countries))
+        self.assertTrue({'AL', 'BA', 'BG', 'BY', 'CY', 'GR', 'HR', 'IS', 'MD', 'ME', 'MK', 'MT', 'RS', 'SK', 'TR', 'UA'}.issubset(ghcnd_daily_countries))
 
         for country in MODULE.COVERAGE_COUNTRIES:
             with self.subTest(country=country):

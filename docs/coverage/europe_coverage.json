@@ -239,8 +239,10 @@
       "status": "ghcnd_daily"
     },
     "BY": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "CH": {
       "providers": [
@@ -457,12 +459,16 @@
       "status": "not_attempted"
     },
     "TR": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "UA": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "ghcnd"
+      ],
+      "status": "ghcnd_daily"
     },
     "VA": {
       "providers": [],

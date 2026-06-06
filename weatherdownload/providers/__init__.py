@@ -8,6 +8,7 @@ from .ba import PROVIDER as BA_GHCND_PROVIDER
 from .base import WeatherProvider
 from .be import PROVIDER as BE_PROVIDER
 from .bg import PROVIDER as BG_GHCND_PROVIDER
+from .by import PROVIDER as BY_GHCND_PROVIDER
 from .ca import PROVIDER as CA_GHCND_PROVIDER
 from .ch import PROVIDER as CH_PROVIDER
 from .cy import PROVIDER as CY_GHCND_PROVIDER
@@ -42,6 +43,8 @@ from .rs import PROVIDER as RS_GHCND_PROVIDER
 from .se import PROVIDER as SE_PROVIDER
 from .si import PROVIDER as SI_GHCND_PROVIDER
 from .sk import PROVIDER as SHMU_PROVIDER
+from .tr import PROVIDER as TR_GHCND_PROVIDER
+from .ua import PROVIDER as UA_GHCND_PROVIDER
 from .us import PROVIDER as US_GHCND_PROVIDER
 
 IS_GHCND_PROVIDER = import_module('weatherdownload.providers.is').PROVIDER
@@ -52,6 +55,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'BA': BA_GHCND_PROVIDER,
     'BE': BE_PROVIDER,
     'BG': BG_GHCND_PROVIDER,
+    'BY': BY_GHCND_PROVIDER,
     'CA': CA_GHCND_PROVIDER,
     'CH': CH_PROVIDER,
     'CY': CY_GHCND_PROVIDER,
@@ -87,6 +91,8 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'SE': SE_PROVIDER,
     'SI': SI_GHCND_PROVIDER,
     'SK': SHMU_PROVIDER,
+    'TR': TR_GHCND_PROVIDER,
+    'UA': UA_GHCND_PROVIDER,
     'US': US_GHCND_PROVIDER,
 }
 
