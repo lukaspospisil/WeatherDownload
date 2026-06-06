@@ -348,8 +348,10 @@
       "status": "not_attempted"
     },
     "LI": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "meteoswiss"
+      ],
+      "status": "national_daily"
     },
     "LT": {
       "providers": [

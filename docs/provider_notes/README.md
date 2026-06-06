@@ -33,6 +33,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [NOAA GHCN-Daily United Kingdom](gb_ghcnd.md)
 - [HungaroMet Hungary](hu_hungaromet.md)
 - [Met Eireann Ireland](ie_meteireann.md)
+- [MeteoSwiss Liechtenstein](li_meteoswiss.md)
 - [Meteo.lt Lithuania](lt_meteo_lt.md)
 - [LVGMC Latvia](lv_lvgmc.md)
 - [MeteoLux Luxembourg](lu_meteolux.md)

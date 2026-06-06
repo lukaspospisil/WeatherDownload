@@ -25,6 +25,7 @@ from .hr import PROVIDER as HR_GHCND_PROVIDER
 from .hu import PROVIDER as HU_PROVIDER
 from .ie import PROVIDER as IE_PROVIDER
 from .it import PROVIDER as IT_GHCND_PROVIDER
+from .li import PROVIDER as LI_METEOSWISS_PROVIDER
 from .lt import PROVIDER as LT_GHCND_PROVIDER
 from .lu import PROVIDER as LU_PROVIDER
 from .lv import PROVIDER as LV_GHCND_PROVIDER
@@ -73,6 +74,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'IE': IE_PROVIDER,
     'IS': IS_GHCND_PROVIDER,
     'IT': IT_GHCND_PROVIDER,
+    'LI': LI_METEOSWISS_PROVIDER,
     'LT': LT_GHCND_PROVIDER,
     'LU': LU_PROVIDER,
     'LV': LV_GHCND_PROVIDER,

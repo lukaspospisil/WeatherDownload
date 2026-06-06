@@ -1,0 +1,1 @@
+{"id":"vad","collection":"ch.meteoschweiz.ogd-smn","type":"Feature","stac_version":"1.0.0","assets":{"ogd-smn_vad_d_historical.csv":{"type":"text/csv","href":"https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/vad/ogd-smn_vad_d_historical.csv"},"ogd-smn_vad_d_recent.csv":{"type":"text/csv","href":"https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/vad/ogd-smn_vad_d_recent.csv"}}}
