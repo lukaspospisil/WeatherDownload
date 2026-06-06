@@ -38,6 +38,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [MeteoLux Luxembourg](lu_meteolux.md)
 - [ASTA Luxembourg](lu_asta.md)
 - [Luxembourg Historical Research Note](lu_meteolux_research.md)
+- [Kosovo IHMK Research Note](kv_ihmk_research.md)
 - [KNMI Netherlands](nl_knmi.md)
 - [MET Norway Frost](no_frost.md)
 - [IMGW-PIB Poland](pl_imgw.md)
