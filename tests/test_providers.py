@@ -128,7 +128,7 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
-        for country in ['AL', 'BG', 'CY', 'GR', 'HR', 'IS', 'IT', 'MD', 'MK', 'MT', 'NZ']:
+        for country in ['AL', 'BG', 'CY', 'GR', 'HR', 'IT', 'MD', 'MK', 'MT', 'NZ']:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])

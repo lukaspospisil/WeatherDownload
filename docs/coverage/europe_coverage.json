@@ -335,9 +335,9 @@
     },
     "IS": {
       "providers": [
-        "ghcnd"
+        "vedur"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "IT": {
       "providers": [

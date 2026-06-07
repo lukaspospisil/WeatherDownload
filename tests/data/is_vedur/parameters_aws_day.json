@@ -1,0 +1,15 @@
+{
+  "station": "Station number (IMO-numbers)",
+  "name": "Station name",
+  "time": "Date (YYYY-MM-DD)",
+  "t": "Air temperature (day average), degC",
+  "tx": "Maximum temperature, degC",
+  "tn": "Minimum temperature, degC",
+  "rh": "Humidity (day average), %",
+  "vp": "Vapour pressure (day average), hPa",
+  "r": "Precipitation (24-hr total) quality-checked and corrected, mm",
+  "p": "Atmospheric pressure (day average at sea level), hPa",
+  "f": "Wind speed (day average), m/s",
+  "fg": "Maximum wind gust (highest 3-sec value), m/s",
+  "rsun": "Sunshine hours (day total), hr"
+}

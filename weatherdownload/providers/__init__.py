@@ -49,7 +49,7 @@ from .tr import PROVIDER as TR_GHCND_PROVIDER
 from .ua import PROVIDER as UA_GHCND_PROVIDER
 from .us import PROVIDER as US_GHCND_PROVIDER
 
-IS_GHCND_PROVIDER = import_module('weatherdownload.providers.is').PROVIDER
+IS_PROVIDER = import_module('weatherdownload.providers.is').PROVIDER
 
 PROVIDERS: dict[str, WeatherProvider] = {
     'AD': AD_METEO_AD_PROVIDER,
@@ -74,7 +74,7 @@ PROVIDERS: dict[str, WeatherProvider] = {
     'HR': HR_GHCND_PROVIDER,
     'HU': HU_PROVIDER,
     'IE': IE_PROVIDER,
-    'IS': IS_GHCND_PROVIDER,
+    'IS': IS_PROVIDER,
     'IT': IT_GHCND_PROVIDER,
     'LI': LI_METEOSWISS_PROVIDER,
     'LT': LT_GHCND_PROVIDER,

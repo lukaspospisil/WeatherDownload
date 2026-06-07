@@ -1,0 +1,28 @@
+[
+  {
+    "station": 1,
+    "name": "Reykjavik",
+    "abbr": "rvk",
+    "type": "sk",
+    "lat": 64.1288833618,
+    "lon": -21.9081897736,
+    "ele": 60.2000007629,
+    "wigos": "0-20000-0-04030",
+    "owner": "Vedurstofa Islands",
+    "start": 1920,
+    "ending": null
+  },
+  {
+    "station": 1475,
+    "name": "Reykjavik - Bustadavegur",
+    "abbr": "reitr",
+    "type": "sj",
+    "lat": 64.1275482178,
+    "lon": -21.9020004272,
+    "ele": 52.0,
+    "wigos": "0-20000-0-04130",
+    "owner": "Vedurstofa Islands",
+    "start": 1993,
+    "ending": null
+  }
+]
