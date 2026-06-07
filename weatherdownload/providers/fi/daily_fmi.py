@@ -8,6 +8,21 @@ import requests
 from ...errors import EmptyResultError, UnsupportedQueryError
 from ...queries import ObservationQuery
 from .fmi_parser import FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS, normalize_fmi_timevaluepair_daily_observations
+
+
+FMI_DAILY_NORMALIZED_COLUMNS = [
+    'station_id',
+    'gh_id',
+    'element',
+    'element_raw',
+    'observation_date',
+    'time_function',
+    'value',
+    'flag',
+    'quality',
+    'provider',
+    'resolution',
+]
 from .registry import get_dataset_spec
 
 
@@ -36,9 +51,10 @@ def download_daily_observations_fmi(
             resolution=query.resolution,
         )
         normalized = _filter_date_range(normalized, query)
+        normalized = _finalize_daily_output(normalized)
         if normalized.empty:
             raise EmptyResultError('No observations found for the given query.')
-        return normalized.loc[:, FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS]
+        return normalized.loc[:, FMI_DAILY_NORMALIZED_COLUMNS]
 
     spec = get_dataset_spec(query.provider, query.resolution)
     params_template = {
@@ -72,8 +88,8 @@ def download_daily_observations_fmi(
     if not frames:
         raise EmptyResultError('No observations found for the given query.')
     combined = pd.concat(frames, ignore_index=True)
-    combined = combined.sort_values(['station_id', 'timestamp', 'element'], kind='stable').reset_index(drop=True)
-    return combined.loc[:, FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS]
+    combined = _finalize_daily_output(combined)
+    return combined.loc[:, FMI_DAILY_NORMALIZED_COLUMNS]
 
 
 def _resolve_local_fixture_source(station_metadata: pd.DataFrame | None) -> str | None:
@@ -103,3 +119,18 @@ def _filter_date_range(table: pd.DataFrame, query: ObservationQuery) -> pd.DataF
     filtered = filtered[(filtered['timestamp'] >= start) & (filtered['timestamp'] <= end)]
     return filtered
 
+
+def _finalize_daily_output(table: pd.DataFrame) -> pd.DataFrame:
+    if table.empty:
+        return pd.DataFrame(columns=FMI_DAILY_NORMALIZED_COLUMNS)
+
+    finalized = table.copy()
+    finalized['timestamp'] = pd.to_datetime(finalized['timestamp'], utc=True, errors='coerce')
+    finalized = finalized[finalized['timestamp'].notna()]
+    if finalized.empty:
+        return pd.DataFrame(columns=FMI_DAILY_NORMALIZED_COLUMNS)
+
+    finalized['observation_date'] = finalized['timestamp'].dt.date
+    finalized['time_function'] = pd.NA
+    finalized = finalized.sort_values(['station_id', 'observation_date', 'element'], kind='stable').reset_index(drop=True)
+    return finalized.loc[:, FMI_DAILY_NORMALIZED_COLUMNS]

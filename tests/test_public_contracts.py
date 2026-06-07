@@ -69,6 +69,9 @@ SAMPLE_LV_FIXTURE_DIR = Path('tests/data/lv_lvgmc')
 SAMPLE_LV_DAILY_TEXT = (SAMPLE_LV_FIXTURE_DIR / 'archive_hourly_one_station_one_day.json').read_text(encoding='utf-8')
 SAMPLE_EE_ILMATEENISTUS_STATION_METADATA_PATH = Path('tests/data/sample_ee_ilmateenistus_station_metadata.json')
 SAMPLE_EE_ILMATEENISTUS_DAILY_TEXT = Path('tests/data/sample_ee_ilmateenistus_daily.json').read_text(encoding='utf-8')
+SAMPLE_FMI_XML = Path('tests/data/sample_fmi_timevaluepair_real_fmisid.xml')
+SAMPLE_FMI_DAILY_XML = Path('tests/data/sample_fmi_daily_timevaluepair_real.xml')
+SAMPLE_FMI_STATIONS_XML = Path('tests/data/sample_fmi_stations.xml')
 SAMPLE_IS_VEDUR_FIXTURE_DIR = Path('tests/data/is_vedur')
 SAMPLE_ES_DAILY_TEXT = Path('tests/data/sample_es_aemet_daily.json').read_text(encoding='utf-8')
 SAMPLE_ES_STATIONS_PATH = Path('tests/data/sample_es_aemet_stations.json')
@@ -276,7 +279,7 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'CA':
         return read_station_metadata(country='CA', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'FI':
-        return read_station_metadata(country='FI', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        return read_station_metadata(country='FI', source_url=str(SAMPLE_FMI_STATIONS_XML))
     if country == 'FR':
         return read_station_metadata(country='FR', source_url=str(SAMPLE_FR_STATIONS_PATH))
     if country == 'GB':
@@ -550,9 +553,9 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
         with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_CY_DLY_TEXT):
             return download_observations(query, country='CY', station_metadata=station_metadata)
     if country == 'FI':
-        station_metadata = _read_station_metadata_fixture('FI')
-        query = ObservationQuery(country='FI', provider='ghcnd', resolution='daily', station_ids=['FI000000001'], start_date='2020-08-01', end_date='2020-08-02', elements=['tas_max', 'precipitation'])
-        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_FI_DLY_TEXT):
+        station_metadata = read_station_metadata(country='FI', source_url=str(SAMPLE_FMI_DAILY_XML))
+        query = ObservationQuery(country='FI', provider='fmi', resolution='daily', station_ids=['100971'], start_date='2026-04-01', end_date='2026-04-03', elements=['tas_mean', 'tas_min', 'tas_max', 'precipitation'])
+        with patch('weatherdownload.providers.fi.daily_fmi.requests.get', side_effect=AssertionError('unexpected network')):
             return download_observations(query, country='FI', station_metadata=station_metadata)
     if country == 'FR':
         station_metadata = _read_station_metadata_fixture('FR')
@@ -868,7 +871,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'DK': ['06030', '06180'],
         'EE': ['AJHARK01', 'AJVORU01'],
         'ES': ['0076', '3195'],
-        'FI': ['FI000000001', 'FI000000002'],
+        'FI': ['100683', '100908', '100909', '100917', '100919'],
         'FR': ['07005001', '13055001'],
         'GB': ['GB000000001', 'GB000000002'],
         'GR': ['GR000000001', 'GR000000002'],
@@ -913,7 +916,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AD': 'meteo_ad', 'AL': 'ghcnd', 'AT': 'historical', 'BA': 'ghcnd', 'BE': 'rmi', 'BG': 'nimh', 'BY': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CY': 'ghcnd', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'dmi', 'EE': 'ilmateenistus', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'vedur', 'IT': 'ghcnd', 'LI': 'meteoswiss', 'LT': 'meteo_lt', 'LV': 'lvgmc', 'MD': 'ghcnd', 'ME': 'ghcnd', 'MK': 'ghcnd', 'MT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'knmi', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'RS': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'TR': 'ghcnd', 'UA': 'ghcnd', 'US': 'ghcnd'}
+    expected_providers = {'AD': 'meteo_ad', 'AL': 'ghcnd', 'AT': 'historical', 'BA': 'ghcnd', 'BE': 'rmi', 'BG': 'nimh', 'BY': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CY': 'ghcnd', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'dmi', 'EE': 'ilmateenistus', 'ES': 'aemet', 'FI': 'fmi', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'vedur', 'IT': 'ghcnd', 'LI': 'meteoswiss', 'LT': 'meteo_lt', 'LV': 'lvgmc', 'MD': 'ghcnd', 'ME': 'ghcnd', 'MK': 'ghcnd', 'MT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'knmi', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'RS': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'TR': 'ghcnd', 'UA': 'ghcnd', 'US': 'ghcnd'}
 
     for country in ['AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CA', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LV', 'MD', 'ME', 'MK', 'MT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'TR', 'UA', 'US']:
         observations = _download_daily_fixture(country)

@@ -14,6 +14,7 @@ from weatherdownload import (
     list_supported_elements,
     read_station_metadata,
 )
+from weatherdownload.providers.fi.daily_fmi import FMI_DAILY_NORMALIZED_COLUMNS
 from weatherdownload.providers.fi.fmi_parser import FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS
 
 
@@ -87,13 +88,14 @@ class FinlandFmiProviderTests(unittest.TestCase):
         with patch('weatherdownload.providers.fi.daily_fmi.requests.get', side_effect=AssertionError('unexpected network')):
             observations = download_observations(query, country='FI', station_metadata=stations)
 
-        self.assertEqual(list(observations.columns), FMI_TIMEVALUEPAIR_NORMALIZED_COLUMNS)
+        self.assertEqual(list(observations.columns), FMI_DAILY_NORMALIZED_COLUMNS)
         self.assertEqual(observations['station_id'].unique().tolist(), ['100971'])
         self.assertEqual(sorted(observations['element_raw'].unique().tolist()), sorted(['tday', 'tmin', 'tmax', 'rrday']))
         self.assertEqual(
             sorted(observations['element'].unique().tolist()),
             sorted(['tas_mean', 'tas_min', 'tas_max', 'precipitation']),
         )
+        self.assertTrue(observations['observation_date'].map(lambda value: hasattr(value, 'isoformat')).all())
 
     def test_read_station_metadata_fmi_from_station_fixture(self) -> None:
         stations = read_station_metadata(country='FI', source_url=str(SAMPLE_FMI_STATIONS_XML))
