@@ -68,6 +68,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [SMHI Sweden](se_smhi.md)
 - [SHMU Slovakia](sk_shmu.md)
 - [Turkey MGM Daily Research Note](tr_mgm_research.md)
+- [Ukraine Ukrhydromet Daily Research Note](ua_ukrhydromet_research.md)
 - [Vatican City Research Note](va_vatican_research.md)
 
 ## Shared-source wrappers
