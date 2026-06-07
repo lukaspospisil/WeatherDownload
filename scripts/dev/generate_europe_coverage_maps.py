@@ -64,6 +64,7 @@ COUNTRY_NAME_FALLBACKS = {
 CONTEXT_LAND_FILL = '#d6dee4'
 DAILY_RESEARCH_FILL = '#ef6c00'
 DAILY_AUDIT_OUTLINE = '#ef6c00'
+DAILY_AUDIT_OUTLINE_WIDTH = 1.4
 
 RESOLUTION_SPECS = {
     'daily': {
@@ -330,7 +331,7 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
     if resolution_name == 'daily':
         lines.append(f'    .researched-no-provider-daily {{ fill: {DAILY_RESEARCH_FILL}; }}')
         lines.append(
-            f'    .daily-audit-outline {{ fill: none; stroke: {DAILY_AUDIT_OUTLINE}; stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; pointer-events: none; }}'
+            f'    .daily-audit-outline {{ fill: none; stroke: {DAILY_AUDIT_OUTLINE}; stroke-width: {DAILY_AUDIT_OUTLINE_WIDTH}; stroke-linejoin: round; stroke-linecap: round; pointer-events: none; }}'
         )
 
     for status_name in used_statuses:

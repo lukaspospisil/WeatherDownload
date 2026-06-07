@@ -106,10 +106,13 @@ status in Europe.
 </p>
 
 This is daily-data coverage, not FAO-readiness coverage, and it does not imply
-that all variables are available at all stations. The fill color shows
-implemented download coverage, and a daily orange outline marks countries where
-an official-provider audit was attempted and documented as failed while fallback
-coverage still exists. Neutral land outside the European coverage set is shown only as geographic context.
+that all variables are available for all countries or all stations. The fill
+color shows implemented download coverage. A daily orange outline means an
+official national daily-provider audit was attempted and failed while fallback
+coverage still exists. Orange fill means researched unresolved daily coverage
+with no safe implemented downloader. `GHCN-Daily` fallback coverage is distinct
+from official national provider coverage. Neutral land outside the European
+coverage set is shown only as geographic context.
 
 Legend: dark green = national daily downloader, light green = GHCN-Daily,
 orange = investigated but no safe daily provider implemented, orange outline = fallback coverage plus failed official-provider audit, red = attempted but no
