@@ -25,27 +25,48 @@ read_station_observation_metadata_ghcnd = build_station_observation_metadata_rea
 
 
 def read_station_metadata_lvgmc(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    spec = get_dataset_spec('lvgmc', 'daily')
+    daily_spec = get_dataset_spec('lvgmc', 'daily')
+    hourly_spec = get_dataset_spec('lvgmc', '1hour')
     station_records = _read_station_records(source_url, timeout=timeout)
     parameter_metadata = _read_parameter_metadata(source_url, timeout=timeout)
-    return normalize_lvgmc_station_metadata(
+    frame = normalize_lvgmc_station_metadata(
         station_records,
-        spec,
+        daily_spec,
         parameter_metadata=parameter_metadata,
         active_only=True,
     )
+    if frame.empty:
+        return frame
+    supported_by_path = frame.attrs.setdefault('station_provider_raw_elements_by_path', {})
+    for spec in (daily_spec, hourly_spec):
+        supported_by_path[(spec.provider, spec.resolution)] = {
+            station_id: [raw_code for raw_code in spec.supported_elements if raw_code in parameter_metadata]
+            for station_id in frame['station_id'].astype(str)
+        }
+    return frame
 
 
 def read_station_observation_metadata_lvgmc(source_url: str | None = None, timeout: int = 60) -> pd.DataFrame:
-    spec = get_dataset_spec('lvgmc', 'daily')
+    daily_spec = get_dataset_spec('lvgmc', 'daily')
+    hourly_spec = get_dataset_spec('lvgmc', '1hour')
     station_records = _read_station_records(source_url, timeout=timeout)
     parameter_metadata = _read_parameter_metadata(source_url, timeout=timeout)
-    return normalize_lvgmc_observation_metadata(
-        station_records,
-        spec,
-        parameter_metadata=parameter_metadata,
-        active_only=True,
-    )
+    frames = [
+        normalize_lvgmc_observation_metadata(
+            station_records,
+            spec,
+            parameter_metadata=parameter_metadata,
+            active_only=True,
+        )
+        for spec in (daily_spec, hourly_spec)
+    ]
+    non_empty_frames = [frame for frame in frames if not frame.empty]
+    if not non_empty_frames:
+        return pd.DataFrame(columns=['obs_type', 'station_id', 'begin_date', 'end_date', 'element', 'schedule', 'name', 'description', 'height'])
+    return pd.concat(non_empty_frames, ignore_index=True).sort_values(
+        ['station_id', 'obs_type', 'element'],
+        kind='stable',
+    ).reset_index(drop=True)
 
 
 def _read_station_records(source_url: str | None, *, timeout: int) -> list[dict[str, object]]:

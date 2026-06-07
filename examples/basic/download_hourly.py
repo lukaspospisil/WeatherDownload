@@ -53,6 +53,13 @@ COUNTRY_DEFAULTS = {
         'end': '2026-01-01T01:00:00Z',
         'elements': ['tas_mean', 'pressure'],
     },
+    'LV': {
+        'provider': 'lvgmc',
+        'station_ids': ['0001'],
+        'start': '2026-01-01T00:00:00Z',
+        'end': '2026-01-01T02:00:00Z',
+        'elements': ['tas_mean', 'pressure'],
+    },
     'PL': {
         'provider': 'historical',
         'station_ids': ['00375'],

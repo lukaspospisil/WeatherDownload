@@ -329,18 +329,44 @@ class ProviderTests(unittest.TestCase):
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'snow_depth', 'cloud_cover'],
         )
 
-    def test_discovery_country_lv_includes_lvgmc_and_ghcnd_daily(self) -> None:
+    def test_discovery_country_lv_includes_lvgmc_hourly_daily_and_ghcnd_daily(self) -> None:
         self.assertEqual(list_providers(country='LV'), ['ghcnd', 'lvgmc'])
         self.assertEqual(list_resolutions(country='LV', provider='ghcnd'), ['daily'])
-        self.assertEqual(list_resolutions(country='LV', provider='lvgmc'), ['daily'])
+        self.assertEqual(list_resolutions(country='LV', provider='lvgmc'), ['1hour', 'daily'])
         self.assertEqual(
             list_supported_elements(country='LV', provider='ghcnd', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
         )
         self.assertEqual(
+            list_supported_elements(country='LV', provider='lvgmc', resolution='1hour'),
+            ['tas_mean', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'snow_depth'],
+        )
+        self.assertEqual(
             list_supported_elements(country='LV', provider='lvgmc', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'snow_depth'],
         )
+
+    def test_lv_hourly_and_daily_queries_are_provider_valid(self) -> None:
+        hourly_query = ObservationQuery(
+            country='LV',
+            provider='lvgmc',
+            resolution='1hour',
+            station_ids=['0001'],
+            start='2026-01-01T00:00:00Z',
+            end='2026-01-01T02:00:00Z',
+            elements=['tas_mean', 'pressure', 'snow_depth'],
+        )
+        daily_query = ObservationQuery(
+            country='LV',
+            provider='lvgmc',
+            resolution='daily',
+            station_ids=['0001'],
+            start_date='2026-01-01',
+            end_date='2026-01-01',
+            elements=['tas_mean', 'pressure', 'snow_depth'],
+        )
+        self.assertEqual(hourly_query.elements, ['HTDRY', 'HPRSL', 'HSNOW'])
+        self.assertEqual(daily_query.elements, ['HTDRY', 'HPRSL', 'HSNOW'])
 
     def test_discovery_country_cz_includes_chmi_and_ghcnd_daily_without_evap_on_ghcnd(self) -> None:
         self.assertIn('historical_csv', list_providers(country='CZ'))

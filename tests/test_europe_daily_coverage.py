@@ -102,6 +102,8 @@ class EuropeCoverageTests(unittest.TestCase):
 
         self.assertEqual(summary['hourly']['DE']['status'], 'national_hourly')
         self.assertIn('historical', summary['hourly']['DE']['providers'])
+        self.assertEqual(summary['hourly']['LV']['status'], 'national_hourly')
+        self.assertEqual(summary['hourly']['LV']['providers'], ['lvgmc'])
         self.assertEqual(summary['10min']['NL']['status'], 'not_attempted')
         self.assertEqual(summary['10min']['NL']['providers'], [])
 

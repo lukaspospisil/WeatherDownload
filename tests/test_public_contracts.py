@@ -66,6 +66,7 @@ SAMPLE_IE_STATION_DETAILS_PATH = Path('tests/data/sample_ie_station_details.csv'
 SAMPLE_LT_FIXTURE_DIR = Path('tests/data/lt_meteo_lt')
 SAMPLE_LT_DAILY_TEXT = (SAMPLE_LT_FIXTURE_DIR / 'vilniaus-ams_2024-01-01.json').read_text(encoding='utf-8')
 SAMPLE_LV_FIXTURE_DIR = Path('tests/data/lv_lvgmc')
+SAMPLE_LV_HOURLY_TEXT = (SAMPLE_LV_FIXTURE_DIR / 'archive_hourly_one_station_one_day.json').read_text(encoding='utf-8')
 SAMPLE_LV_DAILY_TEXT = (SAMPLE_LV_FIXTURE_DIR / 'archive_hourly_one_station_one_day.json').read_text(encoding='utf-8')
 SAMPLE_EE_ILMATEENISTUS_STATION_METADATA_PATH = Path('tests/data/sample_ee_ilmateenistus_station_metadata.json')
 SAMPLE_EE_ILMATEENISTUS_DAILY_TEXT = Path('tests/data/sample_ee_ilmateenistus_daily.json').read_text(encoding='utf-8')
@@ -739,6 +740,11 @@ def _download_hourly_fixture(country: str) -> pd.DataFrame:
 
         with patch('weatherdownload.providers.hu.hourly.requests.get', side_effect=fake_get):
             return download_observations(query, country='HU', station_metadata=station_metadata)
+    if country == 'LV':
+        station_metadata = _read_station_metadata_fixture('LV')
+        query = ObservationQuery(country='LV', provider='lvgmc', resolution='1hour', station_ids=['0001'], start='2026-01-01T00:00:00Z', end='2026-01-01T02:00:00Z', elements=['tas_mean', 'pressure'])
+        with patch('weatherdownload.providers.lv.observations.requests.get', return_value=_MockTextResponse(SAMPLE_LV_HOURLY_TEXT)):
+            return download_observations(query, country='LV', station_metadata=station_metadata)
     if country == 'PL':
         station_metadata = _read_station_metadata_fixture('PL')
         query = ObservationQuery(country='PL', provider='historical', resolution='1hour', station_ids=['00375'], start='2025-01-01T00:00:00Z', end='2025-01-01T01:00:00Z', elements=['tas_mean', 'pressure'])
@@ -1024,6 +1030,20 @@ def test_hourly_download_contract_is_stable_for_supported_denmark_path() -> None
 
 def test_hourly_download_contract_is_stable_for_supported_hungary_path() -> None:
     _assert_subdaily_contract(_download_hourly_fixture('HU'), '1hour', 'null', 'null')
+
+
+def test_hourly_download_contract_is_stable_for_supported_latvia_path() -> None:
+    observations = _download_hourly_fixture('LV')
+    assert list(observations.columns) == ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution']
+    assert observations['element'].str.match(r'^[a-z0-9_]+$').all()
+    assert observations['element_raw'].notna().all()
+    assert observations['timestamp'].map(lambda value: hasattr(value, 'isoformat')).all()
+    assert observations['provider'].eq('lvgmc').all()
+    assert observations['resolution'].eq('1hour').all()
+    assert observations['gh_id'].isna().all()
+    assert observations['flag'].isna().all()
+    assert observations['quality'].isna().all()
+    assert str(observations['quality'].dtype) == 'Int64'
 
 
 def test_hourly_download_contract_is_stable_for_supported_poland_path() -> None:

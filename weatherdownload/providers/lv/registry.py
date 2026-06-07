@@ -52,6 +52,16 @@ LV_LVGMC_DAILY_CANONICAL_ELEMENTS = {
     'snow_depth': ('HSNOW',),
 }
 
+LV_LVGMC_HOURLY_CANONICAL_ELEMENTS = {
+    'tas_mean': ('HTDRY',),
+    'precipitation': ('HPRAB',),
+    'wind_speed': ('HWNDS',),
+    'wind_speed_max': ('HWSMX',),
+    'relative_humidity': ('HRLH',),
+    'pressure': ('HPRSL',),
+    'snow_depth': ('HSNOW',),
+}
+
 LV_LVGMC_PARAMETER_METADATA = {
     'HTDRY': {
         'name': 'UTC-date mean air temperature',
@@ -101,6 +111,22 @@ LV_LVGMC_PARAMETER_METADATA = {
 }
 
 _LV_DATASET_SPECS = [
+    LatviaDatasetSpec(
+        provider='lvgmc',
+        resolution='1hour',
+        label='LVGMC recent meteorological archive hourly observations',
+        metadata_api_url=LV_CKAN_DATASTORE_SEARCH_URL,
+        observation_sql_api_url=LV_CKAN_DATASTORE_SEARCH_SQL_URL,
+        station_resource_id=LV_LVGMC_STATION_RESOURCE_ID,
+        parameter_resource_id=LV_LVGMC_PARAMETER_RESOURCE_ID,
+        archive_hourly_resource_id=LV_LVGMC_ARCHIVE_HOURLY_RESOURCE_ID,
+        factual_archive_resource_id=LV_LVGMC_FACTUAL_ARCHIVE_RESOURCE_ID,
+        operational_resource_id=LV_LVGMC_OPERATIONAL_RESOURCE_ID,
+        supported_elements=('HTDRY', 'HPRAB', 'HWNDS', 'HWSMX', 'HRLH', 'HPRSL', 'HSNOW'),
+        time_semantics='datetime',
+        canonical_elements=LV_LVGMC_HOURLY_CANONICAL_ELEMENTS,
+        implemented=True,
+    ),
     LatviaDatasetSpec(
         provider='lvgmc',
         resolution='daily',

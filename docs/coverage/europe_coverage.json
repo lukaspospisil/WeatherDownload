@@ -650,8 +650,10 @@
       "status": "not_attempted"
     },
     "LV": {
-      "providers": [],
-      "status": "not_attempted"
+      "providers": [
+        "lvgmc"
+      ],
+      "status": "national_hourly"
     },
     "MC": {
       "providers": [],

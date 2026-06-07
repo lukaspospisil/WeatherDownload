@@ -11,8 +11,13 @@ from weatherdownload import (
     read_station_metadata,
     read_station_observation_metadata,
 )
-from weatherdownload.providers.lv.observations import build_lvgmc_daily_sql
-from weatherdownload.providers.lv.parser import hourly_period_date, normalize_lvgmc_parameter_metadata, parse_lvgmc_payload_json
+from weatherdownload.providers.lv.observations import build_lvgmc_daily_sql, build_lvgmc_hourly_sql
+from weatherdownload.providers.lv.parser import (
+    hourly_period_date,
+    hourly_period_timestamp,
+    normalize_lvgmc_parameter_metadata,
+    parse_lvgmc_payload_json,
+)
 
 
 FIXTURE_DIR = Path('tests/data/lv_lvgmc')
@@ -48,10 +53,18 @@ def _lvgmc_observation_response(url: str, params=None, timeout: int = 60) -> _Mo
 
 
 class LatviaLvgmcProviderTests(unittest.TestCase):
-    def test_lv_discovery_exposes_lvgmc_and_ghcnd_daily(self) -> None:
+    def test_lv_discovery_exposes_lvgmc_hourly_daily_and_ghcnd_daily(self) -> None:
         self.assertEqual(list_providers(country='LV'), ['ghcnd', 'lvgmc'])
-        self.assertEqual(list_resolutions(country='LV', provider='lvgmc'), ['daily'])
+        self.assertEqual(list_resolutions(country='LV', provider='lvgmc'), ['1hour', 'daily'])
         self.assertEqual(list_resolutions(country='LV', provider='ghcnd'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='LV', provider='lvgmc', resolution='1hour'),
+            ['tas_mean', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='LV', provider='lvgmc', resolution='1hour', provider_raw=True),
+            ['HTDRY', 'HPRAB', 'HWNDS', 'HWSMX', 'HRLH', 'HPRSL', 'HSNOW'],
+        )
         self.assertEqual(
             list_supported_elements(country='LV', provider='lvgmc', resolution='daily'),
             ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'snow_depth'],
@@ -81,6 +94,10 @@ class LatviaLvgmcProviderTests(unittest.TestCase):
             stations.attrs['station_provider_raw_elements_by_path'][('lvgmc', 'daily')]['0001'],
             ['HTDRY', 'HATMX', 'HATMN', 'HPRAB', 'HWNDS', 'HWSMX', 'HRLH', 'HPRSL', 'HSNOW'],
         )
+        self.assertEqual(
+            stations.attrs['station_provider_raw_elements_by_path'][('lvgmc', '1hour')]['0001'],
+            ['HTDRY', 'HPRAB', 'HWNDS', 'HWSMX', 'HRLH', 'HPRSL', 'HSNOW'],
+        )
 
     def test_parameter_metadata_parser_keeps_expected_fields(self) -> None:
         payload = parse_lvgmc_payload_json(PARAMETERS_TEXT)
@@ -103,10 +120,14 @@ class LatviaLvgmcProviderTests(unittest.TestCase):
             sorted(metadata['element'].unique().tolist()),
             ['HATMN', 'HATMX', 'HPRAB', 'HPRSL', 'HRLH', 'HSNOW', 'HTDRY', 'HWNDS', 'HWSMX'],
         )
+        self.assertEqual(sorted(metadata['obs_type'].unique().tolist()), ['HISTORICAL_1HOUR', 'HISTORICAL_DAILY'])
+        hourly_schedule = metadata[metadata['obs_type'] == 'HISTORICAL_1HOUR']['schedule'].iloc[0]
+        self.assertIn('preceding hour', hourly_schedule)
 
     def test_hourly_period_date_uses_previous_hour_bucket(self) -> None:
         self.assertEqual(hourly_period_date(__import__('pandas').Timestamp('2026-01-02T00:00:00Z')), __import__('datetime').date(2026, 1, 1))
         self.assertEqual(hourly_period_date(__import__('pandas').Timestamp('2026-01-01T00:00:00Z')), __import__('datetime').date(2025, 12, 31))
+        self.assertEqual(hourly_period_timestamp(__import__('pandas').Timestamp('2026-01-01T02:00:00Z')).isoformat(), '2026-01-01T01:00:00+00:00')
 
     def test_build_lvgmc_daily_sql_limits_station_abbreviations_and_interval(self) -> None:
         sql = build_lvgmc_daily_sql(
@@ -120,6 +141,20 @@ class LatviaLvgmcProviderTests(unittest.TestCase):
         self.assertIn("ABBREVIATION IN ('HTDRY', 'HPRAB')", sql)
         self.assertIn("DATETIME > '2026-01-01T00:00:00Z'", sql)
         self.assertIn("DATETIME <= '2026-01-02T00:00:00Z'", sql)
+
+    def test_build_lvgmc_hourly_sql_limits_station_abbreviations_and_represented_interval(self) -> None:
+        sql = build_lvgmc_hourly_sql(
+            resource_id='ecc62e27-2071-483c-bca9-5e53d979faa8',
+            station_id='0001',
+            raw_elements=['HTDRY', 'HPRAB'],
+            start_timestamp='2026-01-01T00:00:00Z',
+            end_timestamp='2026-01-01T02:00:00Z',
+        )
+        self.assertIn('FROM "ecc62e27-2071-483c-bca9-5e53d979faa8"', sql)
+        self.assertIn("STATION_ID = '0001'", sql)
+        self.assertIn("ABBREVIATION IN ('HTDRY', 'HPRAB')", sql)
+        self.assertIn("DATETIME > '2026-01-01T00:00:00Z'", sql)
+        self.assertIn("DATETIME <= '2026-01-01T03:00:00Z'", sql)
 
     def test_download_daily_observations_lv_lvgmc_aggregates_fixture_payload(self) -> None:
         station_metadata = read_station_metadata(country='LV', source_url=str(FIXTURE_DIR))
@@ -153,6 +188,39 @@ class LatviaLvgmcProviderTests(unittest.TestCase):
         self.assertEqual(lookup[('relative_humidity', '2026-01-01')], 70.0)
         self.assertEqual(lookup[('pressure', '2026-01-01')], 1002.0)
         self.assertEqual(lookup[('snow_depth', '2026-01-01')], 12.0)
+
+    def test_download_hourly_observations_lv_lvgmc_exposes_recent_archive_slice(self) -> None:
+        station_metadata = read_station_metadata(country='LV', source_url=str(FIXTURE_DIR))
+        query = ObservationQuery(
+            country='LV',
+            provider='lvgmc',
+            resolution='1hour',
+            station_ids=['0001'],
+            start='2026-01-01T00:00:00Z',
+            end='2026-01-01T02:00:00Z',
+            elements=['tas_mean', 'precipitation', 'wind_speed', 'wind_speed_max', 'relative_humidity', 'pressure', 'snow_depth'],
+        )
+        with patch('weatherdownload.providers.lv.observations.requests.get', return_value=_MockTextResponse(ARCHIVE_ONE_DAY_TEXT)):
+            observations = download_observations(query, country='LV', station_metadata=station_metadata)
+
+        self.assertEqual(
+            list(observations.columns),
+            ['station_id', 'gh_id', 'element', 'element_raw', 'timestamp', 'value', 'flag', 'quality', 'provider', 'resolution'],
+        )
+        self.assertEqual(
+            sorted(observations['element'].unique().tolist()),
+            ['precipitation', 'pressure', 'relative_humidity', 'snow_depth', 'tas_mean', 'wind_speed', 'wind_speed_max'],
+        )
+        self.assertEqual(observations['timestamp'].astype(str).min(), '2026-01-01 00:00:00+00:00')
+        lookup = {
+            (row.element, row.timestamp.isoformat()): round(float(row.value), 4)
+            for row in observations.itertuples(index=False)
+        }
+        self.assertEqual(lookup[('tas_mean', '2026-01-01T00:00:00+00:00')], 1.0)
+        self.assertEqual(lookup[('tas_mean', '2026-01-01T01:00:00+00:00')], 3.0)
+        self.assertEqual(lookup[('precipitation', '2026-01-01T00:00:00+00:00')], 0.2)
+        self.assertEqual(lookup[('wind_speed_max', '2026-01-01T01:00:00+00:00')], 7.0)
+        self.assertEqual(lookup[('snow_depth', '2026-01-01T00:00:00+00:00')], 10.0)
 
     def test_download_daily_observations_lv_lvgmc_ignores_nulls_and_drops_all_null_elements(self) -> None:
         station_metadata = read_station_metadata(country='LV', source_url=str(FIXTURE_DIR))

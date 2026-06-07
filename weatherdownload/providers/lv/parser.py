@@ -8,6 +8,19 @@ import requests
 
 from ...metadata import STATION_METADATA_COLUMNS, STATION_OBSERVATION_METADATA_COLUMNS
 
+LV_NORMALIZED_HOURLY_COLUMNS = [
+    'station_id',
+    'gh_id',
+    'element',
+    'element_raw',
+    'timestamp',
+    'value',
+    'flag',
+    'quality',
+    'provider',
+    'resolution',
+]
+
 LV_NORMALIZED_DAILY_COLUMNS = [
     'station_id',
     'gh_id',
@@ -107,7 +120,9 @@ def normalize_lvgmc_station_metadata(
     if frame.empty:
         return frame
     frame = frame.sort_values('station_id', kind='stable').reset_index(drop=True)
+    existing_attrs = frame.attrs.get('station_provider_raw_elements_by_path', {})
     frame.attrs['station_provider_raw_elements_by_path'] = {
+        **existing_attrs,
         (spec.provider, spec.resolution): station_elements,
     }
     return frame
@@ -120,6 +135,12 @@ def normalize_lvgmc_observation_metadata(
     parameter_metadata: dict[str, dict[str, object]],
     active_only: bool,
 ) -> pd.DataFrame:
+    if spec.resolution == '1hour':
+        obs_type = 'HISTORICAL_1HOUR'
+        schedule = 'PT1H LVGMC recent archive hourly observations using UTC period-end timestamps that represent the preceding hour'
+    else:
+        obs_type = 'HISTORICAL_DAILY'
+        schedule = 'P1D LVGMC recent archive daily aggregation from hourly UTC period-end records'
     rows: list[dict[str, object]] = []
     for record in station_records:
         station_id = _clean_string(record.get('STATION_ID'))
@@ -135,14 +156,14 @@ def normalize_lvgmc_observation_metadata(
                 continue
             rows.append(
                 {
-                    'obs_type': 'HISTORICAL_DAILY',
+                    'obs_type': obs_type,
                     'station_id': station_id,
                     'begin_date': begin_date,
                     'end_date': end_date,
                     'element': raw_code,
-                    'schedule': 'P1D LVGMC recent archive daily aggregation from hourly UTC period-end records',
+                    'schedule': schedule,
                     'name': metadata['name'],
-                    'description': _metadata_description(raw_code, metadata),
+                    'description': _metadata_description(raw_code, metadata, spec.resolution),
                     'height': pd.NA,
                 }
             )
@@ -151,6 +172,55 @@ def normalize_lvgmc_observation_metadata(
     if frame.empty:
         return frame
     return frame.sort_values(['station_id', 'element'], kind='stable').reset_index(drop=True)
+
+
+def normalize_lvgmc_hourly_records(
+    records: list[dict[str, object]],
+    *,
+    query,
+    station_id: str,
+    start_timestamp,
+    end_timestamp,
+) -> pd.DataFrame:
+    start = pd.to_datetime(start_timestamp, utc=True, errors='coerce')
+    end = pd.to_datetime(end_timestamp, utc=True, errors='coerce')
+    rows: list[dict[str, object]] = []
+    for record in records:
+        if _clean_string(record.get('STATION_ID')).upper() != station_id.upper():
+            continue
+        raw_code = _clean_string(record.get('ABBREVIATION')).upper()
+        if raw_code not in query.elements:
+            continue
+        timestamp = pd.to_datetime(record.get('DATETIME'), utc=True, errors='coerce')
+        if pd.isna(timestamp):
+            continue
+        represented_timestamp = hourly_period_timestamp(timestamp)
+        if represented_timestamp < start or represented_timestamp > end:
+            continue
+        value = _parse_optional_float(record.get('VALUE'))
+        if value is None:
+            continue
+        rows.append(
+            {
+                'station_id': station_id,
+                'gh_id': pd.NA,
+                'element': raw_code,
+                'element_raw': raw_code,
+                'timestamp': represented_timestamp,
+                'value': float(value),
+                'flag': pd.NA,
+                'quality': pd.Series([pd.NA], dtype='Int64').iloc[0],
+                'provider': query.provider,
+                'resolution': query.resolution,
+            }
+        )
+
+    frame = pd.DataFrame.from_records(rows, columns=LV_NORMALIZED_HOURLY_COLUMNS)
+    if frame.empty:
+        return frame
+    frame['quality'] = pd.Series([pd.NA] * len(frame), dtype='Int64')
+    frame = frame.drop_duplicates(subset=['station_id', 'element_raw', 'timestamp'], keep='last')
+    return frame.sort_values(['station_id', 'timestamp', 'element_raw'], kind='stable').reset_index(drop=True)
 
 
 def normalize_lvgmc_daily_records(
@@ -206,8 +276,11 @@ def normalize_lvgmc_daily_records(
 
 
 def hourly_period_date(timestamp: pd.Timestamp):
-    shifted = timestamp - pd.Timedelta(hours=1)
-    return shifted.date()
+    return hourly_period_timestamp(timestamp).date()
+
+
+def hourly_period_timestamp(timestamp: pd.Timestamp) -> pd.Timestamp:
+    return timestamp - pd.Timedelta(hours=1)
 
 
 def _aggregate_raw_values(raw_code: str, values: list[tuple[pd.Timestamp, float]]) -> float | None:
@@ -228,10 +301,14 @@ def _aggregate_raw_values(raw_code: str, values: list[tuple[pd.Timestamp, float]
     return None
 
 
-def _metadata_description(raw_code: str, metadata: dict[str, object]) -> str:
+def _metadata_description(raw_code: str, metadata: dict[str, object], resolution: str) -> str:
     unit = _clean_string(metadata.get('unit'))
-    if raw_code == 'HSNOW':
+    if resolution == 'daily' and raw_code == 'HSNOW':
         return f"{metadata['name']}. WeatherDownload keeps the last non-null value assigned to the UTC day. Source unit: {unit}."
+    if resolution == 'daily':
+        return f"{metadata['name']}. Source unit: {unit}."
+    if raw_code == 'HSNOW':
+        return f"{metadata['name']}. LVGMC timestamps are period-end timestamps, so WeatherDownload exposes the preceding UTC hour as the hourly timestamp. Source unit: {unit}."
     return f"{metadata['name']}. Source unit: {unit}."
 
 
