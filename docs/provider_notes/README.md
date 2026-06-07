@@ -40,6 +40,8 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [MeteoSwiss Liechtenstein](li_meteoswiss.md)
 - [Meteo.lt Lithuania](lt_meteo_lt.md)
 - [LVGMC Latvia](lv_lvgmc.md)
+- [Moldova Meteo.md Research Note](md_meteo_md_research.md)
+- [Monaco Research Note](mc_monaco_research.md)
 - [MeteoLux Luxembourg](lu_meteolux.md)
 - [ASTA Luxembourg](lu_asta.md)
 - [Luxembourg Historical Research Note](lu_meteolux_research.md)
