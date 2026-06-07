@@ -24,6 +24,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [GeoSphere Austria](at_geosphere.md)
 - [Bosnia and Herzegovina Meteo BiH Daily Research Note](ba_meteo_bih_research.md)
 - [RMI/KMI Belgium](be_rmi.md)
+- [Belarus Belhydromet Daily Research Note](by_belhydromet_research.md)
 - [NIMH Bulgaria](bg_nimh.md)
 - [CHMI Czech Republic](cz_chmi.md)
 - [ECCC GeoMet Canada](ca_eccc.md)
