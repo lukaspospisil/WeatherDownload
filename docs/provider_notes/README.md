@@ -33,6 +33,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [Meteo-France France](fr_meteo_france.md)
 - [Met Office Weather DataHub Great Britain](gb_metoffice_datahub.md)
 - [NOAA GHCN-Daily United Kingdom](gb_ghcnd.md)
+- [Greece HNMS Research Note](gr_hnms_research.md)
 - [HungaroMet Hungary](hu_hungaromet.md)
 - [Met Eireann Ireland](ie_meteireann.md)
 - [Vedur Iceland](is_vedur.md)
