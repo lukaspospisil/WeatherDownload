@@ -19,6 +19,7 @@ SAMPLE_META1 = Path('tests/data/sample_meta1.csv').read_text(encoding='utf-8')
 SAMPLE_GHCND_STATIONS_PATH = Path('tests/data/sample_ghcnd_stations.txt')
 SAMPLE_GHCND_STATIONS_TEXT = SAMPLE_GHCND_STATIONS_PATH.read_text(encoding='utf-8')
 SAMPLE_GHCND_INVENTORY_TEXT = Path('tests/data/sample_ghcnd_inventory.txt').read_text(encoding='utf-8')
+SAMPLE_BG_RAIN_PAGE_PATH = Path('tests/data/sample_bg_openData_rain.html')
 SAMPLE_DWD_STATIONS = '''Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland Abgabe
 ----------- --------- --------- ------------- --------- --------- ----------------------------------------- ---------- ------
 00003 18910101 20241231 202 50.7827 6.0941 Aachen Baden-W\u00fcrttemberg Frei
@@ -128,7 +129,7 @@ class ProviderTests(unittest.TestCase):
         )
 
     def test_discovery_direct_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
-        for country in ['AL', 'BG', 'CY', 'GR', 'HR', 'IT', 'MD', 'MK', 'MT', 'NZ']:
+        for country in ['AL', 'CY', 'GR', 'HR', 'IT', 'MD', 'MK', 'MT', 'NZ']:
             with self.subTest(country=country):
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
                 self.assertEqual(list_providers(country=country), ['ghcnd'])
@@ -138,6 +139,35 @@ class ProviderTests(unittest.TestCase):
                     list_supported_elements(country=country, provider='ghcnd', resolution='daily'),
                     ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
                 )
+
+    def test_discovery_country_bg_includes_nimh_and_ghcnd_daily(self) -> None:
+        self.assertEqual(list_providers(country='BG'), ['ghcnd', 'nimh'])
+        self.assertEqual(list_resolutions(country='BG', provider='ghcnd'), ['daily'])
+        self.assertEqual(list_resolutions(country='BG', provider='nimh'), ['daily'])
+        self.assertEqual(
+            list_supported_elements(country='BG', provider='ghcnd', resolution='daily'),
+            ['tas_mean', 'tas_max', 'tas_min', 'precipitation', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='BG', provider='nimh', resolution='daily'),
+            ['precipitation', 'snow_depth'],
+        )
+        self.assertEqual(
+            list_supported_elements(country='BG', provider='nimh', resolution='daily', provider_raw=True),
+            ['precipitation', 'snow_cover_depth'],
+        )
+
+    def test_bg_daily_query_is_provider_valid(self) -> None:
+        daily_query = ObservationQuery(
+            country='BG',
+            provider='nimh',
+            resolution='daily',
+            station_ids=['1010'],
+            start_date='2026-01-01',
+            end_date='2026-01-03',
+            elements=['precipitation', 'snow_depth'],
+        )
+        self.assertEqual(daily_query.elements, ['precipitation', 'snow_cover_depth'])
 
     def test_discovery_mapped_prefix_ghcnd_countries_include_conservative_core_without_evap(self) -> None:
         for country in ['BY', 'TR', 'UA']:

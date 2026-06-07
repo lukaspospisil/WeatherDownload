@@ -236,9 +236,9 @@
     },
     "BG": {
       "providers": [
-        "ghcnd"
+        "nimh"
       ],
-      "status": "ghcnd_daily"
+      "status": "national_daily"
     },
     "BY": {
       "providers": [

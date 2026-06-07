@@ -74,6 +74,12 @@ SAMPLE_ES_DAILY_TEXT = Path('tests/data/sample_es_aemet_daily.json').read_text(e
 SAMPLE_ES_STATIONS_PATH = Path('tests/data/sample_es_aemet_stations.json')
 SAMPLE_AD_CLIMATOLOGY_PATH = Path('tests/data/sample_ad_meteo_ad_climatologia.html')
 SAMPLE_AD_DAILY_WORKBOOK_PATH = Path('tests/data/sample_ad_meteo_ad_daily_rich.xls')
+SAMPLE_BG_RAIN_PAGE_PATH = Path('tests/data/sample_bg_openData_rain.html')
+SAMPLE_BG_SNOW_PAGE_PATH = Path('tests/data/sample_bg_openData_snow.html')
+SAMPLE_BG_RAIN_202601_PATH = Path('tests/data/sample_bg_mosv_prec_202601.csv')
+SAMPLE_BG_RAIN_202602_PATH = Path('tests/data/sample_bg_mosv_prec_202602.csv')
+SAMPLE_BG_SNOW_202601_PATH = Path('tests/data/sample_bg_mosv_snow_202601.csv')
+SAMPLE_BG_SNOW_202602_PATH = Path('tests/data/sample_bg_mosv_snow_202602.csv')
 SAMPLE_SE_FIXTURE_DIR = Path('tests/data/smhi_se')
 SAMPLE_SHMU_PAYLOAD_PATH = Path('tests/data/sample_shmu_kli_inter_2025-01.json')
 SAMPLE_SHMU_PAYLOAD_TEXT = SAMPLE_SHMU_PAYLOAD_PATH.read_text(encoding='utf-8')
@@ -162,6 +168,17 @@ def _build_sample_pl_zip(filename: str, csv_text: str) -> bytes:
     return buffer.getvalue()
 
 
+def _build_sample_bg_legend_zip() -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr('legendSnow.csv', Path('tests/data/sample_bg_legendSnow.csv').read_bytes())
+        archive.writestr('legendSnowCover.csv', Path('tests/data/sample_bg_legendSnowCover.csv').read_bytes())
+    return buffer.getvalue()
+
+
+SAMPLE_BG_LEGEND_ZIP = _build_sample_bg_legend_zip()
+
+
 def _mock_ghcnd_metadata_response(url: str, timeout: int = 60) -> _MockTextResponse:
     if url.endswith('ghcnd-stations.txt'):
         return _MockTextResponse(SAMPLE_GHCND_STATIONS_TEXT)
@@ -175,6 +192,26 @@ def _mock_si_arso_observation_response(url: str, timeout: int = 60) -> _MockText
     if 'id=1895' not in url:
         raise AssertionError(f'unexpected ARSO observation URL: {url}')
     return _MockTextResponse((SAMPLE_SI_ARSO_FIXTURE_DIR / 'obs_1895_2024-01-01_2024-01-03.xml').read_text(encoding='utf-8'))
+
+
+def _mock_bg_open_data_response(url: str, timeout: int = 60) -> _MockTextResponse:
+    del timeout
+    normalized = url.replace('\\', '/')
+    if normalized.endswith('/openData/rain'):
+        return _MockTextResponse(SAMPLE_BG_RAIN_PAGE_PATH.read_text(encoding='utf-8'))
+    if normalized.endswith('/openData/snow'):
+        return _MockTextResponse(SAMPLE_BG_SNOW_PAGE_PATH.read_text(encoding='utf-8'))
+    if normalized.endswith('mosv_prec_202601.csv'):
+        return _MockTextResponse(SAMPLE_BG_RAIN_202601_PATH.read_text(encoding='utf-8'))
+    if normalized.endswith('mosv_prec_202602.csv'):
+        return _MockTextResponse(SAMPLE_BG_RAIN_202602_PATH.read_text(encoding='utf-8'))
+    if normalized.endswith('mosv_snow_202601.csv'):
+        return _MockTextResponse(SAMPLE_BG_SNOW_202601_PATH.read_text(encoding='utf-8'))
+    if normalized.endswith('mosv_snow_202602.csv'):
+        return _MockTextResponse(SAMPLE_BG_SNOW_202602_PATH.read_text(encoding='utf-8'))
+    if normalized.endswith('legendSnow.zip'):
+        return _MockTextResponse(content=SAMPLE_BG_LEGEND_ZIP)
+    raise AssertionError(f'unexpected BG NIMH URL: {url}')
 
 
 def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
@@ -197,7 +234,8 @@ def _read_station_metadata_fixture(country: str) -> pd.DataFrame:
     if country == 'BE':
         return read_station_metadata(country='BE', source_url=str(SAMPLE_BE_STATIONS_PATH))
     if country == 'BG':
-        return read_station_metadata(country='BG', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
+        with patch('weatherdownload.providers.bg.parser.requests.get', side_effect=_mock_bg_open_data_response):
+            return read_station_metadata(country='BG', source_url=str(SAMPLE_BG_RAIN_PAGE_PATH))
     if country == 'BY':
         return read_station_metadata(country='BY', source_url=str(SAMPLE_GHCND_STATIONS_PATH))
     if country == 'CH':
@@ -322,8 +360,16 @@ def _download_daily_fixture(country: str) -> pd.DataFrame:
             return download_observations(query, country='BE', station_metadata=station_metadata)
     if country == 'BG':
         station_metadata = _read_station_metadata_fixture('BG')
-        query = ObservationQuery(country='BG', provider='ghcnd', resolution='daily', station_ids=['BG000000001'], start_date='2020-07-01', end_date='2020-07-02', elements=['tas_max', 'precipitation'])
-        with patch('weatherdownload.providers.ghcnd.observations._read_text', return_value=SAMPLE_GHCND_BG_DLY_TEXT):
+        query = ObservationQuery(
+            country='BG',
+            provider='nimh',
+            resolution='daily',
+            station_ids=['1010', '1020'],
+            start_date='2026-01-01',
+            end_date='2026-01-02',
+            elements=['precipitation', 'snow_depth'],
+        )
+        with patch('weatherdownload.providers.bg.parser.requests.get', side_effect=_mock_bg_open_data_response):
             return download_observations(query, country='BG', station_metadata=station_metadata)
     if country == 'BY':
         station_metadata = _read_station_metadata_fixture('BY')
@@ -812,7 +858,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
         'AT': ['1', '2', 'AU000000001', 'AU000000002'],
         'BA': ['BK000000001', 'BK000000002'],
         'BE': ['6414', '6438'],
-        'BG': ['BG000000001', 'BG000000002'],
+        'BG': ['1010', '1020', '3010'],
         'BY': ['BO000000001', 'BO000000002'],
         'CA': ['CA000000001', 'CA000000002'],
         'CH': ['ABO', 'AEG', 'AIG', 'ALT', 'AND'],
@@ -867,7 +913,7 @@ def test_read_station_metadata_contract_is_stable_across_countries() -> None:
 
 def test_daily_download_contract_is_stable_across_supported_countries() -> None:
     expected_columns = ['station_id', 'gh_id', 'element', 'element_raw', 'observation_date', 'time_function', 'value', 'flag', 'quality', 'provider', 'resolution']
-    expected_providers = {'AD': 'meteo_ad', 'AL': 'ghcnd', 'AT': 'historical', 'BA': 'ghcnd', 'BE': 'rmi', 'BG': 'ghcnd', 'BY': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CY': 'ghcnd', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'dmi', 'EE': 'ilmateenistus', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'vedur', 'IT': 'ghcnd', 'LI': 'meteoswiss', 'LT': 'meteo_lt', 'LV': 'lvgmc', 'MD': 'ghcnd', 'ME': 'ghcnd', 'MK': 'ghcnd', 'MT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'knmi', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'RS': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'TR': 'ghcnd', 'UA': 'ghcnd', 'US': 'ghcnd'}
+    expected_providers = {'AD': 'meteo_ad', 'AL': 'ghcnd', 'AT': 'historical', 'BA': 'ghcnd', 'BE': 'rmi', 'BG': 'nimh', 'BY': 'ghcnd', 'CA': 'ghcnd', 'CH': 'historical', 'CY': 'ghcnd', 'CZ': 'historical_csv', 'DE': 'historical', 'DK': 'dmi', 'EE': 'ilmateenistus', 'ES': 'aemet', 'FI': 'ghcnd', 'FR': 'meteo_france', 'GB': 'ghcnd', 'GR': 'ghcnd', 'HR': 'ghcnd', 'HU': 'historical', 'IE': 'meteireann', 'IS': 'vedur', 'IT': 'ghcnd', 'LI': 'meteoswiss', 'LT': 'meteo_lt', 'LV': 'lvgmc', 'MD': 'ghcnd', 'ME': 'ghcnd', 'MK': 'ghcnd', 'MT': 'ghcnd', 'MX': 'ghcnd', 'NL': 'knmi', 'NO': 'frost', 'NZ': 'ghcnd', 'PL': 'historical', 'PT': 'ghcnd', 'RO': 'ghcnd', 'RS': 'ghcnd', 'SE': 'historical', 'SI': 'arso', 'SK': 'recent', 'TR': 'ghcnd', 'UA': 'ghcnd', 'US': 'ghcnd'}
 
     for country in ['AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CA', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LV', 'MD', 'ME', 'MK', 'MT', 'MX', 'NL', 'NO', 'NZ', 'PL', 'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'TR', 'UA', 'US']:
         observations = _download_daily_fixture(country)
