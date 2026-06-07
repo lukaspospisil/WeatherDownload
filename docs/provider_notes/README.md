@@ -58,6 +58,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [San Marino Research Note](sm_san_marino_research.md)
 - [SMHI Sweden](se_smhi.md)
 - [SHMU Slovakia](sk_shmu.md)
+- [Vatican City Research Note](va_vatican_research.md)
 
 ## Shared-source wrappers
 
