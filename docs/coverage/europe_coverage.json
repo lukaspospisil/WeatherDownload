@@ -211,9 +211,11 @@
       "status": "national_daily"
     },
     "AL": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "al_igjeum_research.md",
       "status": "ghcnd_daily"
     },
     "AT": {
@@ -223,9 +225,11 @@
       "status": "national_daily"
     },
     "BA": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "ba_meteo_bih_research.md",
       "status": "ghcnd_daily"
     },
     "BE": {
@@ -241,9 +245,11 @@
       "status": "national_daily"
     },
     "BY": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "by_belhydromet_research.md",
       "status": "ghcnd_daily"
     },
     "CH": {
@@ -253,9 +259,11 @@
       "status": "national_daily"
     },
     "CY": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "cy_meteo_cy_research.md",
       "status": "ghcnd_daily"
     },
     "CZ": {
@@ -304,21 +312,27 @@
       "status": "national_daily"
     },
     "GB": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "gb_metoffice_daily_research.md",
       "status": "ghcnd_daily"
     },
     "GR": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "gr_hnms_research.md",
       "status": "ghcnd_daily"
     },
     "HR": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "hr_dhmz_research.md",
       "status": "ghcnd_daily"
     },
     "HU": {
@@ -340,13 +354,17 @@
       "status": "national_daily"
     },
     "IT": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "it_ispra_scia_research.md",
       "status": "ghcnd_daily"
     },
     "KV": {
+      "official_audit_status": "failed",
       "providers": [],
+      "research_note": "kv_ihmk_research.md",
       "status": "not_attempted"
     },
     "LI": {
@@ -375,31 +393,41 @@
       "status": "national_daily"
     },
     "MC": {
+      "official_audit_status": "failed",
       "providers": [],
+      "research_note": "mc_monaco_research.md",
       "status": "not_attempted"
     },
     "MD": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "md_meteo_md_research.md",
       "status": "ghcnd_daily"
     },
     "ME": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "me_zhms_research.md",
       "status": "ghcnd_daily"
     },
     "MK": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "mk_uhmr_research.md",
       "status": "ghcnd_daily"
     },
     "MT": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "mt_malta_metoffice_research.md",
       "status": "ghcnd_daily"
     },
     "NL": {
@@ -422,9 +450,11 @@
       "status": "national_daily"
     },
     "PT": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "pt_ipma_research.md",
       "status": "ghcnd_daily"
     },
     "RO": {
@@ -434,9 +464,11 @@
       "status": "national_daily"
     },
     "RS": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "rs_rhmz_research.md",
       "status": "ghcnd_daily"
     },
     "SE": {
@@ -459,23 +491,31 @@
       "status": "ghcnd_daily"
     },
     "SM": {
+      "official_audit_status": "failed",
       "providers": [],
+      "research_note": "sm_san_marino_research.md",
       "status": "not_attempted"
     },
     "TR": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "tr_mgm_research.md",
       "status": "ghcnd_daily"
     },
     "UA": {
+      "official_audit_status": "failed",
       "providers": [
         "ghcnd"
       ],
+      "research_note": "ua_ukrhydromet_research.md",
       "status": "ghcnd_daily"
     },
     "VA": {
+      "official_audit_status": "failed",
       "providers": [],
+      "research_note": "va_vatican_research.md",
       "status": "not_attempted"
     }
   },

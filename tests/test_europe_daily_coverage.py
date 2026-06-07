@@ -51,6 +51,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('meteolux', summary['daily']['LU']['providers'])
         self.assertEqual(summary['daily']['GB']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['GB']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['GB']['official_audit_status'], 'failed')
+        self.assertEqual(summary['daily']['GB']['research_note'], 'gb_metoffice_daily_research.md')
         self.assertEqual(summary['daily']['BG']['status'], 'national_daily')
         self.assertEqual(summary['daily']['BG']['providers'], ['nimh'])
         self.assertEqual(summary['daily']['EE']['status'], 'national_daily')
@@ -69,8 +71,12 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['LI']['providers'], ['meteoswiss'])
         self.assertEqual(summary['daily']['MT']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['MT']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['MT']['official_audit_status'], 'failed')
+        self.assertEqual(summary['daily']['MT']['research_note'], 'mt_malta_metoffice_research.md')
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
+        self.assertEqual(summary['daily']['KV']['official_audit_status'], 'failed')
+        self.assertEqual(summary['daily']['KV']['research_note'], 'kv_ihmk_research.md')
         self.assertEqual(summary['daily']['LT']['status'], 'national_daily')
         self.assertEqual(summary['daily']['LT']['providers'], ['meteo_lt'])
         self.assertEqual(summary['daily']['LV']['status'], 'national_daily')
@@ -87,8 +93,12 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['SK']['providers'], ['ghcnd', 'recent'])
         self.assertEqual(summary['daily']['TR']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['TR']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['TR']['official_audit_status'], 'failed')
+        self.assertEqual(summary['daily']['TR']['research_note'], 'tr_mgm_research.md')
         self.assertEqual(summary['daily']['UA']['status'], 'ghcnd_daily')
         self.assertEqual(summary['daily']['UA']['providers'], ['ghcnd'])
+        self.assertEqual(summary['daily']['UA']['official_audit_status'], 'failed')
+        self.assertEqual(summary['daily']['UA']['research_note'], 'ua_ukrhydromet_research.md')
 
         self.assertEqual(summary['hourly']['DE']['status'], 'national_hourly')
         self.assertIn('historical', summary['hourly']['DE']['providers'])
@@ -153,6 +163,8 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertEqual(summary['daily']['FI']['providers'], ['fmi'])
         self.assertEqual(summary['daily']['KV']['status'], 'not_attempted')
         self.assertEqual(summary['daily']['KV']['providers'], [])
+        self.assertEqual(summary['daily']['KV']['official_audit_status'], 'failed')
+        self.assertEqual(summary['daily']['KV']['research_note'], 'kv_ihmk_research.md')
         self.assertTrue({'AL', 'BA', 'BY', 'CY', 'GR', 'HR', 'MD', 'ME', 'MK', 'MT', 'RS', 'SK', 'TR', 'UA'}.issubset(ghcnd_daily_countries))
         self.assertEqual(summary['daily']['BG']['status'], 'national_daily')
         self.assertEqual(summary['daily']['BG']['providers'], ['nimh'])
@@ -290,6 +302,16 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertNotIn('id="context-country-RU" class="country national_daily"', svg_text)
         self.assertNotIn('id="context-country-RU" data-status=', svg_text)
         self.assertNotIn('.context-country { fill: #e7ecef; }', svg_text)
+        self.assertIn('.researched-no-provider-daily { fill: #ef6c00; }', svg_text)
+        self.assertIn('.daily-audit-outline { fill: none; stroke: #ef6c00;', svg_text)
+        self.assertIn('id="country-audit-outline-UA"', svg_text)
+        self.assertIn('id="country-audit-outline-TR"', svg_text)
+        self.assertIn('id="country-MC" class="country researched-no-provider-daily"', svg_text)
+        self.assertIn('id="country-SM" class="country researched-no-provider-daily"', svg_text)
+        self.assertIn('id="country-VA" class="country researched-no-provider-daily"', svg_text)
+        self.assertIn('id="country-KV" class="country researched-no-provider-daily"', svg_text)
+        self.assertIn('data-audit-status="failed"', svg_text)
+        self.assertIn('data-research-note="ua_ukrhydromet_research.md"', svg_text)
 
     def test_hourly_and_tenmin_svg_match_daily_map_layout(self) -> None:
         daily_root = ET.fromstring(Path('docs/assets/europe_daily_coverage_map.svg').read_text(encoding='utf-8'))
@@ -332,6 +354,8 @@ class EuropeCoverageTests(unittest.TestCase):
             self.assertTrue(any(context_id in paths for context_id in ('context-country-MA', 'context-country-DZ', 'context-country-TN', 'context-country-LY', 'context-country-EG')))
             self.assertEqual(paths['context-country-RU'].attrib['class'], 'country context-country')
             self.assertNotIn('data-status', paths['context-country-RU'].attrib)
+            self.assertNotIn('country-audit-outline-UA', paths)
+            self.assertNotIn('country-audit-outline-TR', paths)
 
     def test_country_border_path_data_excludes_view_boundary_segments(self) -> None:
         projection_bounds = MODULE._projected_view_bounds()
@@ -447,9 +471,16 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertIn('assets/europe_10min_coverage_map.svg', doc_text)
         self.assertIn('They are not FAO-readiness maps.', doc_text)
         self.assertIn('They do not imply that all variables are available at all stations.', doc_text)
+        self.assertIn('`BG / nimh / daily` is an intentionally narrow official daily path', doc_text)
         self.assertIn('They reflect WeatherDownload implementation status, not general public data availability in each country.', doc_text)
+        self.assertIn('They distinguish implemented download coverage from documented official-provider audit status', doc_text)
         self.assertIn('shown only as neutral geographic context', doc_text)
         self.assertIn('not part of the coverage classification', doc_text)
+        self.assertIn('Fill color shows implemented daily download coverage.', doc_text)
+        self.assertIn('Orange outline means an official-provider audit was attempted and documented as failed', doc_text)
+        self.assertIn('Orange - investigated with a research note, but no safe implemented daily provider exists', doc_text)
+        self.assertIn('`GHCN-Daily` fallback coverage is distinct from official national providers.', doc_text)
+        self.assertIn('`Fallback + research note` means WeatherDownload can still download daily data there', doc_text)
 
     def test_readme_shows_daily_map_and_links_to_data_coverage_page(self) -> None:
         readme_text = Path('README.md').read_text(encoding='utf-8')
@@ -459,8 +490,12 @@ class EuropeCoverageTests(unittest.TestCase):
         self.assertNotIn('docs/assets/europe_10min_coverage_map.svg', readme_text)
         self.assertIn('This is daily-data coverage, not FAO-readiness coverage', readme_text)
         self.assertIn('it does not imply', readme_text)
+        self.assertIn('fill color shows', readme_text)
+        self.assertIn('orange outline marks countries where', readme_text)
         self.assertIn('shown only as geographic context', readme_text)
         self.assertIn('Legend: dark green = national daily downloader', readme_text)
+        self.assertIn('orange = investigated but no safe daily provider implemented', readme_text)
+        self.assertIn('orange outline = fallback coverage plus failed official-provider audit', readme_text)
         self.assertIn('very light gray = context land outside the coverage classification', readme_text)
         self.assertIn('European data coverage maps: [Data Coverage](docs/data_coverage.md)', readme_text)
         self.assertIn('[Data Coverage](docs/data_coverage.md)', readme_text)
@@ -550,6 +585,7 @@ def _same_svg_coordinate(value: float, boundary: float) -> bool:
 def _expected_daily_summary_from_discovery() -> dict[str, dict[str, object]]:
     supported_countries = set(list_supported_countries())
     attempted = MODULE.load_status_config()['daily']['attempted_no_reliable']
+    research_notes = MODULE.discover_research_notes()
     expected: dict[str, dict[str, object]] = {}
 
     for country in MODULE.COVERAGE_COUNTRIES:
@@ -578,6 +614,13 @@ def _expected_daily_summary_from_discovery() -> dict[str, dict[str, object]]:
                 'status': 'not_attempted',
                 'providers': [],
             }
+
+        if (
+            country in research_notes
+            and expected[country]['status'] in {'ghcnd_daily', 'not_attempted', 'attempted_no_reliable_daily'}
+        ):
+            expected[country]['official_audit_status'] = 'failed'
+            expected[country]['research_note'] = research_notes[country]
 
     return expected
 

@@ -12,6 +12,7 @@ from weatherdownload.providers import get_provider
 STATUS_CONFIG_PATH = Path('docs/coverage/europe_resolution_status.yml')
 GEODATA_PATH = Path('docs/coverage/geodata/ne_50m_admin_0_countries.geojson')
 OUTPUT_JSON_PATH = Path('docs/coverage/europe_coverage.json')
+PROVIDER_NOTES_DIR = Path('docs/provider_notes')
 OUTPUT_SVG_PATHS = {
     'daily': Path('docs/assets/europe_daily_coverage_map.svg'),
     'hourly': Path('docs/assets/europe_hourly_coverage_map.svg'),
@@ -61,6 +62,8 @@ COUNTRY_NAME_FALLBACKS = {
 }
 
 CONTEXT_LAND_FILL = '#d6dee4'
+DAILY_RESEARCH_FILL = '#ef6c00'
+DAILY_AUDIT_OUTLINE = '#ef6c00'
 
 RESOLUTION_SPECS = {
     'daily': {
@@ -102,6 +105,7 @@ def load_status_config(path: Path = STATUS_CONFIG_PATH) -> dict[str, Any]:
 def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dict[str, dict[str, dict[str, Any]]]:
     config = load_status_config() if status_config is None else status_config
     supported_countries = set(list_supported_countries())
+    research_notes = discover_research_notes()
     summary: dict[str, dict[str, dict[str, Any]]] = {}
 
     for resolution_name, spec in RESOLUTION_SPECS.items():
@@ -149,6 +153,13 @@ def classify_europe_coverage(status_config: dict[str, Any] | None = None) -> dic
                     'providers': [],
                 }
 
+            if resolution_name == 'daily':
+                _attach_daily_research_metadata(
+                    resolution_summary[country],
+                    country=country,
+                    research_notes=research_notes,
+                )
+
         summary[resolution_name] = resolution_summary
 
     return summary
@@ -191,6 +202,45 @@ def _stable_national_daily_providers(
         and not getattr(spec, 'experimental', False)
     }
     return [provider for provider in providers if provider in stable_non_ghcnd_providers]
+
+
+def discover_research_notes(provider_notes_dir: Path = PROVIDER_NOTES_DIR) -> dict[str, str]:
+    research_notes: dict[str, str] = {}
+
+    for path in sorted(provider_notes_dir.glob('*_research.md')):
+        country = _country_code_from_research_note(path)
+        if country:
+            research_notes[country] = path.name
+
+    return research_notes
+
+
+def _country_code_from_research_note(path: Path) -> str:
+    stem = path.stem
+    prefix, _, _rest = stem.partition('_')
+    country = prefix.upper()
+
+    if len(country) != 2 or country not in COVERAGE_COUNTRIES:
+        return ''
+
+    return country
+
+
+def _attach_daily_research_metadata(
+    country_info: dict[str, Any],
+    *,
+    country: str,
+    research_notes: dict[str, str],
+) -> None:
+    research_note = research_notes.get(country)
+    if not research_note:
+        return
+
+    if country_info['status'] not in {'ghcnd_daily', 'not_attempted', 'attempted_no_reliable_daily'}:
+        return
+
+    country_info['official_audit_status'] = 'failed'
+    country_info['research_note'] = research_note
 
 
 def load_geodata(path: Path = GEODATA_PATH) -> dict[str, Any]:
@@ -277,6 +327,12 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         f'    .context-country {{ fill: {CONTEXT_LAND_FILL}; }}',
     ]
 
+    if resolution_name == 'daily':
+        lines.append(f'    .researched-no-provider-daily {{ fill: {DAILY_RESEARCH_FILL}; }}')
+        lines.append(
+            f'    .daily-audit-outline {{ fill: none; stroke: {DAILY_AUDIT_OUTLINE}; stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; pointer-events: none; }}'
+        )
+
     for status_name in used_statuses:
         lines.append(f'    .{status_name} {{ fill: {STATUS_COLORS[status_name]}; }}')
 
@@ -332,9 +388,17 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
 
         status = summary[country]['status']
         providers = ', '.join(summary[country].get('providers', [])) or 'none'
+        audit_status = summary[country].get('official_audit_status', '')
+        research_note = summary[country].get('research_note', '')
+        rendered_class = _rendered_fill_class(resolution_name, summary[country])
+        optional_attrs = ''
+        if audit_status:
+            optional_attrs += f' data-audit-status="{audit_status}"'
+        if research_note:
+            optional_attrs += f' data-research-note="{research_note}"'
 
         lines.append(
-            f'  <path id="country-{country}" class="country {status}" data-status="{status}" data-providers="{providers}" d="{path_data}"/>'
+            f'  <path id="country-{country}" class="country {rendered_class}" data-status="{status}" data-providers="{providers}"{optional_attrs} d="{path_data}"/>'
         )
 
     # 4. Coverage borders on top.
@@ -353,8 +417,40 @@ def render_europe_coverage_svg(resolution_name: str, summary: dict[str, dict[str
         if path_data:
             lines.append(f'  <path id="country-border-{country}" class="country-border" d="{path_data}"/>')
 
+    if resolution_name == 'daily':
+        for country in COVERAGE_COUNTRIES:
+            if not _has_fallback_failed_audit(summary[country]):
+                continue
+
+            polygons = rendered_geometries.get(country, [])
+            if not polygons:
+                continue
+
+            path_data = _country_border_path_data(
+                polygons,
+                canvas_width=width,
+                canvas_height=height,
+                projection_bounds=canvas_bounds,
+            )
+            if path_data:
+                lines.append(f'  <path id="country-audit-outline-{country}" class="daily-audit-outline" d="{path_data}"/>')
+
     lines.append('</svg>')
     return '\n'.join(lines) + '\n'
+
+
+def _rendered_fill_class(resolution_name: str, country_info: dict[str, Any]) -> str:
+    if resolution_name == 'daily' and _has_research_only_daily_status(country_info):
+        return 'researched-no-provider-daily'
+    return str(country_info['status'])
+
+
+def _has_research_only_daily_status(country_info: dict[str, Any]) -> bool:
+    return country_info.get('status') == 'not_attempted' and country_info.get('official_audit_status') == 'failed'
+
+
+def _has_fallback_failed_audit(country_info: dict[str, Any]) -> bool:
+    return country_info.get('status') == 'ghcnd_daily' and country_info.get('official_audit_status') == 'failed'
 
 def _svg_size_from_bounds(bounds: dict[str, float], *, width: int) -> tuple[int, int]:
     width_span = bounds['max_x'] - bounds['min_x']
