@@ -26,6 +26,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [CHMI Czech Republic](cz_chmi.md)
 - [ECCC GeoMet Canada](ca_eccc.md)
 - [MeteoSwiss Switzerland](ch_meteoswiss.md)
+- [Cyprus Meteo.cy Daily Research Note](cy_meteo_cy_research.md)
 - [DWD Germany](de_dwd.md)
 - [DMI Denmark](dk_dmi.md)
 - [Ilmateenistus Estonia](ee_ilmateenistus.md)
