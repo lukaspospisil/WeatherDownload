@@ -61,6 +61,7 @@ Canonical country codes follow the registry output. Public alias inputs can stil
 - [IPMA Portugal](pt_ipma.md)
 - [Portugal IPMA Research Note](pt_ipma_research.md)
 - [ANM Romania](ro_anm.md)
+- [Serbia RHMZ Daily Research Note](rs_rhmz_research.md)
 - [ARSO Slovenia](si_arso.md)
 - [San Marino Research Note](sm_san_marino_research.md)
 - [SMHI Sweden](se_smhi.md)
