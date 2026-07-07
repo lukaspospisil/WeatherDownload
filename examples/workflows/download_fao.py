@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import threading
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -535,10 +538,10 @@ class ProgressReporter:
 
     def info(self, message: str) -> None:
         if not self.silent:
-            print(message)
+            print(message, flush=True)
 
     def essential(self, message: str) -> None:
-        print(message)
+        print(message, flush=True)
 
 
 class CacheStats:
@@ -607,6 +610,26 @@ class StationCacheResult:
         return ', '.join(parts)
 
 
+@dataclass(frozen=True)
+class StationCacheTaskResult:
+    station_id: str
+    full_name: str
+    result: StationCacheResult
+    error_message: str | None = None
+
+    @property
+    def status(self) -> str:
+        if self.result.failed:
+            return 'failed'
+        if self.result.missing:
+            return 'missing'
+        if self.result.downloaded:
+            return 'downloaded'
+        if self.result.reused:
+            return 'reused'
+        return 'unknown'
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -639,6 +662,7 @@ def main(argv: list[str] | None = None) -> int:
             config=config,
             mode=args.mode,
             timeout=args.timeout,
+            workers=args.workers,
             reporter=reporter,
             stats=stats,
         )
@@ -771,10 +795,15 @@ def main(argv: list[str] | None = None) -> int:
         reporter.essential(f"Exported FAO-prep output to: {', '.join(exported_targets)}")
         print_final_summary(reporter, stats)
         return 0
+    except KeyboardInterrupt:
+        import sys
+
+        print('Interrupted by user.', file=sys.stderr, flush=True)
+        return 130
     except Exception as exc:
         import sys
 
-        print(f'Error: {exc}', file=sys.stderr)
+        print(f'Error: {exc}', file=sys.stderr, flush=True)
         return 1
 
 
@@ -791,6 +820,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--fill-missing', choices=FILL_MISSING_CHOICES, default='none', help='Keep missing FAO-oriented inputs empty, or explicitly allow the example layer to apply the documented opt-in fallback rules.')
     parser.add_argument('--compute-fao-intermediates', action='store_true', help='Explicitly compute FAO-56 intermediate variables and reference evapotranspiration from the prepared daily inputs and station metadata.')
     parser.add_argument('--timeout', type=int, default=60, help='HTTP timeout in seconds.')
+    parser.add_argument('--workers', type=int, default=1, help='Number of worker threads for daily station cache checks/downloads. Defaults to 1.')
     parser.add_argument('--silent', action='store_true', help='Suppress non-essential progress output.')
     return parser
 
@@ -1203,22 +1233,120 @@ def deduplicate_candidate_stations(meta1_rows: pd.DataFrame) -> pd.DataFrame:
     return meta1_rows.drop_duplicates(subset=['station_id'], keep='first').reset_index(drop=True)
 
 
-def cache_candidate_daily_inputs(candidates: pd.DataFrame, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, reporter: ProgressReporter, stats: CacheStats) -> tuple[int, list[str], list[str]]:
+def cache_candidate_daily_inputs(candidates: pd.DataFrame, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, workers: int, reporter: ProgressReporter, stats: CacheStats) -> tuple[int, list[str], list[str]]:
     available_station_count = 0
     missing_station_ids: list[str] = []
     failed_station_ids: list[str] = []
     total_candidates = len(candidates)
-    reporter.info(f'Checking daily input cache for {total_candidates} station(s).')
-    for index, station in enumerate(candidates.itertuples(index=False), start=1):
-        result = ensure_daily_observations_cached(station.station_id, cache_dir=cache_dir, config=config, mode=mode, timeout=timeout, stats=stats)
-        if result.available:
-            available_station_count += 1
-        if result.missing:
-            missing_station_ids.append(station.station_id)
-        if result.failed:
-            failed_station_ids.append(station.station_id)
-        reporter.info(f'[{index}/{total_candidates}] {station.station_id} ({station.full_name}): {result.summary()}')
+    if workers < 1:
+        raise ValueError(f'--workers must be at least 1, got {workers}')
+    if workers == 1:
+        reporter.info(f'Checking daily input cache for {total_candidates} station(s).')
+        station_results: list[StationCacheTaskResult] = []
+        for index, station in enumerate(candidates.itertuples(index=False), start=1):
+            task_result = process_station_daily_cache(
+                station.station_id,
+                station.full_name,
+                cache_dir=cache_dir,
+                config=config,
+                mode=mode,
+                timeout=timeout,
+            )
+            station_results.append(task_result)
+            reporter.info(_format_daily_station_progress(index, total_candidates, task_result))
+        _accumulate_daily_cache_results(station_results, stats=stats, missing_station_ids=missing_station_ids, failed_station_ids=failed_station_ids)
+    else:
+        reporter.info(f'Checking daily input cache for {total_candidates} station(s) using {workers} worker(s).')
+        station_records = list(candidates.itertuples(index=False))
+        station_results = _cache_candidate_daily_inputs_parallel(
+            station_records,
+            cache_dir=cache_dir,
+            config=config,
+            mode=mode,
+            timeout=timeout,
+            workers=workers,
+            reporter=reporter,
+        )
+        _accumulate_daily_cache_results(station_results, stats=stats, missing_station_ids=missing_station_ids, failed_station_ids=failed_station_ids)
+    available_station_count = sum(1 for task_result in station_results if task_result.result.available)
     return available_station_count, missing_station_ids, failed_station_ids
+
+
+def _cache_candidate_daily_inputs_parallel(
+    station_records: list[Any],
+    *,
+    cache_dir: Path,
+    config: FaoCountryConfig,
+    mode: str,
+    timeout: int,
+    workers: int,
+    reporter: ProgressReporter,
+) -> list[StationCacheTaskResult]:
+    total_candidates = len(station_records)
+    station_results: list[StationCacheTaskResult] = []
+    future_to_station: dict[Any, Any] = {}
+    executor = ThreadPoolExecutor(max_workers=workers)
+    interrupted = False
+    try:
+        for station in station_records:
+            future = executor.submit(
+                process_station_daily_cache,
+                station.station_id,
+                station.full_name,
+                cache_dir=cache_dir,
+                config=config,
+                mode=mode,
+                timeout=timeout,
+            )
+            future_to_station[future] = station
+        completed_count = 0
+        pending = set(future_to_station)
+        while pending:
+            done, pending = wait(pending, return_when=FIRST_COMPLETED)
+            for future in done:
+                task_result = future.result()
+                station_results.append(task_result)
+                completed_count += 1
+                reporter.info(_format_daily_station_progress(completed_count, total_candidates, task_result))
+    except KeyboardInterrupt:
+        interrupted = True
+        for future in future_to_station:
+            future.cancel()
+        executor.shutdown(wait=False, cancel_futures=True)
+        raise
+    finally:
+        if not interrupted:
+            executor.shutdown(wait=True, cancel_futures=False)
+    return station_results
+
+
+def _accumulate_daily_cache_results(
+    station_results: list[StationCacheTaskResult],
+    *,
+    stats: CacheStats,
+    missing_station_ids: list[str],
+    failed_station_ids: list[str],
+) -> None:
+    for task_result in station_results:
+        for _ in range(task_result.result.downloaded):
+            stats.add_file_status('downloaded')
+        for _ in range(task_result.result.reused):
+            stats.add_file_status('reused')
+        for _ in range(task_result.result.missing):
+            stats.add_file_status('missing')
+        for _ in range(task_result.result.failed):
+            stats.add_file_status('failed')
+        if task_result.result.missing:
+            missing_station_ids.append(task_result.station_id)
+        if task_result.result.failed:
+            failed_station_ids.append(task_result.station_id)
+
+
+def _format_daily_station_progress(index: int, total_candidates: int, task_result: StationCacheTaskResult) -> str:
+    line = f'[{index}/{total_candidates}] {task_result.station_id} ({task_result.full_name}): {task_result.result.summary()}'
+    if task_result.error_message:
+        line += f' - {task_result.error_message}'
+    return line
 
 
 def cache_candidate_hourly_inputs(candidates: pd.DataFrame, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, reporter: ProgressReporter, stats: CacheStats) -> tuple[int, list[str], list[str]]:
@@ -1239,33 +1367,51 @@ def cache_candidate_hourly_inputs(candidates: pd.DataFrame, *, cache_dir: Path, 
     return available_station_count, missing_station_ids, failed_station_ids
 
 
-def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int, stats: CacheStats) -> StationCacheResult:
+def process_station_daily_cache(
+    station_id: str,
+    full_name: str,
+    *,
+    cache_dir: Path,
+    config: FaoCountryConfig,
+    mode: str,
+    timeout: int,
+) -> StationCacheTaskResult:
+    result, error_message = ensure_daily_observations_cached(
+        station_id,
+        cache_dir=cache_dir,
+        config=config,
+        mode=mode,
+        timeout=timeout,
+    )
+    return StationCacheTaskResult(
+        station_id=station_id,
+        full_name=full_name,
+        result=result,
+        error_message=error_message,
+    )
+
+
+def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int) -> tuple[StationCacheResult, str | None]:
     result = StationCacheResult(station_id)
     cache_path = cached_daily_observations_path(cache_dir, station_id)
     if cache_path.exists():
         result.add_status('reused')
-        stats.add_file_status('reused')
-        return result
+        return result, None
     if mode == 'build':
         result.add_status('missing')
-        stats.add_file_status('missing')
-        return result
+        return result, None
     try:
         query = _build_daily_cache_query(station_id=station_id, config=config)
         observations = download_observations(query, timeout=timeout, country=config.country)
-    except Exception:
+        if observations.empty:
+            result.add_status('missing')
+            return result, None
+        write_dataframe_atomically(observations, cache_path)
+    except Exception as exc:
         result.add_status('failed')
-        stats.add_file_status('failed')
-        return result
-    if observations.empty:
-        result.add_status('missing')
-        stats.add_file_status('missing')
-        return result
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    observations.to_csv(cache_path, index=False)
+        return result, f'failed: {exc}'
     result.add_status('downloaded')
-    stats.add_file_status('downloaded')
-    return result
+    return result, None
 
 
 def _build_daily_cache_query(*, station_id: str, config: FaoCountryConfig) -> ObservationQuery:
@@ -1332,6 +1478,21 @@ def ensure_hourly_observations_cached(station_id: str, *, cache_dir: Path, confi
     result.add_status('downloaded')
     stats.add_file_status('downloaded')
     return result
+
+
+def write_dataframe_atomically(table: pd.DataFrame, cache_path: Path) -> None:
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = cache_path.with_name(cache_path.name + f'.tmp.{os.getpid()}.{threading.get_ident()}')
+    try:
+        table.to_csv(tmp_path, index=False)
+        os.replace(tmp_path, cache_path)
+    except Exception:
+        try:
+            if tmp_path.exists():
+                tmp_path.unlink()
+        except OSError:
+            pass
+        raise
 
 def read_cached_daily_observations(station_id: str, *, cache_dir: Path) -> pd.DataFrame:
     cache_path = cached_daily_observations_path(cache_dir, station_id)
