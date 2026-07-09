@@ -1376,7 +1376,7 @@ def process_station_daily_cache(
     mode: str,
     timeout: int,
 ) -> StationCacheTaskResult:
-    result, error_message = ensure_daily_observations_cached(
+    result, error_message = _ensure_daily_observations_cached_with_error(
         station_id,
         cache_dir=cache_dir,
         config=config,
@@ -1391,26 +1391,64 @@ def process_station_daily_cache(
     )
 
 
-def ensure_daily_observations_cached(station_id: str, *, cache_dir: Path, config: FaoCountryConfig, mode: str, timeout: int) -> tuple[StationCacheResult, str | None]:
+def ensure_daily_observations_cached(
+    station_id: str,
+    *,
+    cache_dir: Path,
+    config: FaoCountryConfig,
+    mode: str,
+    timeout: int,
+    stats: CacheStats | None = None,
+) -> StationCacheResult:
+    result, _error_message = _ensure_daily_observations_cached_with_error(
+        station_id,
+        cache_dir=cache_dir,
+        config=config,
+        mode=mode,
+        timeout=timeout,
+        stats=stats,
+    )
+    return result
+
+
+def _ensure_daily_observations_cached_with_error(
+    station_id: str,
+    *,
+    cache_dir: Path,
+    config: FaoCountryConfig,
+    mode: str,
+    timeout: int,
+    stats: CacheStats | None = None,
+) -> tuple[StationCacheResult, str | None]:
     result = StationCacheResult(station_id)
     cache_path = cached_daily_observations_path(cache_dir, station_id)
     if cache_path.exists():
         result.add_status('reused')
+        if stats is not None:
+            stats.add_file_status('reused')
         return result, None
     if mode == 'build':
         result.add_status('missing')
+        if stats is not None:
+            stats.add_file_status('missing')
         return result, None
     try:
         query = _build_daily_cache_query(station_id=station_id, config=config)
         observations = download_observations(query, timeout=timeout, country=config.country)
         if observations.empty:
             result.add_status('missing')
+            if stats is not None:
+                stats.add_file_status('missing')
             return result, None
         write_dataframe_atomically(observations, cache_path)
     except Exception as exc:
         result.add_status('failed')
+        if stats is not None:
+            stats.add_file_status('failed')
         return result, f'failed: {exc}'
     result.add_status('downloaded')
+    if stats is not None:
+        stats.add_file_status('downloaded')
     return result, None
 
 
